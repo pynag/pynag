@@ -144,10 +144,10 @@ class simple:
 		warning = self.data['warning']
 
 		if critical and self._range_checker(value, critical):
-			self.nagios_exit("CRITICAL","%s meets the range: %s" % (value, critical))
+			self.nagios_exit("CRITICAL","%s meets the range: %s" % (value, self.hr_range))
 
 		if warning and self._range_checker(value, warning):
-			self.nagios_exit("WARNING","%s meets the range: %s" % (value, warning))
+			self.nagios_exit("WARNING","%s meets the range: %s" % (value, self.hr_range))
 
 		## This is the lowest range, which we'll output
 		if warning:
@@ -155,7 +155,7 @@ class simple:
 		else:
 			alert_range = critical
 		
-		self.nagios_exit("OK","%s does not meet the range: %s" % (value, alert_range))
+		self.nagios_exit("OK","%s does not meet the range: %s" % (value, self.hr_range))
 
 	def _range_checker(self, value, check_range):
 		"""
@@ -166,22 +166,39 @@ class simple:
 		## Simple number check
 		simple_num_re = re.compile('^\d+$')
 		if simple_num_re.match(str(check_range)):
+			self.hr_range = "> %s" % check_range
 			value = float(value)
 			check_range = float(check_range)
-			if value < 0:
-				return True
-			elif value > check_range:
+			if (value < 0) or (value > check_range):
 				return True
 			else:
 				return False
 
 		if (check_range.find(":") != -1) and (check_range.find("@") == -1):
 			(start, end) = check_range.split(":")
+
+			## 10:     < 10, (outside {10 .. #})
 			if (end == "") and (float(value) < float(start)):
+				self.hr_range = "< %s" % (start)
 				return True
-			elif (start == "~") and (float(value) > float(end)):
+			elif (end == "") and (float(value) >= float(start)):
+				self.hr_range = "< %s" % (start)
+				return False
+
+			## ~:10    > 10, (outside the range of {-# .. 10})
+			if (start == "~") and (float(value) > float(end)):
+				self.hr_range = "> %s" % (end)
+				return True
+			elif (start == "~") and (float(value) <= float(end)):
+				self.hr_range = "> %s" % (end)
+				return False
+
+			## 10:20   < 10 or > 20, (outside the range of {10 .. 20})
+			if (start < float(value)) or (end > float(value)):
+				self.hr_range = "< %s or > %s" % (start,end)
 				return True
 			else:
+				self.hr_range = "< %s or > %s" % (start,end)
 				return False
 
 		## Inclusive range check
@@ -189,6 +206,7 @@ class simple:
 			(start, end) = check_range[1:].split(":")
 			start = float(start)
 			end = float(end)
+			self.hr_range = "Between %s and %s" % (start, end)
 			if ( float(value) >= start ) and ( float(value) <= end ):
 				return True
 			else:
