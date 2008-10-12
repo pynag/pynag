@@ -4,7 +4,6 @@ import os
 import re
 from optparse import OptionParser
 from pynag.NObject import *
-import sqlite3
 
 """
 Python Nagios extensions
@@ -34,21 +33,6 @@ class config:
 		## 'use' relationships
 		self.pre_object_list = []
 		self.post_object_list = []
-
-		## This is the real list
-
-		## Open up a sqlite database to store the final values
-		self.conn = sqlite3.connect(':memory:')
-		self.c = self.conn.cursor()		
-
-		sql = """
-create table hosts
-	( host_name, alias, display_name, address, parents, hostgroups, check_command, initial_state, max_check_attempts, check_interval, retry_interval, active_checks_enabled, passive_checks_enabled, check_period, obsess_over_host, check_freshness, freshness_threshold, event_handler, event_handler_enabled, low_flap_threshold, high_flap_threshold, flap_detection_enabled, flap_detection_options, process_perf_data, retain_status_information, retain_nonstatus_information, contacts, contact_groups, notification_interval, first_notification_delay, notification_period, notification_options, notifications_enabled, stalking_options, notes, notes_url, action_url, icon_image, icon_image_alt, vrml_image, statusmap_image, use, register )
-"""
-		self.c.execute(sql)
-		self.conn.commit()
-
-		self.object_list = []
 
 		if not os.path.isfile(self.cfg_file):
 			sys.stderr.write("%s does not exist\n" % self.cfg_file)
