@@ -33,10 +33,40 @@ class config:
 		## 'use' relationships
 		self.pre_object_list = []
 		self.post_object_list = []
+		self.object_type_keys = {
+			'hostgroup':'hostgroup_name',
+			'host':'alias',
+		}
 
 		if not os.path.isfile(self.cfg_file):
 			sys.stderr.write("%s does not exist\n" % self.cfg_file)
 			return None
+
+	def get_cfg_files(self):
+		"""
+		Return a list of all cfg files used in this configuration
+		"""
+		return self.cfg_files
+
+	def get_object_list(self, object_type, user_key = None):
+		"""
+		Return a list of object names for the given object type
+		"""
+		## Specify the key to use
+		object_key = user_key
+		## Be sure we have an existing key for this type, if one is not supplied
+		if not object_key and not self.object_type_keys.has_key(object_type):
+			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
+			sys.exit(2)
+
+		## Use a default key
+		if not object_key:
+			object_key = self.object_type_keys[object_type]
+
+		object_names = []
+		for item in self.data['all_%s' % object_type]:
+			object_names.append(item[object_key])
+		return object_names
 
 	def _append_use(self, source_item, name):
 		"""
