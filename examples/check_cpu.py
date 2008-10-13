@@ -2,7 +2,7 @@
 import os,sys
 
 ## This is for the custom nagios module
-#sys.path.insert(1, '../')
+sys.path.insert(1, '../')
 from pynag.Plugins import simple as Plugin
 
 
