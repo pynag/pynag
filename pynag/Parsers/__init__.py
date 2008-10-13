@@ -48,6 +48,28 @@ class config:
 		"""
 		return self.cfg_files
 
+	def get_object(self, object_type, object_name, user_key = None):
+		"""
+		Return a complete object dictionary
+		"""
+		object_key = user_key
+		if not object_key and not self.object_type_keys.has_key(object_type):
+			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
+			sys.exit(2)
+
+		## Use a default key
+		if not object_key:
+			object_key = self.object_type_keys[object_type]
+
+		target_object = None
+		for item in self.data['all_%s' % object_type]:
+			## Skip items without the specified key
+			if not item.has_key(object_key):
+				continue
+			if item[object_key] == object_name:
+				target_object = item
+		return target_object
+
 	def get_object_list(self, object_type, user_key = None):
 		"""
 		Return a list of object names for the given object type
@@ -140,7 +162,7 @@ class config:
 		## Get a list of the aliases in this group
 		existing_list = target_group['members'].split(",")
 		if alias in existing_list:
-			sys.stderr.write("%s is already in the group %s\n" % (alias, hostgroup_name))
+			#sys.stderr.write("%s is already in the group %s\n" % (alias, hostgroup_name))
 			return None
 		else:
 			existing_list.append(alias)
@@ -189,6 +211,7 @@ class config:
 					self.data[k].remove(item)
 					item['meta']['needs_commit'] = None
 					self.data[k].append(item)
+
 	def flag_all_commit(self):
 		"""
 		Flag every item in the configuration to be committed
@@ -251,6 +274,7 @@ class config:
 		
 		output += "}\n\n"
 		return output
+
 
 	def _get_item(self, item_name, item_type, item_list):
    		""" 
