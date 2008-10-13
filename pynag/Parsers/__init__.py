@@ -65,10 +65,6 @@ class config:
 
 	def _post_parse(self):
 		for raw_item in self.pre_object_list:
-			## just worry about hosts for now, this can be removed once all definitions have been defined
-			#if raw_item['object_type'] != 'host':
-				#continue
-
 			if raw_item.has_key('use'):
 				item_to_add = self._get_item(raw_item['use'], raw_item['meta']['object_type'], self.pre_object_list)
 				raw_item = self._apply_template(raw_item,item_to_add, self.pre_object_list)
@@ -87,6 +83,102 @@ class config:
 			if not is_template:
 				self.data[type_list_name].append(list_item)
 
+	def _exists(self, type, key, value):
+		"""
+		Check if an item exists
+		"""
+		for item in self.data['all_%s' % type ]:
+			if item.has_key(key):
+				if item[key] == value:
+					return True
+		return None
+
+	def add_alias_to_hostgroup(self, alias, hostgroup_name):
+		"""
+		Add a host to a group
+		"""
+		if not self._exists('host','alias',alias):
+			sys.stderr.write("Host alias '%s' does not exist\n" % alias)
+			return None
+
+		## Find the hostgroup from our global dictionaries
+		target_group = self._get_hostgroup(hostgroup_name)
+		if not target_group:
+			print "%s does not exist" % hostgroup_name
+			return None
+
+		## Get a list of the aliases in this group
+		existing_list = target_group['members'].split(",")
+		if alias in existing_list:
+			sys.stderr.write("%s is already in the group %s\n" % (alias, hostgroup_name))
+			return None
+		else:
+			existing_list.append(alias)
+
+		## Alphabetize the list, for easier readability
+		existing_list.sort()
+
+		## Remove old group
+		self.data['all_hostgroup'].remove(target_group)
+
+		## Save the new member list
+		target_group['members'] = ",".join(existing_list)
+
+		## Mark the commit flag for the group
+		target_group['meta']['needs_commit'] = True
+
+		## Add the group back in with new members
+		self.data['all_hostgroup'].append(target_group)
+
+	def commit(self):
+		"""
+		Write any changes that have been made to it's appropriate file
+		"""
+		## Loops through ALL items
+		for k in self.data.keys():
+			for item in self[k]:
+
+				## If the object needs committing, commit it!
+				if item['meta']['needs_commit']:
+					file_contents = ""
+					## find any other items that may share this config file
+					extra_items = self._get_items_in_file(item['meta']['filename'])
+					if len(extra_items) > 0:
+						for commit_item in extra_items:
+							## Make sure we aren't adding this thing twice
+							if item != commit_item:
+								file_contents += self.print_conf(commit_item)
+					file_contents += self.print_conf(item)
+
+					## Write the file
+					f = open(item['meta']['filename'], 'w')
+					f.write(file_contents)
+					f.close()
+
+					## Recreate the item entry without the commit flag
+					self.data[k].remove(item)
+					item['meta']['needs_commit'] = None
+					self.data[k].append(item)
+
+	def _get_items_in_file(self, filename):
+		"""
+		Return all items in the given file
+		"""
+		return_list = []
+				
+		for k in self.data.keys():
+			for item in self[k]:
+				if item['meta']['filename'] == filename:
+					return_list.append(item)
+		return return_list
+
+	def _get_hostgroup(self,hostgroup_name):
+		for hostgroup in self.data['all_hostgroup']:
+			if hostgroup['hostgroup_name'] == hostgroup_name:
+				return hostgroup
+		return None
+
+
 	def print_objects(self, show_templates = None):
 
 		for object in self.post_object_list:
@@ -99,20 +191,22 @@ class config:
 
 	def print_conf(self, item):
 		import time
-		print "# Configuration file %s" % item['meta']['filename']
-		print "# Edited by PyNag on %s" % time.ctime()
-		print "# Values from templates:"
+		output = ""
+		output += "# Configuration file %s\n" % item['meta']['filename']
+		output += "# Edited by PyNag on %s\n" % time.ctime()
+		if len(item['meta']['template_fields']) != 0:
+			output += "# Values from templates:\n"
 		for k in item['meta']['template_fields']:
-			print "#\t %-30s %-30s" % (k, item[k])
-		print ""
-		print "define %s {" % item['meta']['object_type']
+			output += "#\t %-30s %-30s\n" % (k, item[k])
+		output += "\n"
+		output += "define %s {\n" % item['meta']['object_type']
 		for k, v in item.iteritems():
 			if k != 'meta':
 				if k not in item['meta']['template_fields']:
-					print "\t %-30s %-30s" % (k,v)
+					output += "\t %-30s %-30s\n" % (k,v)
 		
-		print "}"
-		print ""
+		output += "}\n\n"
+		return output
 
 	def _get_item(self, item_name, item_type, item_list):
    		""" 
@@ -139,12 +233,17 @@ class config:
 		Apply the new item 'template_item' to 'original_item'
 		"""
 
+		if original_item.has_key('use'):
+			new_item_to_add = self._get_item(original_item['use'], template_item['meta']['object_type'], complete_list)
+			template_item = self._apply_template(template_item, new_item_to_add, complete_list)
+
 		for k,v in template_item.iteritems():
 
 			## Apply another template if this is a 'use' key
 			if k == 'use':
-				new_item_to_add = self._get_item(v, template_item['meta']['object_type'], complete_list)
-				return self._apply_template(template_item, new_item_to_add, complete_list)
+				continue
+				#new_item_to_add = self._get_item(v, template_item['meta']['object_type'], complete_list)
+				#return self._apply_template(template_item, new_item_to_add, complete_list)
 
 			## Ignore 'register' values
 			if k == 'register':
@@ -206,6 +305,8 @@ class config:
 		for cfg_file in self.cfg_files:
 			self._load_file(cfg_file)
 
+		self._post_parse()
+
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
 		append = ""
@@ -252,6 +353,7 @@ class config:
 				current['meta']['object_type'] = object_type
 				current['meta']['filename'] = filename
 				current['meta']['template_fields'] = []
+				current['meta']['needs_commit'] = None
 
 				if in_definition:
 					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
