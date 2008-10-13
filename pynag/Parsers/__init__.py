@@ -159,6 +159,20 @@ class config:
 					self.data[k].remove(item)
 					item['meta']['needs_commit'] = None
 					self.data[k].append(item)
+	def flag_all_commit(self):
+		"""
+		Flag every item in the configuration to be committed
+		This should probably only be used for debugging purposes
+		"""
+		new_data_list = {}
+		for k in self.data.keys():
+			new_data_list[k] = []
+			for item in self[k]:
+				item['meta']['needs_commit'] = True
+				new_data_list[k].append(item)
+
+		## Replace the original list with the new one
+		self.data = new_data_list
 
 	def _get_items_in_file(self, filename):
 		"""
