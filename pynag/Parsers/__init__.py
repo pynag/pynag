@@ -35,6 +35,7 @@ class config:
 		self.post_object_list = []
 		self.object_type_keys = {
 			'hostgroup':'hostgroup_name',
+			'hostextinfo':'host_name',
 			'host':'alias',
 		}
 
@@ -47,6 +48,35 @@ class config:
 		Return a list of all cfg files used in this configuration
 		"""
 		return self.cfg_files
+
+	def delete_object(self, object_type, object_name, user_key = None):
+		"""
+		Delete object from configuration files.
+		"""
+		object_key = user_key
+		if not object_key and not self.object_type_keys.has_key(object_type):
+			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
+			sys.exit(2)
+
+		## Use a default key
+		if not object_key:
+			object_key = self.object_type_keys[object_type]
+
+		target_object = None
+		k = 'all_%s' % object_type
+		for item in self.data[k]:
+			if not item.has_key(object_key):
+				continue
+
+			## If the object matches, mark it for deletion
+			if item[object_key] == object_name:
+				self.data[k].remove(item)
+				item['meta']['delete_me'] = True
+				item['meta']['needs_commit'] = True
+				self.data[k].append(item)
+				return True
+		## Only make it here if the object isn't found
+		return None
 
 	def get_object(self, object_type, object_name, user_key = None):
 		"""
@@ -200,7 +230,10 @@ class config:
 							## Make sure we aren't adding this thing twice
 							if item != commit_item:
 								file_contents += self.print_conf(commit_item)
-					file_contents += self.print_conf(item)
+
+					## This is the actual item that needs commiting
+					if not item['meta']['delete_me']:
+						file_contents += self.print_conf(item)
 
 					## Write the file
 					f = open(item['meta']['filename'], 'w')
@@ -422,6 +455,7 @@ class config:
 				current['meta']['filename'] = filename
 				current['meta']['template_fields'] = []
 				current['meta']['needs_commit'] = None
+				current['meta']['delete_me'] = None
 
 				if in_definition:
 					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
