@@ -49,18 +49,25 @@ class config:
 		"""
 		return self.cfg_files
 
-	def delete_object(self, object_type, object_name, user_key = None):
+	def _get_key(self, object_type, user_key = None):
 		"""
-		Delete object from configuration files.
+		Return the correct 'key' for an item
 		"""
-		object_key = user_key
-		if not object_key and not self.object_type_keys.has_key(object_type):
+		if not user_key and not self.object_type_keys.has_key(object_type):
 			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
 			sys.exit(2)
 
 		## Use a default key
-		if not object_key:
-			object_key = self.object_type_keys[object_type]
+		if not user_key:
+			user_key = self.object_type_keys[object_type]
+
+		return user_key
+
+	def delete_object(self, object_type, object_name, user_key = None):
+		"""
+		Delete object from configuration files.
+		"""
+		object_key = self._get_key(object_type,user_key)
 
 		target_object = None
 		k = 'all_%s' % object_type
@@ -82,14 +89,7 @@ class config:
 		"""
 		Return a complete object dictionary
 		"""
-		object_key = user_key
-		if not object_key and not self.object_type_keys.has_key(object_type):
-			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
-			sys.exit(2)
-
-		## Use a default key
-		if not object_key:
-			object_key = self.object_type_keys[object_type]
+		object_key = self._get_key(object_type,user_key)
 
 		target_object = None
 		for item in self.data['all_%s' % object_type]:
@@ -105,15 +105,7 @@ class config:
 		Return a list of object names for the given object type
 		"""
 		## Specify the key to use
-		object_key = user_key
-		## Be sure we have an existing key for this type, if one is not supplied
-		if not object_key and not self.object_type_keys.has_key(object_type):
-			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
-			sys.exit(2)
-
-		## Use a default key
-		if not object_key:
-			object_key = self.object_type_keys[object_type]
+		object_key = self._get_key(object_type,user_key)
 
 		object_names = []
 		for item in self.data['all_%s' % object_type]:
