@@ -36,7 +36,7 @@ class config:
 		self.object_type_keys = {
 			'hostgroup':'hostgroup_name',
 			'hostextinfo':'host_name',
-			'host':'alias',
+			'host':'host_name',
 		}
 
 		if not os.path.isfile(self.cfg_file):
@@ -81,7 +81,11 @@ class config:
 				item['meta']['delete_me'] = True
 				item['meta']['needs_commit'] = True
 				self.data[k].append(item)
+
+				## Commit the delete
+				self.commit()
 				return True
+
 		## Only make it here if the object isn't found
 		return None
 
@@ -111,6 +115,16 @@ class config:
 		for item in self.data['all_%s' % object_type]:
 			object_names.append(item[object_key])
 		return object_names
+
+	def get_hostgroup_membership(self, name, user_key = None):
+		hostgroup_list = []
+		for item in self.data['all_hostgroup']:
+			if item['members'].find(",") != -1:
+				if name in item['members'].split(","):
+					hostgroup_list.append(item['hostgroup_name'])
+			elif item['members'] == name:
+				hostgroup_list = [item['members']]
+		return hostgroup_list
 
 	def _append_use(self, source_item, name):
 		"""
@@ -167,12 +181,12 @@ class config:
 					return True
 		return None
 
-	def add_alias_to_hostgroup(self, alias, hostgroup_name):
+	def remove_name_from_hostgroup(self, host_name, hostgroup_name):
 		"""
-		Add a host to a group
+		Remove a host from a group
 		"""
-		if not self._exists('host','alias',alias):
-			sys.stderr.write("Host alias '%s' does not exist\n" % alias)
+		if not self._exists('host','host_name',host_name):
+			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
 			return None
 
 		## Find the hostgroup from our global dictionaries
@@ -181,13 +195,48 @@ class config:
 			print "%s does not exist" % hostgroup_name
 			return None
 
-		## Get a list of the aliases in this group
+		## Get a list of the host_name's in this group
 		existing_list = target_group['members'].split(",")
-		if alias in existing_list:
-			#sys.stderr.write("%s is already in the group %s\n" % (alias, hostgroup_name))
+		if host_name not in existing_list:
 			return None
 		else:
-			existing_list.append(alias)
+			existing_list.remove(host_name)
+
+		## Alphabetize the list, for easier readability
+		existing_list.sort()
+
+		## Remove old group
+		self.data['all_hostgroup'].remove(target_group)
+
+		## Save the new member list
+		target_group['members'] = ",".join(existing_list)
+
+		## Mark the commit flag for the group
+		target_group['meta']['needs_commit'] = True
+
+		## Add the group back in with new members
+		self.data['all_hostgroup'].append(target_group)
+
+	def add_name_to_hostgroup(self, host_name, hostgroup_name):
+		"""
+		Add a host to a group
+		"""
+		if not self._exists('host','host_name',host_name):
+			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
+			return None
+
+		## Find the hostgroup from our global dictionaries
+		target_group = self._get_hostgroup(hostgroup_name)
+		if not target_group:
+			print "%s does not exist" % hostgroup_name
+			return None
+
+		## Get a list of the host_name's in this group
+		existing_list = target_group['members'].split(",")
+		if host_name in existing_list:
+			return None
+		else:
+			existing_list.append(host_name)
 
 		## Alphabetize the list, for easier readability
 		existing_list.sort()
@@ -214,11 +263,16 @@ class config:
 
 				## If the object needs committing, commit it!
 				if item['meta']['needs_commit']:
+					## Create file contents as an empty string
 					file_contents = ""
+
 					## find any other items that may share this config file
 					extra_items = self._get_items_in_file(item['meta']['filename'])
 					if len(extra_items) > 0:
 						for commit_item in extra_items:
+							## Ignore files that are already set to be deleted:w
+							if commit_item['meta']['delete_me']:
+								continue
 							## Make sure we aren't adding this thing twice
 							if item != commit_item:
 								file_contents += self.print_conf(commit_item)
