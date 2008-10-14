@@ -37,7 +37,8 @@ class config:
 			'hostgroup':'hostgroup_name',
 			'hostextinfo':'host_name',
 			'host':'host_name',
-			'service':'name',
+			#'service':'name',
+			'service':['host_name','description'],
 		}
 
 		if not os.path.isfile(self.cfg_file):
@@ -47,12 +48,17 @@ class config:
 	def get_cfg_files(self):
 		"""
 		Return a list of all cfg files used in this configuration
+
+		Example:
+		print get_cfg_files()
+		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
 		"""
 		return self.cfg_files
 
 	def _get_key(self, object_type, user_key = None):
 		"""
-		Return the correct 'key' for an item
+		Return the correct 'key' for an item.  This is mainly a helper method
+		for other methods in this class.  It is used to shorten code repitition
 		"""
 		if not user_key and not self.object_type_keys.has_key(object_type):
 			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
@@ -112,13 +118,84 @@ class config:
 		object_key = self._get_key(object_type,user_key)
 
 		target_object = None
+
 		for item in self.data['all_%s' % object_type]:
 			## Skip items without the specified key
 			if not item.has_key(object_key):
 				continue
 			if item[object_key] == object_name:
 				target_object = item
+			## This is for multi-key items
 		return target_object
+
+	def get_service(self, target_host, service_description):
+		"""
+		Return a service object.  This has to be seperate from the 'get_object' method, because it requires more than one key
+		"""
+		for item in self.data['all_service']:
+			## Skip non-matching services
+			if item['service_description'] != service_description:
+				continue
+
+			all_hosts = self.get_service_members(service_description, key='service_description', search_key='host_name')
+			if self.host_in_service(target_host, item):
+				return item
+		return None
+
+	def host_in_service(self, target_host, target_service):
+		"""
+		Return True if the host is in the given service
+
+		Example:
+		define service {
+			service_description	Foo
+			host_name			larry,curly
+		}
+
+		host_in_service("larry", %service_object%)
+		returns True
+
+		host_in_service("moe", %service_object%)
+		returns None
+		"""
+		## Return false if the service doesn't have a host_name key
+		if not target_service.has_key('host_name'):
+			return None
+
+		if target_host in self._get_list(target_service, 'host_name'):
+			return True
+		else:
+			return None
+
+
+	def _get_list(self, object, key):
+		"""
+		Return a comma list from an item
+
+		Example:
+
+		_get_list(Foo_object, host_name)
+		define service {
+			service_description Foo
+			host_name			larry,curly,moe
+		}
+
+		return
+		['larry','curly','moe']
+		"""
+		if not object.has_key(key):
+			return None
+
+		return_list = []
+
+		if object[key].find(",") != -1:
+			for name in object[key].split(","):
+				return_list.append(name)
+		else:
+			return_list.append(object[key])
+
+		return return_list
+		
 
 	def get_object_list(self, object_type, user_key = None):
 		"""
@@ -147,7 +224,7 @@ class config:
 
 	def get_service_membership(self, name, key='host_name'):
 		"""
-		Return a list of services that the host belongs to
+		Return all services a host belongs to
 		"""
 		service_list = []
 		for item in self.data['all_service']:
@@ -157,28 +234,29 @@ class config:
 
 			if item[key].find(",") != -1:
 				if name in item[key].split(","):
-					service_list.append(item['name'])
+					service_list.append(item)
 
 			## If the the item is the only one in the list
 			elif item[key] == name:
-				service_list.append(item['name'])
+				service_list.append(item)
+
 		return service_list
 
-	def get_service_members(self, name, key='host_name'):
+	def get_service_members(self, name, key='name', search_key='host_name'):
 		"""
 		Return a list of members for a specific service
 		"""
 		member_list = []
 		for item in self.data['all_service']:
 			## Skip items that don't even have this key
-			if not item.has_key(key):
+			if not item.has_key(search_key):
 				continue
 
-			if name == item['name']:
-				if item[key].find(",") != -1:
-					member_list.extend(item[key].split(","))
+			if name == item[key]:
+				if item[search_key].find(",") != -1:
+					member_list.extend(item[search_key].split(","))
 				else:
-					member_list.append(item[key])
+					member_list.append(item[search_key])
 
 		return member_list
 
@@ -585,7 +663,11 @@ class config:
 				key = key.strip()
 				value = value.strip()
 
-				#current_definition(key, value)
+				## Rename some old values that may be in the configuration
+				## This can probably be removed in the future to increase performance
+				if (current['meta']['object_type'] == 'service') and key == 'description':
+					key = 'service_description'
+
 				current[key] = value
 			## Something is wrong in the config
 			else:
