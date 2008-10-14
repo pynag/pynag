@@ -15,7 +15,39 @@ target_host = sys.argv[1]
 nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
 
-nc.delete_object('host',target_host)
-nc.commit()
-nc.delete_object('hostextinfo',target_host)
-nc.commit()
+## Find services that this host belongs to
+for service in nc.get_service_membership(target_host):
+	## Check to see if this is the only host in this service
+	host_list = nc.get_service_members(service)
+	if len(host_list) > 1:
+		print "Removing %s from %s" % (target_host, service)
+		new_item = nc.get_object('service',service)
+		host_list.remove(target_host)
+		host_string = ",".join(host_list)
+		print "New Value: %s" % host_string
+		nc.edit_object('service',service, 'host_name',host_string)
+	elif (len(host_list) == 1) and not nc.get_object('service',service).has_key('hostgroup_name'):
+		print "Deleting %s" % service
+		nc.delete_object('service', service)
+	elif (len(host_list) == 1) and (host_list[0] is target_host):
+		print "Deleting %s" % service
+		nc.delete_object('service', service)
+	else:
+		print "Unknown Action"
+		sys.exit(2)
+
+## Delete from groups
+for hostgroup in nc.get_hostgroup_membership(target_host):
+	print "Removing %s from %s" % (target_host, hostgroup)
+	nc.remove_name_from_hostgroup(target_host, hostgroup)
+	nc.commit()
+
+## Delete a host
+result = nc.delete_object('host',target_host)
+if result:
+	print "Deleted host"
+
+## Delete hostextinfo
+result = nc.delete_object('hostextinfo',target_host)
+if result:
+	print "Deleted hostextinfo"
