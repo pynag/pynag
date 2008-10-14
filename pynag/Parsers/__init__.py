@@ -37,6 +37,7 @@ class config:
 			'hostgroup':'hostgroup_name',
 			'hostextinfo':'host_name',
 			'host':'host_name',
+			'service':'name',
 		}
 
 		if not os.path.isfile(self.cfg_file):
@@ -62,6 +63,21 @@ class config:
 			user_key = self.object_type_keys[object_type]
 
 		return user_key
+
+	def edit_object(self, object_type, object_name, field, new_value, user_key = None):
+		"""
+		Edit an object's attributes
+		"""
+		object_key = self._get_key(object_type,user_key)
+
+		original_object = self.get_object(object_type, object_name, user_key = None)
+		self['all_%s' % object_type].remove(original_object)
+		original_object[field] = new_value
+		original_object['meta']['needs_commit'] = True
+		self['all_%s' % object_type].append(original_object)
+		self.commit()
+		return True
+		
 
 	def delete_object(self, object_type, object_name, user_key = None):
 		"""
@@ -117,14 +133,54 @@ class config:
 		return object_names
 
 	def get_hostgroup_membership(self, name, user_key = None):
+		"""
+		Given a host_name, return all hostgroups that the host is a member of.
+		"""
 		hostgroup_list = []
 		for item in self.data['all_hostgroup']:
 			if item['members'].find(",") != -1:
 				if name in item['members'].split(","):
 					hostgroup_list.append(item['hostgroup_name'])
 			elif item['members'] == name:
-				hostgroup_list = [item['members']]
+				hostgroup_list.append(item['members'])
 		return hostgroup_list
+
+	def get_service_membership(self, name, key='host_name'):
+		"""
+		Return a list of services that the host belongs to
+		"""
+		service_list = []
+		for item in self.data['all_service']:
+			## Skip items that don't even have this key
+			if not item.has_key(key):
+				continue
+
+			if item[key].find(",") != -1:
+				if name in item[key].split(","):
+					service_list.append(item['name'])
+
+			## If the the item is the only one in the list
+			elif item[key] == name:
+				service_list.append(item['name'])
+		return service_list
+
+	def get_service_members(self, name, key='host_name'):
+		"""
+		Return a list of members for a specific service
+		"""
+		member_list = []
+		for item in self.data['all_service']:
+			## Skip items that don't even have this key
+			if not item.has_key(key):
+				continue
+
+			if name == item['name']:
+				if item[key].find(",") != -1:
+					member_list.extend(item[key].split(","))
+				else:
+					member_list.append(item[key])
+
+		return member_list
 
 	def _append_use(self, source_item, name):
 		"""
