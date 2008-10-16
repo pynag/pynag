@@ -89,7 +89,6 @@ class config:
 		Delete a service
 		"""
 		item = self.get_service(service_description, host)
-		print "Deleting %s" % item
 
 		self.data['all_service'].remove(item)
 		item['meta']['delete_me'] = True
