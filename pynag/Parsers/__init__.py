@@ -351,7 +351,6 @@ class config:
 		"""
 		for item in self.data['all_%s' % type ]:
 			if item.has_key(key):
-				print item[key]
 				if item[key] == value:
 					return True
 		return None
