@@ -37,8 +37,8 @@ class config:
 			'hostgroup':'hostgroup_name',
 			'hostextinfo':'host_name',
 			'host':'host_name',
-			#'service':'name',
-			'service':['host_name','description'],
+			'service':'name',
+			#'service':['host_name','description'],
 		}
 
 		if not os.path.isfile(self.cfg_file):

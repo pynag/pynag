@@ -17,8 +17,17 @@ nc.parse()
 
 ## Find services that this host belongs to
 for service in nc.get_service_membership(target_host):
+
 	## Check to see if this is the only host in this service
-	host_list = nc.get_service_members(service)
+	if service.has_key('host_name'):
+		if service['host_name'].find(",") == -1:
+			host_list = [service['host_name']]
+		else:
+			host_list = service['host_name'].split(",")
+	else:
+		continue
+
+	#host_list = nc.get_service_members(service['name'])
 	if len(host_list) > 1:
 		print "Removing %s from %s" % (target_host, service)
 		new_item = nc.get_object('service',service)
@@ -26,12 +35,12 @@ for service in nc.get_service_membership(target_host):
 		host_string = ",".join(host_list)
 		print "New Value: %s" % host_string
 		nc.edit_object('service',service, 'host_name',host_string)
-	elif (len(host_list) == 1) and not nc.get_object('service',service).has_key('hostgroup_name'):
-		print "Deleting %s" % service
-		nc.delete_object('service', service)
+	elif (len(host_list) == 1) and not service.has_key('hostgroup_name'):
+		print "Deleting %s" % service['name']
+		nc.delete_object('service', service['name'])
 	elif (len(host_list) == 1) and (host_list[0] is target_host):
-		print "Deleting %s" % service
-		nc.delete_object('service', service)
+		print "Deleting %s" % service['name']
+		nc.delete_object('service', service['name'])
 	else:
 		print "Unknown Action"
 		sys.exit(2)

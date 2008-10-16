@@ -9,5 +9,5 @@ from pynag.Parsers import config
 nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
 #nc._post_parse()
-for host in nc['all']:
-	nc.print_conf(host)
+for host in nc['all_host']:
+	print nc.print_conf(host)

@@ -2,7 +2,7 @@
 import os,sys
 
 ## This is for the custom nagios module
-#sys.path.insert(1, '../')
+sys.path.insert(1, '../')
 from pynag.Parsers import config
 
 def is_ip(ip_address):
@@ -18,5 +18,12 @@ nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
 
 nc.flag_all_commit()
+nc.commit()
+
+obj = nc.get_object('service','SNMP',user_key='name')
+
+nc.print_conf(obj)
+
+
 
 nc.commit()
