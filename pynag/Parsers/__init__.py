@@ -83,7 +83,18 @@ class config:
 		self['all_%s' % object_type].append(original_object)
 		self.commit()
 		return True
-		
+
+	def delete_service(self, service_description, host):
+		"""
+		Delete a service
+		"""
+		item = self.get_service(service_description, host)
+		print "Deleting %s" % item
+
+		self.data['all_service'].remove(item)
+		item['meta']['delete_me'] = True
+		item['meta']['needs_commit'] = True
+		self.data['all_service'].append(item)
 
 	def delete_object(self, object_type, object_name, user_key = None):
 		"""
@@ -340,6 +351,7 @@ class config:
 		"""
 		for item in self.data['all_%s' % type ]:
 			if item.has_key(key):
+				print item[key]
 				if item[key] == value:
 					return True
 		return None
