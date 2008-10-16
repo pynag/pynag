@@ -128,7 +128,7 @@ class config:
 			## This is for multi-key items
 		return target_object
 
-	def get_service(self, target_host, service_description):
+	def get_service(self, service_description, target_host):
 		"""
 		Return a service object.  This has to be seperate from the 'get_object' method, because it requires more than one key
 		"""
@@ -136,9 +136,7 @@ class config:
 			## Skip non-matching services
 			if item['service_description'] != service_description:
 				continue
-
-			all_hosts = self.get_service_members(service_description, key='service_description', search_key='host_name')
-			if self.host_in_service(target_host, item):
+			if target_host in self._expand_service_hosts(item):
 				return item
 		return None
 
@@ -167,6 +165,37 @@ class config:
 		else:
 			return None
 
+	def _expand_service_hosts(self, service):
+		"""
+		Given a service object, return a list of hosts included.  This includes all members of host_groups
+		"""
+		host_list = []
+
+		## If the service lists individual hosts
+		if service.has_key('host_name'):
+			if service['host_name'].find(",") == -1:
+				host_list.append(service['host_name'])
+			else:
+				host_list.extend(service['host_name'].split(","))
+
+		## Hostgroup members
+		if service.has_key('hostgroup_name'):
+			host_list.extend(self._expand_hostgroup(self.get_object('hostgroup',service['hostgroup_name'])))
+
+		return host_list
+
+	
+	def _expand_hostgroup(self, hostgroup):
+		"""
+		Given a hostgroup, return a list of names that belong to it
+		"""
+		host_list = []
+		if hostgroup['members'].find(",") == -1:
+			host_list.append(hostgroup['members'])
+		else:
+			host_list.extend(hostgroup['members'].split(","))
+
+		return host_list
 
 	def _get_list(self, object, key):
 		"""
