@@ -50,7 +50,6 @@ for service in nc.get_service_membership(target_host):
 ## Delete from groups
 for hostgroup in nc.get_hostgroup_membership(target_host):
 	print "Removing %s from %s" % (target_host, hostgroup)
-	print hostgroup
 	nc.remove_name_from_hostgroup(target_host, hostgroup)
 	nc.commit()
 
