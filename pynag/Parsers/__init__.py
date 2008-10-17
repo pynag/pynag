@@ -42,6 +42,7 @@ class config:
 			'contact':'contact_name',
 			'contactgroup':'contactgroup_name',
 			'timeperiod':'timeperiod_name',
+			'command':'command_name',
 			#'service':['host_name','description'],
 		}
 
@@ -348,6 +349,12 @@ class config:
 		Return a Timeperiod object
 		"""
 		return self.get_object('timeperiod',object_name, user_key = user_key)
+
+	def get_command(self, object_name, user_key = None):
+		"""
+		Return a Command object
+		"""
+		return self.get_object('command',object_name, user_key = user_key)
 
 	def get_hostgroup(self, object_name, user_key = None):
 		"""
