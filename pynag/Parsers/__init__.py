@@ -321,9 +321,16 @@ class config:
 		"""
 		return self.get_object('host',object_name, user_key = user_key)
 
+	def get_hostgroup(self, object_name, user_key = None):
+		"""
+		Return a hostgroup object
+		"""
+		return self.get_object('hostgroup',object_name, user_key = user_key)
+
 	def get_service(self, target_host, service_description):
 		"""
-		Return a service object.  This has to be seperate from the 'get_object' method, because it requires more than one key
+		Return a service object.  This has to be seperate from the 'get_object'
+		method, because it requires more than one key
 		"""
 		for item in self.data['all_service']:
 			## Skip non-matching services
@@ -351,14 +358,26 @@ class config:
 		host_in_service("moe", %service_object%)
 		returns None
 		"""
-		## Return false if the service doesn't have a host_name key
-		if not target_service.has_key('host_name'):
-			return None
+		## Negation lists
+		negate_hosts = []
+		if target_service.has_key('host_name'):
+			for host in self._get_list(target_service, 'host_name'):
+				## If the host starts with a bang, add it to the negation list
+				if host[:1] == "!":
+					negate_hosts.append(host[1:])
 
-		if target_host in self._get_list(target_service, 'host_name'):
-			return True
-		else:
-			return None
+		## Check in hostgroup_name
+		if target_service.has_key('hostgroup_name'):
+			hostgroups = self._get_list(self.get_hostgroup(target_service['hostgroup_name']), 'hostgroup_name')
+			for hostgroup in hostgroups:
+				if (target_host in self._get_list(self.get_hostgroup(hostgroup), 'members')) and (target_host not in negate_hosts):
+					return True
+
+		## Check in host_name
+		if target_service.has_key('host_name'):
+			if target_host in self._get_list(target_service, 'host_name'):
+				return True
+		return None
 		
 
 	def get_object_list(self, object_type, user_key = None):
