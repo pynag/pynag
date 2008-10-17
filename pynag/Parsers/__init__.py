@@ -45,15 +45,14 @@ class config:
 			sys.stderr.write("%s does not exist\n" % self.cfg_file)
 			return None
 
-	def get_cfg_files(self):
+	def _has_template(self, target):
 		"""
-		Return a list of all cfg files used in this configuration
-
-		Example:
-		print get_cfg_files()
-		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
+		Determine if an item has a template associated with it
 		"""
-		return self.cfg_files
+		if target.has_key('use'):
+			return True
+		else:
+			return None
 
 	def _get_key(self, object_type, user_key = None):
 		"""
@@ -70,6 +69,167 @@ class config:
 
 		return user_key
 
+	def _get_item(self, item_name, item_type, item_list):
+   		""" 
+   		Return an item from a list
+   		"""
+		for test_item in item_list:  
+			## Skip tems without a name
+			if not test_item.has_key('name'):
+				continue
+
+			## Make sure there isn't an infinite loop going on
+			try:
+				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
+					return test_item
+			except:
+				print "Loop detected, exiting"
+				sys.exit(2)
+
+		## If we make it this far, it means there is no matching item
+		return None
+
+	def _apply_template(self, original_item, template_item, complete_list):
+		"""
+		Apply the new item 'template_item' to 'original_item'
+		"""
+
+		if original_item.has_key('use'):
+			new_item_to_add = self._get_item(original_item['use'], template_item['meta']['object_type'], complete_list)
+			template_item = self._apply_template(template_item, new_item_to_add, complete_list)
+
+		for k,v in template_item.iteritems():
+
+			## Apply another template if this is a 'use' key
+			if k == 'use':
+				continue
+				#new_item_to_add = self._get_item(v, template_item['meta']['object_type'], complete_list)
+				#return self._apply_template(template_item, new_item_to_add, complete_list)
+
+			## Ignore 'register' values
+			if k == 'register':
+				continue
+
+			## Ignore 'meta' values
+			if k == 'meta':
+				continue
+
+			## Apply any unknown value
+			if not original_item.has_key(k):
+				original_item[k] = v
+				original_item['meta']['template_fields'].append(k)
+
+		return original_item
+
+	def _get_items_in_file(self, filename):
+		"""
+		Return all items in the given file
+		"""
+		return_list = []
+				
+		for k in self.data.keys():
+			for item in self[k]:
+				if item['meta']['filename'] == filename:
+					return_list.append(item)
+		return return_list
+
+	def _get_hostgroup(self,hostgroup_name):
+		for hostgroup in self.data['all_hostgroup']:
+			if hostgroup['hostgroup_name'] == hostgroup_name:
+				return hostgroup
+		return None
+
+	def _load_file(self, filename):
+		## Set globals (This is stolen from the perl module)
+		append = ""
+		type = None
+		current = None
+		in_definition = {}
+
+		for line in open(filename, 'rb').readlines():
+
+			## Cleanup and line skips
+			line = line.strip()
+			if line == "":
+				continue
+			if line[0] == "#":
+				continue
+
+			# append saved text to the current line
+			if append:
+				append += ' '
+				line = append . line;
+				append = None
+
+			# end of object definition
+			if line.find("}") != -1:
+
+				in_definition = None
+				append = line.split("}", 1)[1]
+
+				self.pre_object_list.append(current)
+
+
+				## Destroy the Nagios Object
+				current = None
+				continue
+
+			# beginning of object definition
+			boo_re = re.compile("define\s+(\w+)\s*{?(.*)$")
+			m = boo_re.search(line)
+			if m:
+				object_type = m.groups()[0]
+				#current = NObject(object_type, filename)
+				current = {}
+				current['meta'] = {}
+				current['meta']['object_type'] = object_type
+				current['meta']['filename'] = filename
+				current['meta']['template_fields'] = []
+				current['meta']['needs_commit'] = None
+				current['meta']['delete_me'] = None
+
+				if in_definition:
+					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
+					sys.exit(2)
+
+				## Start off an object
+				in_definition = True
+				append = m.groups()[1]
+				continue
+
+			## save whatever's left in the buffer for the next iteration
+			if not in_definition:
+				append = line
+				continue
+
+			## this is an attribute inside an object definition
+			if in_definition:
+				(key, value) = line.split(None, 1)
+
+				## Strip out in-line comments
+				if value.find(";") != -1:
+					value = value.split(";", 1)[0]
+
+				## Clean info
+				key = key.strip()
+				value = value.strip()
+
+				## Rename some old values that may be in the configuration
+				## This can probably be removed in the future to increase performance
+				if (current['meta']['object_type'] == 'service') and key == 'description':
+					key = 'service_description'
+
+				current[key] = value
+			## Something is wrong in the config
+			else:
+				sys.stderr.write("Error: Unexpected token in file '%s'" % filename)
+				sys.exit(2)
+
+		## Something is wrong in the config
+		if in_definition:
+			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
+			sys.exit(2)
+
 	def edit_object(self, object_type, object_name, field, new_value, user_key = None):
 		"""
 		Edit an object's attributes
@@ -84,17 +244,34 @@ class config:
 		self.commit()
 		return True
 
-	def delete_service(self, service_description, host):
+	def _get_list(self, object, key):
 		"""
-		Delete a service
+		Return a comma list from an item
+
+		Example:
+
+		_get_list(Foo_object, host_name)
+		define service {
+			service_description Foo
+			host_name			larry,curly,moe
+		}
+
+		return
+		['larry','curly','moe']
 		"""
-		item = self.get_service(service_description, host)
+		if not object.has_key(key):
+			return None
 
-		self.data['all_service'].remove(item)
-		item['meta']['delete_me'] = True
-		item['meta']['needs_commit'] = True
-		self.data['all_service'].append(item)
+		return_list = []
 
+		if object[key].find(",") != -1:
+			for name in object[key].split(","):
+				return_list.append(name)
+		else:
+			return_list.append(object[key])
+
+		return return_list
+		
 	def delete_object(self, object_type, object_name, user_key = None):
 		"""
 		Delete object from configuration files.
@@ -138,7 +315,13 @@ class config:
 			## This is for multi-key items
 		return target_object
 
-	def get_service(self, service_description, target_host):
+	def get_host(self, object_name, user_key = None):
+		"""
+		Return a host object
+		"""
+		return self.get_object('host',object_name, user_key = user_key)
+
+	def get_service(self, target_host, service_description):
 		"""
 		Return a service object.  This has to be seperate from the 'get_object' method, because it requires more than one key
 		"""
@@ -146,7 +329,9 @@ class config:
 			## Skip non-matching services
 			if item['service_description'] != service_description:
 				continue
-			if target_host in self._expand_service_hosts(item):
+
+			all_hosts = self.get_service_members(service_description, key='service_description', search_key='host_name')
+			if self.host_in_service(target_host, item):
 				return item
 		return None
 
@@ -174,66 +359,6 @@ class config:
 			return True
 		else:
 			return None
-
-	def _expand_service_hosts(self, service):
-		"""
-		Given a service object, return a list of hosts included.  This includes all members of host_groups
-		"""
-		host_list = []
-
-		## If the service lists individual hosts
-		if service.has_key('host_name'):
-			if service['host_name'].find(",") == -1:
-				host_list.append(service['host_name'])
-			else:
-				host_list.extend(service['host_name'].split(","))
-
-		## Hostgroup members
-		if service.has_key('hostgroup_name'):
-			host_list.extend(self._expand_hostgroup(self.get_object('hostgroup',service['hostgroup_name'])))
-
-		return host_list
-
-	
-	def _expand_hostgroup(self, hostgroup):
-		"""
-		Given a hostgroup, return a list of names that belong to it
-		"""
-		host_list = []
-		if hostgroup['members'].find(",") == -1:
-			host_list.append(hostgroup['members'])
-		else:
-			host_list.extend(hostgroup['members'].split(","))
-
-		return host_list
-
-	def _get_list(self, object, key):
-		"""
-		Return a comma list from an item
-
-		Example:
-
-		_get_list(Foo_object, host_name)
-		define service {
-			service_description Foo
-			host_name			larry,curly,moe
-		}
-
-		return
-		['larry','curly','moe']
-		"""
-		if not object.has_key(key):
-			return None
-
-		return_list = []
-
-		if object[key].find(",") != -1:
-			for name in object[key].split(","):
-				return_list.append(name)
-		else:
-			return_list.append(object[key])
-
-		return return_list
 		
 
 	def get_object_list(self, object_type, user_key = None):
@@ -479,36 +604,10 @@ class config:
 		## Replace the original list with the new one
 		self.data = new_data_list
 
-	def _get_items_in_file(self, filename):
-		"""
-		Return all items in the given file
-		"""
-		return_list = []
-				
-		for k in self.data.keys():
-			for item in self[k]:
-				if item['meta']['filename'] == filename:
-					return_list.append(item)
-		return return_list
-
-	def _get_hostgroup(self,hostgroup_name):
-		for hostgroup in self.data['all_hostgroup']:
-			if hostgroup['hostgroup_name'] == hostgroup_name:
-				return hostgroup
-		return None
-
-
-	def print_objects(self, show_templates = None):
-
-		for object in self.post_object_list:
-			if object.has_key('register'):
-				if not show_templates and ( object['register'] == "0"):
-					continue
-			for k,v in object.iteritems():
-				print "%s : %s" % (k, v)
-			print 
-
 	def print_conf(self, item):
+		"""
+		Return a string that can be used in a configuration file
+		"""
 		import time
 		output = ""
 		output += "# Configuration file %s\n" % item['meta']['filename']
@@ -528,66 +627,6 @@ class config:
 		return output
 
 
-	def _get_item(self, item_name, item_type, item_list):
-   		""" 
-   		Return an item from a list
-   		"""
-		for test_item in item_list:  
-			## Skip tems without a name
-			if not test_item.has_key('name'):
-				continue
-
-			## Make sure there isn't an infinite loop going on
-			try:
-				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
-					return test_item
-			except:
-				print "Loop detected, exiting"
-				sys.exit(2)
-
-		## If we make it this far, it means there is no matching item
-		return None
-
-	def _apply_template(self, original_item, template_item, complete_list):
-		"""
-		Apply the new item 'template_item' to 'original_item'
-		"""
-
-		if original_item.has_key('use'):
-			new_item_to_add = self._get_item(original_item['use'], template_item['meta']['object_type'], complete_list)
-			template_item = self._apply_template(template_item, new_item_to_add, complete_list)
-
-		for k,v in template_item.iteritems():
-
-			## Apply another template if this is a 'use' key
-			if k == 'use':
-				continue
-				#new_item_to_add = self._get_item(v, template_item['meta']['object_type'], complete_list)
-				#return self._apply_template(template_item, new_item_to_add, complete_list)
-
-			## Ignore 'register' values
-			if k == 'register':
-				continue
-
-			## Ignore 'meta' values
-			if k == 'meta':
-				continue
-
-			## Apply any unknown value
-			if not original_item.has_key(k):
-				original_item[k] = v
-				original_item['meta']['template_fields'].append(k)
-
-		return original_item
-
-	def _has_template(self, target):
-		"""
-		Determine if an item has a template associated with it
-		"""
-		if target.has_key('use'):
-			return True
-		else:
-			return None
 
 	def parse(self):
 		"""
@@ -627,96 +666,16 @@ class config:
 
 		self._post_parse()
 
-	def _load_file(self, filename):
-		## Set globals (This is stolen from the perl module)
-		append = ""
-		type = None
-		current = None
-		in_definition = {}
 
-		for line in open(filename, 'rb').readlines():
+	def get_cfg_files(self):
+		"""
+		Return a list of all cfg files used in this configuration
 
-			## Cleanup and line skips
-			line = line.strip()
-			if line == "":
-				continue
-			if line[0] == "#":
-				continue
-
-			# append saved text to the current line
-			if append:
-				append += ' '
-				line = append . line;
-				append = None
-
-			# end of object definition
-			if line.find("}") != -1:
-
-				in_definition = None
-				append = line.split("}", 1)[1]
-
-				self.pre_object_list.append(current)
-
-
-				## Destroy the Nagios Object
-				current = None
-				continue
-
-			# beginning of object definition
-			boo_re = re.compile("define\s+(\w+)\s*{?(.*)$")
-			m = boo_re.search(line)
-			if m:
-				object_type = m.groups()[0]
-				#current = NObject(object_type, filename)
-				current = {}
-				current['meta'] = {}
-				current['meta']['object_type'] = object_type
-				current['meta']['filename'] = filename
-				current['meta']['template_fields'] = []
-				current['meta']['needs_commit'] = None
-				current['meta']['delete_me'] = None
-
-				if in_definition:
-					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
-					sys.exit(2)
-
-				## Start off an object
-				in_definition = True
-				append = m.groups()[1]
-				continue
-
-			## save whatever's left in the buffer for the next iteration
-			if not in_definition:
-				append = line
-				continue
-
-			## this is an attribute inside an object definition
-			if in_definition:
-				(key, value) = line.split(None, 1)
-
-				## Strip out in-line comments
-				if value.find(";") != -1:
-					value = value.split(";", 1)[0]
-
-				## Clean info
-				key = key.strip()
-				value = value.strip()
-
-				## Rename some old values that may be in the configuration
-				## This can probably be removed in the future to increase performance
-				if (current['meta']['object_type'] == 'service') and key == 'description':
-					key = 'service_description'
-
-				current[key] = value
-			## Something is wrong in the config
-			else:
-				sys.stderr.write("Error: Unexpected token in file '%s'" % filename)
-				sys.exit(2)
-
-		## Something is wrong in the config
-		if in_definition:
-			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
-			sys.exit(2)
+		Example:
+		print get_cfg_files()
+		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
+		"""
+		return self.cfg_files
 
 	def __setitem__(self, key, item):
 		self.data[key] = item
