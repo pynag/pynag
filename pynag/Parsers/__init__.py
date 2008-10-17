@@ -39,6 +39,7 @@ class config:
 			'host':'host_name',
 			'service':'name',
 			'servicegroup':'servicegroup_name',
+			'contact':'contact_name',
 			#'service':['host_name','description'],
 		}
 
@@ -324,9 +325,15 @@ class config:
 
 	def get_servicegroup(self, object_name, user_key = None):
 		"""
-		Return a host object
+		Return a Servicegroup object
 		"""
 		return self.get_object('servicegroup',object_name, user_key = user_key)
+
+	def get_contact(self, object_name, user_key = None):
+		"""
+		Return a Contact object
+		"""
+		return self.get_object('contact',object_name, user_key = user_key)
 
 	def get_hostgroup(self, object_name, user_key = None):
 		"""
