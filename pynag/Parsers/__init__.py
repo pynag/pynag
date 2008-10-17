@@ -38,6 +38,7 @@ class config:
 			'hostextinfo':'host_name',
 			'host':'host_name',
 			'service':'name',
+			'servicegroup':'servicegroup_name',
 			#'service':['host_name','description'],
 		}
 
@@ -320,6 +321,12 @@ class config:
 		Return a host object
 		"""
 		return self.get_object('host',object_name, user_key = user_key)
+
+	def get_servicegroup(self, object_name, user_key = None):
+		"""
+		Return a host object
+		"""
+		return self.get_object('servicegroup',object_name, user_key = user_key)
 
 	def get_hostgroup(self, object_name, user_key = None):
 		"""
