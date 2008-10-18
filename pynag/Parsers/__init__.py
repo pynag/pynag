@@ -539,42 +539,6 @@ class config:
 					return True
 		return None
 
-	def remove_name_from_hostgroup(self, host_name, hostgroup_name):
-		"""
-		Remove a host from a group
-		"""
-		if not self._exists('host','host_name',host_name):
-			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
-			return None
-
-		## Find the hostgroup from our global dictionaries
-		target_group = self._get_hostgroup(hostgroup_name)
-		if not target_group:
-			print "%s does not exist" % hostgroup_name
-			return None
-
-		## Get a list of the host_name's in this group
-		existing_list = target_group['members'].split(",")
-		if host_name not in existing_list:
-			return None
-		else:
-			existing_list.remove(host_name)
-
-		## Alphabetize the list, for easier readability
-		existing_list.sort()
-
-		## Remove old group
-		self.data['all_hostgroup'].remove(target_group)
-
-		## Save the new member list
-		target_group['members'] = ",".join(existing_list)
-
-		## Mark the commit flag for the group
-		target_group['meta']['needs_commit'] = True
-
-		## Add the group back in with new members
-		self.data['all_hostgroup'].append(target_group)
-
 	def commit(self):
 		"""
 		Write any changes that have been made to it's appropriate file

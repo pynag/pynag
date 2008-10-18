@@ -34,13 +34,13 @@ if not group_obj:
 
 ## Get a list of the host_name's in this group
 existing_list = group_obj['members'].split(",")
-if target_host in existing_list:
-	sys.stderr.write("%s is already in the group\n" % target_host)
+if target_host not in existing_list:
+	sys.stderr.write("%s is not in the group\n" % target_host)
 	sys.exit(2)
 else:
-	existing_list.append(target_host)
+	existing_list.remove(target_host)
 
-print "Adding %s to %s" % (target_host, target_group)
+print "Removing %s from %s" % (target_host, target_group)
 
 ## Alphabetize the list, for easier readability (and to make it pretty)
 existing_list.sort()
@@ -56,7 +56,6 @@ group_obj['meta']['needs_commit'] = True
 
 ## Add the group back in with new members
 nc['all_hostgroup'].append(group_obj)
-
 
 ## Commit the changes to file
 nc.commit()
