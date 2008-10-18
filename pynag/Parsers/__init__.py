@@ -13,7 +13,7 @@ __author__ = "Drew Stinnett"
 __copyright__ = "Copyright 2008, Drew Stinnett"
 __credits__ = ["Drew Stinnett"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.2"
 __maintainer__ = "Drew Stinnett"
 __email__ = "drew@drewlink.com"
 __status__ = "Development"
@@ -238,6 +238,11 @@ class config:
 	def edit_object(self, object_type, object_name, field, new_value, user_key = None):
 		"""
 		Edit an object's attributes
+
+		Example:
+		To change the alias of 'server01' to "Primary Server", use the following method
+
+		edit_object('host','server01', 'alias','Primary Server')
 		"""
 		object_key = self._get_key(object_type,user_key)
 
