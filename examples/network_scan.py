@@ -167,7 +167,10 @@ net_config = ConfigParser.ConfigParser()
 net_config.read("/etc/nagios/networks.ini")
 
 if hostgroup:
-	if hostgroup not in nagios.get_object_list('hostgroup'):
+	hostgroup_list = []
+	for item in nagios['all_hostgroup']:
+		hostgroup_list.append(item['hostgroup_name'])
+	if hostgroup not in hostgroup_list:
 		logger.error("No hostgroups named %s, quitting\n" % hostgroup)
 		sys.exit(2)
 

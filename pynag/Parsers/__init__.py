@@ -421,18 +421,6 @@ class config:
 		return None
 		
 
-	def get_object_list(self, object_type, user_key = None):
-		"""
-		Return a list of object names for the given object type
-		"""
-		## Specify the key to use
-		object_key = self._get_key(object_type,user_key)
-
-		object_names = []
-		for item in self.data['all_%s' % object_type]:
-			object_names.append(item[object_key])
-		return object_names
-
 	def get_hostgroup_membership(self, name, user_key = None):
 		"""
 		Given a host_name, return all hostgroups that the host is a member of.
@@ -528,16 +516,6 @@ class config:
 					is_template = True
 			if not is_template:
 				self.data[type_list_name].append(list_item)
-
-	def _exists(self, type, key, value):
-		"""
-		Check if an item exists
-		"""
-		for item in self.data['all_%s' % type ]:
-			if item.has_key(key):
-				if item[key] == value:
-					return True
-		return None
 
 	def commit(self):
 		"""
