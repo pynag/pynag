@@ -138,11 +138,12 @@ class config:
 					return_list.append(item)
 		return return_list
 
-	def _get_hostgroup(self,hostgroup_name):
-		for hostgroup in self.data['all_hostgroup']:
-			if hostgroup['hostgroup_name'] == hostgroup_name:
-				return hostgroup
-		return None
+	## Removing this in favor of the more accessable get_hostgroup method
+	#def _get_hostgroup(self,hostgroup_name):
+		#for hostgroup in self.data['all_hostgroup']:
+			#if hostgroup['hostgroup_name'] == hostgroup_name:
+				#return hostgroup
+		#return None
 
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
@@ -558,42 +559,6 @@ class config:
 			return None
 		else:
 			existing_list.remove(host_name)
-
-		## Alphabetize the list, for easier readability
-		existing_list.sort()
-
-		## Remove old group
-		self.data['all_hostgroup'].remove(target_group)
-
-		## Save the new member list
-		target_group['members'] = ",".join(existing_list)
-
-		## Mark the commit flag for the group
-		target_group['meta']['needs_commit'] = True
-
-		## Add the group back in with new members
-		self.data['all_hostgroup'].append(target_group)
-
-	def add_name_to_hostgroup(self, host_name, hostgroup_name):
-		"""
-		Add a host to a group
-		"""
-		if not self._exists('host','host_name',host_name):
-			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
-			return None
-
-		## Find the hostgroup from our global dictionaries
-		target_group = self._get_hostgroup(hostgroup_name)
-		if not target_group:
-			print "%s does not exist" % hostgroup_name
-			return None
-
-		## Get a list of the host_name's in this group
-		existing_list = target_group['members'].split(",")
-		if host_name in existing_list:
-			return None
-		else:
-			existing_list.append(host_name)
 
 		## Alphabetize the list, for easier readability
 		existing_list.sort()
