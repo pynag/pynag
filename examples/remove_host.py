@@ -13,29 +13,38 @@ target_host = sys.argv[1]
 
 ## Create the plugin option
 nc = config('/etc/nagios/nagios.cfg')
-nc.parse()
+nc.extended_parse()
 
 ## Find services that this host belongs to
-for service in nc.get_service_membership(target_host):
+if not nc.get_host(target_host):
+	sys.stderr.write("%s does not exist\n" % target_host)
+	sys.exit(2)
+
+for service_description in nc.get_host(target_host)['meta']['service_list']:
+	service = nc.get_service(target_host, service_description)
 
 	## Check to see if this is the only host in this service
+	host_list = []
 	if service.has_key('host_name'):
-		if service['host_name'].find(",") == -1:
-			host_list = [service['host_name']]
-		else:
-			host_list = service['host_name'].split(",")
+		for host in nc._get_list(service, 'host_name'):
+			if host[0] != "!":
+				host_list.append(host)
 	else:
+		continue
+
+	## Ignore if this host isn't listed
+	if len(host_list) == 0:
 		continue
 
 
 	#host_list = nc.get_service_members(service['name'])
 	if len(host_list) > 1:
-		print "Removing %s from %s" % (target_host, service)
+		print "Removing %s from %s" % (target_host, service['service_description'])
 		new_item = nc.get_service(service['service_description'], target_host)
 		host_list.remove(target_host)
 		host_string = ",".join(host_list)
 		print "New Value: %s" % host_string
-		nc.edit_object('service',service, 'host_name',host_string)
+		nc.edit_service(target_host, service['service_description'], 'host_name',host_string)
 	elif (len(host_list) == 1) and not service.has_key('hostgroup_name'):
 		print "Deleting %s" % service['service_description']
 		nc.delete_service(service['service_description'], target_host)
@@ -48,9 +57,18 @@ for service in nc.get_service_membership(target_host):
 	nc.commit()
 
 ## Delete from groups
-for hostgroup in nc.get_hostgroup_membership(target_host):
-	print "Removing %s from %s" % (target_host, hostgroup)
-	nc.remove_name_from_hostgroup(target_host, hostgroup)
+host_obj = nc.get_host(target_host)
+for hostgroup in host_obj['meta']['hostgroup_list']:
+	print "Removing %s from hostgroup %s" % (target_host, hostgroup)
+	#nc.remove_name_from_hostgroup(target_host, hostgroup)
+	hostgroup_obj = nc.get_hostgroup(hostgroup)
+
+	## Remove the original objct
+	nc['all_hostgroup'].remove(hostgroup_obj)
+	hostgroup_obj['members'] = nc._get_list(hostgroup_obj, 'members').remove(target_host)
+	hostgroup_obj['meta']['needs_commit'] = True
+	nc['all_hostgroup'].append(hostgroup_obj)
+	
 	nc.commit()
 
 ## Delete a host
@@ -62,3 +80,5 @@ if result:
 result = nc.delete_object('hostextinfo',target_host)
 if result:
 	print "Deleted hostextinfo"
+
+nc.commit()

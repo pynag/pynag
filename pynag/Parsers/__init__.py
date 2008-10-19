@@ -255,6 +255,22 @@ class config:
 		self.commit()
 		return True
 
+	def edit_service(self, target_host, service_description, field, new_value):
+		print original_object
+		"""
+		Edit a service's attributes
+		"""
+
+		original_object = self.get_service(target_host, service_description)
+		print target_host, service_description
+		self['all_service'].remove(original_object)
+		original_object[field] = new_value
+		original_object['meta']['needs_commit'] = True
+		self['all_service'].append(original_object)
+		#self.commit()
+		return True
+
+
 	def _get_list(self, object, key):
 		"""
 		Return a comma list from an item
@@ -314,6 +330,19 @@ class config:
 
 		## Only make it here if the object isn't found
 		return None
+
+	def delete_service(self, service_description, host_name):
+		"""
+		Delete service from configuration
+		"""
+		for item in self.data['all_service']:
+			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):
+				self.data['all_service'].remove(item)
+				item['meta']['delete_me'] = True
+				item['meta']['needs_commit'] = True
+				self.data['all_service'].append(item)
+
+				return True
 
 	def delete_host(self, object_name, user_key = None):
 		"""
@@ -418,19 +447,6 @@ class config:
 		else:
 			return None
 		
-
-	def get_hostgroup_membership(self, name, user_key = None):
-		"""
-		Given a host_name, return all hostgroups that the host is a member of.
-		"""
-		hostgroup_list = []
-		for item in self.data['all_hostgroup']:
-			if item['members'].find(",") != -1:
-				if name in item['members'].split(","):
-					hostgroup_list.append(item['hostgroup_name'])
-			elif item['members'] == name:
-				hostgroup_list.append(item['members'])
-		return hostgroup_list
 
 	def get_service_membership(self, name, key='host_name'):
 		"""
@@ -583,6 +599,10 @@ class config:
 			output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
 
 		## Some hostgroup information
+		if item['meta'].has_key('service_list'):
+			output += "# Services: %s\n" % ",".join(item['meta']['service_list'])
+
+		## Some hostgroup information
 		if item['meta'].has_key('service_members'):
 			output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
 
@@ -645,6 +665,9 @@ class config:
 		This parse is used after the initial parse() command is run.  It is
 		only needed if you want extended meta information about hosts or other objects
 		"""
+		## Do the initial parsing
+		self.parse()
+
 		## First, cycle through the hosts, and append hostgroup information
 		index = 0
 		for host in self.data['all_host']:
@@ -658,6 +681,14 @@ class config:
 						self.data['all_host'][index]['meta']['hostgroup_list'] = []
 					if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
 						self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
+
+			## Append any services which reference this host
+			service_list = []
+			for service in self.data['all_service']:
+				if host['host_name'] in self._get_active_hosts(service):
+					service_list.append(service['service_description'])
+			self.data['all_host'][index]['meta']['service_list'] = service_list
+					
 
 			## Increment count
 			index += 1
@@ -683,8 +714,6 @@ class config:
 					index += 1
 
 		## Expand service membership
-
-
 		index = 0
 		for service in self.data['all_service']:
 			service_members = []
