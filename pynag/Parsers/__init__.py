@@ -658,6 +658,8 @@ class config:
 			## Append any hostgroups that are directly listed in the host definition
 			if host.has_key('hostgroups'):
 				for hostgroup_name in self._get_list(host, 'hostgroups'):
+					if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+						self.data['all_host'][index]['meta']['hostgroup_list'] = []
 					if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
 						self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
 						self.data['all_host'][index]['meta']['needs_commit'] = True
