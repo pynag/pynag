@@ -500,8 +500,6 @@ class config:
 		## Loops through ALL items
 		for k in self.data.keys():
 			for item in self[k]:
-				if (k == 'all_host'):
-					print item['host_name']
 
 				## If the object needs committing, commit it!
 				if item['meta']['needs_commit']:
@@ -549,8 +547,7 @@ class config:
 		Return a string that can be used in a configuration file
 		"""
 		import time
-		#if not item:
-			#return None
+
 		output = ""
 		## Header, to go on all files
 		output += "# Configuration file %s\n" % item['meta']['filename']
