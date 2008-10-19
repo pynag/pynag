@@ -14,6 +14,7 @@ target_host = sys.argv[1]
 ## Create the plugin option
 nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
+nc.extended_parse()
 
 
 host = nc.get_host(target_host)
@@ -23,4 +24,3 @@ if not host:
 	sys.exit(2)
 
 print nc.print_conf(host)
-

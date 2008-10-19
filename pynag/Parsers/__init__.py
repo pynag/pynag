@@ -309,6 +309,12 @@ class config:
 		## Only make it here if the object isn't found
 		return None
 
+	def delete_host(self, object_name, user_key = None):
+		"""
+		Delete a host
+		"""
+		return self.delete_object('host',object_name, user_key = user_key)
+
 	def get_object(self, object_type, object_name, user_key = None):
 		"""
 		Return a complete object dictionary
@@ -576,8 +582,14 @@ class config:
 		"""
 		import time
 		output = ""
+		## Header, to go on all files
 		output += "# Configuration file %s\n" % item['meta']['filename']
 		output += "# Edited by PyNag on %s\n" % time.ctime()
+
+		## Some hostgroup information
+		if item['meta'].has_key('hostgroup_list'):
+			output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
+
 		if len(item['meta']['template_fields']) != 0:
 			output += "# Values from templates:\n"
 		for k in item['meta']['template_fields']:
@@ -632,6 +644,49 @@ class config:
 
 		self._post_parse()
 
+	def extended_parse(self):
+		"""
+		This parse is used after the initial parse() command is run.  It is
+		only needed if you want extended meta information about hosts or other objects
+		"""
+		## First, cycle through the hosts, and append hostgroup information
+		index = 0
+		for host in self.data['all_host']:
+			if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+				self.data['all_host'][index]['meta']['hostgroup_list'] = []
+
+			## Append any hostgroups that are directly listed in the host definition
+			if host.has_key('hostgroups'):
+				for hostgroup_name in self._get_list(host, 'hostgroups'):
+					if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
+						self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
+						self.data['all_host'][index]['meta']['needs_commit'] = True
+						self.commit()
+
+			## Increment count
+			index += 1
+
+		## Loop through all hostgroups, appending them to their respective hosts
+		for hostgroup in self.data['all_hostgroup']:
+
+			for member in self._get_list(hostgroup,'members'):
+				index = 0
+				for host in self.data['all_host']:
+
+					## Skip members that do not match
+					if host['host_name'] == member:
+
+						## Create the meta var if it doesn' exist
+						if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+							self.data['all_host'][index]['meta']['hostgroup_list'] = []
+
+						if hostgroup['hostgroup_name'] not in self.data['all_host'][index]['meta']['hostgroup_list']:
+							self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup['hostgroup_name'])
+							self.data['all_host'][index]['meta']['needs_commit'] = True
+							self.commit()
+
+					## Increment count
+					index += 1
 
 	def get_cfg_files(self):
 		"""
