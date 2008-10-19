@@ -500,6 +500,8 @@ class config:
 		## Loops through ALL items
 		for k in self.data.keys():
 			for item in self[k]:
+				if (k == 'all_host'):
+					print item['host_name']
 
 				## If the object needs committing, commit it!
 				if item['meta']['needs_commit']:
@@ -536,21 +538,19 @@ class config:
 		Flag every item in the configuration to be committed
 		This should probably only be used for debugging purposes
 		"""
-		new_data_list = {}
 		for k in self.data.keys():
-			new_data_list[k] = []
+			index = 0
 			for item in self[k]:
-				item['meta']['needs_commit'] = True
-				new_data_list[k].append(item)
-
-		## Replace the original list with the new one
-		self.data = new_data_list
+				self.data[k][index]['meta']['needs_commit'] = True
+				index += 1
 
 	def print_conf(self, item):
 		"""
 		Return a string that can be used in a configuration file
 		"""
 		import time
+		#if not item:
+			#return None
 		output = ""
 		## Header, to go on all files
 		output += "# Configuration file %s\n" % item['meta']['filename']

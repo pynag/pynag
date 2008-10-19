@@ -15,15 +15,7 @@ def is_ip(ip_address):
 
 ## Create the plugin option
 nc = config('/etc/nagios/nagios.cfg')
-nc.parse()
+nc.extended_parse()
 
 nc.flag_all_commit()
-nc.commit()
-
-obj = nc.get_object('service','SNMP',user_key='name')
-
-nc.print_conf(obj)
-
-
-
 nc.commit()
