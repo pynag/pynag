@@ -270,6 +270,9 @@ class config:
 		return
 		['larry','curly','moe']
 		"""
+		if type(object) != type({}):
+			sys.stderr.write("%s is not a dictionary\n" % object)
+			return None
 		if not object.has_key(key):
 			return None
 
@@ -280,6 +283,9 @@ class config:
 				return_list.append(name)
 		else:
 			return_list.append(object[key])
+
+		## Alphabetize
+		return_list.sort()
 
 		return return_list
 		
@@ -384,9 +390,9 @@ class config:
 			if item['service_description'] != service_description:
 				continue
 
-			all_hosts = self.get_service_members(service_description, key='service_description', search_key='host_name')
-			if self.host_in_service(target_host, item):
+			if target_host in self._get_active_hosts(item):
 				return item
+
 		return None
 
 	def host_in_service(self, target_host, target_service):
@@ -405,26 +411,12 @@ class config:
 		host_in_service("moe", %service_object%)
 		returns None
 		"""
-		## Negation lists
-		negate_hosts = []
-		if target_service.has_key('host_name'):
-			for host in self._get_list(target_service, 'host_name'):
-				## If the host starts with a bang, add it to the negation list
-				if host[:1] == "!":
-					negate_hosts.append(host[1:])
-
 		## Check in hostgroup_name
-		if target_service.has_key('hostgroup_name'):
-			hostgroups = self._get_list(self.get_hostgroup(target_service['hostgroup_name']), 'hostgroup_name')
-			for hostgroup in hostgroups:
-				if (target_host in self._get_list(self.get_hostgroup(hostgroup), 'members')) and (target_host not in negate_hosts):
-					return True
-
-		## Check in host_name
-		if target_service.has_key('host_name'):
-			if target_host in self._get_list(target_service, 'host_name'):
-				return True
-		return None
+		active_hosts = self._get_active_hosts(target_service)
+		if target_host in active_hosts:
+			return True
+		else:
+			return None
 		
 
 	def get_hostgroup_membership(self, name, user_key = None):
@@ -590,6 +582,10 @@ class config:
 		if item['meta'].has_key('hostgroup_list'):
 			output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
 
+		## Some hostgroup information
+		if item['meta'].has_key('service_members'):
+			output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
+
 		if len(item['meta']['template_fields']) != 0:
 			output += "# Values from templates:\n"
 		for k in item['meta']['template_fields']:
@@ -685,6 +681,65 @@ class config:
 
 					## Increment count
 					index += 1
+
+		## Expand service membership
+
+
+		index = 0
+		for service in self.data['all_service']:
+			service_members = []
+
+			## Find a list of hosts to negate from the final list
+			self.data['all_service'][index]['meta']['service_members'] = self._get_active_hosts(service)
+
+			## Increment count
+			index += 1
+
+	def _get_active_hosts(self, object):
+		"""
+		Given an object, return a list of active hosts.  This will exclude hosts that ar negated with a "!"
+		"""
+		## First, generate the negation list
+		negate_hosts = []
+
+		## Hostgroups
+		if object.has_key("hostgroup_name"):
+
+			for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+				if hostgroup_name[0] == "!":
+					hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
+					negate_hosts.extend(self._get_list(hostgroup_obj,'members'))
+
+		## Host Names
+		if object.has_key("host_name"):
+			for host_name in self._get_list(object, 'host_name'):
+				if host_name[0] == "!":
+					negate_hosts.append(host_name[1:])
+
+
+		## Now get hosts that are actually listed
+		active_hosts = []
+
+		## Hostgroups
+		if object.has_key("hostgroup_name"):
+
+			for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+				if hostgroup_name[0] != "!":
+					active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name),'members'))
+
+		## Host Names
+		if object.has_key("host_name"):
+			for host_name in self._get_list(object, 'host_name'):
+				if host_name[0] != "!":
+					active_hosts.append(host_name)
+
+		## Combine the lists
+		return_hosts = []
+		for active_host in active_hosts:
+			if active_host not in negate_hosts:
+				return_hosts.append(active_host)
+
+		return return_hosts
 
 	def get_cfg_files(self):
 		"""
