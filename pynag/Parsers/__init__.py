@@ -662,8 +662,6 @@ class config:
 						self.data['all_host'][index]['meta']['hostgroup_list'] = []
 					if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
 						self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
-						self.data['all_host'][index]['meta']['needs_commit'] = True
-						self.commit()
 
 			## Increment count
 			index += 1
@@ -684,8 +682,6 @@ class config:
 
 						if hostgroup['hostgroup_name'] not in self.data['all_host'][index]['meta']['hostgroup_list']:
 							self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup['hostgroup_name'])
-							self.data['all_host'][index]['meta']['needs_commit'] = True
-							self.commit()
 
 					## Increment count
 					index += 1
