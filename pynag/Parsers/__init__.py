@@ -448,44 +448,6 @@ class config:
 			return None
 		
 
-	def get_service_membership(self, name, key='host_name'):
-		"""
-		Return all services a host belongs to
-		"""
-		service_list = []
-		for item in self.data['all_service']:
-			## Skip items that don't even have this key
-			if not item.has_key(key):
-				continue
-
-			if item[key].find(",") != -1:
-				if name in item[key].split(","):
-					service_list.append(item)
-
-			## If the the item is the only one in the list
-			elif item[key] == name:
-				service_list.append(item)
-
-		return service_list
-
-	def get_service_members(self, name, key='name', search_key='host_name'):
-		"""
-		Return a list of members for a specific service
-		"""
-		member_list = []
-		for item in self.data['all_service']:
-			## Skip items that don't even have this key
-			if not item.has_key(search_key):
-				continue
-
-			if name == item[key]:
-				if item[search_key].find(",") != -1:
-					member_list.extend(item[search_key].split(","))
-				else:
-					member_list.append(item[search_key])
-
-		return member_list
-
 	def _append_use(self, source_item, name):
 		"""
 		Append any unused values from 'name' to the dict 'item'

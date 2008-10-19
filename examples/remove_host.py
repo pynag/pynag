@@ -37,7 +37,6 @@ for service_description in nc.get_host(target_host)['meta']['service_list']:
 		continue
 
 
-	#host_list = nc.get_service_members(service['name'])
 	if len(host_list) > 1:
 		print "Removing %s from %s" % (target_host, service['service_description'])
 		new_item = nc.get_service(service['service_description'], target_host)
