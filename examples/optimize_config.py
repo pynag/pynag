@@ -18,4 +18,5 @@ nc = config('/etc/nagios/nagios.cfg')
 nc.extended_parse()
 
 nc.flag_all_commit()
+
 nc.commit()

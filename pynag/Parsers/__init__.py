@@ -138,13 +138,6 @@ class config:
 					return_list.append(item)
 		return return_list
 
-	## Removing this in favor of the more accessable get_hostgroup method
-	#def _get_hostgroup(self,hostgroup_name):
-		#for hostgroup in self.data['all_hostgroup']:
-			#if hostgroup['hostgroup_name'] == hostgroup_name:
-				#return hostgroup
-		#return None
-
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
 		append = ""
@@ -423,30 +416,6 @@ class config:
 				return item
 
 		return None
-
-	def host_in_service(self, target_host, target_service):
-		"""
-		Return True if the host is in the given service
-
-		Example:
-		define service {
-			service_description	Foo
-			host_name			larry,curly
-		}
-
-		host_in_service("larry", %service_object%)
-		returns True
-
-		host_in_service("moe", %service_object%)
-		returns None
-		"""
-		## Check in hostgroup_name
-		active_hosts = self._get_active_hosts(target_service)
-		if target_host in active_hosts:
-			return True
-		else:
-			return None
-		
 
 	def _append_use(self, source_item, name):
 		"""
