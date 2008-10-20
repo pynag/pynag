@@ -9,7 +9,7 @@ setup (name='PyNag',
       url='http://code.google.com/p/pynag/',
       license='GPL',
 	  
-      packages=['pynag','pynag.NObject','pynag.Plugins','pynag.Parsers'],
-	scripts = ['scripts/pynag-add_host_to_group.py'],
+      packages=['pynag','pynag.NObject','pynag.Plugins','pynag.Parsers','pynag.Control'],
+	scripts = ['scripts/pynag-add_host_to_group.py', 'scripts/pynag-safe_restart.py'],
 
 )
