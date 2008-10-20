@@ -8,7 +8,6 @@ if len(sys.argv) != 3:
 	sys.exit(2)
 
 ## This is for the custom nagios module
-sys.path.insert(1, '../')
 from pynag.Parsers import config
 
 ## Create the plugin option
