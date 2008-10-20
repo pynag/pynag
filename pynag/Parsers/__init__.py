@@ -343,6 +343,12 @@ class config:
 		"""
 		return self.delete_object('host',object_name, user_key = user_key)
 
+	def delete_hostgroup(self, object_name, user_key = None):
+		"""
+		Delete a hostgroup
+		"""
+		return self.delete_object('hostgroup',object_name, user_key = user_key)
+
 	def get_object(self, object_type, object_name, user_key = None):
 		"""
 		Return a complete object dictionary
@@ -707,6 +713,18 @@ class config:
 		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
 		"""
 		return self.cfg_files
+
+	def cleanup(self):
+		"""
+		This cleans up dead configuration files
+		"""
+		for filename in self.cfg_files:
+			if os.path.isfile(filename):
+				size = os.stat(filename)[6]
+				if size == 0:
+					os.remove(filename)
+
+		return True
 
 	def __setitem__(self, key, item):
 		self.data[key] = item

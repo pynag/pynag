@@ -12,7 +12,7 @@ from pynag.Parsers import config
 
 ## Create the plugin option
 nagios = config('/etc/nagios/nagios.cfg')
-nagios.parse()
+nagios.extended_parse()
 
 
 ## User Variables
@@ -530,12 +530,15 @@ while len(server_list) > 0:
 	## Don't create these right now, may readd it back in later
 	#create_snmp_cfg(hostname)
 
+
 	if os_name not in pseudo_oses:
 		create_cpu_cfg(hostname, os_name)
-		nagios.add_alias_to_hostgroup(hostname, '%s_servers' % os_name)
+		new_group = '%s_servers' % os_name
+		os.system("./add_host_to_group.py %s %s" % (hostname, new_group))
+		
 
 	if hostgroup:
-		nagios.add_alias_to_hostgroup(hostname, hostgroup)
+		os.system("./add_host_to_group.py %s %s" % (hostname, hostgroup))
 
 ## Stop the timer
 stop_time = int(time.time())

@@ -15,10 +15,13 @@ target_host = sys.argv[1]
 nc = config('/etc/nagios/nagios.cfg')
 nc.extended_parse()
 
+nc.cleanup()
+
 ## Find services that this host belongs to
 if not nc.get_host(target_host):
 	sys.stderr.write("%s does not exist\n" % target_host)
 	sys.exit(2)
+
 
 for service_description in nc.get_host(target_host)['meta']['service_list']:
 	service = nc.get_service(target_host, service_description)
@@ -59,13 +62,19 @@ for service_description in nc.get_host(target_host)['meta']['service_list']:
 host_obj = nc.get_host(target_host)
 for hostgroup in host_obj['meta']['hostgroup_list']:
 	print "Removing %s from hostgroup %s" % (target_host, hostgroup)
-	#nc.remove_name_from_hostgroup(target_host, hostgroup)
 	hostgroup_obj = nc.get_hostgroup(hostgroup)
 
+	## Get the list
+	#hostgroup_obj['members'] = nc._get_list(hostgroup_obj, 'members').remove(target_host)
+
 	## Remove the original objct
+	member_list = nc._get_list(hostgroup_obj, 'members')
+	member_list.remove(target_host)
+
 	nc['all_hostgroup'].remove(hostgroup_obj)
-	hostgroup_obj['members'] = nc._get_list(hostgroup_obj, 'members').remove(target_host)
 	hostgroup_obj['meta']['needs_commit'] = True
+	member_string = ",".join(member_list)
+	hostgroup_obj['members'] = ",".join(member_list)
 	nc['all_hostgroup'].append(hostgroup_obj)
 	
 	nc.commit()
@@ -81,3 +90,4 @@ if result:
 	print "Deleted hostextinfo"
 
 nc.commit()
+nc.cleanup()
