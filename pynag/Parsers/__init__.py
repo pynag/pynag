@@ -731,3 +731,53 @@ class config:
 
 	def __getitem__(self, key):
    		return self.data[key]
+
+class status:
+
+	def __init__(self, filename = "/var/log/nagios/status.dat"):
+
+		if not os.path.isfile(filename):
+			sys.stderr.write("Missing stat file %s" % filename)
+
+		self.filename = filename
+		self.data = {}
+
+	def parse(self):
+		## Set globals (This is stolen from the perl module)
+		append = ""
+		type = None
+		current = None
+		in_definition = {}
+
+		for line in open(self.filename, 'rb').readlines():
+
+			## Cleanup and line skips
+			line = line.strip()
+			if line == "":
+				continue
+			if line[0] == "#":
+				continue
+
+			if line.find("{") != -1:
+
+				status = {}
+				status['meta'] = {}
+				status['meta']['type'] = line.split("{")[0].strip()
+				continue
+
+			if line.find("}") != -1:
+				if not self.data.has_key(status['meta']['type']):
+					self.data[status['meta']['type']] = []
+	
+				self.data[status['meta']['type']].append(status)
+				continue
+
+			(key, value) = line.split("=", 1)
+			status[key] = value
+
+
+	def __setitem__(self, key, item):
+		self.data[key] = item
+
+	def __getitem__(self, key):
+   		return self.data[key]
