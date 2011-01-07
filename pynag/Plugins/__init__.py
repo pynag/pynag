@@ -34,7 +34,7 @@ class simple:
 		## Variables we'll get later
 		self.opts = None
 		self.data = {}
-		self.data['perfdata'] = None
+		self.data['perfdata'] = []
 		self.data['threshhold'] = None
 
 		## Error mappings, for easy access
@@ -116,15 +116,14 @@ class simple:
 			if key in (self.extra_list_required + self.extra_list_optional):
 				self.data[key] = value
 
-	def add_perfdata(self, label , value , uom = None, threshold = None):
+	def add_perfdata(self, label , value , uom = None, warn = None, crit = None, minimum = None, maximum = None):
 		"""
 		Append perfdata string to the end of the message
 		"""
-		## Create this, if it doesn't already exist
-		if not self.data['perfdata']:
-			self.data['perfdata'] = "|"
 
-		self.data['perfdata'] += "%s=%s" % (label, value)
+		# Append perfdata (assume multiple)
+		self.data['perfdata'].append({ 'label' : label, 'value' : value, 'uom' : uom, 
+			'warn' : warn, 'crit' : crit, 'min' : minimum, 'max' : maximum})
 
 	def check_range(self, value):
 		"""
@@ -216,11 +215,22 @@ class simple:
 		"""
 		Exit with exit_code, message, and optionally perfdata
 		"""
+
 		## Append perfdata to the message, if perfdata exists
 		if self.data['perfdata']:
-			append = self.data['perfdata']
+			append = '|'
 		else:
-			append = ""
+			append = ''
+
+		for pd in self.data['perfdata']:
+			append += " '%s'=%s%s;%s;%s;%s;%s" % (
+				pd['label'],
+				pd['value'],
+				pd['uom'] or '',
+				pd['warn'] or '',
+				pd['crit'] or '',
+				pd['min'] or '',
+				pd['max'] or '')
 
 		## This should be one line (or more in nagios 3)
 		print "%s : %s %s" % (code_text, message, append)
