@@ -12,14 +12,38 @@ __author__ = "Drew Stinnett"
 __copyright__ = "Copyright 2008, Drew Stinnett"
 __credits__ = ["Drew Stinnett"]
 __license__ = "GPL"
-__version__ = "0.1"
+__version__ = "0.3"
 __maintainer__ = "Drew Stinnett"
 __email__ = "drew@drewlink.com"
 __status__ = "Development"
 
+# Map the return codes
+OK = 0
+WARNING = 1
+CRITICAL = 2
+UNKNOWN = 3
+
 class simple:
 	"""
 	Nagios plugin helper library based on Nagios::Plugin
+
+	Sample usage
+
+	from pynag.Plugins import WARNING, CRITICAL, OK, UNKNOWN, simple as Plugin
+
+	# Create plugin object
+	np = Plugin()
+	# Add arguments
+	np.add_arg("d", "disk")
+	# Do activate plugin
+	np.activate()
+	... check stuff, np['disk'] to address variable assigned above...
+	# Add a status message and severity
+	np.add_message( WARNING, "Disk nearing capacity" )
+	# Get parsed code and messages
+	(code, message) = np.check_messages()
+	# Return information and exit
+	nagios_exit(code, message)
 	"""
 
 	def __init__(self, shortname = None, version = None, blurb = None, extra = None, url = None, license = None, plugin = None, timeout = 15 ):
@@ -35,6 +59,7 @@ class simple:
 		self.opts = None
 		self.data = {}
 		self.data['perfdata'] = []
+		self.data['messages'] = { OK:[], WARNING:[], CRITICAL:[], UNKNOWN:[] }
 		self.data['threshhold'] = None
 
 		## Error mappings, for easy access
@@ -46,9 +71,6 @@ class simple:
 			self.data['shortname'] = os.path.basename("%s" % sys.argv[0])
 		else:
 			self.data['shortname'] = shortname
-
-		## Status messages
-		self.data['messages'] = { "warning":None, "critical":None, "ok":None }
 
 	def add_arg(self, spec_abbr, spec, help_text, required=1):
 		"""
@@ -143,10 +165,10 @@ class simple:
 		warning = self.data['warning']
 
 		if critical and self._range_checker(value, critical):
-			self.nagios_exit("CRITICAL","%s meets the range: %s" % (value, self.hr_range))
+			self.nagios_exit(CRITICAL,"%s meets the range: %s" % (value, self.hr_range))
 
 		if warning and self._range_checker(value, warning):
-			self.nagios_exit("WARNING","%s meets the range: %s" % (value, self.hr_range))
+			self.nagios_exit(WARNING,"%s meets the range: %s" % (value, self.hr_range))
 
 		## This is the lowest range, which we'll output
 		if warning:
@@ -216,6 +238,9 @@ class simple:
 		Exit with exit_code, message, and optionally perfdata
 		"""
 
+		# Change text based codes to int
+		code = self.code_string2int(code_text)
+
 		## Append perfdata to the message, if perfdata exists
 		if self.data['perfdata']:
 			append = '|'
@@ -233,11 +258,83 @@ class simple:
 				pd['max'] or '')
 
 		## This should be one line (or more in nagios 3)
-		print "%s : %s %s" % (code_text, message, append)
-		sys.exit(self.errors[code_text])
+		print "%s : %s %s" % (self.status_text[code], message, append)
+		sys.exit(code)
+
+	def add_message( self, code, message ):
+		"""
+		Add a message with code to the object. May be called
+		multiple times.  The messages added are checked by check_messages,
+		following.
+
+		Only CRITICAL, WARNING, OK and UNKNOWN are accepted as valid codes.
+		"""
+		# Change text based codes to int
+		code = self.code_string2int(code)
+
+		self.data['messages'][code].append( message )
+
+	def check_messages( self, joinstr = " ", joinallstr = None ):
+		"""
+		Check the current set of messages and return an appropriate nagios
+		return code and/or a result message. In scalar context, returns
+		only a return code; in list context returns both a return code and
+		an output message, suitable for passing directly to nagios_exit()
+
+		joinstr = string
+			A string used to join the relevant array to generate the
+			message string returned in list context i.e. if the 'critical'
+			array is non-empty, check_messages would return:
+				joinstr.join(critical)
+
+		joinallstr = string
+			By default, only one set of messages are joined and returned in
+			the result message i.e. if the result is CRITICAL, only the
+			'critical' messages are included in the result; if WARNING,
+			only the 'warning' messages are included; if OK, the 'ok'
+			messages are included (if supplied) i.e. the default is to
+			return an 'errors-only' type message.
+
+			If joinallstr is supplied, however, it will be used as a string
+			to join the resultant critical, warning, and ok messages
+			together i.e.  all messages are joined and returned.
+		"""
+		# Check for messages in unknown, critical, warning, ok to determine
+		# code
+		for code in sorted(self.data['messages'].keys(), reverse = True):
+			if len(self.data['messages'][code]):
+				break
+
+		# Create the relevant message for the most severe code
+		if joinallstr == None:
+			message = joinstr.join(self.data['messages'][code])
+		# Join all strings whether OK, WARN...
+		else:
+			message = ""
+			for c in sorted(self.data['messages'].keys(), reverse = True):
+				message += joinallstr.join(self.data['messages'][c])
+
+		return (code, message)
+
+	def code_string2int( self, code_text ):
+		"""
+		Changes CRITICAL, WARNING, OK and UNKNOWN code_text to integer
+		representation for use within add_message() and nagios_exit()
+		"""
+
+		# If code_text is a string, convert to the int
+		if str(type(code_text)) == "<type 'str'>":
+			code = self.errors[code_text]
+		else:
+			code = code_text
+
+		return code
 
 	def __setitem__(self, key, item):
 		self.data[key] = item
 
 	def __getitem__(self, key):
-		return self.data[key]
+		if key in self.data:
+			return self.data[key]
+		else:
+			return None
