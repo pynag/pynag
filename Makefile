@@ -4,12 +4,6 @@ DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
 PYTHON		= /usr/bin/python
 
-#MESSAGESPOT=po/messages.pot
-
-# file to get translation strings from, little ugly, but it works
-#POTFILES = func/*.py func/overlord/*.py func/minion/*.py func/minion/modules/*.py \
-	func/overlord/cmd_modules/*.py func/overlord/modules/*.py
-
 TOPDIR = $(shell pwd)
 DIRS	= build docs contrib etc examples pynag scripts
 PYDIRS	= pynag scripts examples 
@@ -28,11 +22,6 @@ versionfile:
 #	echo $(shell git log -n 1 --pretty="format:git commit: %H from \(%cd\)") >> etc/version 
 manpage:
 	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod | gzip -c > ./docs/$$manpage.1.gz); done
-
-
-#messages:
-	#xgettext -k_ -kN_ -o $(MESSAGESPOT) $(POTFILES)
-	#sed -i'~' -e 's/SOME DESCRIPTIVE TITLE/func/g' -e 's/YEAR THE PACKAGE'"'"'S COPYRIGHT HOLDER/2007 Red Hat, inc. /g' -e 's/FIRST AUTHOR <EMAIL@ADDRESS>, YEAR/Adrian Likins <alikins@redhat.com>, 2007/g' -e 's/PACKAGE VERSION/func $(VERSION)-$(RELEASE)/g' -e 's/PACKAGE/func/g' $(MESSAGESPOT)
 
 
 build: clean versionfile
