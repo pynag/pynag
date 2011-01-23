@@ -1,0 +1,16 @@
+Changes in 0.3
+
+Bugs Fixed:
+
+
+Features added:
+		- Plugin add_messages() and check_messages()
+		- new build system for easier RPM creation
+
+
+Mist Changes:
+
+
+New Contributors:
+
+	Tomas Ewdardsson, Pall Sigurdsson

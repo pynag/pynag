@@ -1,0 +1,7 @@
+include version
+recursive-include etc *
+recursive-include docs *
+include AUTHORS
+include LICENSE
+include README
+include CHANGES
