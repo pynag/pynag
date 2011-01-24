@@ -3,13 +3,13 @@
 
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 
-Summary: Remote management framework
+Summary: Python Nagios plugin and configuration environment
 Name: pynag
 Version: 0.3
 Release: 1%{?dist}
 Source0: %{name}-%{version}.tar.gz
-License: GPLv2+
-Group: Applications/System
+License: GPLv2
+Group: System Environment/Libraries
 Requires: python >= 2.3
 BuildRequires: python-devel
 %if %is_suse
@@ -28,7 +28,7 @@ BuildArch: noarch
 Url: http://code.google.com/p/pynag/
 
 %description
-Pynag contains tools for pragmatically handling configuration file maintenance and plugin development.
+Pynag contains tools for pragmatically handling Nagios configuration file maintenance and plugin development.
 
 %prep
 %setup -q
