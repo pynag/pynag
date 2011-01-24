@@ -61,6 +61,7 @@ rm -fr $RPM_BUILD_ROOT
 %{_bindir}/pynag-add_host_to_group
 %{_bindir}/pynag-safe_restart
 %doc AUTHORS README LICENSE CHANGES
+%doc examples/*
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
 %{_mandir}/man1/pynag-safe_restart.1.gz
 

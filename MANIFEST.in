@@ -1,7 +1,8 @@
-include version
 recursive-include etc *
 recursive-include docs *
+recursive-include examples *
 include AUTHORS
 include LICENSE
 include README
 include CHANGES
+include pynag.spec
