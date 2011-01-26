@@ -6,8 +6,8 @@
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
 Version: 0.3
-Release: 1%{?dist}
-Source0: %{name}-%{version}.tar.gz
+Release: 2%{?dist}
+Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
 Requires: python >= 2.3
@@ -66,5 +66,8 @@ rm -fr $RPM_BUILD_ROOT
 %{_mandir}/man1/pynag-safe_restart.1.gz
 
 %changelog
+* Fri Jan 26 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-2
+- Fixes for spelling and some issues reported by rpmlint
+
 * Fri Jan 22 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-1
 - Initial RPM Creation, based heavily on the func spec file
