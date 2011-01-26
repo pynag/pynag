@@ -3,7 +3,7 @@
 
 %define is_suse %(test -e /etc/SuSE-release && echo 1 || echo 0)
 
-Summary: Python Nagios plugin and configuration environment
+Summary: Python Nagios plug-in and configuration environment
 Name: pynag
 Version: 0.3
 Release: 1%{?dist}
@@ -28,7 +28,8 @@ BuildArch: noarch
 Url: http://code.google.com/p/pynag/
 
 %description
-Pynag contains tools for pragmatically handling Nagios configuration file maintenance and plugin development.
+Pynag contains tools for pragmatically handling Nagios configuration
+file maintenance and plug-in development.
 
 %prep
 %setup -q
@@ -60,12 +61,10 @@ rm -fr $RPM_BUILD_ROOT
 %{python_sitelib}/pynag/Plugins/*.py*
 %{_bindir}/pynag-add_host_to_group
 %{_bindir}/pynag-safe_restart
-%doc AUTHORS README LICENSE CHANGES
-%doc examples/*
+%doc AUTHORS README LICENSE CHANGES examples
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
 %{_mandir}/man1/pynag-safe_restart.1.gz
 
-
 %changelog
-* Fri Jan 22 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3
+* Fri Jan 22 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-1
 - Initial RPM Creation, based heavily on the func spec file
