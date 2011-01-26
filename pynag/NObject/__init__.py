@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class NObject:
 
 	def __init__(self, type=None):
