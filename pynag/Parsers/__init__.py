@@ -1,4 +1,5 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import sys
 import os
 import re
@@ -13,7 +14,7 @@ __author__ = "Drew Stinnett"
 __copyright__ = "Copyright 2008, Drew Stinnett"
 __credits__ = ["Drew Stinnett"]
 __license__ = "GPL"
-__version__ = "0.2"
+__version__ = "0.3"
 __maintainer__ = "Drew Stinnett"
 __email__ = "drew@drewlink.com"
 __status__ = "Development"
@@ -343,7 +344,31 @@ class config:
 
 		## Only make it here if the object isn't found
 		return None
-
+	
+	def delete_service(self, service_description, host_name):		
+		"""		
+		Delete service from configuration		
+		"""		
+		for item in self.data['all_service']:		
+			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):		
+			self.data['all_service'].remove(item)		
+			item['meta']['delete_me'] = True		
+			item['meta']['needs_commit'] = True		
+			self.data['all_service'].append(item)		
+			
+			return True		
+	
+	def delete_host(self, object_name, user_key = None):		
+		"""		
+		Delete a host		
+		"""		
+		return self.delete_object('host',object_name, user_key = user_key)		
+	def delete_hostgroup(self, object_name, user_key = None):		
+		"""		
+		Delete a hostgroup		
+		"""		
+		return self.delete_object('hostgroup',object_name, user_key = user_key)
+	
 	def get_object(self, object_type, object_name, user_key = None):
 		"""
 		Return a complete object dictionary
@@ -810,20 +835,34 @@ class config:
 
 
 
-
 	def print_conf(self, item):
 		"""
 		Return a string that can be used in a configuration file
 		"""
 		import time
+
 		output = ""
-		#output += "# Configuration file %s\n" % item['meta']['filename']
-		#output += "# Edited by PyNag on %s\n" % time.ctime()
-		#if len(item['meta']['template_fields']) != 0:
-		#	output += "# Values from templates:\n"
-		#for k in item['meta']['template_fields']:
-		#	output += "#\t %-30s %-30s\n" % (k, item[k])
-		#output += "\n"
+		## Header, to go on all files
+		output += "# Configuration file %s\n" % item['meta']['filename']
+		output += "# Edited by PyNag on %s\n" % time.ctime()
+
+		## Some hostgroup information
+		if item['meta'].has_key('hostgroup_list'):
+			output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
+
+		## Some hostgroup information
+		if item['meta'].has_key('service_list'):
+			output += "# Services: %s\n" % ",".join(item['meta']['service_list'])
+
+		## Some hostgroup information
+		if item['meta'].has_key('service_members'):
+			output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
+
+		if len(item['meta']['template_fields']) != 0:
+			output += "# Values from templates:\n"
+		for k in item['meta']['template_fields']:
+			output += "#\t %-30s %-30s\n" % (k, item[k])
+		output += "\n"
 		output += "define %s {\n" % item['meta']['object_type']
 		for k, v in item.iteritems():
 			if k != 'meta':
