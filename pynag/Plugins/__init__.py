@@ -47,7 +47,7 @@ class simple:
 	nagios_exit(code, message)
 	"""
 
-	def __init__(self, shortname = None, version = None, blurb = None, extra = None, url = None, license = None, plugin = None, timeout = 15 ):
+	def __init__(self, shortname = None, version = None, blurb = None, extra = None, url = None, license = None, plugin = None, timeout = 15, must_threshold = True):
 
 		## this is the custom parser
 		self.extra_list_optional = []
@@ -58,6 +58,7 @@ class simple:
 
 		## Variables we'll get later
 		self.opts = None
+		self.must_threshold = must_threshold
 		self.data = {}
 		self.data['perfdata'] = []
 		self.data['messages'] = { OK:[], WARNING:[], CRITICAL:[], UNKNOWN:[] }
@@ -73,11 +74,14 @@ class simple:
 		else:
 			self.data['shortname'] = shortname
 
-	def add_arg(self, spec_abbr, spec, help_text, required=1):
+	def add_arg(self, spec_abbr, spec, help_text, required=1, multiple=False):
 		"""
 		Add an argument to be handled by the option parser.  By default, the arg is not required
 		"""
-		self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" % spec, help=help_text, metavar="%s" % spec.upper())
+		arg_action = 'store'
+		if multiple == True:
+			arg_action = 'append'
+		self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" % spec, help=help_text, metavar="%s" % spec.upper(), action=arg_action)
 		if required:
 			self.extra_list_required.append(spec)
 		else:
@@ -114,7 +118,7 @@ class simple:
 		else:
 			self.data['timeout'] = timeout
 
-		if not options.critical and not options.warning:
+		if self.must_threshold == True and not options.critical and not options.warning:
 			self.parser.error("You must provide a WARNING and/or CRITICAL value")
 
 		## Set Critical
@@ -177,7 +181,7 @@ class simple:
 		else:
 			alert_range = critical
 		
-		self.nagios_exit("OK","%s does not meet the range: %s" % (value, self.hr_range))
+		self.nagios_exit(OK,"%s does not meet the range: %s" % (value, self.hr_range))
 
 	def _range_checker(self, value, check_range):
 		"""
@@ -259,7 +263,7 @@ class simple:
 				pd['max'] or '')
 
 		## This should be one line (or more in nagios 3)
-		print "%s : %s %s" % (self.status_text[code], message, append)
+		print "%s: %s %s" % (self.status_text[code], message, append)
 		sys.exit(code)
 
 	def add_message( self, code, message ):
@@ -313,9 +317,10 @@ class simple:
 		else:
 			message = ""
 			for c in sorted(self.data['messages'].keys(), reverse = True):
-				message += joinallstr.join(self.data['messages'][c])
+				if len(self.data['messages'][c]):
+					message += joinallstr.join(self.data['messages'][c]) + joinallstr
 
-		return (code, message)
+		return (code, message.rstrip(joinallstr))
 
 	def code_string2int( self, code_text ):
 		"""

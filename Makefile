@@ -34,7 +34,7 @@ clean:
 	-rm -rf rpm-build/
 	-rm -rf docs/*.gz
 	-rm -f etc/version
-	-for d in $(DIRS); do ($(MAKE) -C $$d clean ); done
+	#-for d in $(DIRS); do ($(MAKE) -C $$d clean ); done
 
 clean_hard:
 	-rm -rf $(shell $(PYTHON) -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")/pynag 
