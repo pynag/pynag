@@ -1,3 +1,16 @@
+Changes in 0.3.1
+
+Bugs Fixed:
+		- Plugin, Fixed joinallstr, wasn't being added between severity levels.
+
+Features added:
+		- Plugin, Add must_threshold variable for programs that do not need classic -w or -c
+		- Plugin, allow add_arg to be specified multiple times if multiple=True specified
+		- Plugin, removed space character between severity and colon, "OK:" instead of "OK :"
+
+
+
+
 Changes in 0.3
 
 Bugs Fixed:
