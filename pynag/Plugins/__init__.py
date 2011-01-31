@@ -74,14 +74,14 @@ class simple:
 		else:
 			self.data['shortname'] = shortname
 
-	def add_arg(self, spec_abbr, spec, help_text, required=1, multiple=False):
+	def add_arg(self, spec_abbr, spec, help_text, required=1, action="store"):
 		"""
-		Add an argument to be handled by the option parser.  By default, the arg is not required
+		Add an argument to be handled by the option parser.  By default, the arg is not required.
+		
+		required = optional parameter
+		action = [store, append, store_true]
 		"""
-		arg_action = 'store'
-		if multiple == True:
-			arg_action = 'append'
-		self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" % spec, help=help_text, metavar="%s" % spec.upper(), action=arg_action)
+		self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" % spec, help=help_text, metavar="%s" % spec.upper(), action=action)
 		if required:
 			self.extra_list_required.append(spec)
 		else:
