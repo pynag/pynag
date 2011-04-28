@@ -351,18 +351,19 @@ class config:
 		"""		
 		for item in self.data['all_service']:		
 			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):		
-			self.data['all_service'].remove(item)		
-			item['meta']['delete_me'] = True		
-			item['meta']['needs_commit'] = True		
-			self.data['all_service'].append(item)		
+				self.data['all_service'].remove(item)		
+				item['meta']['delete_me'] = True		
+				item['meta']['needs_commit'] = True		
+				self.data['all_service'].append(item)		
 			
-			return True		
+				return True		
 	
 	def delete_host(self, object_name, user_key = None):		
 		"""		
 		Delete a host		
 		"""		
 		return self.delete_object('host',object_name, user_key = user_key)		
+
 	def delete_hostgroup(self, object_name, user_key = None):		
 		"""		
 		Delete a hostgroup		

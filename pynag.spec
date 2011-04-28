@@ -6,7 +6,7 @@
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
 Version: 0.3
-Release: 2%{?dist}
+Release: 3%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
@@ -24,12 +24,20 @@ BuildRequires: python-setuptools
 %endif
 %endif
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-BuildArch: noarch
 Url: http://code.google.com/p/pynag/
 
 %description
 Pynag contains tools for pragmatically handling Nagios configuration
 file maintenance and plug-in development.
+
+%package examples
+Group: System Environment/Libraries
+Summary: Example scripts which manipulate Nagios configuration
+
+%description examples
+Example scripts which manipulate Nagios configuration files. Provided
+are scripts which list services, do network discovery amongst others.
+
 
 %prep
 %setup -q
@@ -40,6 +48,9 @@ file maintenance and plug-in development.
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --prefix=/usr --root=$RPM_BUILD_ROOT
+#mkdir -p $RPM_BUILD_ROOT/usr/share/pynag
+install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples
+install -m 755 examples/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/
 
 %clean
 rm -fr $RPM_BUILD_ROOT
@@ -61,11 +72,21 @@ rm -fr $RPM_BUILD_ROOT
 %{python_sitelib}/pynag/Plugins/*.py*
 %{_bindir}/pynag-add_host_to_group
 %{_bindir}/pynag-safe_restart
-%doc AUTHORS README LICENSE CHANGES examples
+%doc AUTHORS README LICENSE CHANGES
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
 %{_mandir}/man1/pynag-safe_restart.1.gz
+%dir %{_datadir}/%{name}
+
+%files examples
+%defattr(-, root, root, -)
+%dir %{_datadir}/%{name}/examples
+%{_datadir}/%{name}/examples/*
+%doc AUTHORS README LICENSE CHANGES
 
 %changelog
+* Wed Apr 27 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-3
+- Added examples package and moved example files there
+
 * Fri Jan 26 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-2
 - Fixes for spelling and some issues reported by rpmlint
 
