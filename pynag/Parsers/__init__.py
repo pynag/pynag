@@ -19,7 +19,6 @@ __maintainer__ = "Drew Stinnett"
 __email__ = "drew@drewlink.com"
 __status__ = "Development"
 
-
 class config:
 	"""
 	Parse and write nagios config files
@@ -100,17 +99,10 @@ class config:
 		"""
 		Apply the new item 'template_item' to 'original_item'
 		"""
-		if template_item is None:
-			raise "template_item is empty! %s" % original_item
-		#if template_item == original_item:
-		#	raise "Wrong usage of apply template, original item = template item"
-		
-		if template_item.has_key('use'):
-			for parent in template_item['use'].split(','):
-				new_item_to_add = self._get_item(parent, template_item['meta']['object_type'], complete_list)
-				if new_item_to_add is None:
-						raise "Invalid object name: '%s' of type %s" % (parent, template_item['meta']['object_type'])
-				template_item = self._apply_template(template_item, new_item_to_add, complete_list)
+
+		if original_item.has_key('use'):
+			new_item_to_add = self._get_item(original_item['use'], template_item['meta']['object_type'], complete_list)
+			template_item = self._apply_template(template_item, new_item_to_add, complete_list)
 
 		for k,v in template_item.iteritems():
 
@@ -127,10 +119,7 @@ class config:
 			## Ignore 'meta' values
 			if k == 'meta':
 				continue
-			if k == '__USERNAME' and original_item.has_key('host_name') and original_item['host_name'] == 'pall.sigurdsson.is':
-				raise str(original_item)
-			if k == 'name':
-				continue
+
 			## Apply any unknown value
 			if not original_item.has_key(k):
 				original_item[k] = v
@@ -150,12 +139,6 @@ class config:
 					return_list.append(item)
 		return return_list
 
-	def _get_hostgroup(self,hostgroup_name):
-		for hostgroup in self.data['all_hostgroup']:
-			if hostgroup['hostgroup_name'] == hostgroup_name:
-				return hostgroup
-		return None
-
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
 		append = ""
@@ -169,13 +152,13 @@ class config:
 			line = line.strip()
 			if line == "":
 				continue
-			if line[0] == "#" or line[0] == ';':
+			if line[0] == "#":
 				continue
 
 			# append saved text to the current line
 			if append:
 				append += ' '
-				line = append + line;
+				line = append . line;
 				append = None
 
 			# end of object definition
@@ -221,14 +204,7 @@ class config:
 
 			## this is an attribute inside an object definition
 			if in_definition:
-				#(key, value) = line.split(None, 1)
-				tmp = line.split(None, 1)
-				if len(tmp) > 1:
-					(key, value) = tmp
-				else:
-					key = tmp[0]
-					value = ""
-				
+				(key, value) = line.split(None, 1)
 
 				## Strip out in-line comments
 				if value.find(";") != -1:
@@ -254,7 +230,7 @@ class config:
 			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
 			sys.exit(2)
 
-	def edit_object_old(self, object_type, object_name, field, new_value, user_key = None):
+	def edit_object(self, object_type, object_name, field, new_value, user_key = None):
 		"""
 		Edit an object's attributes
 
@@ -272,24 +248,22 @@ class config:
 		self['all_%s' % object_type].append(original_object)
 		self.commit()
 		return True
-	def edit_object2(self, item, field, new_value):
-		"""
-		Edit an object's attributes
 
-		Example:
-		To change the alias of 'server01' to "Primary Server", use the following method
-
-		edit_object('host','server01', 'alias','Primary Server')
+	def edit_service(self, target_host, service_description, field, new_value):
+		print original_object
 		"""
-		original_object = item
-		object_type = original_object['meta']['object_type']
-		#original_object = self.get_object(object_type, object_name, user_key = None)
-		self['all_%s' % object_type].remove(original_object)
+		Edit a service's attributes
+		"""
+
+		original_object = self.get_service(target_host, service_description)
+		print target_host, service_description
+		self['all_service'].remove(original_object)
 		original_object[field] = new_value
 		original_object['meta']['needs_commit'] = True
-		self['all_%s' % object_type].append(original_object)
-		self.commit()
+		self['all_service'].append(original_object)
+		#self.commit()
 		return True
+
 
 	def _get_list(self, object, key):
 		"""
@@ -306,6 +280,9 @@ class config:
 		return
 		['larry','curly','moe']
 		"""
+		if type(object) != type({}):
+			sys.stderr.write("%s is not a dictionary\n" % object)
+			return None
 		if not object.has_key(key):
 			return None
 
@@ -316,6 +293,9 @@ class config:
 				return_list.append(name)
 		else:
 			return_list.append(object[key])
+
+		## Alphabetize
+		return_list.sort()
 
 		return return_list
 		
@@ -344,32 +324,32 @@ class config:
 
 		## Only make it here if the object isn't found
 		return None
-	
-	def delete_service(self, service_description, host_name):		
-		"""		
-		Delete service from configuration		
-		"""		
-		for item in self.data['all_service']:		
-			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):		
-				self.data['all_service'].remove(item)		
-				item['meta']['delete_me'] = True		
-				item['meta']['needs_commit'] = True		
-				self.data['all_service'].append(item)		
-			
-				return True		
-	
-	def delete_host(self, object_name, user_key = None):		
-		"""		
-		Delete a host		
-		"""		
-		return self.delete_object('host',object_name, user_key = user_key)		
 
-	def delete_hostgroup(self, object_name, user_key = None):		
-		"""		
-		Delete a hostgroup		
-		"""		
+	def delete_service(self, service_description, host_name):
+		"""
+		Delete service from configuration
+		"""
+		for item in self.data['all_service']:
+			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):
+				self.data['all_service'].remove(item)
+				item['meta']['delete_me'] = True
+				item['meta']['needs_commit'] = True
+				self.data['all_service'].append(item)
+
+				return True
+
+	def delete_host(self, object_name, user_key = None):
+		"""
+		Delete a host
+		"""
+		return self.delete_object('host',object_name, user_key = user_key)
+
+	def delete_hostgroup(self, object_name, user_key = None):
+		"""
+		Delete a hostgroup
+		"""
 		return self.delete_object('hostgroup',object_name, user_key = user_key)
-	
+
 	def get_object(self, object_type, object_name, user_key = None):
 		"""
 		Return a complete object dictionary
@@ -435,120 +415,14 @@ class config:
 		method, because it requires more than one key
 		"""
 		for item in self.data['all_service']:
-			## Skip services with no service_description
-			if not item.has_key('service_description'):
-				continue
 			## Skip non-matching services
 			if item['service_description'] != service_description:
 				continue
 
-			all_hosts = self.get_service_members(service_description, key='service_description', search_key='host_name')
-			if self.host_in_service(target_host, item):
+			if target_host in self._get_active_hosts(item):
 				return item
+
 		return None
-
-	def host_in_service(self, target_host, target_service):
-		"""
-		Return True if the host is in the given service
-
-		Example:
-		define service {
-			service_description	Foo
-			host_name			larry,curly
-		}
-
-		host_in_service("larry", %service_object%)
-		returns True
-
-		host_in_service("moe", %service_object%)
-		returns None
-		"""
-		## Negation lists
-		negate_hosts = []
-		if target_service.has_key('host_name'):
-			for host in self._get_list(target_service, 'host_name'):
-				## If the host starts with a bang, add it to the negation list
-				if host[:1] == "!":
-					negate_hosts.append(host[1:])
-
-		## Check in hostgroup_name
-		if target_service.has_key('hostgroup_name'):
-			hostgroups = self._get_list(self.get_hostgroup(target_service['hostgroup_name']), 'hostgroup_name')
-			for hostgroup in hostgroups:
-				if (target_host in self._get_list(self.get_hostgroup(hostgroup), 'members')) and (target_host not in negate_hosts):
-					return True
-
-		## Check in host_name
-		if target_service.has_key('host_name'):
-			if target_host in self._get_list(target_service, 'host_name'):
-				return True
-		return None
-		
-
-	def get_object_list(self, object_type, user_key = None):
-		"""
-		Return a list of object names for the given object type
-		"""
-		## Specify the key to use
-		object_key = self._get_key(object_type,user_key)
-
-		object_names = []
-		for item in self.data['all_%s' % object_type]:
-			object_names.append(item[object_key])
-		return object_names
-
-	def get_hostgroup_membership(self, name, user_key = None):
-		"""
-		Given a host_name, return all hostgroups that the host is a member of.
-		"""
-		hostgroup_list = []
-		for item in self.data['all_hostgroup']:
-			if item['members'].find(",") != -1:
-				if name in item['members'].split(","):
-					hostgroup_list.append(item['hostgroup_name'])
-			elif item['members'] == name:
-				hostgroup_list.append(item['members'])
-		return hostgroup_list
-
-	def get_service_membership(self, name, key='host_name'):
-		"""
-		Return all services a host belongs to
-		"""
-		service_list = []
-		for item in self.data['all_service']:
-			## Skip items that don't even have this key
-			if not item.has_key(key):
-				continue
-
-			if item[key].find(",") != -1:
-				if name in item[key].split(","):
-					service_list.append(item)
-
-			## If the the item is the only one in the list
-			elif item[key] == name:
-				service_list.append(item)
-
-		return service_list
-
-	def get_service_members(self, name, key='name', search_key='host_name'):
-		"""
-		Return a list of members for a specific service
-		"""
-		member_list = []
-		for item in self.data['all_service']:
-			## Skip items that don't even have this key
-			if not item.has_key(search_key):
-				continue
-			if not item.has_key(key):
-				continue
-
-			if name == item[key]:
-				if item[search_key].find(",") != -1:
-					member_list.extend(item[search_key].split(","))
-				else:
-					member_list.append(item[search_key])
-
-		return member_list
 
 	def _append_use(self, source_item, name):
 		"""
@@ -562,6 +436,7 @@ class config:
 			if possible_item.has_key('name'):
 				## Start appending to the item
 				for k,v in possible_item.iteritems():
+
 					try:
 						if k == 'use':
 							source_item = self._append_use(source_item, v)
@@ -576,19 +451,9 @@ class config:
 
 	def _post_parse(self):
 		for raw_item in self.pre_object_list:
-			item_to_add = None
-			if raw_item.has_key('name'):
-				name = raw_item['name']
-			elif raw_item.has_key('service_description'):
-				name = raw_item['service_description']
-			else:
-				name = ""
 			if raw_item.has_key('use'):
-				for parent in raw_item['use'].split(','):
-					item_to_add = self._get_item(parent, raw_item['meta']['object_type'], self.pre_object_list)
-					if item_to_add is None or raw_item is None:
-						raise 'INVALID CONFIG. %s "%s" is trying to use %s as a template but it cannot be found.' % (raw_item['meta']['object_type'],name, parent)
-					raw_item = self._apply_template(raw_item,item_to_add, self.pre_object_list)
+				item_to_add = self._get_item(raw_item['use'], raw_item['meta']['object_type'], self.pre_object_list)
+				raw_item = self._apply_template(raw_item,item_to_add, self.pre_object_list)
 			self.post_object_list.append(raw_item)
 
 		## Add the items to the class lists.  
@@ -603,88 +468,6 @@ class config:
 					is_template = True
 			if not is_template:
 				self.data[type_list_name].append(list_item)
-
-	def _exists(self, type, key, value):
-		"""
-		Check if an item exists
-		"""
-		for item in self.data['all_%s' % type ]:
-			if item.has_key(key):
-				if item[key] == value:
-					return True
-		return None
-
-	def remove_name_from_hostgroup(self, host_name, hostgroup_name):
-		"""
-		Remove a host from a group
-		"""
-		if not self._exists('host','host_name',host_name):
-			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
-			return None
-
-		## Find the hostgroup from our global dictionaries
-		target_group = self._get_hostgroup(hostgroup_name)
-		if not target_group:
-			print "%s does not exist" % hostgroup_name
-			return None
-
-		## Get a list of the host_name's in this group
-		existing_list = target_group['members'].split(",")
-		if host_name not in existing_list:
-			return None
-		else:
-			existing_list.remove(host_name)
-
-		## Alphabetize the list, for easier readability
-		existing_list.sort()
-
-		## Remove old group
-		self.data['all_hostgroup'].remove(target_group)
-
-		## Save the new member list
-		target_group['members'] = ",".join(existing_list)
-
-		## Mark the commit flag for the group
-		target_group['meta']['needs_commit'] = True
-
-		## Add the group back in with new members
-		self.data['all_hostgroup'].append(target_group)
-
-	def add_name_to_hostgroup(self, host_name, hostgroup_name):
-		"""
-		Add a host to a group
-		"""
-		if not self._exists('host','host_name',host_name):
-			sys.stderr.write("host_name '%s' does not exist\n" % host_name)
-			return None
-
-		## Find the hostgroup from our global dictionaries
-		target_group = self._get_hostgroup(hostgroup_name)
-		if not target_group:
-			print "%s does not exist" % hostgroup_name
-			return None
-
-		## Get a list of the host_name's in this group
-		existing_list = target_group['members'].split(",")
-		if host_name in existing_list:
-			return None
-		else:
-			existing_list.append(host_name)
-
-		## Alphabetize the list, for easier readability
-		existing_list.sort()
-
-		## Remove old group
-		self.data['all_hostgroup'].remove(target_group)
-
-		## Save the new member list
-		target_group['members'] = ",".join(existing_list)
-
-		## Mark the commit flag for the group
-		target_group['meta']['needs_commit'] = True
-
-		## Add the group back in with new members
-		self.data['all_hostgroup'].append(target_group)
 
 	def commit(self):
 		"""
@@ -729,112 +512,11 @@ class config:
 		Flag every item in the configuration to be committed
 		This should probably only be used for debugging purposes
 		"""
-		new_data_list = {}
 		for k in self.data.keys():
-			new_data_list[k] = []
+			index = 0
 			for item in self[k]:
-				item['meta']['needs_commit'] = True
-				new_data_list[k].append(item)
-
-		## Replace the original list with the new one
-		self.data = new_data_list
-	def compareObjects(self,item1, item2):
-		"""Checks objects, returns True if they are the same nagios definition"""
-		"""In short, if they have the same type and same 'name', returns true"""
-		"""Additionally, if this is a service, it returns true if the have"""
-		"""same host_name and service_description"""
-		# Discard everything which is not of same type
-		if item1['meta']['object_type'] != item2['meta']['object_type']:
-			return False
-		# If both objects have name, lets compare those
-		if item1.has_key('name') and item2.has_key('name'):
-			return item1['name'] == item2['name']
-		# Sometimes service description are identified by host_name,service_description
-		if item1['meta']['object_type'] != 'service':
-			return False
-		if not item1.has_key('host_name') or not item2.has_key('host_name'):
-			return False
-		if not item1.has_key('service_description') or not item2.has_key('service_description'):
-			return False
-		if item1['host_name'] != item2['host_name']:
-			return False
-		if item1['service_description'] != item2['service_description']:
-			return False
-		# If we reach down here, we will accept the fact this is the same definition
-		return True
-	def edit_object(self,item, field_name, new_value):
-		filename = item['meta']['filename']
-		file = open(filename)
-		buffer = []
-		i_have_made_changes = False
-		i_am_within_definition = False
-		counter = 0
-		for line in file.readlines():
-			tmp  = line.split(None, 1)
-			if len(tmp) == 0:
-				keyword = ''
-			if len(tmp) == 1:
-				keyword = tmp[0]
-			if len(tmp) > 1:
-				keyword,rest = tmp[0],tmp[1]
-			keyword = keyword.strip()
-			if keyword == 'define':
-				current_object_type = rest.split(None,1)[0]
-				current_object_type = current_object_type.strip(';')
-				current_object_type = current_object_type.strip('{')
-				tmp_buffer = []
-				i_am_within_definition = True
-			if i_am_within_definition == True:
-				tmp_buffer.append( line )
-			else:
-				buffer.append( line )
-			if len(keyword) > 0 and keyword[0] == '}':
-				i_am_within_definition = False
-				# Check if this was the object we were supposed to edit
-				#type = item['meta']['object_type']
-				#name = item['name']
-				current_definition = {}
-				current_definition['meta'] = {'object_type':current_object_type}
-				current_definition['meta']['template_fields'] = []
-				for i in tmp_buffer:
-					i = i.strip()
-					tmp = i.split(None, 1)
-					if len(tmp) == 1:
-						k = tmp[0]
-					elif len(tmp) > 1:
-						k,v = tmp[0],tmp[1]
-						v = v.split(';',1)[0]
-					else: continue # skip empty lines
-					if k == 'use':
-						v = v.strip()
-					current_definition[k] = v
-					#for i in v.split(',').strip():
-					#	parent = self._get_item(i, current_object_type, self.pre_object_list)
-					#	if parent is None:
-					#		raise "Why is parent None? %s " % i
-					tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
-					current_definition = self._apply_template(current_definition, current_definition, self.pre_object_list)
-				if self.compareObjects(item, current_definition) ==  True:
-					change = "\t%s\t\t%s\n" % (field_name, new_value)
-					for i in range( len(tmp_buffer)):
-						tmp = tmp_buffer[i].split(None, 1)
-						if len(tmp) == 0: continue
-						k = tmp[0].strip()
-						if k == field_name:
-							tmp_buffer[i] = change
-							break
-						elif k == '}':
-							tmp_buffer.insert(i, change)
-				for i in tmp_buffer:
-					buffer.append(i)
-				tmp_buffer = []
-		# Here we overwrite the config-file, hoping not to ruin anything
-		file = open(filename,'w')
-		buffer = ''.join( buffer )
-		file.write( buffer )
-		file.close()
-
-
+				self.data[k][index]['meta']['needs_commit'] = True
+				index += 1
 
 	def print_conf(self, item):
 		"""
@@ -888,7 +570,7 @@ class config:
 				continue
 
 			## Skip comments
-			if line[0] == "#" or line[0] == ';':
+			if line[0] == "#":
 				continue
 
 			## Now get the actual objects and values
@@ -900,26 +582,12 @@ class config:
 
 			## Parse all files in a cfg directory
 			if config_object == "cfg_dir":
-				directories = []
-				raw_file_list = []
-				directories.append(config_value)
-				while len(directories) > 0:
-					current_directory = directories.pop(0)
-					list = os.listdir(current_directory)
-					for item in list:
-						item = "%s" % (os.path.join(current_directory, item.strip()))
-						if os.path.islink( item ):
-							item = os.readlink( item )
-						if os.path.isdir(item):
-							directories.append( item )
-							continue
-						if raw_file_list.count( item ) < 1:
-							raw_file_list.append( item )
+				raw_file_list = os.listdir(config_value)
 				for raw_file in raw_file_list:
 					if raw_file[-4:] == ".cfg":
-						#filename = "%s" % (os.path.join(config_value, raw_file.strip()))
-						if os.path.exists(raw_file):
-							self.cfg_files.append(raw_file)
+						filename = "%s" % (os.path.join(config_value, raw_file.strip()))
+						if os.path.exists(filename):
+							self.cfg_files.append(filename)
 
 		## This loads everything into
 		for cfg_file in self.cfg_files:
@@ -927,6 +595,115 @@ class config:
 
 		self._post_parse()
 
+	def extended_parse(self):
+		"""
+		This parse is used after the initial parse() command is run.  It is
+		only needed if you want extended meta information about hosts or other objects
+		"""
+		## Do the initial parsing
+		self.parse()
+
+		## First, cycle through the hosts, and append hostgroup information
+		index = 0
+		for host in self.data['all_host']:
+			if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+				self.data['all_host'][index]['meta']['hostgroup_list'] = []
+
+			## Append any hostgroups that are directly listed in the host definition
+			if host.has_key('hostgroups'):
+				for hostgroup_name in self._get_list(host, 'hostgroups'):
+					if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+						self.data['all_host'][index]['meta']['hostgroup_list'] = []
+					if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
+						self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
+
+			## Append any services which reference this host
+			service_list = []
+			for service in self.data['all_service']:
+				if host['host_name'] in self._get_active_hosts(service):
+					service_list.append(service['service_description'])
+			self.data['all_host'][index]['meta']['service_list'] = service_list
+					
+
+			## Increment count
+			index += 1
+
+		## Loop through all hostgroups, appending them to their respective hosts
+		for hostgroup in self.data['all_hostgroup']:
+
+			for member in self._get_list(hostgroup,'members'):
+				index = 0
+				for host in self.data['all_host']:
+
+					## Skip members that do not match
+					if host['host_name'] == member:
+
+						## Create the meta var if it doesn' exist
+						if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+							self.data['all_host'][index]['meta']['hostgroup_list'] = []
+
+						if hostgroup['hostgroup_name'] not in self.data['all_host'][index]['meta']['hostgroup_list']:
+							self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup['hostgroup_name'])
+
+					## Increment count
+					index += 1
+
+		## Expand service membership
+		index = 0
+		for service in self.data['all_service']:
+			service_members = []
+
+			## Find a list of hosts to negate from the final list
+			self.data['all_service'][index]['meta']['service_members'] = self._get_active_hosts(service)
+
+			## Increment count
+			index += 1
+
+	def _get_active_hosts(self, object):
+		"""
+		Given an object, return a list of active hosts.  This will exclude hosts that ar negated with a "!"
+		"""
+		## First, generate the negation list
+		negate_hosts = []
+
+		## Hostgroups
+		if object.has_key("hostgroup_name"):
+
+			for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+				if hostgroup_name[0] == "!":
+					hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
+					negate_hosts.extend(self._get_list(hostgroup_obj,'members'))
+
+		## Host Names
+		if object.has_key("host_name"):
+			for host_name in self._get_list(object, 'host_name'):
+				if host_name[0] == "!":
+					negate_hosts.append(host_name[1:])
+
+
+		## Now get hosts that are actually listed
+		active_hosts = []
+
+		## Hostgroups
+		if object.has_key("hostgroup_name"):
+
+			for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+				if hostgroup_name[0] != "!":
+					active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name),'members'))
+
+		## Host Names
+		if object.has_key("host_name"):
+			for host_name in self._get_list(object, 'host_name'):
+				if host_name[0] != "!":
+					active_hosts.append(host_name)
+
+		## Combine the lists
+		return_hosts = []
+		for active_host in active_hosts:
+			if active_host not in negate_hosts:
+				return_hosts.append(active_host)
+
+		return return_hosts
 
 	def get_cfg_files(self):
 		"""
@@ -937,6 +714,68 @@ class config:
 		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
 		"""
 		return self.cfg_files
+
+	def cleanup(self):
+		"""
+		This cleans up dead configuration files
+		"""
+		for filename in self.cfg_files:
+			if os.path.isfile(filename):
+				size = os.stat(filename)[6]
+				if size == 0:
+					os.remove(filename)
+
+		return True
+
+	def __setitem__(self, key, item):
+		self.data[key] = item
+
+	def __getitem__(self, key):
+   		return self.data[key]
+
+class status:
+
+	def __init__(self, filename = "/var/log/nagios/status.dat"):
+
+		if not os.path.isfile(filename):
+			sys.stderr.write("Missing stat file %s" % filename)
+
+		self.filename = filename
+		self.data = {}
+
+	def parse(self):
+		## Set globals (This is stolen from the perl module)
+		append = ""
+		type = None
+		current = None
+		in_definition = {}
+
+		for line in open(self.filename, 'rb').readlines():
+
+			## Cleanup and line skips
+			line = line.strip()
+			if line == "":
+				continue
+			if line[0] == "#":
+				continue
+
+			if line.find("{") != -1:
+
+				status = {}
+				status['meta'] = {}
+				status['meta']['type'] = line.split("{")[0].strip()
+				continue
+
+			if line.find("}") != -1:
+				if not self.data.has_key(status['meta']['type']):
+					self.data[status['meta']['type']] = []
+	
+				self.data[status['meta']['type']].append(status)
+				continue
+
+			(key, value) = line.split("=", 1)
+			status[key] = value
+
 
 	def __setitem__(self, key, item):
 		self.data[key] = item
