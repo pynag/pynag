@@ -106,8 +106,8 @@ class config:
 			raise BaseException("Parsing error: Object definition has a 'use' statement on something that doesnt exist")
 		if template_item == original_item:
 			return original_item
-		if original_item.has_key('use'):
-			for parent in original_item['use'].split(','):
+		if template_item.has_key('use'):
+			for parent in template_item['use'].split(','):
 				new_item_to_add = self._get_item(parent, template_item['meta']['object_type'], complete_list)
 				if new_item_to_add == None:
 					filename = original_item['meta']['filename'] 
@@ -125,6 +125,10 @@ class config:
 
 			## Ignore 'register' values
 			if k == 'register':
+				continue
+			
+			# Ignore 'name' values
+			if k == 'name':
 				continue
 
 			## Ignore 'meta' values
