@@ -19,6 +19,8 @@ __maintainer__ = "Drew Stinnett"
 __email__ = "drew@drewlink.com"
 __status__ = "Development"
 
+def debug(text):
+	if debug: print text
 class config:
 	"""
 	Parse and write nagios config files
@@ -158,7 +160,7 @@ class config:
 			# append saved text to the current line
 			if append:
 				append += ' '
-				line = append . line;
+				line = append + line;
 				append = None
 
 			# end of object definition
@@ -578,19 +580,37 @@ class config:
 
 			## Add cfg_file objects to cfg file list
 			if config_object == "cfg_file" and os.path.isfile(config_value):
+					debug( "cfg_file = %s" % config_value )
 					self.cfg_files.append(config_value)
 
 			## Parse all files in a cfg directory
 			if config_object == "cfg_dir":
-				raw_file_list = os.listdir(config_value)
+				debug( "cfg_dir = %s" % config_value )
+				directories = []
+				raw_file_list = []
+				directories.append( config_value )
+				# Walk through every subdirectory and add to our list
+				while len(directories) > 0:
+					current_directory = directories.pop(0)
+					list = os.listdir(current_directory)
+					for item in list:
+						# Append full path to file
+						item = "%s" % (os.path.join(current_directory, item.strip() ) )
+						if os.path.isdir(item):
+							directories.append( item )
+						elif os.path.islink( item ):
+							item = os.readlink( item )
+						if raw_file_list.count( item ) < 1:
+							raw_file_list.append( item )
 				for raw_file in raw_file_list:
-					if raw_file[-4:] == ".cfg":
-						filename = "%s" % (os.path.join(config_value, raw_file.strip()))
-						if os.path.exists(filename):
-							self.cfg_files.append(filename)
+					if raw_file.endswith('.cfg'):
+						if os.path.exists(raw_file):
+							self.cfg_files.append(raw_file)
+							debug( "filename added from cfg_dir: %s" % raw_file )
 
 		## This loads everything into
 		for cfg_file in self.cfg_files:
+			debug( "loading %s" % cfg_file )
 			self._load_file(cfg_file)
 
 		self._post_parse()
