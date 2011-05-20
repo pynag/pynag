@@ -3,6 +3,8 @@
 import sys
 import os
 import re
+from platform import node
+from subprocess import Popen, PIPE
 from optparse import OptionParser
 
 """
@@ -238,6 +240,46 @@ class simple:
 			else:
 				return False
 
+	def send_nsca(self, code, message, ncsahost, hostname=node(), service=None):
+		"""
+		Send data via send_nsca for passive service checks
+		"""
+	
+		# Execute send_nsca
+		p = Popen("send_nsca -H %s" % (ncsahost), shell=True,
+			stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+
+		# Service check
+		if service:
+			print >>p.stdin, "%s	%s	%s	%s %s" % (hostname, service, code, message, self.perfdata_string())
+		# Host check, omit service_description
+		else:
+			print >>p.stdin, "%s	%s	%s %s" % (hostname, code, message, self.perfdata_string())
+
+		# Send eof
+		# TODO, support multiple statuses ?
+		p.stdin.close()
+
+		# Save output incase we have an error
+		nsca_output = ''
+		for line in p.stdout.readlines():
+			nsca_output += line
+
+		# Wait for send_nsca to exit
+		returncode = p.wait()
+
+		# Problem with running nsca
+		if returncode != 0:
+			if returncode == 127:
+				raise Exception("Could not find send_nsca in path")
+			else:
+				raise Exception("returncode: %i\n%s" % (returncode, nsca_output))
+
+		return 0
+
+
+		
+		
 	def nagios_exit(self, code_text, message):
 		"""
 		Exit with exit_code, message, and optionally perfdata
@@ -245,6 +287,12 @@ class simple:
 
 		# Change text based codes to int
 		code = self.code_string2int(code_text)
+
+		## This should be one line (or more in nagios 3)
+		print "%s: %s %s" % (self.status_text[code], message, self.perfdata_string())
+		sys.exit(code)
+
+	def perfdata_string(self):
 
 		## Append perfdata to the message, if perfdata exists
 		if self.data['perfdata']:
@@ -262,9 +310,7 @@ class simple:
 				pd['min'] or '',
 				pd['max'] or '')
 
-		## This should be one line (or more in nagios 3)
-		print "%s: %s %s" % (self.status_text[code], message, append)
-		sys.exit(code)
+		return append
 
 	def add_message( self, code, message ):
 		"""
