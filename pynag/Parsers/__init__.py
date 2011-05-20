@@ -62,6 +62,11 @@ class config:
 		else:
 			return None
 
+	def _get_hostgroup(self, hostgroup_name):
+		for hostgroup in self.data['all_hostgroup']:
+			if hostgroup.has_key('hostgroup_name') and hostgroup['hostgroup_name'] == hostgroup name:
+				return hostgroup
+		return None
 	def _get_key(self, object_type, user_key = None):
 		"""
 		Return the correct 'key' for an item.  This is mainly a helper method
@@ -251,39 +256,88 @@ class config:
 			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
 			sys.exit(2)
 
-	def edit_object(self, object_type, object_name, field, new_value, user_key = None):
-		"""
-		Edit an object's attributes
-
-		Example:
-		To change the alias of 'server01' to "Primary Server", use the following method
-
-		edit_object('host','server01', 'alias','Primary Server')
-		"""
-		object_key = self._get_key(object_type,user_key)
-
-		original_object = self.get_object(object_type, object_name, user_key = None)
-		self['all_%s' % object_type].remove(original_object)
-		original_object[field] = new_value
-		original_object['meta']['needs_commit'] = True
-		self['all_%s' % object_type].append(original_object)
-		self.commit()
+	def edit_object(self,item, field_name, new_value):
+		filename = item['meta']['filename']
+		file = open(filename)
+		buffer = []
+		i_have_made_changes = False
+		i_am_within_definition = False
+		counter = 0
+		for line in file.readlines():
+			tmp  = line.split(None, 1)
+			if len(tmp) == 0:
+				keyword = ''
+			if len(tmp) == 1:
+				keyword = tmp[0]
+			if len(tmp) > 1:
+				keyword,rest = tmp[0],tmp[1]
+			keyword = keyword.strip()
+			if keyword == 'define':
+				current_object_type = rest.split(None,1)[0]
+				current_object_type = current_object_type.strip(';')
+				current_object_type = current_object_type.strip('{')
+				tmp_buffer = []
+				i_am_within_definition = True
+			if i_am_within_definition == True:
+				tmp_buffer.append( line )
+			else:
+				buffer.append( line )
+			if len(keyword) > 0 and keyword[0] == '}':
+				i_am_within_definition = False
+				# Check if this was the object we were supposed to edit
+				#type = item['meta']['object_type']
+				#name = item['name']
+				current_definition = {}
+				current_definition['meta'] = {'object_type':current_object_type}
+				current_definition['meta']['template_fields'] = []
+				for i in tmp_buffer:
+					i = i.strip()
+					tmp = i.split(None, 1)
+					if len(tmp) == 1:
+						k = tmp[0]
+					elif len(tmp) > 1:
+						k,v = tmp[0],tmp[1]
+						v = v.split(';',1)[0]
+					else: continue # skip empty lines
+					if k == 'use':
+						v = v.strip()
+					current_definition[k] = v
+					#for i in v.split(',').strip():
+					#	parent = self._get_item(i, current_object_type, self.pre_object_list)
+					#	if parent is None:
+					#		raise "Why is parent None? %s " % i
+					tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
+					current_definition = self._apply_template(current_definition, current_definition, self.pre_object_list)
+				if self.compareObjects(item, current_definition) ==  True:
+					change = "\t%s\t\t%s\n" % (field_name, new_value)
+					for i in range( len(tmp_buffer)):
+						tmp = tmp_buffer[i].split(None, 1)
+						if len(tmp) == 0: continue
+						k = tmp[0].strip()
+						if k == field_name:
+							tmp_buffer[i] = change
+							break
+						elif k == '}':
+							tmp_buffer.insert(i, change)
+				for i in tmp_buffer:
+					buffer.append(i)
+				tmp_buffer = []
+		# Here we overwrite the config-file, hoping not to ruin anything
+		file = open(filename,'w')
+		buffer = ''.join( buffer )
+		file.write( buffer )
+		file.close()
 		return True
 
-	def edit_service(self, target_host, service_description, field, new_value):
-		print original_object
+	def edit_service(self, target_host, service_description, field_name, new_value):
 		"""
 		Edit a service's attributes
 		"""
 
 		original_object = self.get_service(target_host, service_description)
-		print target_host, service_description
-		self['all_service'].remove(original_object)
-		original_object[field] = new_value
-		original_object['meta']['needs_commit'] = True
-		self['all_service'].append(original_object)
-		#self.commit()
-		return True
+		if original_object == None:
+			raise BaseException("Service not found")
+		return edit_object( original_object, field_name, new_value)
 
 
 	def _get_list(self, object, key):
@@ -475,6 +529,7 @@ class config:
 
 	def _post_parse(self):
 		for raw_item in self.pre_object_list:
+			item_to_add = None
 			if raw_item.has_key('use'):
 				for parent in raw_item['use'].split(','):
 					item_to_add = self._get_item(parent, raw_item['meta']['object_type'], self.pre_object_list)
@@ -619,10 +674,10 @@ class config:
 					for item in list:
 						# Append full path to file
 						item = "%s" % (os.path.join(current_directory, item.strip() ) )
+						if os.path.islink( item ):
+							item = os.readlink( item )
 						if os.path.isdir(item):
 							directories.append( item )
-						elif os.path.islink( item ):
-							item = os.readlink( item )
 						if raw_file_list.count( item ) < 1:
 							raw_file_list.append( item )
 				for raw_file in raw_file_list:
