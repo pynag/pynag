@@ -64,7 +64,7 @@ class config:
 
 	def _get_hostgroup(self, hostgroup_name):
 		for hostgroup in self.data['all_hostgroup']:
-			if hostgroup.has_key('hostgroup_name') and hostgroup['hostgroup_name'] == hostgroup name:
+			if hostgroup.has_key('hostgroup_name') and hostgroup['hostgroup_name'] == hostgroup_name:
 				return hostgroup
 		return None
 	def _get_key(self, object_type, user_key = None):
@@ -433,6 +433,7 @@ class config:
 
 		target_object = None
 
+		print object_type
 		for item in self.data['all_%s' % object_type]:
 			## Skip items without the specified key
 			if not item.has_key(object_key):
@@ -548,8 +549,7 @@ class config:
 			if list_item.has_key('register'):
 				if list_item['register'] == '0':
 					is_template = True
-			if not is_template:
-				self.data[type_list_name].append(list_item)
+			self.data[type_list_name].append(list_item)
 
 	def commit(self):
 		"""
