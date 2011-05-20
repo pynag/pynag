@@ -163,7 +163,7 @@ class config:
 			line = line.strip()
 			if line == "":
 				continue
-			if line[0] == "#":
+			if line[0] == "#" or line[0] == ';':
 				continue
 
 			# append saved text to the current line
@@ -590,7 +590,7 @@ class config:
 				continue
 
 			## Skip comments
-			if line[0] == "#":
+			if line[0] == "#" or line[0] == ';':
 				continue
 
 			## Now get the actual objects and values
@@ -598,7 +598,6 @@ class config:
 
 			## Add cfg_file objects to cfg file list
 			if config_object == "cfg_file" and os.path.isfile(config_value):
-					debug( "cfg_file = %s" % config_value )
 					self.cfg_files.append(config_value)
 
 			## Parse all files in a cfg directory
@@ -791,7 +790,7 @@ class status:
 			line = line.strip()
 			if line == "":
 				continue
-			if line[0] == "#":
+			if line[0] == "#" or line[0] == ';':
 				continue
 
 			if line.find("{") != -1:
