@@ -101,10 +101,19 @@ class config:
 		"""
 		Apply the new item 'template_item' to 'original_item'
 		"""
-
+		
+		if template_item is None:
+			raise BaseException("Parsing error: Object definition has a 'use' statement on something that doesnt exist")
+		if template_item == original_item:
+			return original_item
 		if original_item.has_key('use'):
-			new_item_to_add = self._get_item(original_item['use'], template_item['meta']['object_type'], complete_list)
-			template_item = self._apply_template(template_item, new_item_to_add, complete_list)
+			for parent in original_item['use'].split(','):
+				new_item_to_add = self._get_item(parent, template_item['meta']['object_type'], complete_list)
+				if new_item_to_add == None:
+					filename = original_item['meta']['filename'] 
+					errorstring="Object definition in '%s' trying to 'use' '%s' but '%s' was not found" %(filename,parent,parent)
+					raise BaseException( errorstring )
+				template_item = self._apply_template(template_item, new_item_to_add, complete_list)
 
 		for k,v in template_item.iteritems():
 
@@ -460,7 +469,10 @@ class config:
 	def _post_parse(self):
 		for raw_item in self.pre_object_list:
 			if raw_item.has_key('use'):
-				item_to_add = self._get_item(raw_item['use'], raw_item['meta']['object_type'], self.pre_object_list)
+				for parent in raw_item['use'].split(','):
+					item_to_add = self._get_item(parent, raw_item['meta']['object_type'], self.pre_object_list)
+					if item_to_add is None or raw_item is None:
+						raise "Item not found"
 				raw_item = self._apply_template(raw_item,item_to_add, self.pre_object_list)
 			self.post_object_list.append(raw_item)
 
@@ -591,7 +603,6 @@ class config:
 
 			## Parse all files in a cfg directory
 			if config_object == "cfg_dir":
-				debug( "cfg_dir = %s" % config_value )
 				directories = []
 				raw_file_list = []
 				directories.append( config_value )
@@ -612,11 +623,9 @@ class config:
 					if raw_file.endswith('.cfg'):
 						if os.path.exists(raw_file):
 							self.cfg_files.append(raw_file)
-							debug( "filename added from cfg_dir: %s" % raw_file )
 
 		## This loads everything into
 		for cfg_file in self.cfg_files:
-			debug( "loading %s" % cfg_file )
 			self._load_file(cfg_file)
 
 		self._post_parse()
