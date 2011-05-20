@@ -432,6 +432,9 @@ class config:
 		method, because it requires more than one key
 		"""
 		for item in self.data['all_service']:
+			## Skip service with no service_description
+			if not item.has_key('service_description'):
+				continue
 			## Skip non-matching services
 			if item['service_description'] != service_description:
 				continue
