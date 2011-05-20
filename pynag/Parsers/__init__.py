@@ -206,7 +206,13 @@ class config:
 
 			## this is an attribute inside an object definition
 			if in_definition:
-				(key, value) = line.split(None, 1)
+				#(key, value) = line.split(None, 1)
+				tmp = line.split(None, 1)
+				if len(tmp) > 1:
+					(key, value) = tmp
+				else:
+					key = tmp[0]
+					value = ""
 
 				## Strip out in-line comments
 				if value.find(";") != -1:
