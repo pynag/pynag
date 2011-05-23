@@ -30,6 +30,8 @@ class config:
 		self.cfg_file = cfg_file
 		self.cfg_files = []
 		self.data = {}
+		self.item_list = None
+		self.item_cache = None
 
 		## This is a pure listof all the key/values in the config files.  It
 		## shouldn't be useful until the items in it are parsed through with the proper
@@ -81,12 +83,31 @@ class config:
 			user_key = self.object_type_keys[object_type]
 
 		return user_key
-
-	def _get_item(self, item_name, item_type, item_list):
+	
+	def _get_item(self, item_name, item_type):
    		""" 
    		Return an item from a list
    		"""
-		for test_item in item_list:  
+		# create local cache for performance optimizations. TODO: Rewrite functions that call this function
+		if not self.item_list:
+			self.item_list = self.pre_object_list
+			self.item_cache = {}
+			for item in self.item_list:
+				if not item.has_key('name'):
+					continue
+				name = item['name']
+				tmp_item_type = (item['meta']['object_type'])
+				if not self.item_cache.has_key( tmp_item_type ):
+					self.item_cache[tmp_item_type] = {}
+				self.item_cache[tmp_item_type][name] = item
+		try:
+			return self.item_cache[item_type][item_name]
+		except:
+			return None
+		if self.item_cache[item_type].has_key(item_name):
+			return self.item_cache[item_type][item_name]
+		return None
+		for test_item in self.item_list:  
 			## Skip tems without a name
 			if not test_item.has_key('name'):
 				continue
@@ -102,51 +123,39 @@ class config:
 		## If we make it this far, it means there is no matching item
 		return None
 
-	def _apply_template(self, original_item, template_item, complete_list):
+	def _apply_template(self, original_item, complete_list):
 		"""
-		Apply the new item 'template_item' to 'original_item'
+		Apply all attributes of item named parent_name to "original_item".
 		"""
-		
-		if template_item is None:
-			raise BaseException("Parsing error: Object definition has a 'use' statement on something that doesnt exist")
-		if template_item == original_item:
+		if not original_item.has_key('use'):
 			return original_item
-		if template_item.has_key('use'):
-			for parent in template_item['use'].split(','):
-				new_item_to_add = self._get_item(parent, template_item['meta']['object_type'], complete_list)
-				if new_item_to_add == None:
-					filename = original_item['meta']['filename'] 
-					errorstring="Object definition in '%s' trying to 'use' '%s' but '%s' was not found" %(filename,parent,parent)
-					raise BaseException( errorstring )
-				template_item = self._apply_template(template_item, new_item_to_add, complete_list)
-
-		for k,v in template_item.iteritems():
-
-			## Apply another template if this is a 'use' key
-			if k == 'use':
-				continue
-				#new_item_to_add = self._get_item(v, template_item['meta']['object_type'], complete_list)
-				#return self._apply_template(template_item, new_item_to_add, complete_list)
-
-			## Ignore 'register' values
-			if k == 'register':
-				continue
-			
-			# Ignore 'name' values
-			if k == 'name':
-				continue
-
-			## Ignore 'meta' values
-			if k == 'meta':
-				continue
-
-			## Apply any unknown value
-			if not original_item.has_key(k):
-				original_item[k] = v
-				original_item['meta']['template_fields'].append(k)
-
+		object_type = original_item['meta']['object_type']
+		parent_names = original_item['use'].split(',')
+		parent_items = []
+		for parent_name in parent_names:
+			parent_item = self._get_item( parent_name, object_type )
+			if parent_item == None: 
+				error_string = "Can not find any %s named %s\n" % (object_type,parent)
+				error_string = error_string + self.print_conf(raw_item)
+				raise BaseException(error_string)
+			parent_item = self._apply_template( parent_item, complete_list)
+			parent_items.append( parent_item )
+		for parent_item in parent_items:
+			for k,v in parent_item.iteritems():
+				if k == 'use':
+					continue
+				if k == 'register':
+					continue
+				if k == 'meta':
+					continue
+				if k == 'name':
+					continue
+				if not original_item.has_key(k):
+					original_item[k] = v
+					original_item['meta']['template_fields'].append(k)
 		return original_item
 
+			
 	def _get_items_in_file(self, filename):
 		"""
 		Return all items in the given file
@@ -307,7 +316,7 @@ class config:
 					#	if parent is None:
 					#		raise "Why is parent None? %s " % i
 					tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
-					current_definition = self._apply_template(current_definition, current_definition, self.pre_object_list)
+					current_definition = self._apply_template(current_definition)
 				if self.compareObjects(item, current_definition) ==  True:
 					change = "\t%s\t\t%s\n" % (field_name, new_value)
 					for i in range( len(tmp_buffer)):
@@ -529,14 +538,9 @@ class config:
 		return source_item
 
 	def _post_parse(self):
+		self.item_list = None
 		for raw_item in self.pre_object_list:
-			item_to_add = None
-			if raw_item.has_key('use'):
-				for parent in raw_item['use'].split(','):
-					item_to_add = self._get_item(parent, raw_item['meta']['object_type'], self.pre_object_list)
-					if item_to_add is None or raw_item is None:
-						raise "Item not found"
-				raw_item = self._apply_template(raw_item,item_to_add, self.pre_object_list)
+			raw_item = self._apply_template( raw_item, self.pre_object_list )
 			self.post_object_list.append(raw_item)
 
 		## Add the items to the class lists.  
