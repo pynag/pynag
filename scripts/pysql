@@ -1,0 +1,239 @@
+#!/usr/bin/python
+#!/usr/bin/python
+#
+# Copyright 2011, Pall Sigurdsson <palli@opensource.is>
+#
+# This script is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This script is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# About this script
+# This is a swiss army knife of manipulating Nagios configurations. Based on Pynag
+
+import os,sys
+
+## This is for the custom nagios module
+sys.path.insert(1, '../')
+from pynag.Parsers import config, Service
+import time
+
+## Create the plugin option
+starttime= time.time()
+nc = config('/etc/nagios/nagios.cfg')
+nc.parse()
+endtime = time.time()
+
+duration = endtime - starttime
+
+total_objects = 0
+for i in nc.data.keys():
+	total_objects = total_objects + len(nc.data[i])
+
+print "Parsed %s objects in %s seconds." %(total_objects, duration)
+
+
+def get_objects(object_type=None, search_filter={}):
+	"""
+	iterates through every object definition and returns those who match selected critera.
+	
+	Example usage:
+		get_objects(object_type="service", search_filter=("host_name":"HostA.example.com","service_description":"Ping")) 
+	"""
+	types = []
+	for i in nc.data.keys():
+		if object_type == None or i == "all_%s" % (object_type):
+			types.append( i ) 
+	search_results = []
+	for obj_type in types:
+		for i in nc.data[obj_type]:
+			i_matches_searchfilters = True
+			for k,v in search_filter.items():
+				if i.has_key(k): item_value = i[k]
+				else:
+					i_matches_searchfilters = False
+					continue
+				if item_value != v: i_matches_searchfilters = False
+			if i_matches_searchfilters:
+				search_results.append( i )
+	return search_results
+
+def update(object_type, search_filter=None, set_filter={}):
+	my_objects = get_objects(object_type, search_filter)
+	for i in my_objects:
+		for k,v in set_filter.items():
+			print "Writing changes to %s" % (i['meta']['filename'])
+			nc.edit_object(item=i, field_name=k, new_value=v)
+		
+def search(object_type, search_filter={},show_attributes="*"):
+	my_objects = get_objects(object_type, search_filter)
+	show_attributes = show_attributes.split(',')
+	print "%s objects found" % (len(my_objects)) 
+	print "---------------------------------------"
+	for i in my_objects:
+		if show_attributes == ["*"] or show_attributes == [""]:
+			show_attributes = i.keys()
+		for field in show_attributes:
+			if i.has_key(field):
+				print "%-30s" % i[field],
+			elif i['meta'].has_key(field):
+				print "%-30s" %i['meta'][field]
+			else:
+				print "%-30s" % "None",
+		print
+	print "---------------------------------------"
+	return my_objects
+
+#s = get_objects(object_type="service", search_filter={'host_name':'pall.sigurdsson.is'})
+search_filter = {}
+mode = 'search'
+object_type=None
+show_attributes="*"
+
+"""
+STATEMENT = <COMMAND> <TABLE> [WHERE <WHERE-STATEMENT>] [SET <set-statement>]
+
+COMMAND = <UPDATE>|SELECT <SELECTSTATEMENT>>|<DESCRIBE>
+SELECT-STATEMENT = attr1 [,<SELECT-STATEMENT>]
+SET-STATEMETN = keyword=value [, SET-STATEMENT]
+WHERE-STATEMENT= keyword=value [AND <WHERE-STATEMENT>]
+"""
+def error( errorstring ):
+	print errorstring
+	print "syntax was: %s" % querystring
+	sys.exit(2)
+def parse_statement( querystring ):
+	#querystring = querystring.strip()
+	#querystring = querystring.split()
+	mode = None
+	object_type=None
+	currently_parsing = None
+	show_attributes = []
+	search_filter = {}
+	set_filter = {}
+	while len(querystring) > 0:
+		word = querystring.pop(0)
+		if word.lower() == 'select':
+			mode = 'select'
+			currently_parsing = "select statement"
+			continue
+		elif word.lower() == 'where':
+			currently_parsing = "where statement"
+			continue
+		elif word.lower() == 'from':
+			currently_parsing = None
+			object_type = querystring.pop(0)
+			continue
+		elif word.lower() == 'show':
+			currently_parsing = None
+			next_word = querystring.pop(0)
+			if next_word.lower() != 'tables':
+				error( "Syntax Error: Expected 'tables' but got '%s %s'" % (word,next_word.lower()) )
+			mode = 'show'
+			break
+		elif word.lower() == 'update':
+			currently_parsing = "update statement"
+			mode = "update"
+			object_type = querystring.pop(0)
+			next_word = querystring[0]
+			if next_word.lower() != 'set':
+				error("Syntax Error: Expecting 'set' keyword but got '%s'" % (next_word))
+			continue
+		elif word.lower() == 'set':
+			if currently_parsing != "update statement":
+				error("Syntax Error: got set but have not seen any update statement")
+			currently_parsing = 'set statement'
+			continue
+		elif word.lower() == 'describe':
+			currently_parsing = None
+			next_word = querystring.pop(0)
+			object_type = next_word
+			mode = 'describe'
+			break
+		elif currently_parsing == 'set statement':
+			if word.lower() == 'and' or word.lower() == ',':
+				continue
+			if word.find('=') > 0:
+				attr,value = word.split('=',1)
+				set_filter[attr] = value
+				continue
+		elif currently_parsing == 'select statement':
+			if word == ',': continue
+			attr = word.split(',')
+			show_attributes += attr
+			continue
+		elif currently_parsing == 'where statement':
+			if word.find('=') > 0:
+				attr,value = word.split('=',1)
+				search_filter[attr] = value
+				continue
+			elif word.lower() == 'and':
+				continue
+			else:
+				if len(querystring) == 0 or querystring.pop(0) != '=':
+					error("Syntax error: Expecting '=' near '%s'" % word)
+					sys.exit(2)
+				next_word = querystring.pop(0)
+				search_filter[word] = next_word
+				continue
+		else:
+			error("Syntax Error, unexpected keyword near '%s'" % (word))
+			sys.exit(2)
+	#print "show attributes: ", show_attributes
+	#print "from: %s" % object_type
+	print "where: %s" % (search_filter)
+	show_attributes = ','.join(show_attributes)
+	return mode,object_type,show_attributes,search_filter,set_filter 
+
+def print_help():
+	p = program_name = sys.argv[0]
+	print """
+	Usage: %s --help
+	Usage: %s SHOW tables
+	Usage: %s DESCRIBE <table>
+	Usage: %s SELECT <attributes> FROM <table> [WHERE <arguments>]
+	
+	Example: "%s SELECT host_name,service_description FROM service WHERE host_name=hostA.example.com"
+	""" % (p,p,p,p,p)
+arguments = sys.argv[1:]
+
+if len(arguments) == 0:
+	print_help()
+	sys.exit(1)
+while len(arguments) > 0:
+	if arguments[0] == '--help':
+		print_help()
+		sys.exit(0)
+	else:
+		querystring = " ".join(arguments)
+		break
+mode,object_type,show_attributes,search_filter,set_filter = parse_statement( arguments )
+		
+if mode == 'describe':
+	print "-----------------"
+	possible_fields = []
+	for i in nc.data["all_%s" % object_type]:
+		for k in i.keys():
+			if k not in possible_fields:
+				possible_fields.append(k)
+	possible_fields.sort()
+	for i in possible_fields:
+		print i
+	print "-----------------"	
+elif mode == 'select':
+	search(object_type, search_filter=search_filter,show_attributes=show_attributes)
+elif mode == 'show':
+	print "---------------------"
+	for i in nc.data.keys():
+		print i[4:]
+	print "---------------------"
+elif mode == 'update':
+	update(object_type=object_type, search_filter=search_filter,set_filter=set_filter)
