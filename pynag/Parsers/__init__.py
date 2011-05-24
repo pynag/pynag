@@ -267,12 +267,16 @@ class config:
 			sys.exit(2)
 
 	def edit_object(self,item, field_name, new_value):
+		"""
+		Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
+		
+		Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+		"""
 		filename = item['meta']['filename']
 		file = open(filename)
 		buffer = []
 		i_have_made_changes = False
 		i_am_within_definition = False
-		counter = 0
 		for line in file.readlines():
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
@@ -282,6 +286,9 @@ class config:
 			if len(tmp) > 1:
 				keyword,rest = tmp[0],tmp[1]
 			keyword = keyword.strip()
+			# If we reach a define statement, we log every line to a special buffer
+			# When define closes, we parse the object and see if it is the object we
+			# want to modify
 			if keyword == 'define':
 				current_object_type = rest.split(None,1)[0]
 				current_object_type = current_object_type.strip(';')
@@ -294,9 +301,6 @@ class config:
 				buffer.append( line )
 			if len(keyword) > 0 and keyword[0] == '}':
 				i_am_within_definition = False
-				# Check if this was the object we were supposed to edit
-				#type = item['meta']['object_type']
-				#name = item['name']
 				current_definition = {}
 				current_definition['meta'] = {'object_type':current_object_type}
 				current_definition['meta']['template_fields'] = []
@@ -310,32 +314,30 @@ class config:
 						k,v = tmp[0],tmp[1]
 						v = v.split(';',1)[0]
 					else: continue # skip empty lines
-					if k.startswith('#') or k.startswith(';'): continue
-					if k == 'define': continue
-					if k == '}': continue
+					
+					if k.startswith('#'): continue
+					if k.startswith(';'): continue
+					if k.startswith('define'): continue
+					if k.startswith('}'): continue
+					
 					current_definition[k] = v
-					#tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
 					current_definition = self._apply_template(current_definition)
 				# Compare objects
-				i_am_the_correct_item=True
-				for k,v in current_definition.items():
-					if k == 'meta': continue
-					if not item.has_key(k) or item[k] != v:
-						if current_definition.has_key('service_description') and current_definition['service_description'] == 'CPU Utilization':
-							print k,v
-						i_am_the_correct_item=False
-				if i_am_the_correct_item ==  True:
-					print "changing much?"
-					change = "\t%s\t\t%s\n" % (field_name, new_value)
+				if self.compareObjects( item, current_definition ) == True:
+					'This is the object i am looking for'
+					change = "\t %-30s %s\n" % (field_name, new_value)
 					for i in range( len(tmp_buffer)):
 						tmp = tmp_buffer[i].split(None, 1)
 						if len(tmp) == 0: continue
 						k = tmp[0].strip()
 						if k == field_name:
+							'Attribute was found, lets overwrite this line'
 							tmp_buffer[i] = change
 							break
 						elif k == '}':
+							'Attribute was not found, lets insert it'
 							tmp_buffer.insert(i, change)
+				# If tmp_buffer contains any data, we merge it back to the main buffer
 				for i in tmp_buffer:
 					buffer.append(i)
 				tmp_buffer = []
@@ -355,23 +357,16 @@ class config:
 		keys1.sort()
 		keys2.sort()
 		if keys1 != keys2:
-			#for i in keys1:
-			#	if i not in keys2:
-			#		print "%s (from keys1) not found in %s" % (i, keys2)
-			#for i in keys2:
-			#	if i not in keys1:
-			#		print "%s (from keys2) not found in %s" % (i, keys1)
-			#debug("%s != %s" % ( keys1, keys2))
 			return False
 		for key in keys1:
 			if key == 'meta': continue
 			key1 = item1[key]
 			key2 = item2[key]
+			# For our purpose, 30 is equal to 30.000
 			if key == 'check_interval':
 				key1 = int(float(key1))
 				key2 = int(float(key2))
 			if key1 != key2:
-				debug( "%s: %s != %s" % (key, item1[key], item2[key]) )
 				return False
 		return True
 	def edit_service(self, target_host, service_description, field_name, new_value):
@@ -964,4 +959,5 @@ class Service(ObjectDefinition):
 		return locals()
 	def __strs__(self):
 		return "%-30s %-30s %-30s" % (str(self['name']), str(self['host_name']), str(self['service_description']))
+
 
