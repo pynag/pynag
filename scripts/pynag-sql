@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#!/usr/bin/python
 #
 # Copyright 2011, Pall Sigurdsson <palli@opensource.is>
 #
@@ -48,6 +47,10 @@ def get_objects(object_type=None, search_filter={}):
 	Example usage:
 		get_objects(object_type="service", search_filter=("host_name":"HostA.example.com","service_description":"Ping")) 
 	"""
+	# Lets do some modification of the search filters
+	for k,v in search_filter.items():
+		if v == 'None':
+			search_filter[k] = None
 	types = []
 	for i in nc.data.keys():
 		if object_type == None or i == "all_%s" % (object_type):
@@ -75,14 +78,14 @@ def update(object_type, search_filter=None, set_filter={}):
 	my_objects = get_objects(object_type, search_filter)
 	for i in my_objects:
 		for k,v in set_filter.items():
-			print "Writing changes to %s" % (i['meta']['filename'])
-			nc.edit_object(item=i, field_name=k, new_value=v)
+			result = nc.edit_object(item=i, field_name=k, new_value=v)
+			if result == True:
+				print "Writing changes to %s" % (i['meta']['filename'])
+			else:
+				print "Failed to write to %s, this service here:"
+				#print nc.print_conf( i )
 		
 def search(object_type, search_filter={},show_attributes="*"):
-	# Lets do some modification of the search filters
-	for k,v in search_filter.items():
-		if v == 'None':
-			search_filter[k] = None
 	my_objects = get_objects(object_type, search_filter)
 	show_attributes = show_attributes.split(',')
 	print "%s objects found" % (len(my_objects)) 
