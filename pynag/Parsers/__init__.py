@@ -277,12 +277,15 @@ class config:
 		buffer = []
 		i_have_made_changes = False
 		i_am_within_definition = False
+		change = None
 		for line in file.readlines():
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
 				keyword = ''
+				rest = ''
 			if len(tmp) == 1:
 				keyword = tmp[0]
+				rest = ''
 			if len(tmp) > 1:
 				keyword,rest = tmp[0],tmp[1]
 			keyword = keyword.strip()
@@ -293,6 +296,7 @@ class config:
 				current_object_type = rest.split(None,1)[0]
 				current_object_type = current_object_type.strip(';')
 				current_object_type = current_object_type.strip('{')
+				current_object_type = current_object_type.strip()
 				tmp_buffer = []
 				i_am_within_definition = True
 			if i_am_within_definition == True:
@@ -310,9 +314,11 @@ class config:
 					tmp = i.split(None, 1)
 					if len(tmp) == 1:
 						k = tmp[0]
+						v = ''
 					elif len(tmp) > 1:
 						k,v = tmp[0],tmp[1]
 						v = v.split(';',1)[0]
+						v = v.strip()
 					else: continue # skip empty lines
 					
 					if k.startswith('#'): continue
@@ -346,7 +352,11 @@ class config:
 		buffer = ''.join( buffer )
 		file.write( buffer )
 		file.close()
-		return True
+		if change == None:
+			return False
+		else:
+			#print change
+			return True
 
 	def compareObjects(self, item1, item2):
 		"""
@@ -356,6 +366,7 @@ class config:
 		keys2 = item2.keys()
 		keys1.sort()
 		keys2.sort()
+		result=True
 		if keys1 != keys2:
 			return False
 		for key in keys1:
@@ -367,7 +378,8 @@ class config:
 				key1 = int(float(key1))
 				key2 = int(float(key2))
 			if key1 != key2:
-				return False
+				result = False
+		if result == False: return False
 		return True
 	def edit_service(self, target_host, service_description, field_name, new_value):
 		"""
