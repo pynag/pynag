@@ -57,11 +57,16 @@ def get_objects(object_type=None, search_filter={}):
 		for i in nc.data[obj_type]:
 			i_matches_searchfilters = True
 			for k,v in search_filter.items():
-				if i.has_key(k): item_value = i[k]
-				else:
+				if v == None and not i.has_key(k):
+					'match'
+					continue
+				if not i.has_key(k):
+					'no match'
 					i_matches_searchfilters = False
 					continue
-				if item_value != v: i_matches_searchfilters = False
+				if i[k] != v:
+					'no match'
+					i_matches_searchfilters = False
 			if i_matches_searchfilters:
 				search_results.append( i )
 	return search_results
@@ -74,6 +79,10 @@ def update(object_type, search_filter=None, set_filter={}):
 			nc.edit_object(item=i, field_name=k, new_value=v)
 		
 def search(object_type, search_filter={},show_attributes="*"):
+	# Lets do some modification of the search filters
+	for k,v in search_filter.items():
+		if v == 'None':
+			search_filter[k] = None
 	my_objects = get_objects(object_type, search_filter)
 	show_attributes = show_attributes.split(',')
 	print "%s objects found" % (len(my_objects)) 
@@ -189,7 +198,7 @@ def parse_statement( querystring ):
 			sys.exit(2)
 	#print "show attributes: ", show_attributes
 	#print "from: %s" % object_type
-	print "where: %s" % (search_filter)
+	#print "where: %s" % (search_filter)
 	show_attributes = ','.join(show_attributes)
 	return mode,object_type,show_attributes,search_filter,set_filter 
 
