@@ -20,6 +20,7 @@ __email__ = "drew@drewlink.com"
 __status__ = "Development"
 
 def debug(text):
+	debug = True
 	if debug: print text
 class config:
 	"""
@@ -123,7 +124,7 @@ class config:
 		## If we make it this far, it means there is no matching item
 		return None
 
-	def _apply_template(self, original_item, complete_list):
+	def _apply_template(self, original_item):
 		"""
 		Apply all attributes of item named parent_name to "original_item".
 		"""
@@ -135,10 +136,10 @@ class config:
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
 			if parent_item == None: 
-				error_string = "Can not find any %s named %s\n" % (object_type,parent)
-				error_string = error_string + self.print_conf(raw_item)
+				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
+				error_string = error_string + self.print_conf(original_item)
 				raise BaseException(error_string)
-			parent_item = self._apply_template( parent_item, complete_list)
+			parent_item = self._apply_template( parent_item)
 			parent_items.append( parent_item )
 		for parent_item in parent_items:
 			for k,v in parent_item.iteritems():
@@ -299,6 +300,7 @@ class config:
 				current_definition = {}
 				current_definition['meta'] = {'object_type':current_object_type}
 				current_definition['meta']['template_fields'] = []
+				current_definition['meta']['filename'] = item['meta']['filename']
 				for i in tmp_buffer:
 					i = i.strip()
 					tmp = i.split(None, 1)
@@ -308,16 +310,22 @@ class config:
 						k,v = tmp[0],tmp[1]
 						v = v.split(';',1)[0]
 					else: continue # skip empty lines
-					if k == 'use':
-						v = v.strip()
+					if k.startswith('#') or k.startswith(';'): continue
+					if k == 'define': continue
+					if k == '}': continue
 					current_definition[k] = v
-					#for i in v.split(',').strip():
-					#	parent = self._get_item(i, current_object_type, self.pre_object_list)
-					#	if parent is None:
-					#		raise "Why is parent None? %s " % i
-					tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
+					#tmp = {'meta':{'template_fields':[],'object_type':current_object_type}}
 					current_definition = self._apply_template(current_definition)
-				if self.compareObjects(item, current_definition) ==  True:
+				# Compare objects
+				i_am_the_correct_item=True
+				for k,v in current_definition.items():
+					if k == 'meta': continue
+					if not item.has_key(k) or item[k] != v:
+						if current_definition.has_key('service_description') and current_definition['service_description'] == 'CPU Utilization':
+							print k,v
+						i_am_the_correct_item=False
+				if i_am_the_correct_item ==  True:
+					print "changing much?"
 					change = "\t%s\t\t%s\n" % (field_name, new_value)
 					for i in range( len(tmp_buffer)):
 						tmp = tmp_buffer[i].split(None, 1)
@@ -338,6 +346,34 @@ class config:
 		file.close()
 		return True
 
+	def compareObjects(self, item1, item2):
+		"""
+		Compares two items. Returns true if they are equal"
+		"""
+		keys1 = item1.keys()
+		keys2 = item2.keys()
+		keys1.sort()
+		keys2.sort()
+		if keys1 != keys2:
+			#for i in keys1:
+			#	if i not in keys2:
+			#		print "%s (from keys1) not found in %s" % (i, keys2)
+			#for i in keys2:
+			#	if i not in keys1:
+			#		print "%s (from keys2) not found in %s" % (i, keys1)
+			#debug("%s != %s" % ( keys1, keys2))
+			return False
+		for key in keys1:
+			if key == 'meta': continue
+			key1 = item1[key]
+			key2 = item2[key]
+			if key == 'check_interval':
+				key1 = int(float(key1))
+				key2 = int(float(key2))
+			if key1 != key2:
+				debug( "%s: %s != %s" % (key, item1[key], item2[key]) )
+				return False
+		return True
 	def edit_service(self, target_host, service_description, field_name, new_value):
 		"""
 		Edit a service's attributes
@@ -442,7 +478,7 @@ class config:
 
 		target_object = None
 
-		print object_type
+		#print object_type
 		for item in self.data['all_%s' % object_type]:
 			## Skip items without the specified key
 			if not item.has_key(object_key):
@@ -540,7 +576,7 @@ class config:
 	def _post_parse(self):
 		self.item_list = None
 		for raw_item in self.pre_object_list:
-			raw_item = self._apply_template( raw_item, self.pre_object_list )
+			raw_item = self._apply_template( raw_item )
 			self.post_object_list.append(raw_item)
 
 		## Add the items to the class lists.  
@@ -882,3 +918,50 @@ class status:
 
 	def __getitem__(self, key):
    		return self.data[key]
+
+
+def Property(func):
+	return property(**func())
+
+class ObjectDefinition(object):
+	def __init__(self, item, object_type=None):
+		self.object_type = object_type
+		self.data = item
+		for k,v in self.data.items():
+			self.__setattr__(k,v)
+	def __setitem__(self, key, item):
+		self.data[key] = item
+	def __getitem__(self, key):
+		if not self.data.has_key(key): return None
+		return self.data[key]
+	def __str__(self):
+		return_buffer = "define %s {\n" % (self.object_type)
+		fields = self.data.keys()
+		fields.sort()
+		interesting_fields = ['service_description','use','name','host_name']
+		for i in interesting_fields:
+			if i in fields:
+				fields.remove(i)
+				fields.insert(0, i)
+			
+		for key in fields:
+			if key == 'meta': continue
+			value = self.data[key]
+			return_buffer = return_buffer + "\t%s = %s\n" %(key,value)
+		return_buffer = return_buffer + "}\n\n"
+		return return_buffer
+		
+
+class Service(ObjectDefinition):
+	@Property
+	def service_description():
+		doc = "The service_description of this object (if it has any)"
+		def fget(self):
+			if self.data.has_key('service_description'):
+				return self.data['service_description']
+		def fset(self, value):
+			self.data['service_description'] = value
+		return locals()
+	def __strs__(self):
+		return "%-30s %-30s %-30s" % (str(self['name']), str(self['host_name']), str(self['service_description']))
+
