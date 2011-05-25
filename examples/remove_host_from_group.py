@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-#!/usr/bin/python
 import os,sys
 
 if len(sys.argv) != 3:
