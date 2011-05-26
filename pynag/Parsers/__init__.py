@@ -22,6 +22,8 @@ __status__ = "Development"
 def debug(text):
 	debug = True
 	if debug: print text
+
+
 class config:
 	"""
 	Parse and write nagios config files
@@ -138,7 +140,7 @@ class config:
 			if parent_item == None: 
 				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
 				error_string = error_string + self.print_conf(original_item)
-				raise BaseException(error_string)
+				raise Exception(error_string)
 			parent_item = self._apply_template( parent_item)
 			parent_items.append( parent_item )
 		for parent_item in parent_items:
@@ -327,7 +329,7 @@ class config:
 					if k.startswith('}'): continue
 					
 					current_definition[k] = v
-					current_definition = self._apply_template(current_definition)
+				current_definition = self._apply_template(current_definition)
 				# Compare objects
 				if self.compareObjects( item, current_definition ) == True:
 					'This is the object i am looking for'
@@ -388,7 +390,7 @@ class config:
 
 		original_object = self.get_service(target_host, service_description)
 		if original_object == None:
-			raise BaseException("Service not found")
+			raise Exception("Service not found")
 		return edit_object( original_object, field_name, new_value)
 
 
