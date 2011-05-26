@@ -3,7 +3,7 @@
 import sys
 import os
 import re
-sys.path.insert(1, '/opt/pynag')
+#sys.path.insert(1, '/opt/pynag')
 from pynag.Parsers import config
 import time
 
@@ -16,7 +16,7 @@ from pynag.Parsers import Service,Host
 
 all_services = Service.objects.all
 my_service=all_service[0]
-print my_servce.host_name
+print my_service.host_name
 
 example_host = Host.objects.filter(host_name="host.example.com")
 canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
@@ -77,7 +77,7 @@ class ObjectFetcher(object):
 			objects = config.data[ key_name ]
 		else:
 			for k,v in config.data.items():
-				objects += v
+				self.objects += v
 		for i in objects:
 			i = ObjectDefinition( item=i  )
 			self.objects.append( i )
@@ -155,32 +155,74 @@ class ObjectDefinition(object):
 	objects = ObjectFetcher( None )
 	def __init__(self, item):
 		self.object_type = item['meta']['object_type']
+		
+		# self.objects is a convenient way to access more objects of the same type
 		self.objects = ObjectFetcher( self.object_type )
-		self.data = item
-		for k,v in self.data.items():
-			self.__setattr__(k,v)
+		# self.data -- This dict stores all effective attributes of this objects
+		self.__original_attributes = item
+		
+		#: __changes - This dict contains any changed (but yet unsaved) attributes of this object 
+		self.__changes = {}
+		
+		#: __defined_attributes - All attributes that this item has defined
+		self.__defined_attributes = item['meta']['defined_attributes']
+		
+		#: __inherited_attributes - All attributes that this object has inherited via 'use'
+		self.__inherited_attributes = item['meta']['inherited_attributes']
+		#for k,v in self.data.items():
+		#	self.__setattr__(k,v)
+	def is_dirty(self):
+		"Returns true if any attributes has been changed on this object, and therefore it needs saving"
+		return len(self.__changes.keys()) == 0
 	def __setitem__(self, key, item):
-		self.data[key] = item
+		self.__changes[key] = item
+		#self.data[key] = item
 	def __getitem__(self, key):
-		if not self.data.has_key(key): return None
-		return self.data[key]
-	def has_key(self, key_name):
-		return self.data.has_key(key_name)
+		if self.__changes.has_key(key):
+			return self.__changes[key]
+		elif self.__defined_attributes.has_key(key):
+			return self.__defined_attributes[key]
+		elif self.__inherited_attributes.has_key(key):
+			return self.__inherited_attributes[key]
+		else:
+			return None
+	def has_key(self, key):
+		if self.__changes.has_key(key):
+			return True
+		elif self.__defined_attributes.has_key(key):
+			return True
+		elif self.__inherited_attributes.has_key(key):
+			return True
+		else:
+			return False
 	def keys(self):
-		return self.data.keys()
+		all_keys = []
+		for k in self.__changes.keys():
+			if k not in all_keys(): all_keys.append(k)
+		for k in self.__changes.keys():
+			if k not in all_keys(): all_keys.append(k)
+		for k in self.__changes.keys():
+			if k not in all_keys(): all_keys.append(k)
+		return all_keys
 	def save(self):
 		"""Saves any changes to the current object to its configuration file
 		
 		Returns:
-			True if save was successful.
+			Number of changes made to the object
 		"""
-		# TODO: We need to keep a log whenever someone makes changes to this object.
-		# Then call config.edit_object()
-		raise NotImplementedError()
+		number_of_changes = 0
+		for field_name,new_value in self.__changes.items():
+			save_result = config.edit_object(item=self.__original_attributes, field_name=field_name, new_value=new_value)
+			if save_result == True:
+				self.__defined_attributes[field_name] = new_value
+				self.__original_attributes[field_name] = new_value
+				del self.__changes[field_name]
+				number_of_changes += 1
+		return number_of_changes
 		
 	def __str__(self):
 		return_buffer = "define %s {\n" % (self.object_type)
-		fields = self.data.keys()
+		fields = self.keys()
 		fields.sort()
 		interesting_fields = ['service_description','use','name','host_name']
 		for i in interesting_fields:
@@ -190,7 +232,7 @@ class ObjectDefinition(object):
 			
 		for key in fields:
 			if key == 'meta': continue
-			value = self.data[key]
+			value = self[key]
 			return_buffer = return_buffer + "\t%s = %s\n" %(key,value)
 		return_buffer = return_buffer + "}\n\n"
 		return return_buffer
@@ -198,8 +240,8 @@ class ObjectDefinition(object):
 		result=""
 		result += "%s: " % self.__class__.__name__
 		for i in  ['host_name','name','use','service_description']:
-			if self.data.has_key(i):
-				result += " %s=%s " % (i,self.data[i])
+			if self.has_key(i):
+				result += " %s=%s " % (i,self[i])
 			else:
 				result += "%s=None " % (i)
 		return result
@@ -247,14 +289,30 @@ class:
 
 '''
 
+string_to_class = {}
+string_to_class['contact'] = Contact
+string_to_class['service'] = Service
+string_to_class['Host'] = Host
+string_to_class['hostgroup'] = Hostgroup
+string_to_class['contactgroup'] = Contactgroup
+string_to_class['servicegroup'] = Servicegroup
+string_to_class['timeperiod'] = Timeperiod
+string_to_class['command'] = Command
 
 if __name__ == '__main__':
 	starttime = time.time()
-	services = Service.objects.all
-	pall_sigurdsson_services = Service.objects.filter(host_name='pall.sigurdsson.is')
-	icelandic_services = Service.objects.filter(host_name__endswith='.is')
-	endtime = time.time()
-	duration=endtime-starttime
-	print "Converted (%s) config objects to ObjectDefinitions in %s seconds" % (len(services), duration)
+	#services = Service.objects.all
+	#pall_sigurdsson_services = Service.objects.filter(host_name='pall.sigurdsson.is')
+	#icelandic_services = Service.objects.filter(host_name__endswith='.is')
+	#endtime = time.time()
+	#duration=endtime-starttime
+	#print "Converted (%s) config objects to ObjectDefinitions in %s seconds" % (len(services), duration)
+	#host = Host.objects.filter(host_name='pall.sigurdsson.is')[0]
+	#host['alias'] = 'pall.sigurdsson.is'
+	#print host['alias']
+	#print host.save()
+	o = ObjectDefinition('contact')
+	print o
+	
 	
 	

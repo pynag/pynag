@@ -88,7 +88,7 @@ class config:
 		return user_key
 	
 	def _get_item(self, item_name, item_type):
-   		""" 
+		""" 
    		Return an item from a list
    		"""
 		# create local cache for performance optimizations. TODO: Rewrite functions that call this function
@@ -141,6 +141,7 @@ class config:
 				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
 				error_string = error_string + self.print_conf(original_item)
 				raise Exception(error_string)
+			# Parent item probably has use flags on its own. So lets apply to parent first
 			parent_item = self._apply_template( parent_item)
 			parent_items.append( parent_item )
 		for parent_item in parent_items:
@@ -153,6 +154,7 @@ class config:
 					continue
 				if k == 'name':
 					continue
+				original_item['meta']['inherited_attributes'][k] = v
 				if not original_item.has_key(k):
 					original_item[k] = v
 					original_item['meta']['template_fields'].append(k)
@@ -219,6 +221,8 @@ class config:
 				current['meta']['template_fields'] = []
 				current['meta']['needs_commit'] = None
 				current['meta']['delete_me'] = None
+				current['meta']['defined_attributes'] = {}
+				current['meta']['inherited_attributes'] = {}
 
 				if in_definition:
 					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
@@ -258,6 +262,7 @@ class config:
 					key = 'service_description'
 
 				current[key] = value
+				current['meta']['defined_attributes'][key] = value
 			## Something is wrong in the config
 			else:
 				sys.stderr.write("Error: Unexpected token in file '%s'" % filename)
@@ -277,7 +282,6 @@ class config:
 		filename = item['meta']['filename']
 		file = open(filename)
 		buffer = []
-		i_have_made_changes = False
 		i_am_within_definition = False
 		change = None
 		for line in file.readlines():
@@ -311,6 +315,8 @@ class config:
 				current_definition['meta'] = {'object_type':current_object_type}
 				current_definition['meta']['template_fields'] = []
 				current_definition['meta']['filename'] = item['meta']['filename']
+				current_definition['meta']['defined_attributes'] = {}
+				current_definition['meta']['inherited_attributes'] = {}
 				for i in tmp_buffer:
 					i = i.strip()
 					tmp = i.split(None, 1)
@@ -329,7 +335,7 @@ class config:
 					if k.startswith('}'): continue
 					
 					current_definition[k] = v
-				current_definition = self._apply_template(current_definition)
+					current_definition = self._apply_template(current_definition)
 				# Compare objects
 				if self.compareObjects( item, current_definition ) == True:
 					'This is the object i am looking for'
@@ -391,7 +397,7 @@ class config:
 		original_object = self.get_service(target_host, service_description)
 		if original_object == None:
 			raise Exception("Service not found")
-		return edit_object( original_object, field_name, new_value)
+		return config.edit_object( original_object, field_name, new_value)
 
 
 	def _get_list(self, object, key):
@@ -594,12 +600,13 @@ class config:
 			if not self.data.has_key(type_list_name):
 				self.data[type_list_name] = []
 
+			'''
 			is_template = None
 			if list_item.has_key('register'):
 				if list_item['register'] == '0':
 					is_template = True
+			'''
 			self.data[type_list_name].append(list_item)
-
 	def commit(self):
 		"""
 		Write any changes that have been made to it's appropriate file
@@ -876,7 +883,7 @@ class config:
 		self.data[key] = item
 
 	def __getitem__(self, key):
-   		return self.data[key]
+		return self.data[key]
 
 class status:
 
@@ -890,10 +897,7 @@ class status:
 
 	def parse(self):
 		## Set globals (This is stolen from the perl module)
-		append = ""
 		type = None
-		current = None
-		in_definition = {}
 
 		for line in open(self.filename, 'rb').readlines():
 
@@ -926,5 +930,10 @@ class status:
 		self.data[key] = item
 
 	def __getitem__(self, key):
-   		return self.data[key]
+		return self.data[key]
 
+if __name__ == '__main__':
+	c=config('/etc/nagios/nagios.cfg')
+	c.parse()
+	for i in c.data['all_host']:
+		print i['meta']
