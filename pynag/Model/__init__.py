@@ -8,7 +8,22 @@ from pynag.Parsers import config
 import time
 
 """
-Python Nagios extensions
+This module provides a high level Object-Oriented wrapper around pynag.Parsers.config.
+
+example usage:
+
+from pynag.Parsers import Service,Host
+
+all_services = Service.objects.all
+my_service=all_service[0]
+print my_servce.host_name
+
+example_host = Host.objects.filter(host_name="host.example.com")
+canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
+
+for i in canadian_hosts:
+	i.alias = "this host is located in Canada"
+	i.save()
 """
 
 __author__ = "Pall Sigurdsson"
@@ -151,6 +166,18 @@ class ObjectDefinition(object):
 		return self.data[key]
 	def has_key(self, key_name):
 		return self.data.has_key(key_name)
+	def keys(self):
+		return self.data.keys()
+	def save(self):
+		"""Saves any changes to the current object to its configuration file
+		
+		Returns:
+			True if save was successful.
+		"""
+		# TODO: We need to keep a log whenever someone makes changes to this object.
+		# Then call config.edit_object()
+		raise NotImplementedError()
+		
 	def __str__(self):
 		return_buffer = "define %s {\n" % (self.object_type)
 		fields = self.data.keys()
