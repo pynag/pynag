@@ -76,10 +76,12 @@ class ObjectFetcher(object):
 				return []
 			objects = config.data[ key_name ]
 		else:
+			# If no object type was requested
+			objects = []
 			for k,v in config.data.items():
-				self.objects += v
+				objects += v
 		for i in objects:
-			i = ObjectDefinition( item=i  )
+			i = ObjectDefinition( item=i )
 			self.objects.append( i )
 		return self.objects
 	def filter(self, **kwargs):
@@ -131,6 +133,14 @@ class ObjectFetcher(object):
 					match_function = not_contains
 				else:
 					match_function = str.__eq__
+				if k == 'id':
+					if i['host_name']=='pall.sigurdsson.is':
+						print "lets do this"
+						id1 = v
+						id2 = i.__str__().__hash__()
+				if k == 'id' and str(v) == str(i.get_id()):
+					object_matches=True
+					break
 				if v == None and not i.has_key( k ):
 					continue
 				if not i.has_key( k ):
@@ -159,51 +169,66 @@ class ObjectDefinition(object):
 		# self.objects is a convenient way to access more objects of the same type
 		self.objects = ObjectFetcher( self.object_type )
 		# self.data -- This dict stores all effective attributes of this objects
-		self.__original_attributes = item
+		self._original_attributes = item
 		
-		#: __changes - This dict contains any changed (but yet unsaved) attributes of this object 
-		self.__changes = {}
+		#: _changes - This dict contains any changed (but yet unsaved) attributes of this object 
+		self._changes = {}
 		
-		#: __defined_attributes - All attributes that this item has defined
-		self.__defined_attributes = item['meta']['defined_attributes']
+		#: _defined_attributes - All attributes that this item has defined
+		self._defined_attributes = item['meta']['defined_attributes']
 		
-		#: __inherited_attributes - All attributes that this object has inherited via 'use'
-		self.__inherited_attributes = item['meta']['inherited_attributes']
+		#: _inherited_attributes - All attributes that this object has inherited via 'use'
+		self._inherited_attributes = item['meta']['inherited_attributes']
+		
+		#: _meta - Various metadata about the object
+		self._meta = item['meta']
 		#for k,v in self.data.items():
 		#	self.__setattr__(k,v)
 	def is_dirty(self):
 		"Returns true if any attributes has been changed on this object, and therefore it needs saving"
-		return len(self.__changes.keys()) == 0
+		return len(self._changes.keys()) == 0
 	def __setitem__(self, key, item):
-		self.__changes[key] = item
+		self._changes[key] = item
 		#self.data[key] = item
 	def __getitem__(self, key):
-		if self.__changes.has_key(key):
-			return self.__changes[key]
-		elif self.__defined_attributes.has_key(key):
-			return self.__defined_attributes[key]
-		elif self.__inherited_attributes.has_key(key):
-			return self.__inherited_attributes[key]
+		if key == 'id':
+			return self.get_id()
+		if self._changes.has_key(key):
+			return self._changes[key]
+		elif self._defined_attributes.has_key(key):
+			return self._defined_attributes[key]
+		elif self._inherited_attributes.has_key(key):
+			return self._inherited_attributes[key]
+		elif self._meta.has_key(key):
+			return self._meta[key]
 		else:
 			return None
 	def has_key(self, key):
-		if self.__changes.has_key(key):
+		return key in self.keys()
+		if self._changes.has_key(key):
 			return True
-		elif self.__defined_attributes.has_key(key):
+		elif self._defined_attributes.has_key(key):
 			return True
-		elif self.__inherited_attributes.has_key(key):
+		elif self._inherited_attributes.has_key(key):
 			return True
 		else:
 			return False
 	def keys(self):
 		all_keys = []
-		for k in self.__changes.keys():
-			if k not in all_keys(): all_keys.append(k)
-		for k in self.__changes.keys():
-			if k not in all_keys(): all_keys.append(k)
-		for k in self.__changes.keys():
-			if k not in all_keys(): all_keys.append(k)
+		for k in self._changes.keys():
+			if k not in all_keys: all_keys.append(k)
+		for k in self._inherited_attributes.keys():
+			if k not in all_keys: all_keys.append(k)
+		for k in self._defined_attributes.keys():
+			if k not in all_keys: all_keys.append(k)
+		for k in self._meta.keys():
+			if k not in all_keys: all_keys.append(k)
 		return all_keys
+	def items(self):
+		return self._original_attributes.items()
+	def get_id(self):
+		""" Return a unique ID for this object"""
+		return self.__str__().__hash__()
 	def save(self):
 		"""Saves any changes to the current object to its configuration file
 		
@@ -211,12 +236,12 @@ class ObjectDefinition(object):
 			Number of changes made to the object
 		"""
 		number_of_changes = 0
-		for field_name,new_value in self.__changes.items():
-			save_result = config.edit_object(item=self.__original_attributes, field_name=field_name, new_value=new_value)
+		for field_name,new_value in self._changes.items():
+			save_result = config.edit_object(item=self._original_attributes, field_name=field_name, new_value=new_value)
 			if save_result == True:
-				self.__defined_attributes[field_name] = new_value
-				self.__original_attributes[field_name] = new_value
-				del self.__changes[field_name]
+				self._defined_attributes[field_name] = new_value
+				self._original_attributes[field_name] = new_value
+				del self._changes[field_name]
 				number_of_changes += 1
 		return number_of_changes
 		
@@ -244,6 +269,20 @@ class ObjectDefinition(object):
 				result += " %s=%s " % (i,self[i])
 			else:
 				result += "%s=None " % (i)
+		return result
+	def get_attribute_tuple(self):
+		""" Returns all relevant attributes in the form of:
+		
+		(attribute_name,defined_value,inherited_value)
+		"""
+		result = []
+		for k in self.keys():
+			inher = defin = None 
+			if self._inherited_attributes.has_key(k):
+				inher = self._inherited_attributes[k]
+			if self._defined_attributes.has_key(k):
+				defin = self._defined_attributes[k]
+			result.append( (k,defin,inher) )
 		return result
 		
 class Host(ObjectDefinition):
@@ -292,7 +331,7 @@ class:
 string_to_class = {}
 string_to_class['contact'] = Contact
 string_to_class['service'] = Service
-string_to_class['Host'] = Host
+string_to_class['host'] = Host
 string_to_class['hostgroup'] = Hostgroup
 string_to_class['contactgroup'] = Contactgroup
 string_to_class['servicegroup'] = Servicegroup
@@ -311,8 +350,26 @@ if __name__ == '__main__':
 	#host['alias'] = 'pall.sigurdsson.is'
 	#print host['alias']
 	#print host.save()
-	o = ObjectDefinition('contact')
-	print o
+	#o = ObjectDefinition('contact')
+	host = Host.objects.all[0]
+	#print host.__str__().__hash__()
+	#print host.get_attribute_tuple()
+	#print host.keys()
+	#print host.has_key('name')
+	#c = Contact.objects.filter(name="generic-contact")
+	#for i in c:
+	#	print i['name']
+	#print c
+	#3675388337418840039
+	
+	host = ObjectDefinition.objects.filter(object_type="contact")
+	print len(host), "hosts found"
+	#print len(host)
+	#print host[0]['object_type']
+	#print host.__str__().__hash__()
+	#host['hash'] = host.__hash__
+	
+	#print host.__hash__()
 	
 	
 	
