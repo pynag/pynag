@@ -49,14 +49,23 @@ def debug(text):
 
 
 
-def contains(str1,str2):
+def contains(str1, str2):
 	'Returns True if str1 contains str2'
 	if str1.find(str2) > -1: return True
 
-def not_contains(str1,str2):
+def not_contains(str1, str2):
 	'Returns True if str1 does not contain str2'
-	return not contains(str1,str2)
+	return not contains(str1, str2)
 
+def is_a_field(str1, str2):
+	'''Returns True if str2 is a field in str1
+	
+	For this purpose the string 'example' is a field in '+this,is,an,example'
+	'''
+	str1 = str1.strip('+')
+	str1 = str1.split(',')
+	if str2 in str1: return True
+	return False
 class ObjectFetcher(object):
 	'''
 	This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
@@ -72,17 +81,18 @@ class ObjectFetcher(object):
 			return self.objects
 		if self.object_type != None:
 			key_name = "all_%s" % (self.object_type)
-			if not config.data.has_key( key_name ):
+			if not config.data.has_key(key_name):
 				return []
 			objects = config.data[ key_name ]
 		else:
 			# If no object type was requested
 			objects = []
-			for k,v in config.data.items():
+			for v in config.data.values():
 				objects += v
 		for i in objects:
-			i = ObjectDefinition( item=i )
-			self.objects.append( i )
+			Class = string_to_class[ i['meta']['object_type'] ]
+			i = Class(item=i)
+			self.objects.append(i)
 		return self.objects
 	def filter(self, **kwargs):
 		'''
@@ -113,9 +123,14 @@ class ObjectFetcher(object):
 		Service.objects.filter(name__isnot=None)
 		'''
 		result = []
+		# Lets convert all values to str()
+		tmp = {}
+		for k,v in kwargs.items():
+			tmp[str(k)] = str(v)
+		kwargs = tmp
 		for i in self.all:
 			object_matches = True
-			for k,v in kwargs.items():
+			for k, v in kwargs.items():
 				if k.endswith('__startswith'):
 					k = k[:-12]
 					match_function = str.startswith
@@ -128,29 +143,32 @@ class ObjectFetcher(object):
 				elif k.endswith('__contains'):
 					k = k[:-10]
 					match_function = contains
+				elif k.endswith('__is_a_field'):
+					k = k[:-12]
+					match_function = is_a_field
 				elif k.endswith('__notcontains'):
 					k = k[:-13]
 					match_function = not_contains
 				else:
 					match_function = str.__eq__
 				if k == 'id':
-					if i['host_name']=='pall.sigurdsson.is':
+					if i['host_name'] == 'pall.sigurdsson.is':
 						print "lets do this"
 						id1 = v
 						id2 = i.__str__().__hash__()
 				if k == 'id' and str(v) == str(i.get_id()):
-					object_matches=True
+					object_matches = True
 					break
-				if v == None and not i.has_key( k ):
+				if v == None and not i.has_key(k):
 					continue
-				if not i.has_key( k ):
-					object_matches=False
+				if not i.has_key(k):
+					object_matches = False
 					break
 				if not match_function(i[k], v):
-					object_matches=False
+					object_matches = False
 					break
 			if object_matches:
-				result.append( i )
+				result.append(i)
 		return result		
 
 
@@ -162,12 +180,12 @@ class ObjectDefinition(object):
 		my_object ObjectDefinition( dict ) # dict = hash map of configuration attributes
 	'''
 	object_type = None
-	objects = ObjectFetcher( None )
+	objects = ObjectFetcher(None)
 	def __init__(self, item):
 		self.object_type = item['meta']['object_type']
 		
 		# self.objects is a convenient way to access more objects of the same type
-		self.objects = ObjectFetcher( self.object_type )
+		self.objects = ObjectFetcher(self.object_type)
 		# self.data -- This dict stores all effective attributes of this objects
 		self._original_attributes = item
 		
@@ -193,6 +211,8 @@ class ObjectDefinition(object):
 	def __getitem__(self, key):
 		if key == 'id':
 			return self.get_id()
+		if key == 'description':
+			return self.get_description()
 		if self._changes.has_key(key):
 			return self._changes[key]
 		elif self._defined_attributes.has_key(key):
@@ -236,7 +256,7 @@ class ObjectDefinition(object):
 			Number of changes made to the object
 		"""
 		number_of_changes = 0
-		for field_name,new_value in self._changes.items():
+		for field_name, new_value in self._changes.items():
 			save_result = config.edit_object(item=self._original_attributes, field_name=field_name, new_value=new_value)
 			if save_result == True:
 				self._defined_attributes[field_name] = new_value
@@ -249,7 +269,7 @@ class ObjectDefinition(object):
 		return_buffer = "define %s {\n" % (self.object_type)
 		fields = self.keys()
 		fields.sort()
-		interesting_fields = ['service_description','use','name','host_name']
+		interesting_fields = ['service_description', 'use', 'name', 'host_name']
 		for i in interesting_fields:
 			if i in fields:
 				fields.remove(i)
@@ -258,18 +278,83 @@ class ObjectDefinition(object):
 		for key in fields:
 			if key == 'meta': continue
 			value = self[key]
-			return_buffer = return_buffer + "\t%s = %s\n" %(key,value)
+			return_buffer = return_buffer + "\t%s = %s\n" % (key, value)
 		return_buffer = return_buffer + "}\n\n"
 		return return_buffer
 	def __repr__(self):
-		result=""
+		result = ""
 		result += "%s: " % self.__class__.__name__
-		for i in  ['host_name','name','use','service_description']:
+		for i in  ['host_name', 'name', 'use', 'service_description']:
 			if self.has_key(i):
-				result += " %s=%s " % (i,self[i])
+				result += " %s=%s " % (i, self[i])
 			else:
 				result += "%s=None " % (i)
 		return result
+	def get_description(self):
+		raise NotImplementedError()
+	def get_effective_parents(self):
+		""" Get all objects that this one inherits via "use" attribute
+		Returns:
+			a list of ObjectDefinition objects
+		"""
+		if not self.has_key('use'):
+			return []
+		results = []
+		use = self['use'].split(',')
+		for parent_name in use:
+			results.append( self.objects.filter(name=parent_name)[0] )
+		return results
+	def get_effective_hostgroups(self):
+		"""Get all hostgroups that this object belongs to (not just the ones it defines on its own
+		
+		How can a hostgroup be linked to this object:
+			1) This object has hostgroups defined via "hostgroups" attribute
+			2) This object inherits hostgroups attribute from a parent
+			3) A hostgroup names this object via members attribute
+			4) A hostgroup names another hostgroup via hostgroup_members attribute
+			5) A hostgroup inherits (via use) from a hostgroup who names this host
+		"""
+		result = []
+		parent_results = []
+		hostgroup_list = []
+		# Case 1:
+		if self.has_key('hostgroups'):
+			grp = self['hostgroups']
+			grp = grp.split(',')
+			for i in grp:
+				i = i.strip('+')
+				i = Hostgroup.objects.filter(hostgroup_name=i)[0]
+				if not i in result: result.append(i)
+		# Case 2:
+		if not self.has_key('hostgroups') or self['hostgroups'].startswith('+'):
+			parents = self.get_effective_parents()
+			for parent in parents:
+				parent_results += parent.get_effective_hostgroups()
+		
+		# Case 3:
+		if self.has_key('host_name'):
+			host_name = self['host_name']
+			# We will use hostgroup_list in case 4 and 5 as well
+			hostgroup_list = Hostgroup.objects.filter(members__is_a_field=self['host_name'])
+			for hg in hostgroup_list:
+					if hg not in result:
+						result.append( hg )
+		# Case 4:	
+		for hg in hostgroup_list:
+			if not hg.has_key('hostgroup_name'): continue
+			grp = Hostgroup.objects.filter(hostgroup_members__is_a_field=hg['hostgroup_name'])
+			for i in grp:
+				if i not in result:
+					result.append(i )
+		# Case 5:
+		for hg in hostgroup_list:
+			if not hg.has_key('hostgroup_name'): continue
+			grp = Hostgroup.objects.filter(use__is_a_field=hg['hostgroup_name'])
+			for i in grp:
+				if i not in result:
+					result.append(i )
+		return result
+		
 	def get_attribute_tuple(self):
 		""" Returns all relevant attributes in the form of:
 		
@@ -282,34 +367,57 @@ class ObjectDefinition(object):
 				inher = self._inherited_attributes[k]
 			if self._defined_attributes.has_key(k):
 				defin = self._defined_attributes[k]
-			result.append( (k,defin,inher) )
+			result.append((k, defin, inher))
 		return result
 		
 class Host(ObjectDefinition):
 	object_type = 'host'
-	objects = ObjectFetcher( 'host' )
+	objects = ObjectFetcher('host')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['host_name']
 class Service(ObjectDefinition):
 	object_type = 'service'
-	objects = ObjectFetcher( 'service' )
+	objects = ObjectFetcher('service')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return "%s/%s" % (self['host_name'], self['service_description'])
 class Command(ObjectDefinition):
 	object_type = 'command'
-	objects = ObjectFetcher( 'command' )
+	objects = ObjectFetcher('command')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['command_name']
 class Contact(ObjectDefinition):
 	object_type = 'contact'
-	objects = ObjectFetcher( 'contact' )
+	objects = ObjectFetcher('contact')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['contact_name']	
 class Contactgroup(ObjectDefinition):
 	object_type = 'contactgroup'
-	objects = ObjectFetcher( 'contactgroup' )
+	objects = ObjectFetcher('contactgroup')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['contactgroup_name']
 class Hostgroup(ObjectDefinition):
 	object_type = 'hostgroup'
-	objects = ObjectFetcher( 'hostgroup' )
+	objects = ObjectFetcher('hostgroup')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['hostgroup_name']
 class Servicegroup(ObjectDefinition):
 	object_type = 'servicegroup'
-	objects = ObjectFetcher( 'servicegroup' )
+	objects = ObjectFetcher('servicegroup')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['servicegroup_name']
 class Timeperiod(ObjectDefinition):
 	object_type = 'timeperiod'
-	objects = ObjectFetcher( 'timeperiod' )
-
+	objects = ObjectFetcher('timeperiod')
+	def get_description(self):
+		""" Returns a friendly description of the object """
+		return self['timeperiod_name']
 '''
 def Property(func):
 	return property(**func())
@@ -337,6 +445,7 @@ string_to_class['contactgroup'] = Contactgroup
 string_to_class['servicegroup'] = Servicegroup
 string_to_class['timeperiod'] = Timeperiod
 string_to_class['command'] = Command
+string_to_class[None] = ObjectDefinition
 
 if __name__ == '__main__':
 	starttime = time.time()
@@ -362,14 +471,16 @@ if __name__ == '__main__':
 	#print c
 	#3675388337418840039
 	
-	host = ObjectDefinition.objects.filter(object_type="contact")
-	print len(host), "hosts found"
+	#host = ObjectDefinition.objects.filter(object_type="contact")
+	#print len(host), "hosts found"
 	#print len(host)
 	#print host[0]['object_type']
 	#print host.__str__().__hash__()
 	#host['hash'] = host.__hash__
+	h = Host.objects.filter(host_name='pall.sigurdsson.is')
+	for i in h:
+		print i.get_effective_hostgroups()
 	
-	#print host.__hash__()
 	
 	
 	
