@@ -235,14 +235,33 @@ class ObjectDefinition(object):
 		
 		#: _meta - Various metadata about the object
 		self._meta = item['meta']
-		#for k,v in self.data.items():
-		#	self.__setattr__(k,v)
+		
+		# Lets create dynamic convenience properties for each item
+		for k in self._original_attributes.keys():
+			if k == 'meta': continue
+			self._add_property(k)
+
+	def _add_property(self, name):
+		''' Creates dynamic properties for every attribute of out definition.
+		
+		i.e. this makes sure host_name attribute is accessable as self.host_name
+		
+		Returns: None
+		'''
+		fget = lambda self: self.get_attribute(name)
+		fset = lambda self, value: self.set_attribute(name, value)
+		setattr( self.__class__, name, property(fget,fset))
+	def get_attribute(self, attribute_name):
+		'Get one attribute from our object definition'
+		return self[attribute_name]
+	def set_attribute(self, attribute_name, attribute_value):
+		'Set (but does not save) one attribute in our object'
+		self[attribute_name] = attribute_value
 	def is_dirty(self):
 		"Returns true if any attributes has been changed on this object, and therefore it needs saving"
 		return len(self._changes.keys()) == 0
 	def __setitem__(self, key, item):
 		self._changes[key] = item
-		#self.data[key] = item
 	def __getitem__(self, key):
 		if key == 'id':
 			return self.get_id()
@@ -250,6 +269,8 @@ class ObjectDefinition(object):
 			return self.get_description()
 		if key == 'register' and not self._defined_attributes.has_key('register'):
 			return "1"
+		if key == 'meta':
+			return self._meta
 		if self._changes.has_key(key):
 			return self._changes[key]
 		elif self._defined_attributes.has_key(key):
@@ -262,16 +283,9 @@ class ObjectDefinition(object):
 			return None
 	def has_key(self, key):
 		return key in self.keys()
-		if self._changes.has_key(key):
-			return True
-		elif self._defined_attributes.has_key(key):
-			return True
-		elif self._inherited_attributes.has_key(key):
-			return True
-		else:
-			return False
+
 	def keys(self):
-		all_keys = []
+		all_keys = ['meta']
 		for k in self._changes.keys():
 			if k not in all_keys: all_keys.append(k)
 		for k in self._inherited_attributes.keys():
@@ -281,8 +295,6 @@ class ObjectDefinition(object):
 		for k in self._meta.keys():
 			if k not in all_keys: all_keys.append(k)
 		return all_keys
-	def items(self):
-		return self._original_attributes.items()
 	def get_id(self):
 		""" Return a unique ID for this object"""
 		return self.__str__().__hash__()
@@ -321,7 +333,7 @@ class ObjectDefinition(object):
 	def __repr__(self):
 		result = ""
 		result += "%s: " % self.__class__.__name__
-		for i in  ['host_name', 'name', 'use', 'service_description']:
+		for i in  ['object_type', 'host_name', 'name', 'use', 'service_description']:
 			if self.has_key(i):
 				result += " %s=%s " % (i, self[i])
 			else:
@@ -372,7 +384,6 @@ class ObjectDefinition(object):
 		
 		# Case 3:
 		if self.has_key('host_name'):
-			host_name = self['host_name']
 			# We will use hostgroup_list in case 4 and 5 as well
 			hostgroup_list = Hostgroup.objects.filter(members__is_a_field=self['host_name'])
 			for hg in hostgroup_list:
@@ -457,23 +468,6 @@ class Timeperiod(ObjectDefinition):
 	def get_description(self):
 		""" Returns a friendly description of the object """
 		return self['timeperiod_name']
-'''
-def Property(func):
-	return property(**func())
-class:
-	@Property
-	def service_description():
-		doc = "The service_description of this object (if it has any)"
-		def fget(self):
-			if self.data.has_key('service_description'):
-				return self.data['service_description']
-		def fset(self, value):
-			self.data['service_description'] = value
-		return locals()
-	def __strs__(self):
-		return "%-30s %-30s %-30s" % (str(self['name']), str(self['host_name']), str(self['service_description']))
-
-'''
 
 string_to_class = {}
 string_to_class['contact'] = Contact
@@ -516,10 +510,16 @@ if __name__ == '__main__':
 	#print host[0]['object_type']
 	#print host.__str__().__hash__()
 	#host['hash'] = host.__hash__
-	hosts = Service.objects.filter(host_name=None,register="1")
-	for i in hosts:
-		print i['host_name'],i['name']
-	print len(hosts)
+	#hosts = Service.objects.filter(host_name=None,register="1")
+	#for i in hosts:
+	#	print i['host_name'],i['name']
+	#print len(hosts)
+	h = Service.objects.filter(use='tester97,windows-check_cpu')
+	for i in h:
+		#print i['meta']
+		config.object_remove(i._original_attributes)
+		print "%s removed" % i.host_name
+		break
 
 def _test_get_by_id():
 	'Do a quick unit test of the ObjectDefinition.get_by_id'
