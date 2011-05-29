@@ -3,7 +3,7 @@
 import sys
 import os
 import re
-#sys.path.insert(1, '/opt/pynag')
+sys.path.insert(1, '/opt/pynag')
 from pynag.Parsers import config
 import time
 
@@ -94,6 +94,20 @@ class ObjectFetcher(object):
 			i = Class(item=i)
 			self.objects.append(i)
 		return self.objects
+	def get_by_id(self, id):
+		''' Get one specific object
+		
+		Returns:
+			ObjectDefinition
+		Raises:
+			ValueError if object is not found
+		'''
+		id = int(id)
+		for item in self.all:
+			item_id = item['id']
+			if item['id'] == id:
+				return item
+		raise ValueError('No object with ID=%s found'% (id))
 	def filter(self, **kwargs):
 		'''
 		Returns all objects that match the selected filter
@@ -122,11 +136,17 @@ class ObjectFetcher(object):
 		# Get all services with non-empty name
 		Service.objects.filter(name__isnot=None)
 		'''
+		# TODO: Better testing of these cases:
+		# register = 1
+		# id attribute
+		# any attribute = None or 'None'
 		result = []
 		# Lets convert all values to str()
 		tmp = {}
 		for k,v in kwargs.items():
-			tmp[str(k)] = str(v)
+			k = str(k)
+			if v != None: v = str(v)
+			tmp[k] = v
 		kwargs = tmp
 		for i in self.all:
 			object_matches = True
@@ -151,17 +171,17 @@ class ObjectFetcher(object):
 					match_function = not_contains
 				else:
 					match_function = str.__eq__
-				if k == 'id':
-					if i['host_name'] == 'pall.sigurdsson.is':
-						print "lets do this"
-						id1 = v
-						id2 = i.__str__().__hash__()
 				if k == 'id' and str(v) == str(i.get_id()):
 					object_matches = True
 					break
-				if v == None and not i.has_key(k):
+				if k == 'register' and v == '1' and not i.has_key(k):
+					'not defined means item is registered'
 					continue
+				if v == None and i.has_key(k):
+					object_matches = False
+					break
 				if not i.has_key(k):
+					if v == None: continue # if None was the search attribute
 					object_matches = False
 					break
 				if not match_function(i[k], v):
@@ -213,6 +233,8 @@ class ObjectDefinition(object):
 			return self.get_id()
 		if key == 'description':
 			return self.get_description()
+		if key == 'register' and not self._defined_attributes.has_key('register'):
+			return "1"
 		if self._changes.has_key(key):
 			return self._changes[key]
 		elif self._defined_attributes.has_key(key):
@@ -314,6 +336,7 @@ class ObjectDefinition(object):
 			4) A hostgroup names another hostgroup via hostgroup_members attribute
 			5) A hostgroup inherits (via use) from a hostgroup who names this host
 		"""
+		# TODO: Need error handling when object defines hostgroups but hostgroup does not exist
 		result = []
 		parent_results = []
 		hostgroup_list = []
@@ -323,6 +346,7 @@ class ObjectDefinition(object):
 			grp = grp.split(',')
 			for i in grp:
 				i = i.strip('+')
+				print self['hostgroups']
 				i = Hostgroup.objects.filter(hostgroup_name=i)[0]
 				if not i in result: result.append(i)
 		# Case 2:
@@ -477,10 +501,18 @@ if __name__ == '__main__':
 	#print host[0]['object_type']
 	#print host.__str__().__hash__()
 	#host['hash'] = host.__hash__
-	h = Host.objects.filter(host_name='pall.sigurdsson.is')
-	for i in h:
-		print i.get_effective_hostgroups()
-	
-	
-	
+	hosts = Service.objects.filter(host_name=None,register="1")
+	for i in hosts:
+		print i['host_name'],i['name']
+	print len(hosts)
+
+def _test_get_by_id():
+	'Do a quick unit test of the ObjectDefinition.get_by_id'
+	hosts = Host.objects.all
+	for h in hosts:
+		id = h.get_id()
+		h2 = Host.objects.get_by_id(id)
+		if h.get_id() != h2.get_id():
+			return False
+	return True
 	
