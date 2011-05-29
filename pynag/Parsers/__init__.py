@@ -4,7 +4,6 @@ import sys
 import os
 import re
 from optparse import OptionParser
-from pynag.NObject import *
 
 """
 Python Nagios extensions
@@ -130,6 +129,8 @@ class config:
 		"""
 		Apply all attributes of item named parent_name to "original_item".
 		"""
+		# TODO: Performance optimization. Don't recursively call _apply_template on hosts we have already
+		# applied templates to.
 		if not original_item.has_key('use'):
 			return original_item
 		object_type = original_item['meta']['object_type']
@@ -272,19 +273,34 @@ class config:
 		if in_definition:
 			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
 			sys.exit(2)
-
-	def edit_object(self,item, field_name, new_value):
+	def _locate_object(self, item):
 		"""
-		Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
+		This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
+		file which is configured in, and locates exactly the lines which contain that definition.
 		
-		Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+		Returns tuple:
+			(everything_before, object_definition, everything_after, filename)
+			everything_before(string) - Every line in filename before object was defined
+			everything_after(string) - Every line in "filename" after object was defined
+			object_definition - exact configuration of the object as it appears in "filename"
+			filename - file in which the object was written to
+		Raises:
+			ValueError if object was not found in "filename"
 		"""
-		filename = item['meta']['filename']
+		if item['meta'].has_key("filename"):
+			filename = item['meta']['filename']
+		else:
+			raise ValueError("item does not have a filename")
 		file = open(filename)
-		buffer = []
+		object_has_been_found = False
+		everything_before = [] # Every line before our object definition
+		everything_after = []  # Every line after our object definition
+		object_definition = [] # List of every line of our object definition
 		i_am_within_definition = False
-		change = None
 		for line in file.readlines():
+			if object_has_been_found:
+				everything_after.append( line )
+				continue
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
 				keyword = ''
@@ -308,7 +324,7 @@ class config:
 			if i_am_within_definition == True:
 				tmp_buffer.append( line )
 			else:
-				buffer.append( line )
+				everything_before.append( line )
 			if len(keyword) > 0 and keyword[0] == '}':
 				i_am_within_definition = False
 				current_definition = {}
@@ -339,32 +355,176 @@ class config:
 				# Compare objects
 				if self.compareObjects( item, current_definition ) == True:
 					'This is the object i am looking for'
-					change = "\t %-30s %s\n" % (field_name, new_value)
-					for i in range( len(tmp_buffer)):
-						tmp = tmp_buffer[i].split(None, 1)
-						if len(tmp) == 0: continue
-						k = tmp[0].strip()
-						if k == field_name:
-							'Attribute was found, lets overwrite this line'
-							tmp_buffer[i] = change
-							break
-						elif k == '}':
-							'Attribute was not found, lets insert it'
-							tmp_buffer.insert(i, change)
-				# If tmp_buffer contains any data, we merge it back to the main buffer
-				for i in tmp_buffer:
-					buffer.append(i)
-				tmp_buffer = []
+					object_has_been_found = True
+					object_definition = tmp_buffer
+		if object_has_been_found:
+			return (everything_before, object_definition, everything_after, filename)
+		else:
+			raise ValueError("We could not find object in %s" % filename)
+	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None):
+		'''
+		Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
+		If new_value and new_field_name are both None, the attribute is removed.
+		
+		Arguments:
+			item(dict) -- The item to be modified
+			field_name(str) -- The field_name to modify (if any)
+			new_field_name(str) -- If set, field_name will be renamed
+			new_value(str) -- If set the value of field_name will be changed
+			new_item(str) -- If set, whole object will be replaced with this string
+		Returns:
+			True on success
+		Raises:
+			ValueError if object or field_name is not found
+			IOError is save is unsuccessful.
+		'''
+		print "Something is going on with %s" % item['host_name']
+		if field_name is None and new_item is None:
+			raise ValueError("either field_name or new_item must be set")
+		everything_before,object_definition, everything_after, filename = self._locate_object(item)
+		if new_item is not None:
+			'We have instruction on how to write new object, so we dont need to parse it'
+			change = True
+			object_definition = [new_item]
+		else:
+			change = None
+			for i in range( len(object_definition)):
+				tmp = object_definition[i].split(None, 1)
+				if len(tmp) == 0: continue
+				if len(tmp) == 1: value = ''
+				if len(tmp) == 2: value = tmp[1]
+				k = tmp[0].strip()
+				if k == field_name:
+					'Attribute was found, lets change this line'
+					if not new_field_name and not new_value:
+						'We take it that we are supposed to remove this attribute'
+						change = object_definition.pop(i)
+						break
+					elif new_field_name:
+						'Field name has changed'
+						k = new_field_name
+					if new_value:
+						'value has changed '
+						value = new_value
+					# Here we do the actual change	
+					change = "\t %-30s %s\n" % (k, value)
+					object_definition[i] = change
+					break
+			if not change:
+					'Attribute was not found, lets throw up an exception indicating the field was not found'
+					raise ValueError( 'attribute %s was not found.' % field_name)
+
 		# Here we overwrite the config-file, hoping not to ruin anything
+		buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
 		file = open(filename,'w')
-		buffer = ''.join( buffer )
 		file.write( buffer )
 		file.close()
-		if change == None:
-			return False
-		else:
-			#print change
-			return True
+		return True		
+	def object_rewrite(self, item, str_new_item):
+		"""
+		Completely rewrites item with string provided.
+		
+		Arguments:
+			item -- Item that is to be rewritten
+			str_new_item -- str representation of the new item
+		Examples:
+			object_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+		Returns:
+			True on success
+		Raises:
+			ValueError if object is not found
+			IOError if save fails
+		"""
+		return self._modify_object(item=item, new_item=str_new_item)
+	def object_remove(self, item):
+		"""
+		Completely rewrites item with string provided.
+		
+		Arguments:
+			item -- Item that is to be rewritten
+			str_new_item -- str representation of the new item
+		Examples:
+			object_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+		Returns:
+			True on success
+		Raises:
+			ValueError if object is not found
+			IOError if save fails
+		"""
+		return self._modify_object(item=item, new_item="")
+
+	def object_edit_field(self, item, field_name, new_value):
+		"""
+		Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+		
+		Example usage:
+			edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+		Returns:
+			True on success
+		Raises:
+			ValueError if object is not found
+			IOError if save fails
+		"""
+		return self._modify_object(item, field_name=field_name, new_value=new_value)
+	
+	def object_remove_field(self, item, field_name):
+		"""
+		Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+		
+		Example usage:
+			object_remove_field( item, field_name="contactgroups" )
+		Returns:
+			True on success
+		Raises:
+			ValueError if object is not found
+			IOError if save fails
+		"""
+		return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
+	
+	def object_rename_field(self, item, old_field_name, new_field_name):
+		"""
+		Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
+		
+		Example usage:
+			object_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
+		Returns:
+			True on success
+		Raises:
+			ValueError if object is not found
+			IOError if save fails
+		"""
+		return self._modify_object(item=item, field_name=old_field_name, new_field_name=new_field_name)
+	def object_add(self, item, filename):
+		"""
+		Adds a new object to a specified config file
+		
+		Arguments:
+			item -- Item to be created
+			filename -- Filename that we are supposed to write to
+		Returns:
+			True on success
+		Raises:
+			IOError on failed save
+		"""
+		if not 'meta' in item:
+			item['meta'] = {}
+		item['meta']['filename'] = filename
+		
+		buffer = self.print_conf( item )
+		file = open(filename,'a')
+		file.write( buffer )
+		file.close()
+		return True		
+			
+	def edit_object(self,item, field_name, new_value):
+		"""
+		Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
+		
+		Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+		
+		THIS FUNCTION IS DEPRECATED. USE object_edit_field() instead
+		"""
+		return self.object_edit_field(item=item, field_name=field_name, new_value=new_value)
 
 	def compareObjects(self, item1, item2):
 		"""
@@ -935,5 +1095,5 @@ class status:
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
 	c.parse()
-	for i in c.data['all_host']:
-		print i['meta']
+	#for i in c.data['all_host']:
+	#	print i['meta']
