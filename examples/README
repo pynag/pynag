@@ -1,0 +1,12 @@
+This Directory Contains Examples for how to use the pynag library to manipulate Nagios Configurations.
+
+These examples are split into the following directories:
+
+* Model:
+Examples on high-level config manipulation with the Model module
+
+* Parsers:
+Examples on low-level configuration with the Parsers.config module
+
+* Plugins
+Creating nagios plugins with the Plugin module
