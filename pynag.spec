@@ -50,7 +50,13 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --prefix=/usr --root=$RPM_BUILD_ROOT
 #mkdir -p $RPM_BUILD_ROOT/usr/share/pynag
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples
-install -m 755 examples/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/
+install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model
+install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers
+install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins
+install -m 755 examples/README $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/
+install -m 755 examples/Model/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model/
+install -m 755 examples/Parsers/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers/
+install -m 755 examples/Plugins/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins/
 
 %clean
 rm -fr $RPM_BUILD_ROOT
@@ -80,7 +86,13 @@ rm -fr $RPM_BUILD_ROOT
 %files examples
 %defattr(-, root, root, -)
 %dir %{_datadir}/%{name}/examples
-%{_datadir}/%{name}/examples/*
+%dir %{_datadir}/%{name}/examples/Model
+%dir %{_datadir}/%{name}/examples/Parsers
+%dir %{_datadir}/%{name}/examples/Plugins
+%{_datadir}/%{name}/examples/README
+%{_datadir}/%{name}/examples/Model/*
+%{_datadir}/%{name}/examples/Parsers/*
+%{_datadir}/%{name}/examples/Plugins/*
 %doc AUTHORS README LICENSE CHANGES
 
 %changelog
