@@ -3,7 +3,6 @@
 import sys
 import os
 import re
-from optparse import OptionParser
 
 """
 Python Nagios extensions
@@ -130,10 +129,14 @@ class config:
 		Apply all attributes of item named parent_name to "original_item".
 		"""
 		# TODO: Performance optimization. Don't recursively call _apply_template on hosts we have already
-		# applied templates to.
+		# applied templates to. This needs more work.
 		if not original_item.has_key('use'):
 			return original_item
 		object_type = original_item['meta']['object_type']
+		# Performance tweak, if item has been parsed. Lets not do it again
+		if original_item.has_key('name') and self.item_apply_cache[object_type].has_key( original_item['name'] ):
+			return self.item_apply_cache[object_type][ original_item['name'] ]
+		# End of performance tweak
 		parent_names = original_item['use'].split(',')
 		parent_items = []
 		for parent_name in parent_names:
@@ -143,7 +146,7 @@ class config:
 				error_string = error_string + self.print_conf(original_item)
 				raise Exception(error_string)
 			# Parent item probably has use flags on its own. So lets apply to parent first
-			parent_item = self._apply_template( parent_item)
+			parent_item = self._apply_template( parent_item )
 			parent_items.append( parent_item )
 		for parent_item in parent_items:
 			for k,v in parent_item.iteritems():
@@ -159,6 +162,8 @@ class config:
 				if not original_item.has_key(k):
 					original_item[k] = v
 					original_item['meta']['template_fields'].append(k)
+		if original_item.has_key('name'):
+			self.item_apply_cache[object_type][ original_item['name'] ] = original_item
 		return original_item
 
 			
@@ -378,7 +383,6 @@ class config:
 			ValueError if object or field_name is not found
 			IOError is save is unsuccessful.
 		'''
-		print "Something is going on with %s" % item['host_name']
 		if field_name is None and new_item is None:
 			raise ValueError("either field_name or new_item must be set")
 		everything_before,object_definition, everything_after, filename = self._locate_object(item)
@@ -750,22 +754,22 @@ class config:
 
 	def _post_parse(self):
 		self.item_list = None
+		self.item_apply_cache = {} # This is performance tweak used by _apply_template
 		for raw_item in self.pre_object_list:
-			raw_item = self._apply_template( raw_item )
+			# Performance tweak, make sure hashmap exists for this object_type
+			object_type = raw_item['meta']['object_type']
+			if not self.item_apply_cache.has_key( object_type ):
+				self.item_apply_cache[ object_type ] = {}
+			# Tweak ends
+			if raw_item.has_key('use'):
+				raw_item = self._apply_template( raw_item )
 			self.post_object_list.append(raw_item)
-
 		## Add the items to the class lists.  
 		for list_item in self.post_object_list:
 			type_list_name = "all_%s" % list_item['meta']['object_type']
 			if not self.data.has_key(type_list_name):
 				self.data[type_list_name] = []
 
-			'''
-			is_template = None
-			if list_item.has_key('register'):
-				if list_item['register'] == '0':
-					is_template = True
-			'''
 			self.data[type_list_name].append(list_item)
 	def commit(self):
 		"""
