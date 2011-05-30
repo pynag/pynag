@@ -178,6 +178,18 @@ class config:
 				if item['meta']['filename'] == filename:
 					return_list.append(item)
 		return return_list
+	def get_new_item(self, object_type, filename):
+		''' Returns an empty item with all necessary metadata '''
+		current = {}
+		current['meta'] = {}
+		current['meta']['object_type'] = object_type
+		current['meta']['filename'] = filename
+		current['meta']['template_fields'] = []
+		current['meta']['needs_commit'] = None
+		current['meta']['delete_me'] = None
+		current['meta']['defined_attributes'] = {}
+		current['meta']['inherited_attributes'] = {}
+		return current
 
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
@@ -220,15 +232,8 @@ class config:
 			if m:
 				object_type = m.groups()[0]
 				#current = NObject(object_type, filename)
-				current = {}
-				current['meta'] = {}
-				current['meta']['object_type'] = object_type
-				current['meta']['filename'] = filename
-				current['meta']['template_fields'] = []
-				current['meta']['needs_commit'] = None
-				current['meta']['delete_me'] = None
-				current['meta']['defined_attributes'] = {}
-				current['meta']['inherited_attributes'] = {}
+				current = self.get_new_item(object_type, filename)
+
 
 				if in_definition:
 					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
@@ -332,12 +337,8 @@ class config:
 				everything_before.append( line )
 			if len(keyword) > 0 and keyword[0] == '}':
 				i_am_within_definition = False
-				current_definition = {}
-				current_definition['meta'] = {'object_type':current_object_type}
-				current_definition['meta']['template_fields'] = []
-				current_definition['meta']['filename'] = item['meta']['filename']
-				current_definition['meta']['defined_attributes'] = {}
-				current_definition['meta']['inherited_attributes'] = {}
+				
+				current_definition = self.get_new_item(object_type=current_object_type, filename=filename)
 				for i in tmp_buffer:
 					i = i.strip()
 					tmp = i.split(None, 1)
@@ -424,7 +425,7 @@ class config:
 		file.write( buffer )
 		file.close()
 		return True		
-	def object_rewrite(self, item, str_new_item):
+	def item_rewrite(self, item, str_new_item):
 		"""
 		Completely rewrites item with string provided.
 		
@@ -432,7 +433,7 @@ class config:
 			item -- Item that is to be rewritten
 			str_new_item -- str representation of the new item
 		Examples:
-			object_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+			item_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
 		Returns:
 			True on success
 		Raises:
@@ -440,7 +441,7 @@ class config:
 			IOError if save fails
 		"""
 		return self._modify_object(item=item, new_item=str_new_item)
-	def object_remove(self, item):
+	def item_remove(self, item):
 		"""
 		Completely rewrites item with string provided.
 		
@@ -448,7 +449,7 @@ class config:
 			item -- Item that is to be rewritten
 			str_new_item -- str representation of the new item
 		Examples:
-			object_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+			item_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
 		Returns:
 			True on success
 		Raises:
@@ -457,7 +458,7 @@ class config:
 		"""
 		return self._modify_object(item=item, new_item="")
 
-	def object_edit_field(self, item, field_name, new_value):
+	def item_edit_field(self, item, field_name, new_value):
 		"""
 		Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
 		
@@ -471,12 +472,12 @@ class config:
 		"""
 		return self._modify_object(item, field_name=field_name, new_value=new_value)
 	
-	def object_remove_field(self, item, field_name):
+	def item_remove_field(self, item, field_name):
 		"""
 		Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
 		
 		Example usage:
-			object_remove_field( item, field_name="contactgroups" )
+			item_remove_field( item, field_name="contactgroups" )
 		Returns:
 			True on success
 		Raises:
@@ -485,12 +486,12 @@ class config:
 		"""
 		return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
 	
-	def object_rename_field(self, item, old_field_name, new_field_name):
+	def item_rename_field(self, item, old_field_name, new_field_name):
 		"""
 		Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
 		
 		Example usage:
-			object_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
+			item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
 		Returns:
 			True on success
 		Raises:
@@ -498,7 +499,7 @@ class config:
 			IOError if save fails
 		"""
 		return self._modify_object(item=item, field_name=old_field_name, new_field_name=new_field_name)
-	def object_add(self, item, filename):
+	def item_add(self, item, filename):
 		"""
 		Adds a new object to a specified config file
 		
@@ -526,9 +527,9 @@ class config:
 		
 		Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
 		
-		THIS FUNCTION IS DEPRECATED. USE object_edit_field() instead
+		THIS FUNCTION IS DEPRECATED. USE item_edit_field() instead
 		"""
-		return self.object_edit_field(item=item, field_name=field_name, new_value=new_value)
+		return self.item_edit_field(item=item, field_name=field_name, new_value=new_value)
 
 	def compareObjects(self, item1, item2):
 		"""
