@@ -15,13 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
-import re
-sys.path.insert(1, '/opt/pynag')
-from pynag.Parsers import config
-import time
-
 """
 This module provides a high level Object-Oriented wrapper around pynag.Parsers.config.
 
@@ -51,9 +44,22 @@ __email__ = "palli@opensource.is"
 __status__ = "Development"
 
 
+import sys
+import os
+import re
+sys.path.insert(1, '/opt/pynag')
+from pynag import Parsers
+import EventHandlers
+
+import time
+
+
 # Path To Nagios configuration file
 cfg_file = '/etc/nagios/nagios.cfg'
-config = config(cfg_file)
+
+config = None
+# TODO: Make this a lazy load, so config is only parsed when it needs to be.
+config = Parsers.config(cfg_file)
 config.parse()
 
 
@@ -117,10 +123,9 @@ class ObjectFetcher(object):
 		Raises:
 			ValueError if object is not found
 		'''
-		id = int(id)
+		id = str(id)
 		for item in self.all:
-			item_id = item['id']
-			if item['id'] == id:
+			if str(item['id']) == id:
 				return item
 		raise ValueError('No object with ID=%s found'% (id))
 	def filter(self, **kwargs):
@@ -216,7 +221,10 @@ class ObjectDefinition(object):
 	'''
 	object_type = None
 	objects = ObjectFetcher(None)
-	def __init__(self, item):
+	eventhandlers = []
+	def __init__(self, item=None):
+		if item == None:
+			item = config.get_new_item(object_type=self.object_type, filename=None)
 		self.object_type = item['meta']['object_type']
 		
 		# self.objects is a convenient way to access more objects of the same type
@@ -257,6 +265,8 @@ class ObjectDefinition(object):
 	def set_attribute(self, attribute_name, attribute_value):
 		'Set (but does not save) one attribute in our object'
 		self[attribute_name] = attribute_value
+		for i in self.eventhandlers:
+			i.debug(self, "attribute changed: %s = %s" % (attribute_name, attribute_value) )
 	def is_dirty(self):
 		"Returns true if any attributes has been changed on this object, and therefore it needs saving"
 		return len(self._changes.keys()) == 0
@@ -297,7 +307,15 @@ class ObjectDefinition(object):
 		return all_keys
 	def get_id(self):
 		""" Return a unique ID for this object"""
-		return self.__str__().__hash__()
+		#return self.__str__().__hash__()
+		object_type = self['object_type']
+		shortname = self.get_description()
+		object_name = self['name']
+		filename = self['filename']
+		id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
+		import md5
+		return md5.new(id).hexdigest()
+		return id
 	def save(self):
 		"""Saves any changes to the current object to its configuration file
 		
@@ -306,7 +324,7 @@ class ObjectDefinition(object):
 		"""
 		number_of_changes = 0
 		for field_name, new_value in self._changes.items():
-			save_result = config.edit_object(item=self._original_attributes, field_name=field_name, new_value=new_value)
+			save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
 			if save_result == True:
 				self._defined_attributes[field_name] = new_value
 				self._original_attributes[field_name] = new_value
@@ -325,10 +343,10 @@ class ObjectDefinition(object):
 				fields.insert(0, i)
 			
 		for key in fields:
-			if key == 'meta': continue
+			if key == 'meta' or key in self['meta'].keys(): continue
 			value = self[key]
-			return_buffer = return_buffer + "\t%s = %s\n" % (key, value)
-		return_buffer = return_buffer + "}\n\n"
+			return_buffer = return_buffer + "%-30s %s\n" % (key, value)
+		return_buffer = return_buffer + "}\n"
 		return return_buffer
 	def __repr__(self):
 		result = ""
@@ -341,6 +359,10 @@ class ObjectDefinition(object):
 		return result
 	def get_description(self):
 		raise NotImplementedError()
+	def get_shortname(self):
+		''' Returns a "shortname" for this object. For host, return host_name, for contact return contact_name, etc '''
+		raise NotImplementedError()
+		
 	def get_effective_parents(self):
 		""" Get all objects that this one inherits via "use" attribute
 		Returns:
@@ -481,45 +503,8 @@ string_to_class['command'] = Command
 string_to_class[None] = ObjectDefinition
 
 if __name__ == '__main__':
-	starttime = time.time()
-	#services = Service.objects.all
-	#pall_sigurdsson_services = Service.objects.filter(host_name='pall.sigurdsson.is')
-	#icelandic_services = Service.objects.filter(host_name__endswith='.is')
-	#endtime = time.time()
-	#duration=endtime-starttime
-	#print "Converted (%s) config objects to ObjectDefinitions in %s seconds" % (len(services), duration)
-	#host = Host.objects.filter(host_name='pall.sigurdsson.is')[0]
-	#host['alias'] = 'pall.sigurdsson.is'
-	#print host['alias']
-	#print host.save()
-	#o = ObjectDefinition('contact')
-	host = Host.objects.all[0]
-	#print host.__str__().__hash__()
-	#print host.get_attribute_tuple()
-	#print host.keys()
-	#print host.has_key('name')
-	#c = Contact.objects.filter(name="generic-contact")
-	#for i in c:
-	#	print i['name']
-	#print c
-	#3675388337418840039
-	
-	#host = ObjectDefinition.objects.filter(object_type="contact")
-	#print len(host), "hosts found"
-	#print len(host)
-	#print host[0]['object_type']
-	#print host.__str__().__hash__()
-	#host['hash'] = host.__hash__
-	#hosts = Service.objects.filter(host_name=None,register="1")
-	#for i in hosts:
-	#	print i['host_name'],i['name']
-	#print len(hosts)
-	h = Service.objects.filter(use='tester97,windows-check_cpu')
-	for i in h:
-		#print i['meta']
-		config.object_remove(i._original_attributes)
-		print "%s removed" % i.host_name
-		break
+	s = Service()
+	pass
 
 def _test_get_by_id():
 	'Do a quick unit test of the ObjectDefinition.get_by_id'
