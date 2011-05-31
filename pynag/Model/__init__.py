@@ -49,7 +49,7 @@ import os
 import re
 sys.path.insert(1, '/opt/pynag')
 from pynag import Parsers
-import EventHandlers
+#import EventHandlers
 
 import time
 
