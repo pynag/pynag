@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import time
 
 """
 Python Nagios extensions
@@ -283,7 +284,7 @@ class config:
 		if in_definition:
 			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
 			sys.exit(2)
-	def _locate_object(self, item):
+	def _locate_item(self, item):
 		"""
 		This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
 		file which is configured in, and locates exactly the lines which contain that definition.
@@ -309,13 +310,16 @@ class config:
 		i_am_within_definition = False
 		for line in file.readlines():
 			if object_has_been_found:
+				'If we have found an object, lets just spool to the end'
 				everything_after.append( line )
 				continue
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
+				'empty line'
 				keyword = ''
 				rest = ''
 			if len(tmp) == 1:
+				'single word on the line'
 				keyword = tmp[0]
 				rest = ''
 			if len(tmp) > 1:
@@ -363,11 +367,14 @@ class config:
 					'This is the object i am looking for'
 					object_has_been_found = True
 					object_definition = tmp_buffer
+				else:
+					'This is not the item you are looking for'
+					everything_before += tmp_buffer
 		if object_has_been_found:
 			return (everything_before, object_definition, everything_after, filename)
 		else:
 			raise ValueError("We could not find object in %s" % filename)
-	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None):
+	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
 		'''
 		Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
 		If new_value and new_field_name are both None, the attribute is removed.
@@ -378,6 +385,7 @@ class config:
 			new_field_name(str) -- If set, field_name will be renamed
 			new_value(str) -- If set the value of field_name will be changed
 			new_item(str) -- If set, whole object will be replaced with this string
+			make_comments -- If set, put pynag-branded comments where changes have been made
 		Returns:
 			True on success
 		Raises:
@@ -386,7 +394,7 @@ class config:
 		'''
 		if field_name is None and new_item is None:
 			raise ValueError("either field_name or new_item must be set")
-		everything_before,object_definition, everything_after, filename = self._locate_object(item)
+		everything_before,object_definition, everything_after, filename = self._locate_item(item)
 		if new_item is not None:
 			'We have instruction on how to write new object, so we dont need to parse it'
 			change = True
@@ -412,13 +420,20 @@ class config:
 						'value has changed '
 						value = new_value
 					# Here we do the actual change	
-					change = "\t %-30s %s\n" % (k, value)
+					change = "\t%-30s%s\n" % (k, value)
 					object_definition[i] = change
 					break
 			if not change:
 					'Attribute was not found, lets throw up an exception indicating the field was not found'
 					raise ValueError( 'attribute %s was not found.' % field_name)
-
+		# Lets put a banner in front of our item
+		if make_comments:
+			comment = '# Edited by PyNag on %s\n' % time.ctime()
+			if len(everything_before) > 0:
+				last_line_before = everything_before[-1]
+				if last_line_before.startswith('# Edited by PyNag on'):
+					everything_before.pop() # remove this line
+			object_definition.insert(0, comment )
 		# Here we overwrite the config-file, hoping not to ruin anything
 		buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
 		file = open(filename,'w')
@@ -825,8 +840,6 @@ class config:
 		"""
 		Return a string that can be used in a configuration file
 		"""
-		import time
-
 		output = ""
 		## Header, to go on all files
 		output += "# Configuration file %s\n" % item['meta']['filename']
