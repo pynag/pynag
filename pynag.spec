@@ -69,11 +69,13 @@ rm -fr $RPM_BUILD_ROOT
 %dir %{python_sitelib}/pynag
 %dir %{python_sitelib}/pynag/Control
 %dir %{python_sitelib}/pynag/NObject
+%dir %{python_sitelib}/pynag/Model
 %dir %{python_sitelib}/pynag/Parsers
 %dir %{python_sitelib}/pynag/Plugins
 %{python_sitelib}/pynag/*.py*
 %{python_sitelib}/pynag/Control/*.py*
 %{python_sitelib}/pynag/NObject/*.py*
+%{python_sitelib}/pynag/Model/*.py*
 %{python_sitelib}/pynag/Parsers/*.py*
 %{python_sitelib}/pynag/Plugins/*.py*
 %{_bindir}/pynag-add_host_to_group
