@@ -34,6 +34,7 @@ if __name__ == "__main__":
 			'pynag',
 			'pynag.NObject',
 			'pynag.Model',
+			'pynag.Model.EventHandlers',
 			'pynag.Plugins',
 			'pynag.Parsers',
 			'pynag.Control'
