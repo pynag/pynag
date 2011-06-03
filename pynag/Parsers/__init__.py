@@ -29,11 +29,12 @@ class config:
 	"""
 	def __init__(self, cfg_file = "/etc/nagios/nagios.cfg"):
 
-		self.cfg_file = cfg_file
-		self.cfg_files = []
-		self.data = {}
+		self.cfg_file = cfg_file # Main configuration file
+		self.cfg_files = [] # List of other configuration files
+		self.data = {} # dict of every known object definition
 		self.item_list = None
 		self.item_cache = None
+		self.maincfg_values = [] 
 
 		## This is a pure listof all the key/values in the config files.  It
 		## shouldn't be useful until the items in it are parsed through with the proper
@@ -891,6 +892,7 @@ class config:
 
 			## Now get the actual objects and values
 			(config_object, config_value) = line.split("=", 1)
+			self.maincfg_values.append( (config_object,config_value) )
 
 			## Add cfg_file objects to cfg file list
 			if config_object == "cfg_file" and os.path.isfile(config_value):
