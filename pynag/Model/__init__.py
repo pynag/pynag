@@ -79,7 +79,7 @@ def not_contains(str1, str2):
     'Returns True if str1 does not contain str2'
     return not contains(str1, str2)
 
-def is_a_field(str1, str2):
+def has_field(str1, str2):
     '''Returns True if str2 is a field in str1
     
     For this purpose the string 'example' is a field in '+this,is,an,example'
@@ -129,6 +129,19 @@ class ObjectFetcher(object):
             if str(item['id']) == id:
                 return item
         raise ValueError('No object with ID=%s found'% (id))
+    def get_by_shortname(self, shortname):
+        ''' Get one specific object by its shortname (i.e. host_name for host, etc)
+        
+        Returns:
+            ObjectDefinition
+        Raises:
+            ValueError if object is not found
+        '''
+        attribute_name = "%s_name" % (self.object_type)
+        for item in self.all:
+            if item[attribute_name] == shortname:
+                return item
+        raise ValueError('No %s with %s=%s found' % (self.object_type, attribute_name,shortname))
     def filter(self, **kwargs):
         '''
         Returns all objects that match the selected filter
@@ -184,9 +197,9 @@ class ObjectFetcher(object):
                 elif k.endswith('__contains'):
                     k = k[:-10]
                     match_function = contains
-                elif k.endswith('__is_a_field'):
+                elif k.endswith('__has_field'):
                     k = k[:-12]
-                    match_function = is_a_field
+                    match_function = has_field
                 elif k.endswith('__notcontains'):
                     k = k[:-13]
                     match_function = not_contains
@@ -392,8 +405,8 @@ class ObjectDefinition(object):
         if self['check_command'] == None: return None
         c = self['check_command']
         c = c.split('!')
-        command = c.pop(0)
-        command = Command.objects.filter(command_name=command)[0]
+        command_name = c.pop(0)
+        command = Command.objects.get_by_shortname(command_name)
         regex = re.compile("(\$\w+\$)")
         macronames = regex.findall( command['command_line'] )
         result = {}
@@ -406,8 +419,8 @@ class ObjectDefinition(object):
         if self['check_command'] == None: return None
         c = self['check_command']
         c = c.split('!')
-        command = c.pop(0)
-        command = Command.objects.filter(command_name=command)[0]
+        command_name = c.pop(0)
+        command = Command.objects.get_by_shortname(command_name)
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group())
         result = regex.sub(get_macro, command['command_line'])
@@ -480,7 +493,7 @@ class ObjectDefinition(object):
             for i in grp:
                 i = i.strip('+')
                 print self['hostgroups']
-                i = Hostgroup.objects.filter(hostgroup_name=i)[0]
+                i = Hostgroup.objects.get_by_shortname(i)
                 if not i in result: result.append(i)
         # Case 2:
         if not self.has_key('hostgroups') or self['hostgroups'].startswith('+'):
@@ -491,21 +504,21 @@ class ObjectDefinition(object):
         # Case 3:
         if self.has_key('host_name'):
             # We will use hostgroup_list in case 4 and 5 as well
-            hostgroup_list = Hostgroup.objects.filter(members__is_a_field=self['host_name'])
+            hostgroup_list = Hostgroup.objects.filter(members__has_field=self['host_name'])
             for hg in hostgroup_list:
                     if hg not in result:
                         result.append( hg )
         # Case 4:    
         for hg in hostgroup_list:
             if not hg.has_key('hostgroup_name'): continue
-            grp = Hostgroup.objects.filter(hostgroup_members__is_a_field=hg['hostgroup_name'])
+            grp = Hostgroup.objects.filter(hostgroup_members__has_field=hg['hostgroup_name'])
             for i in grp:
                 if i not in result:
                     result.append(i )
         # Case 5:
         for hg in hostgroup_list:
             if not hg.has_key('hostgroup_name'): continue
-            grp = Hostgroup.objects.filter(use__is_a_field=hg['hostgroup_name'])
+            grp = Hostgroup.objects.filter(use__has_field=hg['hostgroup_name'])
             for i in grp:
                 if i not in result:
                     result.append(i )
@@ -533,6 +546,44 @@ class ObjectDefinition(object):
                 defin = self._defined_attributes[k]
             result.append((k, defin, inher))
         return result
+    def get_parents(self):
+        "Returns an ObjectDefinition list of all parents (via use attribute)"
+        result = []
+        if not self['use']: return result
+        for parent_name in self['use'].split(','):
+            parent = self.objects.filter(name=parent_name)[0]
+            result.append(parent)
+        return result
+    def _get_effective_attribute(self, attribute_name):
+        """This helper function returns specific attribute, from this object or its templates
+        
+        This is handy for fields that effectively are many_to_many values.
+        for example, "contactroups +group1,group2,group3"
+        
+        Fields that are known to use this format are:
+            contacts, contactgroups, hostgroups, servicegroups, members,contactgroup_members
+        """
+        result = []
+        tmp = self[attribute_name]
+        if tmp != None:
+            result.append( tmp )
+        if tmp == None or tmp.startswith('+'):
+            for parent in self.get_parents():
+                result.append( parent._get_effective_attribute(attribute_name) )
+                if parent[attribute_name] != None and not parent[attribute_name].startswith('+'):
+                    break
+        return_value = []
+        for i,value in enumerate( result ):
+            value = value.strip('+')
+            if value == '': continue
+            if value not in return_value:
+                return_value.append( value )
+        return ','.join( return_value )
+            
+                
+                    
+                
+        
         
 class Host(ObjectDefinition):
     object_type = 'host'
@@ -540,6 +591,12 @@ class Host(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['host_name']
+    def get_effective_contact_groups(self):
+        "Returns a list of all contactgroups that belong to this host"
+        return Service.get_effective_contact_groups(self)
+    def get_effective_contacts(self):
+        "Returns a list of all contacts that belong to this host"
+        return Service.get_effective_contacts(self)
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
@@ -549,9 +606,25 @@ class Service(ObjectDefinition):
     def _get_host_macro(self, macroname):
         if self['host_name'] == None:
             return None
-        myhost = Host.objects.filter(host_name=self['host_name'])[0]
-        return myhost._get_host_macro(macroname)
-        
+        myhost = Host.objects.get_by_shortname(self['host_name'])
+        return myhost._get_host_macro(macroname)     
+    def get_effective_contact_groups(self):
+        "Returns a list of all contactgroups that belong to this service"
+        result = []
+        contactgroups = self._get_effective_attribute('contact_groups')
+        for c in contactgroups.split(','):
+            group = Contactgroup.objects.get_by_shortname(c)
+            result.append( group )
+        return result
+    def get_effective_contacts(self):
+        "Returns a list of all contacts that belong to this service"
+        result = []
+        contacts = self._get_effective_attribute('contacts')
+        for c in contacts.split(','):
+            contact = Contact.objects.get_by_shortname(c)
+            result.append( contact )
+        return result
+            
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
@@ -563,13 +636,30 @@ class Contact(ObjectDefinition):
     objects = ObjectFetcher('contact')
     def get_description(self):
         """ Returns a friendly description of the object """
-        return self['contact_name']    
+        return self['contact_name']
+    def get_effective_contactgroups(self):
+        ''' Get a list of all contactgroups that are hooked to this contact '''
+        result = []
+        contactgroups = self._get_effective_attribute('contactgroups')
+        for c in contactgroups.split(','):
+            if c == '': continue
+            group = Contactgroup.objects.get_by_shortname(c)
+            if group not in result: result.append( group )
+        # Additionally, check for contactgroups that define this contact as a member
+        if self['contact_name'] == None: return result
+        
+        for cgroup in Contactgroup.objects.filter( members__has_field=self['contact_name'] ):
+            if cgroup not in result: result.append( cgroup )
+        return result
 class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
     objects = ObjectFetcher('contactgroup')
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['contactgroup_name']
+                    
+             
+   
 class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
     objects = ObjectFetcher('hostgroup')
@@ -611,8 +701,12 @@ def _test_get_by_id():
         if h.get_id() != h2.get_id():
             return False
     return True
-    
+
 
 if __name__ == '__main__':
-    s = Service.objects.filter(host_name__contains='host.')[3]
-    print s.get_effective_command_line()
+    for c in Contact.objects.all:
+        #print c
+        print "...", c.contact_name
+        for i in c.get_effective_contactgroups():
+            print i.contactgroup_name
+    #print Host.objects.get_by_shortname('pall.sigurdsson.is')
