@@ -366,7 +366,7 @@ class ObjectDefinition(object):
         for key in fields:
             if key == 'meta' or key in self['meta'].keys(): continue
             value = self[key]
-            return_buffer = return_buffer + "%-30s %s\n" % (key, value)
+            return_buffer = return_buffer + "  %-30s %s\n" % (key, value)
         return_buffer = return_buffer + "}\n"
         return return_buffer
     def __repr__(self):
@@ -381,8 +381,7 @@ class ObjectDefinition(object):
     def get_description(self):
         raise NotImplementedError()
     def get_shortname(self):
-        ''' Returns a "shortname" for this object. For host, return host_name, for contact return contact_name, etc '''
-        raise NotImplementedError()
+        return self.get_description()
     def get_macro(self, macroname ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):
@@ -486,13 +485,19 @@ class ObjectDefinition(object):
         result = []
         parent_results = []
         hostgroup_list = []
-        # Case 1:
+        # Case 1 and Case 2:
+        tmp = self._get_effective_attribute('hostgroups')
+        for i in tmp.split(','):
+            if i == '': continue
+            i = Hostgroup.objects.get_by_shortname(i)
+            if not i in result: result.append(i)
+        '''
+        # Case 1
         if self.has_key('hostgroups'):
             grp = self['hostgroups']
             grp = grp.split(',')
             for i in grp:
                 i = i.strip('+')
-                print self['hostgroups']
                 i = Hostgroup.objects.get_by_shortname(i)
                 if not i in result: result.append(i)
         # Case 2:
@@ -500,7 +505,7 @@ class ObjectDefinition(object):
             parents = self.get_effective_parents()
             for parent in parents:
                 parent_results += parent.get_effective_hostgroups()
-        
+        '''
         # Case 3:
         if self.has_key('host_name'):
             # We will use hostgroup_list in case 4 and 5 as well
@@ -522,10 +527,8 @@ class ObjectDefinition(object):
             for i in grp:
                 if i not in result:
                     result.append(i )
+        
         return result
-    def get_effective_contacts(self):
-        # TODO: This function is incomplete and untested
-        raise NotImplementedError()
     def get_effective_contactgroups(self):
         # TODO: This function is incomplete and untested
         raise NotImplementedError()
@@ -553,6 +556,24 @@ class ObjectDefinition(object):
         for parent_name in self['use'].split(','):
             parent = self.objects.filter(name=parent_name)[0]
             result.append(parent)
+        return result
+    def get_effective_contact_groups(self):
+        "Returns a list of all contactgroups that belong to this service"
+        result = []
+        contactgroups = self._get_effective_attribute('contact_groups')
+        for c in contactgroups.split(','):
+            if c == '': continue
+            group = Contactgroup.objects.get_by_shortname(c)
+            result.append( group )
+        return result
+    def get_effective_contacts(self):
+        "Returns a list of all contacts that belong to this service"
+        result = []
+        contacts = self._get_effective_attribute('contacts')
+        for c in contacts.split(','):
+            if c == '': continue
+            contact = Contact.objects.get_by_shortname(c)
+            result.append( contact )
         return result
     def _get_effective_attribute(self, attribute_name):
         """This helper function returns specific attribute, from this object or its templates
@@ -591,12 +612,6 @@ class Host(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['host_name']
-    def get_effective_contact_groups(self):
-        "Returns a list of all contactgroups that belong to this host"
-        return Service.get_effective_contact_groups(self)
-    def get_effective_contacts(self):
-        "Returns a list of all contacts that belong to this host"
-        return Service.get_effective_contacts(self)
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
@@ -608,22 +623,7 @@ class Service(ObjectDefinition):
             return None
         myhost = Host.objects.get_by_shortname(self['host_name'])
         return myhost._get_host_macro(macroname)     
-    def get_effective_contact_groups(self):
-        "Returns a list of all contactgroups that belong to this service"
-        result = []
-        contactgroups = self._get_effective_attribute('contact_groups')
-        for c in contactgroups.split(','):
-            group = Contactgroup.objects.get_by_shortname(c)
-            result.append( group )
-        return result
-    def get_effective_contacts(self):
-        "Returns a list of all contacts that belong to this service"
-        result = []
-        contacts = self._get_effective_attribute('contacts')
-        for c in contacts.split(','):
-            contact = Contact.objects.get_by_shortname(c)
-            result.append( contact )
-        return result
+
             
 class Command(ObjectDefinition):
     object_type = 'command'
@@ -704,9 +704,6 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    for c in Contact.objects.all:
-        #print c
-        print "...", c.contact_name
-        for i in c.get_effective_contactgroups():
-            print i.contactgroup_name
-    #print Host.objects.get_by_shortname('pall.sigurdsson.is')
+    hosts = Host.objects.all
+    for h in hosts:
+        print h['meta']['raw_definition']
