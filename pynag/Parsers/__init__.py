@@ -191,6 +191,7 @@ class config:
 		current['meta']['delete_me'] = None
 		current['meta']['defined_attributes'] = {}
 		current['meta']['inherited_attributes'] = {}
+		current['meta']['raw_definition'] = ""
 		return current
 
 	def _load_file(self, filename):
@@ -220,7 +221,9 @@ class config:
 
 				in_definition = None
 				append = line.split("}", 1)[1]
-
+				
+				tmp_buffer.append(  line )
+				current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
 				self.pre_object_list.append(current)
 
 
@@ -232,6 +235,7 @@ class config:
 			boo_re = re.compile("define\s+(\w+)\s*{?(.*)$")
 			m = boo_re.search(line)
 			if m:
+				tmp_buffer = [line]
 				object_type = m.groups()[0]
 				#current = NObject(object_type, filename)
 				current = self.get_new_item(object_type, filename)
@@ -245,6 +249,8 @@ class config:
 				in_definition = True
 				append = m.groups()[1]
 				continue
+			else:
+				tmp_buffer.append( '    ' + line )
 
 			## save whatever's left in the buffer for the next iteration
 			if not in_definition:
@@ -1111,6 +1117,13 @@ class status:
 
 	def __getitem__(self, key):
 		return self.data[key]
+
+class ParserError(Exception):
+	def __init__(self, message, item=None):
+		self.message = message
+		self.item = item
+	def __str__(self):
+		return repr(self.value)
 
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
