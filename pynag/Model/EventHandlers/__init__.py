@@ -32,6 +32,8 @@ This enables you for example to log to file every time an object is rewritten.
 import time
 
 class BaseEventHandler:
+    def __init__(self, debug=False):
+        self._debug = debug
     def debug(self, object_definition, message):
         "Used for any particual debug notifications"
         raise NotImplementedError()
@@ -47,10 +49,11 @@ class PrintToScreenHandler(BaseEventHandler):
     "Handler that prints everything to stdout"
     def debug(self, object_definition, message):
         "Used for any particual debug notifications"
-        print "%s: %s" %( time.asctime(), message )
+        if self._debug:
+            print "%s: %s" %( time.asctime(), message )
     def write(self, object_definition, message):
         "Called whenever a modification has been written to file"
-        print "%s: %s" %( time.asctime(), message )
+        print "%s: file='%s' %s" %( time.asctime(), object_definition['meta']['filename'], message )
     def save(self, object_definition, message):
         "Called when objectdefinition.save() has finished"
         print "%s: %s" %( time.asctime(), message )
@@ -58,18 +61,24 @@ class PrintToScreenHandler(BaseEventHandler):
 
 class FileLogger(BaseEventHandler):
     "Handler that logs everything to file"
-    def __init__(self, logfile='/var/log/pynag.log'):
+    def __init__(self, logfile='/var/log/pynag.log', debug=False):
         self.file = logfile
+        self._debug = debug
     def _append_to_file(self, message):
         f = open(self.file, 'a')
-        f.write( message )
+        if not message.endswith('\n'): message += '\n'
+        f.write( message  )
         f.close()
     def debug(self, object_definition, message):
-        "Used for any particual debug notifications"
-        self._append_to_file( "%s: %s" %( time.asctime(), message ))
+        "Used for any particular debug notifications"
+        if self.debug:
+            message = "%s: %s" % ( time.asctime(), message )
+            self._append_to_file( message )
     def write(self, object_definition, message):
         "Called whenever a modification has been written to file"
-        self._append_to_file( "%s: %s" %( time.asctime(), message ))
+        message = "%s: file='%s' %s" %( time.asctime(), object_definition['meta']['filename'], message )
+        self._append_to_file( message )
     def save(self, object_definition, message):
         "Called when objectdefinition.save() has finished"
-        self._append_to_file( "%s: %s" %( time.asctime(), message ))
+        message = "%s: %s" %( time.asctime(), message )
+        self._append_to_file( message )

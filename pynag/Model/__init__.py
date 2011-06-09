@@ -50,7 +50,7 @@ import re
 sys.path.insert(1, '/opt/pynag')
 from pynag import Parsers
 from macros import _standard_macros
-#import EventHandlers
+
 
 import time
 
@@ -64,6 +64,10 @@ config = Parsers.config(cfg_file)
 config.parse()
 
 
+#: eventhandlers -- A list of Model.EventHandelers object.
+# Event handler is responsible for passing notification whenever something important happens in the model
+# For example FileLogger class is an event handler responsible for logging to file whenever something has been written.
+eventhandlers = []
 
 def debug(text):
     debug = True
@@ -198,7 +202,7 @@ class ObjectFetcher(object):
                     k = k[:-10]
                     match_function = contains
                 elif k.endswith('__has_field'):
-                    k = k[:-12]
+                    k = k[:-11]
                     match_function = has_field
                 elif k.endswith('__notcontains'):
                     k = k[:-13]
@@ -235,7 +239,6 @@ class ObjectDefinition(object):
     '''
     object_type = None
     objects = ObjectFetcher(None)
-    eventhandlers = []
     def __init__(self, item=None):
         if item == None:
             item = config.get_new_item(object_type=self.object_type, filename=None)
@@ -284,8 +287,7 @@ class ObjectDefinition(object):
     def set_attribute(self, attribute_name, attribute_value):
         'Set (but does not save) one attribute in our object'
         self[attribute_name] = attribute_value
-        for i in self.eventhandlers:
-            i.debug(self, "attribute changed: %s = %s" % (attribute_name, attribute_value) )
+        self._event(level="debug", message="attribute changed: %s = %s" % (attribute_name, attribute_value))
     def is_dirty(self):
         "Returns true if any attributes has been changed on this object, and therefore it needs saving"
         return len(self._changes.keys()) == 0
@@ -348,12 +350,12 @@ class ObjectDefinition(object):
         for field_name, new_value in self._changes.items():
             save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
             if save_result == True:
+                self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self._original_attributes[field_name], new_value))
                 self._defined_attributes[field_name] = new_value
                 self._original_attributes[field_name] = new_value
                 del self._changes[field_name]
                 number_of_changes += 1
         return number_of_changes
-        
     def __str__(self):
         return_buffer = "define %s {\n" % (self.object_type)
         fields = self.keys()
@@ -370,6 +372,7 @@ class ObjectDefinition(object):
         return_buffer = return_buffer + "}\n"
         return return_buffer
     def __repr__(self):
+        return "%s: %s" % (self['object_type'], self.get_shortname())
         result = ""
         result += "%s: " % self.__class__.__name__
         for i in  ['object_type', 'host_name', 'name', 'use', 'service_description']:
@@ -483,7 +486,6 @@ class ObjectDefinition(object):
         # TODO: This function is incomplete and untested
         # TODO: Need error handling when object defines hostgroups but hostgroup does not exist
         result = []
-        parent_results = []
         hostgroup_list = []
         # Case 1 and Case 2:
         tmp = self._get_effective_attribute('hostgroups')
@@ -599,7 +601,16 @@ class ObjectDefinition(object):
             if value == '': continue
             if value not in return_value:
                 return_value.append( value )
-        return ','.join( return_value )
+        tmp = ','.join( return_value )
+        tmp = tmp.replace(',,',',')
+        return tmp
+    def _event(self, level=None, message=None):
+        """ Pass informational message about something that has happened within the Model """
+        for i in eventhandlers:
+            if level == 'write':
+                i.write( object_definition=self, message=message )
+            else:
+                i.debug( object_definition=self, message=message )
             
                 
                     
@@ -637,6 +648,9 @@ class Contact(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['contact_name']
+    def get_effective_contact_groups(self):
+        "Contact uses contactgroups instead of contact_groups"
+        return self.get_effective_contactgroups()
     def get_effective_contactgroups(self):
         ''' Get a list of all contactgroups that are hooked to this contact '''
         result = []
@@ -657,7 +671,35 @@ class Contactgroup(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['contactgroup_name']
-                    
+    def get_effective_members(self):
+        """ Returns a list of all Contacts that are in this contactgroup """
+        """
+        How can a contact belong to a group:
+        1) contact.contact_name is mentioned in contactgroup.members
+        2) contactgroup.contactgroup_name is mentioned in contact.contactgroups
+        3) contact belongs to contactgroup.use
+        4) contact belongs to contactgroup.countactgroup.use
+        """
+        result = []
+        # Case 1 and 3
+        for i in self._get_effective_attribute('members').split(','):
+            if i == '': continue
+            contact = Contact.objects.get_by_shortname(i)
+            if contact not in result: result.append( contact )
+        # Case 2
+        for i in self._get_effective_attribute('contactgroup_members').split(','):
+            if i == '': continue
+            contactgroup = Contactgroup.objects.get_by_shortname(i)
+            for c in contactgroup.get_effective_members():
+                if c not in result: result.append( c)
+        # Case 4
+        if self['contactgroup_name'] is not None:
+            for i in Contact.objects.all:
+                groups = i.get_effective_contact_groups()
+                for group in groups:
+                    if self.get_shortname() == group.get_shortname():
+                        if i not in result: result.append( i )
+        return result
              
    
 class Hostgroup(ObjectDefinition):
@@ -704,6 +746,9 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    hosts = Host.objects.all
-    for h in hosts:
-        print h['meta']['raw_definition']
+    import EventHandlers
+    eventhandlers.append(EventHandlers.PrintToScreenHandler())
+    eventhandlers.append( EventHandlers.FileLogger(logfile='/tmp/pynag.log'))
+    for i in Contactgroup.objects.all:
+        i.contactgroup_name = i.contactgroup_name
+        i.save()
