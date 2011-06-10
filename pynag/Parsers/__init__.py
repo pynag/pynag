@@ -34,7 +34,8 @@ class config:
 		self.data = {} # dict of every known object definition
 		self.item_list = None
 		self.item_cache = None
-		self.maincfg_values = [] 
+		self.maincfg_values = [] # The contents of main nagios.cfg
+		self.resource_values = [] # The contents of any resource_files
 
 		## This is a pure listof all the key/values in the config files.  It
 		## shouldn't be useful until the items in it are parsed through with the proper
@@ -200,6 +201,7 @@ class config:
 		type = None
 		current = None
 		in_definition = {}
+		tmp_buffer = []
 
 		for line in open(filename, 'rb').readlines():
 
@@ -604,9 +606,9 @@ class config:
 		"""
 		if type(object) != type({}):
 			sys.stderr.write("%s is not a dictionary\n" % object)
-			return None
+			return []
 		if not object.has_key(key):
-			return None
+			return []
 
 		return_list = []
 
@@ -879,12 +881,13 @@ class config:
 		return output
 
 
-
-	def parse(self):
+	def _load_static_file(self, filename):
+		"""Load a general config file (like nagios.cfg) that has key=value config file format. Ignore comments
+		
+		Returns: a [ (key,value), (key,value) ] list
 		"""
-		Load the nagios.cfg file and parse it up
-		"""
-		for line in open(self.cfg_file).readlines():
+		result = []
+		for line in open(filename).readlines():
 			## Strip out new line characters
 			line = line.strip()
 
@@ -895,10 +898,18 @@ class config:
 			## Skip comments
 			if line[0] == "#" or line[0] == ';':
 				continue
-
-			## Now get the actual objects and values
-			(config_object, config_value) = line.split("=", 1)
+			key, value = line.split("=", 1)
+			result.append( (key, value) )
+		return result
+	def parse(self):
+		"""
+		Load the nagios.cfg file and parse it up
+		"""
+		for config_object, config_value in self._load_static_file(self.cfg_file):
 			self.maincfg_values.append( (config_object,config_value) )
+			
+			if config_object == 'resource_file' and os.path.isfile(config_value):
+				self.resource_values += self._load_static_file(config_value)
 
 			## Add cfg_file objects to cfg file list
 			if config_object == "cfg_file" and os.path.isfile(config_value):
@@ -944,6 +955,8 @@ class config:
 		## First, cycle through the hosts, and append hostgroup information
 		index = 0
 		for host in self.data['all_host']:
+			if host.has_key('register') and host['register'] == '0': continue
+			if not host.has_key('host_name'): continue
 			if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
 				self.data['all_host'][index]['meta']['hostgroup_list'] = []
 
@@ -958,6 +971,8 @@ class config:
 			## Append any services which reference this host
 			service_list = []
 			for service in self.data['all_service']:
+				if service.has_key('register') and service['register'] == '0': continue
+				if not service.has_key('service_description'): continue
 				if host['host_name'] in self._get_active_hosts(service):
 					service_list.append(service['service_description'])
 			self.data['all_host'][index]['meta']['service_list'] = service_list
@@ -972,6 +987,7 @@ class config:
 			for member in self._get_list(hostgroup,'members'):
 				index = 0
 				for host in self.data['all_host']:
+					if not host.has_key('host_name'): continue
 
 					## Skip members that do not match
 					if host['host_name'] == member:
@@ -1128,5 +1144,8 @@ class ParserError(Exception):
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
 	c.parse()
+	s = c._load_static_file('/etc/nagios/nagios.cfg')
+	for k,v in s:
+		print k, v
 	#for i in c.data['all_host']:
 	#	print i['meta']

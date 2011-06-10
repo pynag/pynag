@@ -391,8 +391,11 @@ class ObjectDefinition(object):
             'Command macros handled in a special function'
             return self._get_command_macro(macroname)
         if macroname.startswith('$USER'):
-            '$USERx$ macros are supposed to be private, lets not resolve those'
-            return macroname
+            '$USERx$ macros are supposed to be private, but we will display them anyway'
+            for mac,val in config.resource_values:
+                if macroname == mac:
+                    return val
+            return ''
         if macroname.startswith('$HOST') or macroname.startswith('$_HOST'):
             return self._get_host_macro(macroname)
         if macroname.startswith('$SERVICE') or macroname.startswith('$_SERVICE'):
@@ -422,7 +425,10 @@ class ObjectDefinition(object):
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
-        command = Command.objects.get_by_shortname(command_name)
+        try:
+            command = Command.objects.get_by_shortname(command_name)
+        except ValueError:
+            return None
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group())
         result = regex.sub(get_macro, command['command_line'])
@@ -432,10 +438,13 @@ class ObjectDefinition(object):
         # TODO: This function is incomplete and untested
         a = self.__argument_macros
         if a == {}:
-            c = self['check_command'].split()
+            c = self['check_command'].split('!')
             c.pop(0) # First item is the command, we dont need it
             for i, v in enumerate( c ):
-                a['$ARG%s$' % i] = v
+                tmp = i+1
+                if v.startswith('$') and v.endswith('$') and not v.startswith('$ARG'):
+                    v = self.get_macro(v)
+                a['$ARG%s$' % tmp] = v
         if a.has_key( macroname ):
             return a[ macroname ]
         else:
@@ -746,9 +755,6 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    import EventHandlers
-    eventhandlers.append(EventHandlers.PrintToScreenHandler())
-    eventhandlers.append( EventHandlers.FileLogger(logfile='/tmp/pynag.log'))
-    for i in Contactgroup.objects.all:
-        i.contactgroup_name = i.contactgroup_name
-        i.save()
+    s = Service.objects.filter(register="1")
+    for i in s:
+        print i.get_shortname(), i.get_effective_command_line()
