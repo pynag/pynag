@@ -509,8 +509,11 @@ class ObjectDefinition(object):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
         return ''
-    def get_effective_parents(self):
+    def get_effective_parents(self, recursive=False):
         """ Get all objects that this one inherits via "use" attribute
+        
+        Arguments:
+            recursive - If true include grandparents in list to be returned
         Returns:
             a list of ObjectDefinition objects
         """
@@ -521,6 +524,11 @@ class ObjectDefinition(object):
         use = self['use'].split(',')
         for parent_name in use:
             results.append( self.objects.filter(name=parent_name)[0] )
+        if recursive is True:
+            grandparents = []
+            for i in results:
+                grandparents.append( i.get_effective_parents(recursive=True))
+            results += grandparents
         return results
     def get_effective_hostgroups(self):
         """Get all hostgroups that this object belongs to (not just the ones it defines on its own
@@ -645,7 +653,7 @@ class ObjectDefinition(object):
                 if parent[attribute_name] != None and not parent[attribute_name].startswith('+'):
                     break
         return_value = []
-        for i,value in enumerate( result ):
+        for value in  result :
             value = value.strip('+')
             if value == '': continue
             if value not in return_value:
@@ -817,6 +825,8 @@ def _test_get_by_id():
 if __name__ == '__main__':
     s = Host.objects.all
     for host in s:
+        print host.get_effective_parents(recursive=False)
+        continue
         print host['host_name']
         for i in host.get_effective_services():
             print "\t", i['service_description']

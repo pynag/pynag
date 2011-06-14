@@ -49,3 +49,7 @@ class daemon:
 		cmd = "%s restart" % self.nagios_init
 
 		os.system(cmd)
+	def reload(self):
+		cmd = "%s reload" % self.nagios_init
+
+		os.system(cmd)
