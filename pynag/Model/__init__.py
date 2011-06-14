@@ -356,6 +356,46 @@ class ObjectDefinition(object):
                 del self._changes[field_name]
                 number_of_changes += 1
         return number_of_changes
+    def rewrite(self, str_new_definition=None):
+        """ Rewrites this Object Definition in its configuration files.
+        
+        Arguments:
+            str_new_definition = the actual string that will be written in the configuration file
+            if str_new_definition is None, then we will use self.__str__()
+        Returns: 
+            True on success
+        """
+        if str_new_definition == None:
+            str_new_definition = self['meta']['raw_definition']
+        config.item_rewrite(self._original_attributes, str_new_definition)
+        self._event(level='write', message="Object definition rewritten")
+        return True
+    def delete(self, cascade=False):
+        """ Deletes this object definition from its configuration files.
+        
+        Arguments:
+            Cascade: If True, look for items that depend on this object and delete them as well
+            (for example, if you delete a host, delete all its services as well)
+        """
+        if cascade == True:
+            raise NotImplementedError()
+        else:
+            result = config.item_remove(self._original_attributes)
+            self._event(level="write", message="Object was deleted")
+            return result
+    def get_related_objects(self):
+        """ Returns a list of ObjectDefinition that depend on this object
+        
+        Object can "depend" on another by a 'use' or 'host_name' or similar attribute
+        
+        Returns:
+            List of ObjectDefinition objects
+        """
+        result = []
+        if self['name'] != None:
+            tmp = ObjectDefinition.objects.filter(use__has_field=self['name'], object_type=self['object_type'])
+            for i in tmp: result.append(i)
+        return result
     def __str__(self):
         return_buffer = "define %s {\n" % (self.object_type)
         fields = self.keys()
@@ -632,6 +672,26 @@ class Host(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['host_name']
+    def get_effective_services(self):
+        """ Returns a list of all services that belong to this Host """
+        result = []
+        if self['host_name'] != None:
+            tmp = Service.objects.filter(host_name=self['host_name'])
+            for i in tmp:
+                if i not in result:
+                    result.append(i)
+        for hostgroup in self.get_effective_hostgroups():
+            tmp = Service.objects.filter(hostgroups=hostgroup)
+            for i in tmp:
+                if i not in result:
+                    result.append(i)
+        return result
+    def get_related_objects(self):
+        result = super(self.__class__, self).get_related_objects()
+        if self['host_name'] != None:
+            tmp = Service.objects.filter(host_name=self['host_name'])
+            for i in tmp: result.append( i )
+        return result
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
@@ -755,6 +815,8 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    s = Service.objects.filter(register="1")
-    for i in s:
-        print i.get_shortname(), i.get_effective_command_line()
+    s = Host.objects.all
+    for host in s:
+        print host['host_name']
+        for i in host.get_effective_services():
+            print "\t", i['service_description']
