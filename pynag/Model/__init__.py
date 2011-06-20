@@ -105,6 +105,7 @@ class ObjectFetcher(object):
         " Return all object definitions of specified type"
         if self.objects != []:
             return self.objects
+        #config.parse()
         if self.object_type != None:
             key_name = "all_%s" % (self.object_type)
             if not config.data.has_key(key_name):
@@ -189,6 +190,10 @@ class ObjectFetcher(object):
         for i in self.all:
             object_matches = True
             for k, v in kwargs.items():
+                if k.endswith('__exists'):
+                    k = i
+                    v = k[:-8]
+                    match_function = dict.has_key
                 if k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
@@ -594,6 +599,10 @@ class ObjectDefinition(object):
     def get_effective_hosts(self):
         # TODO: This function is incomplete and untested
         raise NotImplementedError()
+    def invalidate_cache(self):
+        """ Makes sure next time we call self.objects.all or self.objects.filter it will be read from file """
+        #self.objects.objects = []
+        return True
     def get_attribute_tuple(self):
         """ Returns all relevant attributes in the form of:
         
@@ -825,8 +834,4 @@ def _test_get_by_id():
 if __name__ == '__main__':
     s = Host.objects.all
     for host in s:
-        print host.get_effective_parents(recursive=False)
-        continue
         print host['host_name']
-        for i in host.get_effective_services():
-            print "\t", i['service_description']

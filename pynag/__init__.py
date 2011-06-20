@@ -4,7 +4,6 @@ import sys
 import os
 import re
 from optparse import OptionParser
-#from pynag.NObject import *
 #from pynag import Plugin
 
 """

@@ -239,7 +239,6 @@ class config:
 			if m:
 				tmp_buffer = [line]
 				object_type = m.groups()[0]
-				#current = NObject(object_type, filename)
 				current = self.get_new_item(object_type, filename)
 
 
