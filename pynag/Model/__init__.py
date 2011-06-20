@@ -60,8 +60,8 @@ cfg_file = '/etc/nagios/nagios.cfg'
 
 config = None
 # TODO: Make this a lazy load, so config is only parsed when it needs to be.
-config = Parsers.config(cfg_file)
-config.parse()
+#config = Parsers.config(cfg_file)
+#config.parse()
 
 
 #: eventhandlers -- A list of Model.EventHandelers object.
@@ -100,12 +100,23 @@ class ObjectFetcher(object):
     def __init__(self, object_type):
         self.object_type = object_type
         self.objects = []
+        self.objects = []
     @property
     def all(self):
         " Return all object definitions of specified type"
-        if self.objects != []:
-            return self.objects
-        #config.parse()
+        if self.objects == []:
+            'we get here on first run'
+            self.reload_cache()
+        elif config.needs_reparse():
+            'We get here if any configuration file has changed'
+            self.reload_cache()
+        return self.objects
+    def reload_cache(self):
+        'Reload configuration cache'
+        self.objects = []
+        global config
+        config = Parsers.config(cfg_file)
+        config.parse()
         if self.object_type != None:
             key_name = "all_%s" % (self.object_type)
             if not config.data.has_key(key_name):
@@ -832,6 +843,5 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    s = Host.objects.all
-    for host in s:
-        print host['host_name']
+    for i in Host.objects.all:
+        print i.get_shortname()
