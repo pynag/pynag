@@ -112,7 +112,7 @@ class config:
 			return self.item_cache[item_type][item_name]
 		return None
 		for test_item in self.item_list:  
-			## Skip tems without a name
+			## Skip items without a name
 			if not test_item.has_key('name'):
 				continue
 
@@ -433,8 +433,9 @@ class config:
 					object_definition[i] = change
 					break
 			if not change:
-					'Attribute was not found, lets throw up an exception indicating the field was not found'
-					raise ValueError( 'attribute %s was not found.' % field_name)
+					'Attribute was not found. Lets add it'
+					change = "\t%-30s%s\n" % (field_name, new_value)
+					object_definition.insert(i,change)
 		# Lets put a banner in front of our item
 		if make_comments:
 			comment = '# Edited by PyNag on %s\n' % time.ctime()
@@ -901,48 +902,61 @@ class config:
 			key, value = line.split("=", 1)
 			result.append( (key, value) )
 		return result
+	def needs_reload(self):
+		"Returns True if Nagios service needs reload of cfg files"
+		new_timestamps = self.get_timestamps()
+		for k,v in self.maincfg_values:
+			if k == 'lock_file': lockfile = v
+		lockfile = new_timestamps.pop(lockfile)
+		for k,v in new_timestamps.items():
+			if int(v) > lockfile: return True
+		return False 
+	def needs_reparse(self):
+		"Returns True if any Nagios configuration file has changed since last parse()"
+		new_timestamps = self.get_timestamps()
+		if len(new_timestamps) != len( self.timestamps ):
+			return True
+		for k,v in new_timestamps.items():
+			if self.timestamps[k] != v:
+				return True
+		return False
 	def parse(self):
 		"""
 		Load the nagios.cfg file and parse it up
 		"""
-		for config_object, config_value in self._load_static_file(self.cfg_file):
-			self.maincfg_values.append( (config_object,config_value) )
-			
-			if config_object == 'resource_file' and os.path.isfile(config_value):
-				self.resource_values += self._load_static_file(config_value)
-
-			## Add cfg_file objects to cfg file list
-			if config_object == "cfg_file" and os.path.isfile(config_value):
-					self.cfg_files.append(config_value)
-
-			## Parse all files in a cfg directory
-			if config_object == "cfg_dir":
-				directories = []
-				raw_file_list = []
-				directories.append( config_value )
-				# Walk through every subdirectory and add to our list
-				while len(directories) > 0:
-					current_directory = directories.pop(0)
-					list = os.listdir(current_directory)
-					for item in list:
-						# Append full path to file
-						item = "%s" % (os.path.join(current_directory, item.strip() ) )
-						if os.path.islink( item ):
-							item = os.readlink( item )
-						if os.path.isdir(item):
-							directories.append( item )
-						if raw_file_list.count( item ) < 1:
-							raw_file_list.append( item )
-				for raw_file in raw_file_list:
-					if raw_file.endswith('.cfg'):
-						if os.path.exists(raw_file):
-							self.cfg_files.append(raw_file)
-
+		self.maincfg_values = self._load_static_file(self.cfg_file)
+		
+		self.cfg_files = self.get_cfg_files()
+		
+		self.resource_values = self.get_resources()
+		
+		self.timestamps = self.get_timestamps()
+		
 		## This loads everything into
 		for cfg_file in self.cfg_files:
 			self._load_file(cfg_file)
 
 		self._post_parse()
+	def get_timestamps(self):
+		"Returns a hash map of all nagios related files and their timestamps"
+		files = {}
+		files[self.cfg_file] = None
+		for k,v in self.maincfg_values:
+			if k == 'resource_file' or k == 'lock_file':
+				files[v] = None
+		for i in self.get_cfg_files():
+			files[i] = None
+		# Now lets lets get timestamp of every file
+		for k,v in files.items():
+			files[k] = os.stat(k).st_mtime
+		return files
+	def get_resources(self):
+		"Returns a list of every private resources from nagios.cfg"
+		resources = []
+		for config_object,config_value in self.maincfg_values:
+			if config_object == 'resource_file' and os.path.isfile(config_value):
+				resources += self._load_static_file(config_value)
+		return resources
 
 	def extended_parse(self):
 		"""
@@ -1067,7 +1081,37 @@ class config:
 		print get_cfg_files()
 		['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
 		"""
-		return self.cfg_files
+		cfg_files = []
+		for config_object, config_value in self.maincfg_values:
+			
+			## Add cfg_file objects to cfg file list
+			if config_object == "cfg_file" and os.path.isfile(config_value):
+					cfg_files.append(config_value)
+
+			## Parse all files in a cfg directory
+			if config_object == "cfg_dir":
+				directories = []
+				raw_file_list = []
+				directories.append( config_value )
+				# Walk through every subdirectory and add to our list
+				while len(directories) > 0:
+					current_directory = directories.pop(0)
+					list = os.listdir(current_directory)
+					for item in list:
+						# Append full path to file
+						item = "%s" % (os.path.join(current_directory, item.strip() ) )
+						if os.path.islink( item ):
+							item = os.readlink( item )
+						if os.path.isdir(item):
+							directories.append( item )
+						if raw_file_list.count( item ) < 1:
+							raw_file_list.append( item )
+				for raw_file in raw_file_list:
+					if raw_file.endswith('.cfg'):
+						if os.path.exists(raw_file):
+							cfg_files.append(raw_file)
+
+		return cfg_files
 
 	def cleanup(self):
 		"""
@@ -1144,8 +1188,6 @@ class ParserError(Exception):
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
 	c.parse()
-	s = c._load_static_file('/etc/nagios/nagios.cfg')
-	for k,v in s:
-		print k, v
+	print c.needs_reload()
 	#for i in c.data['all_host']:
 	#	print i['meta']
