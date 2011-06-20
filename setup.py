@@ -32,7 +32,6 @@ if __name__ == "__main__":
 		],
 		packages = [
 			'pynag',
-			'pynag.NObject',
 			'pynag.Model',
 			'pynag.Model.EventHandlers',
 			'pynag.Plugins',
