@@ -906,6 +906,7 @@ class config:
 		new_timestamps = self.get_timestamps()
 		for k,v in self.maincfg_values:
 			if k == 'lock_file': lockfile = v
+		if not os.path.isfile(lockfile): return False
 		lockfile = new_timestamps.pop(lockfile)
 		for k,v in new_timestamps.items():
 			if int(v) > lockfile: return True
@@ -947,6 +948,7 @@ class config:
 			files[i] = None
 		# Now lets lets get timestamp of every file
 		for k,v in files.items():
+			if not os.path.isfile(k): continue
 			files[k] = os.stat(k).st_mtime
 		return files
 	def get_resources(self):
