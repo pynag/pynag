@@ -312,7 +312,7 @@ class ObjectDefinition(object):
     def __getitem__(self, key):
         if key == 'id':
             return self.get_id()
-        if key == 'description':
+        if key == 'description' or key == 'shortname':
             return self.get_description()
         if key == 'register' and not self._defined_attributes.has_key('register'):
             return "1"
