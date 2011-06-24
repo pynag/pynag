@@ -36,7 +36,13 @@ class config:
 		self.item_cache = None
 		self.maincfg_values = [] # The contents of main nagios.cfg
 		self.resource_values = [] # The contents of any resource_files
-
+		
+		# If nagios.cfg is not set, lets do some minor autodiscover.
+		if self.cfg_file is None:
+			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
+			for file in possible_files:
+				if os.path.isfile(file):
+					self.cfg_file = file
 		## This is a pure listof all the key/values in the config files.  It
 		## shouldn't be useful until the items in it are parsed through with the proper
 		## 'use' relationships
@@ -56,8 +62,7 @@ class config:
 		}
 
 		if not os.path.isfile(self.cfg_file):
-			sys.stderr.write("%s does not exist\n" % self.cfg_file)
-			return None
+			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
 
 	def _has_template(self, target):
 		"""
@@ -79,8 +84,7 @@ class config:
 		for other methods in this class.  It is used to shorten code repitition
 		"""
 		if not user_key and not self.object_type_keys.has_key(object_type):
-			sys.stderr.write("Unknown key for object type:  %s\n" % object_type)
-			sys.exit(2)
+			raise ParserError("Unknown key for object type:  %s\n" % object_type)
 
 		## Use a default key
 		if not user_key:
@@ -121,9 +125,8 @@ class config:
 				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
 					return test_item
 			except:
-				print "Loop detected, exiting"
-				sys.exit(2)
-
+				raise ParserError("Loop detected, exiting", item=test_item)
+			
 		## If we make it this far, it means there is no matching item
 		return None
 
@@ -147,7 +150,7 @@ class config:
 			if parent_item == None: 
 				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
 				error_string = error_string + self.print_conf(original_item)
-				raise Exception(error_string)
+				raise ParserError(error_string)
 			# Parent item probably has use flags on its own. So lets apply to parent first
 			parent_item = self._apply_template( parent_item )
 			parent_items.append( parent_item )
@@ -225,7 +228,10 @@ class config:
 				append = line.split("}", 1)[1]
 				
 				tmp_buffer.append(  line )
-				current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
+				try:
+					current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
+				except:
+					print "hmm?"
 				self.pre_object_list.append(current)
 
 
@@ -243,8 +249,7 @@ class config:
 
 
 				if in_definition:
-					sys.stderr.write("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
-					sys.exit(2)
+					raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
 
 				## Start off an object
 				in_definition = True
@@ -285,13 +290,12 @@ class config:
 				current['meta']['defined_attributes'][key] = value
 			## Something is wrong in the config
 			else:
-				sys.stderr.write("Error: Unexpected token in file '%s'" % filename)
-				sys.exit(2)
+				raise ParserError("Error: Unexpected token in file '%s'" % filename)
 
 		## Something is wrong in the config
 		if in_definition:
-			sys.stderr.write("Error: Unexpected EOF in file '%s'" % filename)
-			sys.exit(2)
+			raise ParserError("Error: Unexpected EOF in file '%s'" % filename)
+
 	def _locate_item(self, item):
 		"""
 		This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
@@ -585,7 +589,7 @@ class config:
 
 		original_object = self.get_service(target_host, service_description)
 		if original_object == None:
-			raise Exception("Service not found")
+			raise ParserError("Service not found")
 		return config.edit_object( original_object, field_name, new_value)
 
 
@@ -605,8 +609,8 @@ class config:
 		['larry','curly','moe']
 		"""
 		if type(object) != type({}):
-			sys.stderr.write("%s is not a dictionary\n" % object)
-			return []
+			raise ParserError("%s is not a dictionary\n" % object)
+			# return []
 		if not object.has_key(key):
 			return []
 
@@ -769,8 +773,8 @@ class config:
 						if k == 'use':
 							source_item = self._append_use(source_item, v)
 					except:
-						print "Recursion error on %s %s" % (source_item, v)
-						sys.exit(2)
+						raise ParserError("Recursion error on %s %s" % (source_item, v) )
+
 
 					## Only add the item if it doesn't already exist
 					if not source_item.has_key(k):
@@ -1097,6 +1101,8 @@ class config:
 				# Walk through every subdirectory and add to our list
 				while len(directories) > 0:
 					current_directory = directories.pop(0)
+					# Nagios doesnt care if cfg_dir exists or not, so why should we ?
+					if not os.path.isdir( current_directory ): continue
 					list = os.listdir(current_directory)
 					for item in list:
 						# Append full path to file
@@ -1110,6 +1116,7 @@ class config:
 				for raw_file in raw_file_list:
 					if raw_file.endswith('.cfg'):
 						if os.path.exists(raw_file):
+							'Nagios doesnt care if cfg_file exists or not, so we will not throws errors'
 							cfg_files.append(raw_file)
 
 		return cfg_files
@@ -1137,7 +1144,7 @@ class status:
 	def __init__(self, filename = "/var/log/nagios/status.dat"):
 
 		if not os.path.isfile(filename):
-			sys.stderr.write("Missing stat file %s" % filename)
+			raise ParserError("status.dat file %s not found." % filename)
 
 		self.filename = filename
 		self.data = {}
@@ -1184,7 +1191,7 @@ class ParserError(Exception):
 		self.message = message
 		self.item = item
 	def __str__(self):
-		return repr(self.value)
+		return repr(self.message)
 
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
