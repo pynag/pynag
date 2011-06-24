@@ -384,6 +384,7 @@ class ObjectDefinition(object):
         if str_new_definition == None:
             str_new_definition = self['meta']['raw_definition']
         config.item_rewrite(self._original_attributes, str_new_definition)
+        self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
         return True
     def delete(self, cascade=False):
