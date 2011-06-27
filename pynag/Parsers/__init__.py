@@ -148,7 +148,8 @@ class config:
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
 			if parent_item == None: 
-				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
+				error_string = "error in %s\n" % (original_item['meta']['filename'])
+				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
 				error_string = error_string + self.print_conf(original_item)
 				raise ParserError(error_string)
 			# Parent item probably has use flags on its own. So lets apply to parent first
@@ -543,6 +544,11 @@ class config:
 			item['meta'] = {}
 		item['meta']['filename'] = filename
 		
+		# Create directory if it does not already exist				
+		dirname = os.path.dirname(filename)
+		if not os.path.isdir(dirname):
+			os.makedirs(dirname)
+
 		buffer = self.print_conf( item )
 		file = open(filename,'a')
 		file.write( buffer )

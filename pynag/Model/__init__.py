@@ -47,7 +47,7 @@ __status__ = "Development"
 import sys
 import os
 import re
-sys.path.insert(1, '/opt/pynag')
+#sys.path.insert(1, '/opt/pynag')
 from pynag import Parsers
 from macros import _standard_macros
 
@@ -57,7 +57,7 @@ import time
 
 # Path To Nagios configuration file
 cfg_file = '/etc/nagios/nagios.cfg'
-
+pynag_directory = '/etc/nagios/pynag/' # Were new objects are written by default
 config = None
 # TODO: Make this a lazy load, so config is only parsed when it needs to be.
 #config = Parsers.config(cfg_file)
@@ -256,8 +256,17 @@ class ObjectDefinition(object):
     object_type = None
     objects = ObjectFetcher(None)
     def __init__(self, item=None):
-        if item == None:
+        # Check if we have parsed the configuration yet
+        if config is None:
+            self.objects.reload_cache()
+        # if Item is empty, we are creating a new object
+        if item is None:
             item = config.get_new_item(object_type=self.object_type, filename=None)
+            self.is_new = True
+        else:
+            self.is_new = False
+        
+        # store the object_type (i.e. host,service,command, etc)
         self.object_type = item['meta']['object_type']
         
         # self.objects is a convenient way to access more objects of the same type
@@ -356,12 +365,40 @@ class ObjectDefinition(object):
         import md5
         return md5.new(id).hexdigest()
         return id
+    def get_suggested_filename(self):
+        "Returns a suitable configuration filename to store this object in"
+        path = "" # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
+        object_type = self.object_type
+        shortname = self.get_shortname()
+        if self['register'] == "0":
+            'This is a template'
+            path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
+        else:
+            'Not a template'
+            if object_type == 'service':
+                'Services written in same file as their host'
+                shortname = self['host_name']
+            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
+        return path
     def save(self):
         """Saves any changes to the current object to its configuration file
         
         Returns:
             Number of changes made to the object
         """
+        # If this is a new object, we save it with config.item_add()
+        if self.is_new is True or not self._meta['filename'] is None:
+            if not self._meta['filename']:
+                'discover a new filename'
+                self._meta['filename'] = self.get_suggested_filename()
+                for k,v in self._changes.items():
+                    self._defined_attributes[k] = v
+                    self._original_attributes[k] = v
+                    del self._changes[k]
+            config.item_add(self._original_attributes, self._meta['filename'])
+            print "saved to %s" % (self._meta['filename'])
+            return
+        # If we get here, we are making modifications to an object
         number_of_changes = 0
         for field_name, new_value in self._changes.items():
             save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
@@ -371,6 +408,8 @@ class ObjectDefinition(object):
                 self._original_attributes[field_name] = new_value
                 del self._changes[field_name]
                 number_of_changes += 1
+            else:
+                raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
         return number_of_changes
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
@@ -844,5 +883,5 @@ def _test_get_by_id():
 
 
 if __name__ == '__main__':
-    for i in Host.objects.all:
-        print i.get_shortname()
+    s = Service()
+    s.save()
