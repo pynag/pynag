@@ -47,7 +47,6 @@ __status__ = "Development"
 import sys
 import os
 import re
-#sys.path.insert(1, '/opt/pynag')
 from pynag import Parsers
 from macros import _standard_macros
 
@@ -100,7 +99,6 @@ class ObjectFetcher(object):
     def __init__(self, object_type):
         self.object_type = object_type
         self.objects = []
-        self.objects = []
     @property
     def all(self):
         " Return all object definitions of specified type"
@@ -111,6 +109,9 @@ class ObjectFetcher(object):
             'We get here if any configuration file has changed'
             self.reload_cache()
         return self.objects
+    def clean_cache(self):
+        'Empties current object cache'
+        self.objects = []
     def reload_cache(self):
         'Reload configuration cache'
         self.objects = []
@@ -387,7 +388,7 @@ class ObjectDefinition(object):
             Number of changes made to the object
         """
         # If this is a new object, we save it with config.item_add()
-        if self.is_new is True or not self._meta['filename'] is None:
+        if self.is_new is True or self._meta['filename'] is None:
             if not self._meta['filename']:
                 'discover a new filename'
                 self._meta['filename'] = self.get_suggested_filename()
@@ -403,13 +404,14 @@ class ObjectDefinition(object):
         for field_name, new_value in self._changes.items():
             save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
             if save_result == True:
-                self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self._original_attributes[field_name], new_value))
+                del self._changes[field_name]
+                self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
                 self._defined_attributes[field_name] = new_value
                 self._original_attributes[field_name] = new_value
-                del self._changes[field_name]
                 number_of_changes += 1
             else:
                 raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
+        self.objects.clean_cache()
         return number_of_changes
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
