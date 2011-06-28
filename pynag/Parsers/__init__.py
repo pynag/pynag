@@ -165,7 +165,8 @@ class config:
 					continue
 				if k == 'name':
 					continue
-				original_item['meta']['inherited_attributes'][k] = v
+				if not original_item['meta']['inherited_attributes'].has_key(k):
+					original_item['meta']['inherited_attributes'][k] = v
 				if not original_item.has_key(k):
 					original_item[k] = v
 					original_item['meta']['template_fields'].append(k)
@@ -386,7 +387,7 @@ class config:
 		if object_has_been_found:
 			return (everything_before, object_definition, everything_after, filename)
 		else:
-			raise ValueError("We could not find object in %s" % filename)
+			raise ValueError("We could not find object in %s\n%s" % (filename,item))
 	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
 		'''
 		Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
