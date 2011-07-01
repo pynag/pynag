@@ -488,7 +488,7 @@ class ObjectDefinition(object):
         return result
     def get(self, value, default=None):
         ''' self.get(x) == self[x] '''
-        if self.has_key(value): return value
+        if self.has_key(value): return self[value]
         return default
     def get_description(self):
         return self.get("%s_name" % self.object_type, None)
