@@ -1127,7 +1127,9 @@ class config:
 							cfg_files.append(raw_file)
 
 		return cfg_files
-
+	def get_object_types(self):
+		''' Returns a list of all discovered object types '''
+		return map(lambda x: re.sub("all_","", x), self.data.keys())
 	def cleanup(self):
 		"""
 		This cleans up dead configuration files
@@ -1203,6 +1205,7 @@ class ParserError(Exception):
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
 	c.parse()
+	print c.get_object_types()
 	print c.needs_reload()
 	#for i in c.data['all_host']:
 	#	print i['meta']

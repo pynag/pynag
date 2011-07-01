@@ -105,13 +105,15 @@ class ObjectFetcher(object):
         if self.objects == []:
             'we get here on first run'
             self.reload_cache()
-        elif config.needs_reparse():
+        elif config is None or config.needs_reparse():
             'We get here if any configuration file has changed'
             self.reload_cache()
         return self.objects
     def clean_cache(self):
         'Empties current object cache'
-        self.objects = []
+        global config
+        config = None
+        ObjectDefinition.objects.objects = []
     def reload_cache(self):
         'Reload configuration cache'
         self.objects = []
@@ -129,7 +131,8 @@ class ObjectFetcher(object):
             for v in config.data.values():
                 objects += v
         for i in objects:
-            Class = string_to_class[ i['meta']['object_type'] ]
+            object_type = i['meta']['object_type']
+            Class = string_to_class.get( object_type, ObjectDefinition )
             i = Class(item=i)
             self.objects.append(i)
         return self.objects
@@ -159,6 +162,10 @@ class ObjectFetcher(object):
             if item[attribute_name] == shortname:
                 return item
         raise ValueError('No %s with %s=%s found' % (self.object_type, attribute_name,shortname))
+    def get_object_types(self):
+        ''' Returns a list of all discovered object types '''
+        if config is None: self.reload_cache()
+        return config.get_object_types()
     def filter(self, **kwargs):
         '''
         Returns all objects that match the selected filter
@@ -202,11 +209,12 @@ class ObjectFetcher(object):
         for i in self.all:
             object_matches = True
             for k, v in kwargs.items():
-                if k.endswith('__exists'):
-                    k = i
+                if k == ('exists'):
+                    raise NotImplementedError('Dont use this. Doesnt work.')
                     v = k[:-8]
+                    k = i
                     match_function = dict.has_key
-                if k.endswith('__startswith'):
+                elif k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
                 elif k.endswith('__endswith'):
@@ -397,7 +405,6 @@ class ObjectDefinition(object):
                     self._original_attributes[k] = v
                     del self._changes[k]
             config.item_add(self._original_attributes, self._meta['filename'])
-            print "saved to %s" % (self._meta['filename'])
             return
         # If we get here, we are making modifications to an object
         number_of_changes = 0
@@ -479,8 +486,12 @@ class ObjectDefinition(object):
             else:
                 result += "%s=None " % (i)
         return result
+    def get(self, value, default=None):
+        ''' self.get(x) == self[x] '''
+        if self.has_key(value): return value
+        return default
     def get_description(self):
-        raise NotImplementedError()
+        return self.get("%s_name" % self.object_type, None)
     def get_shortname(self):
         return self.get_description()
     def get_macro(self, macroname ):
@@ -869,7 +880,7 @@ string_to_class['contactgroup'] = Contactgroup
 string_to_class['servicegroup'] = Servicegroup
 string_to_class['timeperiod'] = Timeperiod
 string_to_class['command'] = Command
-string_to_class[None] = ObjectDefinition
+#string_to_class[None] = ObjectDefinition
 
 
 
