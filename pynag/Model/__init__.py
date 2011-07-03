@@ -96,6 +96,7 @@ class ObjectFetcher(object):
     This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
     from config.data and turning into high ObjectDefinition objects
     '''
+    relations = {}
     def __init__(self, object_type):
         self.object_type = object_type
         self.objects = []
@@ -117,6 +118,7 @@ class ObjectFetcher(object):
     def reload_cache(self):
         'Reload configuration cache'
         self.objects = []
+        ObjectFetcher.relations= {}
         global config
         config = Parsers.config(cfg_file)
         config.parse()
@@ -134,6 +136,7 @@ class ObjectFetcher(object):
             object_type = i['meta']['object_type']
             Class = string_to_class.get( object_type, ObjectDefinition )
             i = Class(item=i)
+            #    self.find_relations(i)
             self.objects.append(i)
         return self.objects
     def get_by_id(self, id):
@@ -395,6 +398,7 @@ class ObjectDefinition(object):
         Returns:
             Number of changes made to the object
         """
+        if config is None: self.objects.reload_cache()
         # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self._meta['filename'] is None:
             if not self._meta['filename']:
@@ -413,8 +417,14 @@ class ObjectDefinition(object):
             if save_result == True:
                 del self._changes[field_name]
                 self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
-                self._defined_attributes[field_name] = new_value
-                self._original_attributes[field_name] = new_value
+                if not new_value:
+                    if self._defined_attributes.has_key(field_name):
+                        del self._defined_attributes[field_name]
+                    if self._original_attributes.has_key(field_name):
+                        del self._original_attributes[field_name]
+                else:
+                    self._defined_attributes[field_name] = new_value
+                    self._original_attributes[field_name] = new_value
                 number_of_changes += 1
             else:
                 raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
@@ -822,35 +832,25 @@ class Contactgroup(ObjectDefinition):
         """ Returns a friendly description of the object """
         return self['contactgroup_name']
     def get_effective_members(self):
-        """ Returns a list of all Contacts that are in this contactgroup """
-        """
-        How can a contact belong to a group:
-        1) contact.contact_name is mentioned in contactgroup.members
-        2) contactgroup.contactgroup_name is mentioned in contact.contactgroups
-        3) contact belongs to contactgroup.use
-        4) contact belongs to contactgroup.countactgroup.use
-        """
+        ''' Returns every single member that belongs to this contactgroup, no matter where they are defined '''
         result = []
-        # Case 1 and 3
-        for i in self._get_effective_attribute('members').split(','):
-            if i == '': continue
-            contact = Contact.objects.get_by_shortname(i)
-            if contact not in result: result.append( contact )
-        # Case 2
-        for i in self._get_effective_attribute('contactgroup_members').split(','):
-            if i == '': continue
-            contactgroup = Contactgroup.objects.get_by_shortname(i)
-            for c in contactgroup.get_effective_members():
-                if c not in result: result.append( c)
-        # Case 4
-        if self['contactgroup_name'] is not None:
-            for i in Contact.objects.all:
-                groups = i.get_effective_contact_groups()
-                for group in groups:
-                    if self.get_shortname() == group.get_shortname():
-                        if i not in result: result.append( i )
-        return result
-             
+        do_relations()
+        myname = self.get_description()
+        contactgroups_tocheck = [ myname ]
+        contactgroups_alreadychecked = []
+        while len( contactgroups_tocheck ) > 0:
+            group = contactgroups_tocheck.pop(0)
+            if group in contactgroups_alreadychecked: continue
+            members = relations['contactgroup_member'][group]
+            for i in members:
+                if not i in result: result.append(i)
+            # expand group
+            tmp =relations['contactgroup_contactgroup'].get(group, [])
+            contactgroups_tocheck += tmp
+            contactgroups_alreadychecked.append( group )
+        result2 = []
+        for i in result: result2.append( Contact.objects.get_by_shortname(i) )
+        return result2
    
 class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
@@ -893,8 +893,64 @@ def _test_get_by_id():
         if h.get_id() != h2.get_id():
             return False
     return True
+"""
+How can a contact belong to a group:
+1) contact.contact_name is mentioned in contactgroup.members
+2) contactgroup.contactgroup_name is mentioned in contact.contactgroups
+3) contact belongs to contactgroup.use
+4) contact belongs to contactgroup.countactgroup.use
+"""
 
+relations = {
+             'contactgroup_member':{},
+             'member_contactgroup':{},
+             'contactgroup_contactgroup':{},
+             }
 
+def add_contact_to_group(contact_name, contactgroup_name):
+    global relations
+    if not relations['contactgroup_member'].has_key(contactgroup_name):
+        relations['contactgroup_member'][contactgroup_name] = []
+    if not relations['member_contactgroup'].has_key(contact_name):
+        relations['member_contactgroup'][contact_name] = []
+    if not contact_name in relations['contactgroup_member'][contactgroup_name]:
+        relations['contactgroup_member'][contactgroup_name].append(contact_name)
+    if not contactgroup_name in relations['member_contactgroup'][contact_name]:
+        relations['member_contactgroup'][contact_name].append(contactgroup_name)
+    return True
+
+def add_group_to_group(contactgroup1, contactgroup2):
+    global relations
+    group = relations['contactgroup_contactgroup'].get(contactgroup1, [])
+    if not contactgroup2 in group:
+        group.append(contactgroup2)
+    relations['contactgroup_contactgroup'][contactgroup1] = group
+    return True
+
+def do_relations():        
+    all_contactgroups = Contactgroup.objects.all
+    all_contacts = Contact.objects.all
+    
+    for i in all_contactgroups: relations['contactgroup_member'][i.get_shortname()] = []
+    for i in all_contacts: relations['member_contactgroup'][i.get_shortname()] = []
+    # Case 1
+    for group in all_contactgroups:
+        relations['contactgroup_member'][group.get_shortname()]
+        members = group._get_effective_attribute('members')
+        contactgroup_members = group._get_effective_attribute('contactgroup_members')
+        if members:
+            members = members.split(',')
+            for i in members: add_contact_to_group(i, group.get_shortname())
+        if contactgroup_members:
+            contactgroup_members = contactgroup_members.split(',')
+            for i in contactgroup_members:
+                add_group_to_group(group.get_shortname(), i)
+    for contact in all_contacts:
+        groups = contact._get_effective_attribute('contactgroups')
+        if groups:
+            groups = groups.split(',')
+            for i in groups: add_contact_to_group(contact.get_shortname(), i)
+    
 if __name__ == '__main__':
-    s = Service()
-    s.save()
+    c = Contactgroup.objects.get_by_shortname('admins')
+    print c.get_effective_members()
