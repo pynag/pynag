@@ -32,6 +32,7 @@ class config:
 		self.cfg_file = cfg_file # Main configuration file
 		self.cfg_files = [] # List of other configuration files
 		self.data = {} # dict of every known object definition
+		self.errors = [] # List of ParserErrors
 		self.item_list = None
 		self.item_cache = None
 		self.maincfg_values = [] # The contents of main nagios.cfg
@@ -151,7 +152,8 @@ class config:
 				error_string = "error in %s\n" % (original_item['meta']['filename'])
 				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
 				error_string = error_string + self.print_conf(original_item)
-				raise ParserError(error_string)
+				self.errors.append( ParserError(error_string,item=original_item) )
+				continue
 			# Parent item probably has use flags on its own. So lets apply to parent first
 			parent_item = self._apply_template( parent_item )
 			parent_items.append( parent_item )
