@@ -5,7 +5,7 @@
 
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
-Version: 0.3
+Version: 0.4
 Release: 3%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -98,6 +98,11 @@ rm -fr $RPM_BUILD_ROOT
 %doc AUTHORS README LICENSE CHANGES
 
 %changelog
+* Mon Jul  4 2011 Pall Sigurdsson <palli@opensource.is> - 0.4.0
+- New upstream version
+- Config refactoring
+- New Model module
+
 * Wed Apr 27 2011 Tomas Edwardsson <tommi@tommi.org> - 0.3-3
 - Added examples package and moved example files there
 

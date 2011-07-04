@@ -1,3 +1,10 @@
+Changes in 0.4.0
+
+Features added:
+		- Model, New module that turns configuration into python objects
+		- Parsers, major refactoring
+
+
 Changes in 0.3.1
 
 Bugs Fixed:

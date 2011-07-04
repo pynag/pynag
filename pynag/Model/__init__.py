@@ -38,7 +38,7 @@ __author__ = "Pall Sigurdsson"
 __copyright__ = "Copyright 2011, Pall Sigurdsson"
 __credits__ = ["Pall Sigurdsson"]
 __license__ = "GPL"
-__version__ = "0.3"
+__version__ = "0.4"
 __maintainer__ = "Pall Sigurdsson"
 __email__ = "palli@opensource.is"
 __status__ = "Development"
@@ -588,6 +588,25 @@ class ObjectDefinition(object):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
         return ''
+    def get_effective_children(self, recursive=False):
+        """ Get a list of all objects that inherit this object via "use" attribute 
+        
+        Arguments:
+            recursive - If true, include grandchildren as well
+        Returns:
+            A list of ObjectDefinition objects
+        """
+        if not self.has_key('name'):
+            return []
+        name = self['name']
+        children = self.objects.filter(use__has_field=name)
+        if recursive == True:
+            grandchildren = []
+            for i in children:
+                grandchildren += i.get_effective_children(recursive)
+            children += grandchildren
+        return children
+        
     def get_effective_parents(self, recursive=False):
         """ Get all objects that this one inherits via "use" attribute
         
@@ -952,5 +971,6 @@ def do_relations():
             for i in groups: add_contact_to_group(contact.get_shortname(), i)
     
 if __name__ == '__main__':
-    c = Contactgroup.objects.get_by_shortname('admins')
-    print c.get_effective_members()
+    for i in Host.objects.filter(name='linux-server'):
+        print i.get_shortname()
+        print i.get_effective_children()

@@ -13,11 +13,11 @@ Python Nagios extensions
 
 __author__ = "Drew Stinnett"
 __copyright__ = "Copyright 2008, Drew Stinnett"
-__credits__ = ["Drew Stinnett"]
+__credits__ = ["Drew Stinnett", "Tomas Edwardsson"]
 __license__ = "GPL"
-__version__ = "0.3"
-__maintainer__ = "Drew Stinnett"
-__email__ = "drew@drewlink.com"
+__version__ = "0.4"
+__maintainer__ = "Tomas Edwardsson"
+__email__ = "tommi@opensource.is"
 __status__ = "Development"
 
 # Map the return codes
