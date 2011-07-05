@@ -791,7 +791,7 @@ class Host(ObjectDefinition):
                 if i not in result:
                     result.append(i)
         for hostgroup in self.get_effective_hostgroups():
-            tmp = Service.objects.filter(hostgroups=hostgroup)
+            tmp = Service.objects.filter(hostgroups__has_field=hostgroup['hostgroup_name'])
             for i in tmp:
                 if i not in result:
                     result.append(i)
@@ -971,6 +971,4 @@ def do_relations():
             for i in groups: add_contact_to_group(contact.get_shortname(), i)
     
 if __name__ == '__main__':
-    for i in Host.objects.filter(name='linux-server'):
-        print i.get_shortname()
-        print i.get_effective_children()
+	pass
