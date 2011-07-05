@@ -784,17 +784,20 @@ class Host(ObjectDefinition):
         return self['host_name']
     def get_effective_services(self):
         """ Returns a list of all services that belong to this Host """
+        if self['host_name'] == None:
+            return []
         result = []
-        if self['host_name'] != None:
-            tmp = Service.objects.filter(host_name=self['host_name'])
-            for i in tmp:
-                if i not in result:
-                    result.append(i)
+        myname = self['host_name']
+        # Find all services that define us via service.host_name directive
+        for service in Service.objects.all:
+            service_hostname = service['host_name'] or ""
+            if myname in service_hostname.split(","):
+                result.append( service )
+        # Find all services that define us via our hostgroup
         for hostgroup in self.get_effective_hostgroups():
-            tmp = Service.objects.filter(hostgroups__has_field=hostgroup['hostgroup_name'])
-            for i in tmp:
-                if i not in result:
-                    result.append(i)
+            for service in hostgroup.get_effective_services():
+                if service not in result:
+                    result.append(service)
         return result
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
@@ -877,6 +880,20 @@ class Hostgroup(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['hostgroup_name']
+    def get_effective_services(self):
+        """ Returns a list of all Service that belong to this hostgroup """
+        myname = self['hostgroup_name']
+        if not myname: return []
+        
+        result = []
+        for service in Service.objects.all:
+            hostgroup_name = service['hostgroup_name'] or ""
+            hostgroups = service['hostgroups'] or ""
+            if myname in hostgroups.split(','):
+                result.append( service )
+            elif myname in hostgroup_name.split(","):
+                result.append( service )
+        return result
 class Servicegroup(ObjectDefinition):
     object_type = 'servicegroup'
     objects = ObjectFetcher('servicegroup')
