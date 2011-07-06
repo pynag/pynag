@@ -504,7 +504,7 @@ class ObjectDefinition(object):
         return self.get("%s_name" % self.object_type, None)
     def get_shortname(self):
         return self.get_description()
-    def get_macro(self, macroname ):
+    def get_macro(self, macroname, host_name=None ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):
             'Command macros handled in a special function'
@@ -516,7 +516,7 @@ class ObjectDefinition(object):
                     return val
             return ''
         if macroname.startswith('$HOST') or macroname.startswith('$_HOST'):
-            return self._get_host_macro(macroname)
+            return self._get_host_macro(macroname, host_name=host_name)
         if macroname.startswith('$SERVICE') or macroname.startswith('$_SERVICE'):
             return self._get_service_macro(macroname)
         if _standard_macros.has_key( macroname ):
@@ -537,7 +537,7 @@ class ObjectDefinition(object):
         for i in macronames:
             result[i] = self.get_macro(i)
         return result
-    def get_effective_command_line(self):
+    def get_effective_command_line(self, host_name=None):
         "Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"
         # TODO: This function is incomplete and untested
         if self['check_command'] == None: return None
@@ -549,7 +549,7 @@ class ObjectDefinition(object):
         except ValueError:
             return None
         regex = re.compile("(\$\w+\$)")
-        get_macro = lambda x: self.get_macro(x.group())
+        get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
         result = regex.sub(get_macro, command['command_line'])
         return result
     def _get_command_macro(self, macroname):
@@ -578,7 +578,7 @@ class ObjectDefinition(object):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
         return ''
-    def _get_host_macro(self, macroname):
+    def _get_host_macro(self, macroname, host_name=None):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$_HOST'):
             'if this is a custom macro'
@@ -811,12 +811,16 @@ class Service(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return "%s/%s" % (self['host_name'], self['service_description'])
-    def _get_host_macro(self, macroname):
-        if self['host_name'] == None:
+    def _get_host_macro(self, macroname, host_name=None):
+        if not host_name:
+            host_name = self['host_name']
+        if not host_name:
             return None
-        myhost = Host.objects.get_by_shortname(self['host_name'])
-        return myhost._get_host_macro(macroname)     
-
+        try:
+            myhost = Host.objects.get_by_shortname(host_name)
+            return myhost._get_host_macro(macroname)     
+        except:
+            return None
             
 class Command(ObjectDefinition):
     object_type = 'command'
