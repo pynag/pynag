@@ -4,7 +4,6 @@ import sys
 import os
 import re
 from platform import node
-from subprocess import Popen, PIPE
 from optparse import OptionParser
 
 """
@@ -246,27 +245,29 @@ class simple:
 		"""
 	
 		# Execute send_nsca
-		p = Popen("send_nsca -H %s" % (ncsahost), shell=True,
-			stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=True)
+                from popen2 import Popen3
+		command = "send_nsca -H %s" % (ncsahost)
+                p = Popen3(command,  capturestderr=True)
 
 		# Service check
 		if service:
-			print >>p.stdin, "%s	%s	%s	%s %s" % (hostname, service, code, message, self.perfdata_string())
+			print >>p.tochild, "%s	%s	%s	%s %s" % (hostname, service, code, message, self.perfdata_string())
 		# Host check, omit service_description
 		else:
-			print >>p.stdin, "%s	%s	%s %s" % (hostname, code, message, self.perfdata_string())
+			print >>p.tochild, "%s	%s	%s %s" % (hostname, code, message, self.perfdata_string())
 
 		# Send eof
 		# TODO, support multiple statuses ?
-		p.stdin.close()
+		p.tochild.close()
 
 		# Save output incase we have an error
 		nsca_output = ''
-		for line in p.stdout.readlines():
+		for line in p.fromchild.readlines():
 			nsca_output += line
 
 		# Wait for send_nsca to exit
 		returncode = p.wait()
+		returncode = os.WEXITSTATUS( returncode) 
 
 		# Problem with running nsca
 		if returncode != 0:
@@ -352,7 +353,9 @@ class simple:
 		"""
 		# Check for messages in unknown, critical, warning, ok to determine
 		# code
-		for code in sorted(self.data['messages'].keys(), reverse = True):
+		keys = self.data['messages'].keys()
+		keys.sort(reverse=True)
+		for code in keys:
 			if len(self.data['messages'][code]):
 				break
 
@@ -362,7 +365,7 @@ class simple:
 		# Join all strings whether OK, WARN...
 		else:
 			message = ""
-			for c in sorted(self.data['messages'].keys(), reverse = True):
+			for c in keys:
 				if len(self.data['messages'][c]):
 					message += joinallstr.join(self.data['messages'][c]) + joinallstr
 
