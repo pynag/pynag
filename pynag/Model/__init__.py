@@ -100,8 +100,7 @@ class ObjectFetcher(object):
     def __init__(self, object_type):
         self.object_type = object_type
         self.objects = []
-    @property
-    def all(self):
+    def get_all(self):
         " Return all object definitions of specified type"
         if self.objects == []:
             'we get here on first run'
@@ -110,6 +109,7 @@ class ObjectFetcher(object):
             'We get here if any configuration file has changed'
             self.reload_cache()
         return self.objects
+    all = property(get_all)
     def clean_cache(self):
         'Empties current object cache'
         global config
