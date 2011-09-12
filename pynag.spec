@@ -12,7 +12,7 @@ License: GPLv2
 Group: System Environment/Libraries
 Requires: python >= 2.3
 BuildRequires: python-devel
-%if %is_suse
+%if 0%{?suse_version}
 BuildRequires: gettext-devel
 %else
 %if 0%{?fedora} >= 8
