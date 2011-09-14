@@ -416,7 +416,7 @@ class ObjectDefinition(object):
             save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
             if save_result == True:
                 del self._changes[field_name]
-                self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
+                self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
                 if not new_value:
                     if self._defined_attributes.has_key(field_name):
                         del self._defined_attributes[field_name]
@@ -768,6 +768,8 @@ class ObjectDefinition(object):
         for i in eventhandlers:
             if level == 'write':
                 i.write( object_definition=self, message=message )
+            elif level == 'save':
+                i.save( object_definition=self, message=message )
             else:
                 i.debug( object_definition=self, message=message )
             
