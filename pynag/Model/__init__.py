@@ -429,6 +429,7 @@ class ObjectDefinition(object):
             else:
                 raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
         self.objects.clean_cache()
+        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
         return number_of_changes
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
