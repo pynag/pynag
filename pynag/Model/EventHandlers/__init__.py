@@ -82,3 +82,51 @@ class FileLogger(BaseEventHandler):
         "Called when objectdefinition.save() has finished"
         message = "%s: %s" %( time.asctime(), message )
         self._append_to_file( message )
+ 
+ 
+class GitEventHandler(BaseEventHandler):
+    def __init__(self, gitdir, source, modified_by):
+        """
+        Commits to git repo rooted in nagios configuration directory
+        
+        It automatically raises an exception if the configuration directory
+        is not a git repository.
+        
+        source = prepended to git commit messages
+        modified_by = is the username in username@<hostname> for commit messages
+        """
+        import git
+        from os import environ
+        from platform import node
+
+        # Git base is the nagios config directory
+        self.gitdir = gitdir
+
+        # Who made the change
+        self.modified_by = modified_by
+
+        # Which program did the change
+        self.source = source
+
+        # Init the git repository
+        try:
+            self.gitrepo = git.Repo(self.gitdir)
+        except Exception, e:
+            raise Exception("Unable to open git repo %s, do you need to git init?" % (str(e)))
+
+        # Set the author information for the commit
+        environ['GIT_AUTHOR_NAME'] = self.modified_by
+        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.modified_by, node())
+
+    def debug(self, object_definition, message):
+        pass
+
+    def write(self, object_definition, message):
+        print "write"
+        self.gitrepo.index.add([object_definition._meta['filename']])
+        self.gitrepo.index.commit("%s: %s %s modified by %s" % (self.source, object_definition.object_type.capitalize(), object_definition.get_shortname(), self.modified_by))
+
+    def save(self, object_definition, message):
+        pass
+
+
