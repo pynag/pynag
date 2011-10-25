@@ -404,10 +404,10 @@ class ObjectDefinition(object):
             if not self._meta['filename']:
                 'discover a new filename'
                 self._meta['filename'] = self.get_suggested_filename()
-                for k,v in self._changes.items():
-                    self._defined_attributes[k] = v
-                    self._original_attributes[k] = v
-                    del self._changes[k]
+            for k,v in self._changes.items():
+                self._defined_attributes[k] = v
+                self._original_attributes[k] = v
+                del self._changes[k]
             config.item_add(self._original_attributes, self._meta['filename'])
             return
         # If we get here, we are making modifications to an object
