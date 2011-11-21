@@ -599,7 +599,7 @@ class config:
 		original_object = self.get_service(target_host, service_description)
 		if original_object == None:
 			raise ParserError("Service not found")
-		return config.edit_object( original_object, field_name, new_value)
+		return self.edit_object( original_object, field_name, new_value)
 
 
 	def _get_list(self, object, key):
