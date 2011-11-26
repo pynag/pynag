@@ -267,13 +267,13 @@ class ObjectDefinition(object):
     '''
     object_type = None
     objects = ObjectFetcher(None)
-    def __init__(self, item=None):
+    def __init__(self, item=None, filename=None):
         # Check if we have parsed the configuration yet
         if config is None:
             self.objects.reload_cache()
         # if Item is empty, we are creating a new object
         if item is None:
-            item = config.get_new_item(object_type=self.object_type, filename=None)
+            item = config.get_new_item(object_type=self.object_type, filename=filename)
             self.is_new = True
         else:
             self.is_new = False
