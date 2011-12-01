@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import sys,os
+sys.path.append('/opt/pynag')
+from pynag import Model
+
+all_commands = Model.Command.objects.all
+for c in all_commands:
+	print c.command_line
+

@@ -21,8 +21,7 @@
 import os,sys
 
 ## This is for the custom nagios module
-sys.path.insert(1, '../')
-from pynag.Parsers import config, Service
+from pynag.Parsers import config
 import time
 
 ## Create the plugin option
