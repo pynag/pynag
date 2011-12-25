@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Python Nagios extensions
+"""
 
 import sys
 import os
@@ -6,9 +9,7 @@ import re
 from platform import node
 from optparse import OptionParser
 
-"""
-Python Nagios extensions
-"""
+
 
 __author__ = "Drew Stinnett"
 __copyright__ = "Copyright 2008, Drew Stinnett"
@@ -247,7 +248,7 @@ class simple:
 		# Execute send_nsca
                 from popen2 import Popen3
 		command = "send_nsca -H %s" % (ncsahost)
-                p = Popen3(command,  capturestderr=True)
+		p = Popen3(command,  capturestderr=True)
 
 		# Service check
 		if service:

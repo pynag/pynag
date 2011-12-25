@@ -222,7 +222,7 @@ class config:
 			# append saved text to the current line
 			if append:
 				append += ' '
-				line = append + line;
+				line = append + line
 				append = None
 
 			# end of object definition

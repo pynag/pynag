@@ -122,7 +122,7 @@ class ObjectFetcher(object):
         global config
         config = Parsers.config(cfg_file)
         config.parse()
-        if self.object_type != None:
+        if self.object_type is not None:
             key_name = "all_%s" % (self.object_type)
             if not config.data.has_key(key_name):
                 return []
@@ -328,6 +328,12 @@ class ObjectDefinition(object):
     def is_dirty(self):
         "Returns true if any attributes has been changed on this object, and therefore it needs saving"
         return len(self._changes.keys()) == 0
+    def is_registered(self):
+		""" Returns true if object is enabled (registered)
+		"""
+		if not self.has_key('register'): return True
+		if self['register'] is "1": return True
+		return False
     def __setitem__(self, key, item):
         self._changes[key] = item
     def __getitem__(self, key):
@@ -505,6 +511,13 @@ class ObjectDefinition(object):
         return self.get("%s_name" % self.object_type, None)
     def get_shortname(self):
         return self.get_description()
+    def get_filename(self):
+        """ Get name of the config file which defines this object
+        """
+        return self._meta['filename']
+    def set_filename(self, filename):
+        """ set name of the config file which defines this object"""
+        self._meta['filename'] = filename
     def get_macro(self, macroname, host_name=None ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):

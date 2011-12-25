@@ -17,15 +17,15 @@ class daemon:
 
 		if not os.path.isfile(nagios_bin):
 			sys.stderr.write("Missing Nagios Binary (%s)\n" % nagios_bin)
-			return None
+			return
 
 		if not os.path.isfile(nagios_cfg):
 			sys.stderr.write("Missing Nagios Configuration (%s)\n" % nagios_cfg)
-			return None
+			return
 
 		if not os.path.isfile(nagios_init):
 			sys.stderr.write("Missing Nagios Init File (%s)\n" % nagios_init)
-			return None
+			return
 
 		self.nagios_bin = nagios_bin
 		self.nagios_cfg = nagios_cfg
