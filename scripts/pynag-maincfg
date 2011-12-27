@@ -1,0 +1,89 @@
+#!/usr/bin/python
+#
+# Copyright 2011, Pall Sigurdsson <palli@opensource.is>
+#
+# This script is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This script is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# About this script:
+# Convenient way to add configure nagios.cfg from commandline
+
+
+from pynag import Parsers
+import os.path
+from sys import argv,exit
+import sys
+
+
+
+attributes = {}
+arguments = argv[1:]
+append = False
+verbose = False
+
+c = Parsers.config()
+filename = c.cfg_file
+
+def show_help():
+	print """
+%s - Pragmatic way to edit values in static nagios configuration files like nagios.cfg
+
+USAGE:
+	%s [OPTIONS] [attribute1=value1] [attribute2=value2]
+
+OPTIONS:
+	--quiet		not verbose (default true)
+	--verbose	Verbose mode (default false)
+	--filename	Filename to edit (default %s)
+	--append	Append value to end of file instead of replacing
+	attribute=value	set a speficic attribute to a new value
+
+EXAMPLES:
+	# %s 'process_performance_data=1'
+	# %s 'event_broker_options=-1'
+	# %s --filename /etc/nagios/nagios.cfg --append 'cfg_dir=/etc/nagios/okconfig'
+
+	""" % (sys.argv[0], sys.argv[0], filename, sys.argv[0],sys.argv[0], sys.argv[0] )
+
+if len(arguments) is 0:
+	print "Arguments are required."
+	show_help()
+	sys.exit(1)
+
+while len(arguments) > 0:
+	i = arguments.pop(0)
+	if i == '--verbose':
+		verbose = True
+	elif i == '--quiet':
+		verbose == False
+	elif i == '--append':
+		append = True
+	elif i == '--help':
+		show_help()
+		sys.exit(0)
+	elif i == "--config":
+		filename = arguments.pop(0)
+	elif i == "--filename":
+		filename = arguments.pop(0)
+	elif i.find('=') > 1:
+		key,value = i.split('=',1)
+		attributes[key] = value
+	else:
+		print "Error: Dont know what to do with argument '%s'. " % i
+		show_help()
+		sys.exit(1)
+
+for k,v in attributes.items():
+	result = c._edit_static_file(attribute=k, new_value=v, filename=filename, append=append)
+	if verbose is True:
+		print "%s:%s changed: %s" % (filename,k, result)
