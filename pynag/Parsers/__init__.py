@@ -358,7 +358,7 @@ class config:
 			if len(keyword) > 0 and keyword[0] == '}':
 				i_am_within_definition = False
 				
-				current_definition = self.get_new_item(object_type=current_object_type, filename=filename)
+				current_candidate = self.get_new_item(object_type=current_object_type, filename=filename)
 				for i in tmp_buffer:
 					i = i.strip()
 					tmp = i.split(None, 1)
@@ -376,10 +376,12 @@ class config:
 					if k.startswith('define'): continue
 					if k.startswith('}'): continue
 					
-					current_definition[k] = v
-					current_definition = self._apply_template(current_definition)
+					current_candidate[k] = v
+					current_candidate['meta']['defined_attributes'][k] = v
+					# Apply template should not be needed anymore
+					#current_candidate = self._apply_template(current_candidate)
 				# Compare objects
-				if self.compareObjects( item, current_definition ) == True:
+				if self.compareObjects( item, current_candidate ) == True:
 					'This is the object i am looking for'
 					object_has_been_found = True
 					object_definition = tmp_buffer
@@ -572,8 +574,8 @@ class config:
 		"""
 		Compares two items. Returns true if they are equal"
 		"""
-		keys1 = item1.keys()
-		keys2 = item2.keys()
+		keys1 = item1['meta']['defined_attributes'].keys()
+		keys2 = item2['meta']['defined_attributes'].keys()
 		keys1.sort()
 		keys2.sort()
 		result=True
@@ -587,7 +589,7 @@ class config:
 			if key == 'check_interval':
 				key1 = int(float(key1))
 				key2 = int(float(key2))
-			if key1 != key2:
+			if str(key1) != str(key2):
 				result = False
 		if result == False: return False
 		return True
@@ -914,6 +916,66 @@ class config:
 			key, value = line.split("=", 1)
 			result.append( (key, value) )
 		return result
+	def _edit_static_file(self, attribute, new_value, filename=None,old_value=None,append=False):
+		""" Modify a general config file (like nagios.cfg) that has a key=value config file format.
+
+		Arguments:
+			filename -- Name of config file that will be edited (i.e. nagios.cfg)
+			attribute -- name of attribute to edit (i.e. check_external_commands)
+			new_value -- new value for the said attribute (i.e. "1"). None deletes the line.
+			old_value -- Useful if multiple attributes exist (i.e. cfg_dir) and you want to replace a specific one.
+			append -- If true, do not overwrite current setting. Instead append this at the end. Use this with settings that are repeated like cfg_file.
+		Examples:
+			_edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='check_external_commands', new_value='1')
+			_edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='cfg_dir', new_value='/etc/nagios/okconfig', append=True)
+		"""
+		if filename is None: filename = self.cfg_file
+		if attribute in ('cfg_file','cfg_dir','broker_module'): append = True
+		new_line = '%s=%s\n' % (attribute,new_value)
+		if new_value is None: new_line = ''
+		write_buffer = open(filename).readlines()
+		need_to_write = True # False if there is no need to overwrite file
+		is_dirty = False # dirty if we make any changes
+		for i,line in enumerate(write_buffer):
+			## Strip out new line characters
+			line = line.strip()
+
+			## Skip blank lines
+			if line == "":
+				continue
+
+			## Skip comments
+			if line[0] == "#" or line[0] == ';':
+				continue
+			key, value = line.split("=", 1)
+			key = key.strip()
+			value = value.strip()
+			if key == attribute and value == old_value:
+				print "old value at work", old_value
+				write_buffer[i] = new_line
+				is_dirty = True
+				break
+			elif key == attribute and value == new_value:
+				# New value is the same as current value
+				need_to_write = False
+				break
+			elif key == attribute and append is False and old_value is not None:
+				write_buffer[i] = new_line
+				is_dirty = True
+				break
+		if need_to_write is False:
+			return False
+		if is_dirty is True:
+			open(filename,'w').write(''.join(write_buffer))
+			return True
+		# If old_value was specifically mentioned. Then it should have been handled by now.
+		# If no old_value is specified we append to file
+		if old_value is None:
+			open(filename,'a').write('\n%s	' % new_line)
+			return True
+		return False
+
+
 	def needs_reload(self):
 		"Returns True if Nagios service needs reload of cfg files"
 		new_timestamps = self.get_timestamps()
@@ -1207,7 +1269,8 @@ class ParserError(Exception):
 if __name__ == '__main__':
 	c=config('/etc/nagios/nagios.cfg')
 	c.parse()
-	print c.get_object_types()
-	print c.needs_reload()
+	print c._edit_static_file(filename='/tmp/nagios.cfg',attribute='host_perfdata_file_mode',new_value='rugl', append=True)
+	#print c.get_object_types()
+	#print c.needs_reload()
 	#for i in c.data['all_host']:
 	#	print i['meta']

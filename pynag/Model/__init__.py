@@ -69,7 +69,6 @@ config = None
 eventhandlers = []
 
 def debug(text):
-    debug = True
     if debug: print text
 
 
@@ -112,11 +111,13 @@ class ObjectFetcher(object):
     all = property(get_all)
     def clean_cache(self):
         'Empties current object cache'
+        debug("Debug: clean_cache()")
         global config
         config = None
         ObjectDefinition.objects.objects = []
     def reload_cache(self):
         'Reload configuration cache'
+        debug('debug: reload_cache()')
         self.objects = []
         ObjectFetcher.relations= {}
         global config
@@ -435,6 +436,14 @@ class ObjectDefinition(object):
             else:
                 raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
         self.objects.clean_cache()
+
+        # this piece of code makes sure that when we current object contains all current info
+        new_me = self.objects.get_by_id(self.get_id())
+        self._defined_attributes = new_me._defined_attributes
+        self._original_attributes = new_me._original_attributes
+        self._inherited_attributes = new_me._inherited_attributes
+        self._meta = new_me._meta
+
         self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
         return number_of_changes
     def rewrite(self, str_new_definition=None):
@@ -480,7 +489,9 @@ class ObjectDefinition(object):
         return result
     def __str__(self):
         return_buffer = "define %s {\n" % (self.object_type)
-        fields = self.keys()
+        fields = self._defined_attributes.keys()
+        for i in self._changes.keys():
+            if i not in fields: fields.append(i)
         fields.sort()
         interesting_fields = ['service_description', 'use', 'name', 'host_name']
         for i in interesting_fields:

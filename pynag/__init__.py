@@ -4,7 +4,8 @@ import sys
 import os
 import re
 from optparse import OptionParser
-#from pynag import Plugin
+from pynag import Plugins
+Plugin = Plugins.simple
 
 """
 Python Nagios extensions
