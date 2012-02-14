@@ -173,17 +173,10 @@ class simple:
 
 		if critical and self._range_checker(value, critical):
 			self.add_message(CRITICAL,"%s meets the range: %s" % (value, self.hr_range))
-
-		if warning and self._range_checker(value, warning):
+		elif warning and self._range_checker(value, warning):
 			self.add_message(WARNING,"%s meets the range: %s" % (value, self.hr_range))
-
-		## This is the lowest range, which we'll output
-		if warning:
-			alert_range = warning
 		else:
-			alert_range = critical
-		
-		self.add_message(OK,"%s does not meet the range: %s" % (value, self.hr_range))
+			self.add_message(OK,"%s does not meet the range: %s" % (value, self.hr_range))
 
 		# Get all messages appended and exit code
 		(code, message) = self.check_messages()
