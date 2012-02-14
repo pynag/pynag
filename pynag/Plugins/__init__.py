@@ -156,7 +156,7 @@ class simple:
 
 	def check_range(self, value):
 		"""
-		Check if a value is within a given range.  This should replace change_threshold eventually
+		Check if a value is within a given range.  This should replace change_threshold eventually. Exits with appropriate exit code given the range.
 
 		Taken from:  http://nagiosplug.sourceforge.net/developer-guidelines.html
 		Range definition
@@ -172,10 +172,10 @@ class simple:
 		warning = self.data['warning']
 
 		if critical and self._range_checker(value, critical):
-			self.nagios_exit(CRITICAL,"%s meets the range: %s" % (value, self.hr_range))
+			self.add_message(CRITICAL,"%s meets the range: %s" % (value, self.hr_range))
 
 		if warning and self._range_checker(value, warning):
-			self.nagios_exit(WARNING,"%s meets the range: %s" % (value, self.hr_range))
+			self.add_message(WARNING,"%s meets the range: %s" % (value, self.hr_range))
 
 		## This is the lowest range, which we'll output
 		if warning:
@@ -183,7 +183,13 @@ class simple:
 		else:
 			alert_range = critical
 		
-		self.nagios_exit(OK,"%s does not meet the range: %s" % (value, self.hr_range))
+		self.add_message(OK,"%s does not meet the range: %s" % (value, self.hr_range))
+
+		# Get all messages appended and exit code
+		(code, message) = self.check_messages()
+
+		# Exit with appropriate exit status and message
+		self.nagios_exit(code, message)
 
 	def _range_checker(self, value, check_range):
 		"""
