@@ -5,7 +5,7 @@
 
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
-Version: 0.5
+Version: 0.4.1
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -99,6 +99,10 @@ rm -fr $RPM_BUILD_ROOT
 %doc AUTHORS README LICENSE CHANGES
 
 %changelog
+* Tue Mar 13 2012 Pall Sigurdsson <palli@opensource.is> 0.4.1-1
+- make manpages added to pynag.spec (palli@opensource.is)
+- make manpages added to pynag.spec (palli@opensource.is)
+
 * Tue Mar 13 2012 Pall Sigurdsson <palli@opensource.is> 0.5-1
 - new package built with tito
 
