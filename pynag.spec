@@ -15,11 +15,15 @@ BuildRequires: python-devel
 %if 0%{?suse_version}
 BuildRequires: gettext-devel
 %else
+%if 0%{?fedora} >= 13
+BuildRequires: python-setuptools
+%else
 %if 0%{?fedora} >= 8
 BuildRequires: python-setuptools-devel
 %else
 %if 0%{?rhel} >= 5
 BuildRequires: python-setuptools
+%endif
 %endif
 %endif
 %endif
