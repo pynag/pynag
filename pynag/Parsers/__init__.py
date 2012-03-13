@@ -30,6 +30,18 @@ class config:
 	def __init__(self, cfg_file = "/etc/nagios/nagios.cfg"):
 
 		self.cfg_file = cfg_file # Main configuration file
+
+		# If nagios.cfg is not set, lets do some minor autodiscover.
+		if self.cfg_file is None:
+			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
+			for file in possible_files:
+				if os.path.isfile(file):
+					self.cfg_file = file
+
+		if not os.path.isfile(self.cfg_file):
+			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
+
+	def reset(self):
 		self.cfg_files = [] # List of other configuration files
 		self.data = {} # dict of every known object definition
 		self.errors = [] # List of ParserErrors
@@ -37,13 +49,7 @@ class config:
 		self.item_cache = None
 		self.maincfg_values = [] # The contents of main nagios.cfg
 		self.resource_values = [] # The contents of any resource_files
-		
-		# If nagios.cfg is not set, lets do some minor autodiscover.
-		if self.cfg_file is None:
-			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
-			for file in possible_files:
-				if os.path.isfile(file):
-					self.cfg_file = file
+
 		## This is a pure listof all the key/values in the config files.  It
 		## shouldn't be useful until the items in it are parsed through with the proper
 		## 'use' relationships
@@ -61,9 +67,6 @@ class config:
 			'command':'command_name',
 			#'service':['host_name','description'],
 		}
-
-		if not os.path.isfile(self.cfg_file):
-			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
 
 	def _has_template(self, target):
 		"""
@@ -999,6 +1002,10 @@ class config:
 		"""
 		Load the nagios.cfg file and parse it up
 		"""
+
+		# reset
+		self.reset()
+
 		self.maincfg_values = self._load_static_file(self.cfg_file)
 		
 		self.cfg_files = self.get_cfg_files()
@@ -1073,7 +1080,6 @@ class config:
 
 		## Loop through all hostgroups, appending them to their respective hosts
 		for hostgroup in self.data['all_hostgroup']:
-
 			for member in self._get_list(hostgroup,'members'):
 				index = 0
 				for host in self.data['all_host']:
