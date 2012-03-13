@@ -44,6 +44,7 @@ are scripts which list services, do network discovery amongst others.
 
 %build
 %{__python} setup.py build
+make manpages
 
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
