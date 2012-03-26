@@ -752,6 +752,18 @@ class config:
 		"""
 		return self.get_object('hostgroup',object_name, user_key = user_key)
 
+	def get_servicedependency(self, object_name, user_key = None):
+		"""
+		Return a servicedependency object
+		"""
+		return self.get_object('servicedependency',object_name, user_key = user_key)
+
+	def get_hostdependency(self, object_name, user_key = None):
+		"""
+		Return a hostdependency object
+		"""
+		return self.get_object('hostdependency',object_name, user_key = user_key)
+
 	def get_service(self, target_host, service_description):
 		"""
 		Return a service object.  This has to be seperate from the 'get_object'

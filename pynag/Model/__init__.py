@@ -878,6 +878,14 @@ class Contact(ObjectDefinition):
         for cgroup in Contactgroup.objects.filter( members__has_field=self['contact_name'] ):
             if cgroup not in result: result.append( cgroup )
         return result
+class ServiceDependency(ObjectDefinition):
+    object_type = 'servicedependency'
+    objects = ObjectFetcher('servicedependency')
+
+class HostDependency(ObjectDefinition):
+    object_type = 'hostdependency'
+    objects = ObjectFetcher('hostdependency')
+
 class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
     objects = ObjectFetcher('contactgroup')
