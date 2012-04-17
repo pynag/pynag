@@ -16,10 +16,7 @@ versionfile:
 	echo "version:" $(VERSION) > etc/version
 	echo "release:" $(RELEASE) >> etc/version
 	echo "source build date:" $(DATE) >> etc/version
-	#echo "git commit:" $(shell git log -n 1 --pretty="format:%H") >> etc/version
-	#echo "git date:" $(shell git log -n 1 --pretty="format:%cd") >> etc/version
 
-#	echo $(shell git log -n 1 --pretty="format:git commit: %H from \(%cd\)") >> etc/version 
 manpage:
 	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod | gzip -c > ./docs/$$manpage.1.gz); done
 
@@ -34,7 +31,6 @@ clean:
 	-rm -rf rpm-build/
 	-rm -rf docs/*.gz
 	-rm -f etc/version
-	#-for d in $(DIRS); do ($(MAKE) -C $$d clean ); done
 
 clean_hard:
 	-rm -rf $(shell $(PYTHON) -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")/pynag 
@@ -78,7 +74,7 @@ testit: clean
 unittest:
 	-nosetests -v -w test/unittest
 
-rpms: build manpage sdist
+rpms: build sdist
 	mkdir -p rpm-build
 	cp dist/*.gz rpm-build/
 	rpmbuild --define "_topdir %(pwd)/rpm-build" \
