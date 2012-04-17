@@ -6,3 +6,4 @@ include LICENSE
 include README
 include CHANGES
 include pynag.spec
+include Makefile
