@@ -1284,11 +1284,3 @@ class ParserError(Exception):
 	def __str__(self):
 		return repr(self.message)
 
-if __name__ == '__main__':
-	c=config('/etc/nagios/nagios.cfg')
-	c.parse()
-	print c._edit_static_file(filename='/tmp/nagios.cfg',attribute='host_perfdata_file_mode',new_value='rugl', append=True)
-	#print c.get_object_types()
-	#print c.needs_reload()
-	#for i in c.data['all_host']:
-	#	print i['meta']
