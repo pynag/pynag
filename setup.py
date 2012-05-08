@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 NAME = "pynag"
-VERSION = '0.4.1'
+VERSION = '0.4'
 SHORT_DESC = "%s - Python Nagios Extension" % NAME
 LONG_DESC = """
 %s contains tools for pragmatically handling configuration file maintenance a
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 		long_description = LONG_DESC,
 		author_email='drew@drewlink.com',
 		url='http://code.google.com/p/pynag/',
-		license='GPL',
+		license='GPLv2',
 		scripts = [
 			'scripts/pynag-add_host_to_group',
 			'scripts/pynag-safe_restart'
