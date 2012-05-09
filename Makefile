@@ -8,7 +8,7 @@ TOPDIR = $(shell pwd)
 DIRS	= build docs contrib etc examples pynag scripts
 PYDIRS	= pynag scripts examples 
 EXAMPLEDIR = examples
-MANPAGES = pynag-safe_restart pynag-add_host_to_group
+MANPAGES = pynag-add_host_to_group pynag-addservice pynag-maincfg pynag-safe_restart pynag-sql
 
 all: rpms
 

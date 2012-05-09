@@ -6,7 +6,7 @@
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
 Version: 0.4.1
-Release: 5%{?dist}
+Release: 6%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
@@ -65,6 +65,9 @@ rm -fr $RPM_BUILD_ROOT
 %doc AUTHORS README LICENSE CHANGES
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
 %{_mandir}/man1/pynag-safe_restart.1.gz
+%{_mandir}/man1/pynag-addservice.1.gz
+%{_mandir}/man1/pynag-maincfg.1.gz
+%{_mandir}/man1/pynag-sql.1.gz
 %dir %{_datadir}/%{name}
 
 %files examples
@@ -73,7 +76,7 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
-* Tue Apr 17 2012 Tomas Edwardsson <tommi@tommi.org> 0.4.1-5
+* Tue May  9 2012 Tomas Edwardsson <tommi@tommi.org> 0.4.1-6
 - Simplified spec file, threw out lots of legacy conditionals
 - Added Requires parent for pynag-examples
 

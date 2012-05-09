@@ -44,6 +44,9 @@ if __name__ == "__main__":
       	data_files = [(manpath, [
 			'docs/pynag-add_host_to_group.1',
 			'docs/pynag-safe_restart.1',
+			'docs/pynag-addservice.1',
+			'docs/pynag-maincfg.1',
+			'docs/pynag-sql.1'
 		]),
 		],
 	)

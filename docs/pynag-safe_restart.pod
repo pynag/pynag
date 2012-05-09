@@ -17,7 +17,8 @@ See http://code.google.com/p/pynag/ for more information.
 
 =head1 SEE ALSO
 
-pynag-add_host_to_group(1)
+pynag-add_host_to_group(1) pynag-addservice(1) pynag-maincfg(1)
+pynag-sql(1)
 
 =head1 AUTHOR
 

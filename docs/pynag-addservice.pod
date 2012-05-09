@@ -1,0 +1,35 @@
+=head1 NAME
+
+pynag-addservice - Adds a nagios service to the specified host
+
+=head1 SYNOPSIS
+
+pynag-addservice host_name=<hostname> [attribute1=value1]...
+
+=head1 DESCRIPTION
+
+A convenience script to add new service checks to nagios
+
+=head1 hostname
+
+Hostname can be any correctly defined host in the nagios configuration.
+
+=head1 attributes
+
+Adds any attributes to the new service, for instance
+	use=generic-host
+	service_description=SSH
+	check_command=check_ssh
+
+=head1 ADDITIONAL RESOURCES
+
+See http://code.google.com/p/pynag/ for more information.
+
+=head1 SEE ALSO
+
+pynag-safe_restart(1) pynag-add_host_to_group(1) pynag-maincfg(1)
+pynag-sql(1)
+
+=head1 AUTHOR
+
+Pall Sigurdsson <palli@opensource.is>
