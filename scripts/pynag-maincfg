@@ -46,6 +46,7 @@ OPTIONS:
 	--verbose	Verbose mode (default false)
 	--filename	Filename to edit (default %s)
 	--append	Append value to end of file instead of replacing
+	--set		Replace existing value if any exists (default)
 	attribute=value	set a speficic attribute to a new value
 
 EXAMPLES:
@@ -68,6 +69,8 @@ while len(arguments) > 0:
 		verbose == False
 	elif i == '--append':
 		append = True
+	elif i == '--set':
+		append = False
 	elif i == '--help':
 		show_help()
 		sys.exit(0)
@@ -79,7 +82,7 @@ while len(arguments) > 0:
 		key,value = i.split('=',1)
 		attributes[key] = value
 	else:
-		print "Error: Dont know what to do with argument '%s'. " % i
+		print "Error: Unknown argument '%s'. " % i
 		show_help()
 		sys.exit(1)
 
