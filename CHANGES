@@ -1,3 +1,28 @@
+Changes in 0.4.1
+
+    Plugins
+	Fix to check_range which now support multiple status lines
+	Modifications for python-2.3 support
+
+    Scripts
+	Added pynag-maincfg which allows for editing nagios.cfg
+	Added pynag-addservice for easy addition of services
+
+    Model
+	Ability to set filename for new objects
+	save() now works on when changing 'use'
+	Modifications for python-2.3 support
+
+    Parsers
+	typo fixed in edit_service 
+	Memory leak fix
+	Added servicedependency and hostdependency support
+
+    EventHandlers
+	Added GitEventHandler which automaticly commits to git
+
+
+
 Changes in 0.4.0
 
 Features added:

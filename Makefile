@@ -1,4 +1,4 @@
-VERSION		= 0.4
+VERSION		= 0.4.1
 RELEASE		= 1
 DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
@@ -8,7 +8,7 @@ TOPDIR = $(shell pwd)
 DIRS	= build docs contrib etc examples pynag scripts
 PYDIRS	= pynag scripts examples 
 EXAMPLEDIR = examples
-MANPAGES = pynag-safe_restart pynag-add_host_to_group
+MANPAGES = pynag-add_host_to_group pynag-addservice pynag-maincfg pynag-safe_restart pynag-sql
 
 all: rpms
 
@@ -18,10 +18,10 @@ versionfile:
 	echo "source build date:" $(DATE) >> etc/version
 
 manpage:
-	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod | gzip -c > ./docs/$$manpage.1.gz); done
+	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod > ./docs/$$manpage.1); done
 
 
-build: clean versionfile
+build: clean manpage versionfile
 	$(PYTHON) setup.py build -f
 
 clean:
@@ -29,7 +29,7 @@ clean:
 	-rm -rf dist/ build/
 	-rm -rf *~
 	-rm -rf rpm-build/
-	-rm -rf docs/*.gz
+	-rm -rf docs/*.1
 	-rm -f etc/version
 
 clean_hard:

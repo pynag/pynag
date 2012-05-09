@@ -8,7 +8,7 @@ pynag-add_host_to_group <hostname> <hostgroup_name>
 
 =head1 DESCRIPTION
 
-pynag-add_host_to_group adds the specified hostgroup to the host in question.
+Adds the specified hostgroup to the host in question.
 
 =head1 hostname
 
@@ -24,7 +24,8 @@ See http://code.google.com/p/pynag/ for more information.
 
 =head1 SEE ALSO
 
-pynag-safe_restart(1)
+pynag-safe_restart(1) pynag-addservice(1) pynag-maincfg(1)
+pynag-sql(1)
 
 =head1 AUTHOR
 
