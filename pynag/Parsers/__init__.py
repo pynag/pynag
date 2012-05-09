@@ -647,7 +647,6 @@ class config:
 		"""
 		object_key = self._get_key(object_type,user_key)
 
-		target_object = None
 		k = 'all_%s' % object_type
 		for item in self.data[k]:
 			if not item.has_key(object_key):
@@ -1113,7 +1112,6 @@ class config:
 		## Expand service membership
 		index = 0
 		for service in self.data['all_service']:
-			service_members = []
 
 			## Find a list of hosts to negate from the final list
 			self.data['all_service'][index]['meta']['service_members'] = self._get_active_hosts(service)

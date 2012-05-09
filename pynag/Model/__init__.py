@@ -330,11 +330,11 @@ class ObjectDefinition(object):
         "Returns true if any attributes has been changed on this object, and therefore it needs saving"
         return len(self._changes.keys()) == 0
     def is_registered(self):
-		""" Returns true if object is enabled (registered)
+        """ Returns true if object is enabled (registered)
 		"""
-		if not self.has_key('register'): return True
-		if self['register'] is "1": return True
-		return False
+        if not self.has_key('register'): return True
+        if self['register'] is "1": return True
+        return False
     def __setitem__(self, key, item):
         self._changes[key] = item
     def __getitem__(self, key):
@@ -1027,4 +1027,4 @@ def do_relations():
             for i in groups: add_contact_to_group(contact.get_shortname(), i)
     
 if __name__ == '__main__':
-	pass
+    pass
