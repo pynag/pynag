@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # pynag - Python Nagios plug-in and configuration environment
-# Copyright (C) 2010 Pall Sigurdsson
+# Copyright (C) 2011 Pall Sigurdsson
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ for i in canadian_hosts:
 __author__ = "Pall Sigurdsson"
 __copyright__ = "Copyright 2011, Pall Sigurdsson"
 __credits__ = ["Pall Sigurdsson"]
-__license__ = "GPL"
-__version__ = "0.4"
+__license__ = "GPLv2"
+__version__ = "0.4.1"
 __maintainer__ = "Pall Sigurdsson"
 __email__ = "palli@opensource.is"
 __status__ = "Development"
