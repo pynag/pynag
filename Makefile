@@ -18,10 +18,10 @@ versionfile:
 	echo "source build date:" $(DATE) >> etc/version
 
 manpage:
-	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod | gzip -c > ./docs/$$manpage.1.gz); done
+	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod > ./docs/$$manpage.1); done
 
 
-build: clean versionfile
+build: clean manpage versionfile
 	$(PYTHON) setup.py build -f
 
 clean:
@@ -29,7 +29,7 @@ clean:
 	-rm -rf dist/ build/
 	-rm -rf *~
 	-rm -rf rpm-build/
-	-rm -rf docs/*.gz
+	-rm -rf docs/*.1
 	-rm -f etc/version
 
 clean_hard:

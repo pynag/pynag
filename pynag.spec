@@ -1,21 +1,20 @@
 %if 0%{?rhel} <= 5
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python_version: %define python_version %(%{__python} -c "from distutils.sysconfig import get_python_version; print get_python_version()")}
+%{!?python_version: %global python_version %(%{__python} -c "from distutils.sysconfig import get_python_version; print get_python_version()")}
 %endif
 
 Summary: Python Nagios plug-in and configuration environment
 Name: pynag
-Version: 0.4.1
-Release: 2%{?dist}
+Version: 0.4
+Release: 5%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
-Requires: python >= 2.3
 BuildRequires: python-devel
 BuildRequires: python-setuptools
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://code.google.com/p/pynag/
+BuildArch: noarch
 
 %description
 Pynag contains tools for pragmatically handling Nagios configuration
@@ -28,14 +27,13 @@ Requires: pynag
 
 %description examples
 Example scripts which manipulate Nagios configuration files. Provided
-are scripts which list services, do network discovery amongst others.
+are scripts which list services, do network discovery among other tasks.
 
 %prep
 %setup -q
 
 %build
 %{__python} setup.py build
-make manpage
 
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
@@ -44,10 +42,10 @@ install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins
-install -m 755 examples/README $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/
 install -m 755 examples/Model/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model/
 install -m 755 examples/Parsers/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers/
 install -m 755 examples/Plugins/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins/
+
 
 %clean
 rm -fr $RPM_BUILD_ROOT
@@ -60,6 +58,10 @@ rm -fr $RPM_BUILD_ROOT
 %{python_sitelib}/pynag/
 %{_bindir}/pynag-add_host_to_group
 %{_bindir}/pynag-safe_restart
+%{_bindir}/pynag-addservice
+%{_bindir}/pynag-maincfg
+%{_bindir}/pynag-sql
+
 %doc AUTHORS README LICENSE CHANGES
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
 %{_mandir}/man1/pynag-safe_restart.1.gz
@@ -68,17 +70,14 @@ rm -fr $RPM_BUILD_ROOT
 %files examples
 %defattr(-, root, root, -)
 %{_datadir}/%{name}/examples
-%doc AUTHORS README LICENSE CHANGES
+%doc examples/README
 
 %changelog
-* Tue Apr 17 2012 Tomas Edwardsson <tommi@tommi.org> 0.4.1-2
+* Tue Apr 17 2012 Tomas Edwardsson <tommi@tommi.org> 0.4-4
 - Simplified spec file, threw out lots of legacy conditionals
 - Added Requires parent for pynag-examples
 
-* Tue Mar 13 2012 Pall Sigurdsson <palli@opensource.is> 0.4.1-1
-- make manpages added to pynag.spec
-
-* Mon Jul  4 2011 Pall Sigurdsson <palli@opensource.is> - 0.4.0
+* Mon Jul  4 2011 Pall Sigurdsson <palli@opensource.is> - 0.4-1
 - New upstream version
 - Config refactoring
 - New Model module
