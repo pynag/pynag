@@ -36,7 +36,7 @@ are scripts which list services, do network discovery among other tasks.
 %{__python} setup.py build
 
 %install
-test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
+rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --prefix=/usr --root=$RPM_BUILD_ROOT
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model
