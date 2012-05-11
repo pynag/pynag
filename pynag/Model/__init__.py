@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+from google.protobuf.internal.decoder import StringDecoder
 
 
 """
@@ -383,10 +384,10 @@ class ObjectDefinition(object):
         shortname = self.get_description()
         object_name = self['name']
         filename = self['filename']
-        id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
+        object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
         import md5
         return md5.new(id).hexdigest()
-        return id
+        return object_id
     def get_suggested_filename(self):
         "Returns a suitable configuration filename to store this object in"
         path = "" # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
@@ -477,6 +478,29 @@ class ObjectDefinition(object):
             result = config.item_remove(self._original_attributes)
             self._event(level="write", message="Object was deleted")
             return result
+    def copy(self, filename=None, **args):
+        """ Copies this object definition with any unsaved changes to a new configuration object
+        
+        Arguments:
+          filename: If specified, new object will be saved in this file.
+          **args: Any argument will be treated a modified attribute in the new definition.
+        Examples:
+          myhost = Host.objects.get_by_shortname('myhost.example.com')
+          myhost.copy( host_name="newhost.example.com", address="127.0.0.1")
+        """
+        if args == {}:
+                raise ValueError('To copy an object definition you need at least one new attribute')
+
+        new_object = string_to_class[self.object_type]( filename=filename )
+        for k,v in self._defined_attributes.items():
+            new_object[k] = v
+        for k,v in self._changes.items():
+            new_object[k] = v
+        for k,v in args.items():
+            new_object[k] = v
+        print new_object
+        new_object.save()
+        
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
         
@@ -957,6 +981,8 @@ string_to_class['hostgroup'] = Hostgroup
 string_to_class['contactgroup'] = Contactgroup
 string_to_class['servicegroup'] = Servicegroup
 string_to_class['timeperiod'] = Timeperiod
+string_to_class['hostdependency'] = HostDependency
+string_to_class['servicedependency'] = ServiceDependency
 string_to_class['command'] = Command
 #string_to_class[None] = ObjectDefinition
 
