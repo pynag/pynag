@@ -744,10 +744,6 @@ class ObjectDefinition(object):
     def get_effective_hosts(self):
         # TODO: This function is incomplete and untested
         raise NotImplementedError()
-    def invalidate_cache(self):
-        """ Makes sure next time we call self.objects.all or self.objects.filter it will be read from file """
-        #self.objects.objects = []
-        return True
     def get_attribute_tuple(self):
         """ Returns all relevant attributes in the form of:
         
