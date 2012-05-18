@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-from google.protobuf.internal.decoder import StringDecoder
 
 
 """
@@ -122,10 +121,13 @@ class ObjectFetcher(object):
     def reload_cache(self):
         'Reload configuration cache'
         debug('debug: reload_cache()')
+        # clear object list
         self.objects = []
+        #del self.objects[:]
         ObjectFetcher.relations= {}
         global config
-        config = Parsers.config(cfg_file)
+        if not config:
+            config = Parsers.config(cfg_file)
         config.parse()
         if self.object_type is not None:
             key_name = "all_%s" % (self.object_type)
@@ -143,7 +145,7 @@ class ObjectFetcher(object):
             i = Class(item=i)
             #    self.find_relations(i)
             self.objects.append(i)
-        return self.objects
+        return True
     def get_by_id(self, id):
         ''' Get one specific object
         
@@ -386,7 +388,7 @@ class ObjectDefinition(object):
         filename = self['filename']
         object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
         import md5
-        return md5.new(id).hexdigest()
+        return md5.new(object_id).hexdigest()
         return object_id
     def get_suggested_filename(self):
         "Returns a suitable configuration filename to store this object in"
@@ -439,10 +441,9 @@ class ObjectDefinition(object):
                 number_of_changes += 1
             else:
                 raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
-        self.objects.clean_cache()
 
         # this piece of code makes sure that when we current object contains all current info
-        new_me = self.objects.get_by_id(self.get_id())
+        new_me = self.__class__.objects.get_by_id(self.get_id())
         self._defined_attributes = new_me._defined_attributes
         self._original_attributes = new_me._original_attributes
         self._inherited_attributes = new_me._inherited_attributes
