@@ -665,6 +665,7 @@ class config:
 		object_key = self._get_key(object_type,user_key)
 
 		k = 'all_%s' % object_type
+		if k not in self.data: return None
 		for item in self.data[k]:
 			if not item.has_key(object_key):
 				continue
@@ -688,7 +689,7 @@ class config:
 		Delete service from configuration
 		"""
 		for item in self.data['all_service']:
-			if (item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):
+			if ('service_description' in item and item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):
 				self.data['all_service'].remove(item)
 				item['meta']['delete_me'] = True
 				item['meta']['needs_commit'] = True
