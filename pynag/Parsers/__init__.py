@@ -169,9 +169,10 @@ class config:
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
 			if parent_item == None: 
-				error_string = "error in %s\n" % (original_item['meta']['filename'])
+				error_string = ""
+				#error_string = "error in %s\n" % (original_item['meta']['filename'])
 				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
-				error_string = error_string + self.print_conf(original_item)
+				#error_string = error_string + self.print_conf(original_item)
 				self.errors.append( ParserError(error_string,item=original_item) )
 				continue
 			# Parent item probably has use flags on its own. So lets apply to parent first
@@ -1294,9 +1295,15 @@ class status:
 		return self.data[key]
 
 class ParserError(Exception):
+	''' ParserError is used for errors that the Parser has when parsing config.
+	
+	Typical usecase when there is a critical error while trying to read configuration.
+	'''
 	def __init__(self, message, item=None):
 		self.message = message
 		self.item = item
+		self.filename = item['meta']['filename']
+		#self.object_id = item.get_id()
 	def __str__(self):
 		return repr(self.message)
 
