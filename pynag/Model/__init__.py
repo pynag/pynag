@@ -785,6 +785,74 @@ class ObjectDefinition(object):
             contact = Contact.objects.get_by_shortname(c)
             result.append( contact )
         return result
+    def attribute_appendfield(self, attribute_name, value):
+        '''Convenient way to append value to an attribute with a comma seperated value
+        
+        Example:
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins,localadmins
+            }
+           >>> myservice.attribute_addfield(attribute_name="contactgroups", value='webmasters')
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins,localadmins,webmasters
+            }
+           '''
+        aList = AttributeList( self[attribute_name] )
+        
+        if value not in aList.fields:
+            aList.fields.append( value )
+            self[attribute_name] = str(aList)
+        return
+    def attribute_removefield(self, attribute_name, value):
+        '''Convenient way to remove value to an attribute with a comma seperated value
+        
+        Example:
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins,localadmins
+            }
+           >>> myservice.attribute_removefield(attribute_name="contactgroups", value='localadmins')
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins
+            }
+           '''
+        aList = AttributeList(self[attribute_name])
+
+        if value in aList.fields:
+            aList.fields.remove(value)
+            self[attribute_name] = str(aList)
+        return
+    def attribute_replacefield(self, attribute_name, old_value, new_value):
+        '''Convenient way to replace field within an attribute with a comma seperated value
+        
+        Example:
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins,localadmins
+            }
+           >>> myservice.attribute_replacefield(attribute_name="contactgroups", old_value='localadmins', new_value=webmasters)
+           >>> print myservice
+           define service {
+                ...
+                contactgroups +alladmins,webmasters
+            }
+           '''
+        aList = AttributeList(self[attribute_name])
+        
+        if old_value in aList.fields:
+            i = aList.fields.index(old_value)
+            aList.fields[i] = new_value
+            self[attribute_name] = str(aList)
+        return
+
     def _get_effective_attribute(self, attribute_name):
         """This helper function returns specific attribute, from this object or its templates
         
@@ -970,6 +1038,57 @@ class Timeperiod(ObjectDefinition):
         """ Returns a friendly description of the object """
         return self['timeperiod_name']
 
+class AttributeList(object):
+    ''' Parse a list of nagios attributes (e. contact_groups) into a parsable format
+    
+    This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
+    
+    Typical comma-seperated format in nagios configuration files looks something like this:
+        contact_groups     +group1,group2,group3
+        
+    Example:
+        >>> i = AttributeList('+group1,group2,group3')
+        >>> print "Operator is:", i.operator
+        Operator is: +
+        >>> print i.values
+        ['group1','group2','group3']
+    '''
+    def __init__(self, value=None):
+        self.operator = ''
+        self.fields = []
+        
+        # this is easy to do if attribue_name is unset
+        if not value or value == '':
+            return
+    
+        possible_operators = '+-!'
+        if value[0] in possible_operators:
+            self.operator = value[0]
+        else:
+            self.operator = ''
+        
+        self.fields = value.strip(possible_operators).split(',')
+    def __str__(self):
+        return self.operator + ','.join(self.fields)
+    def __repr__(self):
+        return self.__str__()
+    def insert(self, index, object):
+        return self.fields.insert(index,object) 
+    def append(self, object):
+        return self.fields.append(object)
+    def count(self, value):
+        return self.fields.count(value)
+    def extend(self, iterable):
+        return self.fields.extend(iterable)
+    def index(self, value, start, stop):
+        return self.fields.index(value, start, stop)
+    def reverse(self):
+        return self.fields.reverse()
+    def sort(self):
+        return self.fields.sort()
+    def remove(self, value):
+        return self.fields.remove(value)
+
 string_to_class = {}
 string_to_class['contact'] = Contact
 string_to_class['service'] = Service
@@ -1053,4 +1172,6 @@ def do_relations():
             for i in groups: add_contact_to_group(contact.get_shortname(), i)
     
 if __name__ == '__main__':
-    pass
+    for i in Service.objects.all:
+        print i.get_fil
+        i.get_effective_parents()
