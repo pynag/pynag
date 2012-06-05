@@ -586,6 +586,15 @@ class ObjectDefinition(object):
         command = Command.objects.get_by_shortname(command_name)
         regex = re.compile("(\$\w+\$)")
         macronames = regex.findall( command['command_line'] )
+        
+        # Add all custom macros to our list:
+        for i in self.keys():
+            if not i.startswith('_'): continue
+            if self.object_type == 'service':
+                i = '$_SERVICE%s$' % (i[1:])
+            elif self.object_type == 'host':
+                i = '$_HOST%s$' % (i[1:])
+            macronames.append( i )
         result = {}
         for i in macronames:
             result[i] = self.get_macro(i)
