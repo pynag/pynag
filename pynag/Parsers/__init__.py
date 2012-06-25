@@ -256,7 +256,7 @@ class config:
 				try:
 					current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
 				except:
-					print "hmm?"
+					raise ParserError("Encountered Unexpected end of object definition in file '%s'." % filename)
 				self.pre_object_list.append(current)
 
 
@@ -1301,6 +1301,7 @@ class ParserError(Exception):
 	'''
 	def __init__(self, message, item=None):
 		self.message = message
+		if item == None: return
 		self.item = item
 		self.filename = item['meta']['filename']
 		#self.object_id = item.get_id()
