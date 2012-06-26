@@ -120,7 +120,6 @@ class ObjectFetcher(object):
         ObjectDefinition.objects.objects = []
     def reload_cache(self):
         'Reload configuration cache'
-        debug('debug: reload_cache()')
         # clear object list
         self.objects = []
         #del self.objects[:]
@@ -129,6 +128,7 @@ class ObjectFetcher(object):
         if not config:
             config = Parsers.config(cfg_file)
         if config.needs_reparse():
+            debug('Debug: Doing a reparse of configuration')
             config.parse()
         if self.object_type is not None:
             key_name = "all_%s" % (self.object_type)
