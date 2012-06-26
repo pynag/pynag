@@ -52,6 +52,7 @@ import os
 import re
 from pynag import Parsers
 from macros import _standard_macros
+import all_attributes
 import subprocess
 import time
 
@@ -310,9 +311,12 @@ class ObjectDefinition(object):
         
         #: __argument_macros - A dict object that resolves $ARG* macros
         self.__argument_macros = {}
-        # Lets create dynamic convenience properties for each item
-        for k in self._original_attributes.keys():
-            if k == 'meta': continue
+
+        # Lets find common attributes that every object definition should have:
+	self._add_property('register')
+	self._add_property('name')
+	defs = all_attributes.object_definitions.get(self.object_type,[])
+        for k in defs.keys():
             self._add_property(k)
     
     def _add_property(self, name):
@@ -324,7 +328,9 @@ class ObjectDefinition(object):
         '''
         fget = lambda self: self.get_attribute(name)
         fset = lambda self, value: self.set_attribute(name, value)
-        setattr( self.__class__, name, property(fget,fset))
+        fdel = lambda self: self.set_attribute(name, None)
+        fdoc = "This is the %s attribute for object definition"
+        setattr( self.__class__, name, property(fget,fset,fdel,fdoc))
     def get_attribute(self, attribute_name):
         'Get one attribute from our object definition'
         return self[attribute_name]
