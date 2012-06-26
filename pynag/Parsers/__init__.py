@@ -57,6 +57,7 @@ class config:
 
 		if not os.path.isfile(self.cfg_file):
 			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
+		self.data = {}
 
 	def reset(self):
 		self.cfg_files = [] # List of other configuration files
@@ -1021,6 +1022,9 @@ class config:
 		return False 
 	def needs_reparse(self):
 		"Returns True if any Nagios configuration file has changed since last parse()"
+		# If Parse has never been run:
+		if self.data == {}:
+			return True
 		new_timestamps = self.get_timestamps()
 		if len(new_timestamps) != len( self.timestamps ):
 			return True

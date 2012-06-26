@@ -128,7 +128,8 @@ class ObjectFetcher(object):
         global config
         if not config:
             config = Parsers.config(cfg_file)
-        config.parse()
+        if config.needs_reparse():
+            config.parse()
         if self.object_type is not None:
             key_name = "all_%s" % (self.object_type)
             if not config.data.has_key(key_name):
@@ -1181,6 +1182,8 @@ def do_relations():
             for i in groups: add_contact_to_group(contact.get_shortname(), i)
     
 if __name__ == '__main__':
-    for i in Service.objects.all:
-        print i.get_fil
-        i.get_effective_parents()
+    #s = Service.objects.all
+    #h = Host.objects.all
+    services = Service.objects.filter(host_name='argon.ok.is',service_description__contains='')
+    for i in services:
+        print i.service_description, i.get_filename()
