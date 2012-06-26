@@ -52,8 +52,7 @@ import os
 import re
 from pynag import Parsers
 from macros import _standard_macros
-
-
+import subprocess
 import time
 
 
@@ -615,6 +614,14 @@ class ObjectDefinition(object):
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
         result = regex.sub(get_macro, command['command_line'])
         return result
+    def run_check_command(self, host_name=None):
+        "Run the check_command defined by this service. Returns return_code,stdout,stderr"
+        
+        command = self.get_effective_command_line(host_name=host_name)
+        if command == None: return None
+        proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        stdout, stderr = proc.communicate('through stdin to stdout')
+        return proc.returncode,stdout,stderr
     def _get_command_macro(self, macroname):
         "Resolve any command argument ($ARG1$) macros from check_command"
         # TODO: This function is incomplete and untested
