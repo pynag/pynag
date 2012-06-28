@@ -471,6 +471,13 @@ class ObjectDefinition(object):
         config.item_rewrite(self._original_attributes, str_new_definition)
         self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
+
+        # this piece of code makes sure that when we current object contains all current info
+        new_me = self.__class__.objects.get_by_id(self.get_id())
+        self._defined_attributes = new_me._defined_attributes
+        self._original_attributes = new_me._original_attributes
+        self._inherited_attributes = new_me._inherited_attributes
+        self._meta = new_me._meta
         return True
     def delete(self, cascade=False):
         """ Deletes this object definition from its configuration files.
@@ -722,8 +729,11 @@ class ObjectDefinition(object):
         tmp = self._get_effective_attribute('hostgroups')
         for i in tmp.split(','):
             if i == '': continue
-            i = Hostgroup.objects.get_by_shortname(i)
-            if not i in result: result.append(i)
+            try:
+                i = Hostgroup.objects.get_by_shortname(i)
+                if not i in result: result.append(i)
+            except:
+                pass # fail silently if nonexistent hostgroups are defined
         '''
         # Case 1
         if self.has_key('hostgroups'):
