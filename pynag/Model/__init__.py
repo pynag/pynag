@@ -59,10 +59,12 @@ import time
 
 # Path To Nagios configuration file
 cfg_file = '/etc/nagios/nagios.cfg'
-pynag_directory = '/etc/nagios/pynag/' # Were new objects are written by default
-config = None
-# TODO: Make this a lazy load, so config is only parsed when it needs to be.
-#config = Parsers.config(cfg_file)
+
+# Were new objects are written by default
+pynag_directory = '/etc/nagios/pynag/'
+
+# This will be a Parsers.config instance once we have parsed 
+config = None 
 #config.parse()
 
 
@@ -501,6 +503,8 @@ class ObjectDefinition(object):
         Examples:
           myhost = Host.objects.get_by_shortname('myhost.example.com')
           myhost.copy( host_name="newhost.example.com", address="127.0.0.1")
+        Returns:
+          A copy of the new ObjectDefinition
         """
         if args == {}:
                 raise ValueError('To copy an object definition you need at least one new attribute')
@@ -512,8 +516,8 @@ class ObjectDefinition(object):
             new_object[k] = v
         for k,v in args.items():
             new_object[k] = v
-        print new_object
         new_object.save()
+        return new_object
         
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
