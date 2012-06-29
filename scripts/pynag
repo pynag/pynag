@@ -133,7 +133,7 @@ Run %prog list --help for full list of command line arguments.
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
     parser.add_option("--width", dest="width", 
-                      default=30, help="Column width in output (default 30)")
+                      default=40, help="Column width in output (default 40)")
     (opts,args) = parser.parse_args(sys.argv[2:])
     objects = None
     attributes = []
@@ -163,6 +163,8 @@ Run %prog delete --help for full list of command line arguments.
 '''
     parser.add_option("--verbose", dest="verbose", action="store_true",
                       default=False,help="Increase verbosity")
+    parser.add_option("--force", dest="force", action="store_true",
+                      default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
     objects = None
     attributes = []    
@@ -174,7 +176,11 @@ Run %prog delete --help for full list of command line arguments.
         attributes.append( arg )
     if objects is None:
         parser.error('Refusing to delete every object. Please trim down the selection with a WHERE statement')
-    
+    if len(objects) > 0 and not opts.force:
+        pretty_print(objects)
+        answer = raw_input('Delete these %s objects ? (y/N) ' % (len(objects)))
+        if answer.lower() not in ('y', 'yes'):
+            return 
     for i in objects:
         if opts.verbose:
             print i
@@ -282,7 +288,7 @@ Run %prog update --help for full list of command line arguments.
         objects = pynag.Model.ObjectDefinition.objects.all
     update_many(objects=objects, **attributes)
 
-def pretty_print(objects,width=30, attributes=None):
+def pretty_print(objects,width=40, attributes=None):
     ''' Takes in a list of objects and prints them in a pretty table format '''
     # Set default attributes if none are specified
     if not attributes:
