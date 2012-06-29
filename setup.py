@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 NAME = "pynag"
-VERSION = '0.4.1'
+VERSION = '0.4.2'
 SHORT_DESC = "%s - Python Nagios Extension" % NAME
 LONG_DESC = """
 %s contains tools for pragmatically handling configuration file maintenance a
