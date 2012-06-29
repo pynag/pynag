@@ -56,19 +56,9 @@ rm -fr $RPM_BUILD_ROOT
 %{python_sitelib}/pynag*.egg-info
 %endif
 %{python_sitelib}/pynag/
-%{_bindir}/pynag-add_host_to_group
-%{_bindir}/pynag-safe_restart
-%{_bindir}/pynag-addservice
-%{_bindir}/pynag-maincfg
-%{_bindir}/pynag-sql
 %{_bindir}/pynag
 
 %doc AUTHORS README LICENSE CHANGES
-%{_mandir}/man1/pynag-add_host_to_group.1.gz
-%{_mandir}/man1/pynag-safe_restart.1.gz
-%{_mandir}/man1/pynag-addservice.1.gz
-%{_mandir}/man1/pynag-maincfg.1.gz
-%{_mandir}/man1/pynag-sql.1.gz
 %dir %{_datadir}/%{name}
 
 %files examples
