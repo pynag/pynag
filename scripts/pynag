@@ -269,8 +269,10 @@ Examples:
   
 Run %prog update --help for full list of command line arguments.
 '''
-    parser.add_option("--print", dest="print_definition", action='store_true',
-                      default=False, help="Print actual definition instead of attributes")
+    parser.add_option("--verbose", dest="verbose", action='store_true',
+                      default=False, help="Print updated definition after changing")
+    parser.add_option("--force", dest="force", action="store_true",
+                      default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
     objects = None
     attributes = {}
@@ -284,9 +286,19 @@ Run %prog update --help for full list of command line arguments.
         if len(tmp) != 2: 
             raise BaseException("attributes should be in the form of attribute=new_value for update (got %s)" % arg )
         attributes[tmp[0]] = tmp[1]
-    if objects is None:
-        objects = pynag.Model.ObjectDefinition.objects.all
+    if objects is None :
+        return
+    if len(objects) > 0 and not opts.force:
+        pretty_print(objects)
+        answer = raw_input('Update these %s objects ? (y/N) ' % (len(objects)))
+        if answer.lower() not in ('y', 'yes'):
+            return 
+    
     update_many(objects=objects, **attributes)
+
+    if opts.verbose:
+        for i in objects: print i
+    print "Updated %s objects" % (len(objects))
 
 def pretty_print(objects,width=40, attributes=None):
     ''' Takes in a list of objects and prints them in a pretty table format '''
