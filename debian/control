@@ -1,0 +1,16 @@
+Source: pynag
+Maintainer: Pall Sigurdsson <palli@opensource.is>
+Section: python
+Priority: optional
+Build-Depends: python (>= 2.4), debhelper (>= 7.4.3)
+Standards-Version: 3.9.1
+
+X-Python-Version: >= 2.4
+Package: pynag
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: pynag - Python Nagios Extension
+ .
+ pynag contains tools for pragmatically handling configuration file maintenance
+ a nd plugin development.
+ .
