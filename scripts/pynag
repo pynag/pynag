@@ -38,7 +38,7 @@ Available subcommands:
   update        Update host/service etc.
   add           Create a new object definition
   copy          Copy a current object definition to a new one
-  
+  delete        Delete a specific object definition
   config-set    set a specific value for nagios.cfg
   config-append append a specific value to nagios.cfg
   
@@ -61,6 +61,8 @@ def parse_arguments():
         add_object()
     elif sys.argv[1] == 'copy':
         copy_object()
+    elif sys.argv[1] == 'delete':
+        delete_object()
     elif sys.argv[1] == 'config-set':
         main_config()
     elif sys.argv[1] == 'config-append':
@@ -149,7 +151,35 @@ Run %prog list --help for full list of command line arguments.
             print i
     else:
         pretty_print(objects=objects, attributes=attributes,width=opts.width)
+def delete_object():
+    ''' Delete one specific nagios object '''
+    parser.usage = ''' %prog delete <WHERE statement>
 
+Examples:
+  # %prog delete where object_type=service and host_name='mydeprecated_host' 
+  # %prog delete where filename__startswith='/etc/nagios/myoldhosts' 
+
+Run %prog delete --help for full list of command line arguments.
+'''
+    parser.add_option("--verbose", dest="verbose", action="store_true",
+                      default=False,help="Increase verbosity")
+    (opts,args) = parser.parse_args(sys.argv[2:])
+    objects = None
+    attributes = []    
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg.lower() == 'where':
+            objects = search_objects(search_statements=args)
+            break
+        attributes.append( arg )
+    if objects is None:
+        parser.error('Refusing to delete every object. Please trim down the selection with a WHERE statement')
+    
+    for i in objects:
+        if opts.verbose:
+            print i
+        i.delete()
+    print len(objects), "objects deleted"
 def add_object():
     parser.usage = ''' %prog add <object_type> <attributes>
 
