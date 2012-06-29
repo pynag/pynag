@@ -61,6 +61,7 @@ rm -fr $RPM_BUILD_ROOT
 %{_bindir}/pynag-addservice
 %{_bindir}/pynag-maincfg
 %{_bindir}/pynag-sql
+%{_bindir}/pynag
 
 %doc AUTHORS README LICENSE CHANGES
 %{_mandir}/man1/pynag-add_host_to_group.1.gz
