@@ -993,6 +993,10 @@ class config:
 				# New value is the same as current value
 				need_to_write = False
 				break
+			# Special so cfg_dir matches despite double-slashes, etc
+			elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
+				need_to_write = False
+				break
 			elif key == attribute and append is False and old_value is not None:
 				write_buffer[i] = new_line
 				is_dirty = True
