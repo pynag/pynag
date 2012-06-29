@@ -1301,7 +1301,11 @@ class status:
 
 	def __getitem__(self, key):
 		return self.data[key]
-
+class object_cache(config):
+	''' Loads the configuration as it appears in objects.cache file '''
+	def get_cfg_files(self):
+		for k,v in self.maincfg_values:
+			if k == 'object_cache_file': return [ v ]
 class ParserError(Exception):
 	''' ParserError is used for errors that the Parser has when parsing config.
 	
