@@ -494,21 +494,28 @@ class ObjectDefinition(object):
             result = config.item_remove(self._original_attributes)
             self._event(level="write", message="Object was deleted")
             return result
-    def copy(self, filename=None, **args):
+    def copy(self, recursive=False,filename=None, **args):
         """ Copies this object definition with any unsaved changes to a new configuration object
         
         Arguments:
           filename: If specified, new object will be saved in this file.
+          recursive: If true, also find any related children objects and copy those
           **args: Any argument will be treated a modified attribute in the new definition.
         Examples:
           myhost = Host.objects.get_by_shortname('myhost.example.com')
+          
+          # Copy this host to a new one
           myhost.copy( host_name="newhost.example.com", address="127.0.0.1")
+          
+          # Copy this host and all its services:
+                    myhost.copy(recursive=True, host_name="newhost.example.com", address="127.0.0.1")
+          
         Returns:
           A copy of the new ObjectDefinition
         """
         if args == {}:
                 raise ValueError('To copy an object definition you need at least one new attribute')
-
+        
         new_object = string_to_class[self.object_type]( filename=filename )
         for k,v in self._defined_attributes.items():
             new_object[k] = v
@@ -517,6 +524,15 @@ class ObjectDefinition(object):
         for k,v in args.items():
             new_object[k] = v
         new_object.save()
+        
+        # If recursive copy, also copy any related objects
+        if recursive == True:
+            related_objects = self.get_related_objects()
+            for i in related_objects:
+                new_args = {}
+                for k,v in args.items():
+                    if i.has_key(k): new_args[k] = v
+                i.copy(filename=filename, **new_args)
         return new_object
         
     def get_related_objects(self):
@@ -961,6 +977,7 @@ class Host(ObjectDefinition):
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
+        
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
