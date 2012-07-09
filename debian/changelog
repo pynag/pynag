@@ -1,5 +1,5 @@
 pynag (0.4.2-1) unstable; urgency=low
 
-  * source package automatically created by stdeb 0.6.0+git
+  * Initial packaging. Closes: 680954
 
  -- Pall Sigurdsson <palli@opensource.is>  Fri, 29 Jun 2012 16:54:37 +0000

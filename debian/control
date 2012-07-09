@@ -9,8 +9,8 @@ X-Python-Version: >= 2.4
 Package: pynag
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Description: pynag - Python Nagios Extension
+Description: Python Modules for Nagios plugins and configuration
  .
- pynag contains tools for pragmatically handling configuration file maintenance
- a nd plugin development.
+ pynag contains tools for pragmatically handling configuration
+ file maintenance and plugin development.
  .
