@@ -2,3 +2,4 @@
 .project
 .pydevproject
 .settings
+debian/pynag
