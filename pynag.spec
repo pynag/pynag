@@ -3,7 +3,7 @@
 %{!?python_version: %global python_version %(%{__python} -c "from distutils.sysconfig import get_python_version; print get_python_version()")}
 %endif
 
-Summary: Python Nagios plug-in and configuration environment
+Summary: Python Modules for Nagios plugins and configuration
 Name: pynag
 Version: 0.4.2
 Release: 1%{?dist}
@@ -17,8 +17,8 @@ Url: http://code.google.com/p/pynag/
 BuildArch: noarch
 
 %description
-Pynag contains tools for pragmatically handling Nagios configuration
-file maintenance and plug-in development.
+Contains python modules for pragmatically handling Nagios
+configuration file maintenance and plug-in development.
 
 %package examples
 Group: System Environment/Libraries

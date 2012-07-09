@@ -3,11 +3,11 @@ from distutils.core import setup
 
 NAME = "pynag"
 VERSION = '0.4.2'
-SHORT_DESC = "%s - Python Nagios Extension" % NAME
+SHORT_DESC = "Python Modules for Nagios plugins and configuration" 
 LONG_DESC = """
-%s contains tools for pragmatically handling configuration file maintenance a
-nd plugin development.
-""" % NAME
+Contains python modules for pragmatically handling configuration
+file maintenance and plugin development.
+"""
 
 if __name__ == "__main__":
 	manpath		= "share/man/man1/"
@@ -38,6 +38,7 @@ if __name__ == "__main__":
 			'pynag.Control'
 		],
       	data_files = [(manpath, [
+		'docs/pynag.1',
 		]),
 		],
 	)
