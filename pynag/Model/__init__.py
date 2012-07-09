@@ -315,9 +315,11 @@ class ObjectDefinition(object):
         self.__argument_macros = {}
 
         # Lets find common attributes that every object definition should have:
-	self._add_property('register')
-	self._add_property('name')
-	defs = all_attributes.object_definitions.get(self.object_type,[])
+        self._add_property('register')
+        self._add_property('name')
+        self._add_property('use')
+        
+        defs = all_attributes.object_definitions.get(self.object_type,{})
         for k in defs.keys():
             self._add_property(k)
     
@@ -838,6 +840,14 @@ class ObjectDefinition(object):
             contact = Contact.objects.get_by_shortname(c)
             result.append( contact )
         return result
+    def unregister(self, recursive=True):
+        ''' Short for self['register'] = 0 ; self.save() '''
+        self['register'] = 0
+        self.save()
+        if recursive is True:
+            for i in self.get_related_objects():
+                i.unregister()
+        
     def attribute_appendfield(self, attribute_name, value):
         '''Convenient way to append value to an attribute with a comma seperated value
         
