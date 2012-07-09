@@ -23,15 +23,14 @@ import pynag.Model
 import pynag.Parsers
 
 from optparse import OptionParser
-import ConfigParser
 
 import sys
 
 usage = """usage: %prog <sub-command> [arguments]
 
 Examples:
- %prog list service set "host_name=examplehost.com"
- %prog update service where "host_name=examplehost.com" set check_period=24x7
+ %prog list host_name service_description where object_type=service and host_name=examplehost.com
+ %prog update service set check_period=24x7 where host_name=examplehost.com and object_type=host
 
 Available subcommands:
   list          List host/services, etc.
@@ -165,6 +164,8 @@ Run %prog delete --help for full list of command line arguments.
                       default=False,help="Increase verbosity")
     parser.add_option("--force", dest="force", action="store_true",
                       default=False,help="Don't prompt for confirmation")
+    parser.add_option("--recursive", dest="recursive", action="store_true",
+                      default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
     objects = None
     attributes = []    
@@ -184,7 +185,7 @@ Run %prog delete --help for full list of command line arguments.
     for i in objects:
         if opts.verbose:
             print i
-        i.delete()
+        i.delete(recursive=opts.recursive)
     print len(objects), "objects deleted"
 def add_object():
     parser.usage = ''' %prog add <object_type> <attributes>
@@ -237,6 +238,8 @@ Run %prog copy --help for full list of command line arguments.
                       default=False,help="Increase verbosity")
     parser.add_option("--filename", dest="filename",
                       help="Write to this specific file")
+    parser.add_option("--recursive", dest="recursive", action="store_true",
+                      default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
     if len(args) == 0:
         parser.error("You need to specify an object id of the object to copy")
@@ -252,8 +255,9 @@ Run %prog copy --help for full list of command line arguments.
     
     if attributes == []:
         parser.error('Refusing to write an identical definition. Please specify some attributes' )
+    # Here we actually copy the object
     obj = pynag.Model.ObjectDefinition.objects.get_by_id(object_id)
-    new_obj = obj.copy(filename=opts.filename,**attributes)
+    new_obj = obj.copy(filename=opts.filename,recursive=opts.recursive,**attributes)
     print "Object saved to", new_obj.get_filename()
     if opts.verbose:
         print "# This is what actual statement looks like"
@@ -334,11 +338,14 @@ def update_many(objects, **kwargs):
 
 def parse_configfile():
     ''' Parse configuration file '''
-    
+
 
 if __name__ == '__main__':
 #    config = ConfigParser.ConfigParser()
 #    config.read('/etc/pynag.conf')
 #    pynag.Model.cfg_file = config.options('pynag')['cfg_file']
-    parse_arguments()
-
+    try:
+        parse_arguments()
+    except KeyboardInterrupt, k:
+        print
+        sys.exit()
