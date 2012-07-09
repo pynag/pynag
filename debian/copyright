@@ -4,9 +4,8 @@ Upstream-Contact: Pall Sigurdsson: <palli@opensource.is>
 Source: http://code.google.com/p/pynag/source/checkout
 
 Files: *
-Copyright 2008-2010 Drew Stinnett
-Copyright 2010-     Pall Sigurdsson
-
+Copyright: Copyright 2008-2010 Drew Stinnett
+Copyright: Copyright 2010-     Pall Sigurdsson
 License: GPL-2
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

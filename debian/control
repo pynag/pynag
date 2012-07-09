@@ -3,7 +3,7 @@ Maintainer: Pall Sigurdsson <palli@opensource.is>
 Section: python
 Priority: optional
 Build-Depends: python (>= 2.4), debhelper (>= 7.4.3)
-Standards-Version: 3.9.1
+Standards-Version: 3.9.3
 
 X-Python-Version: >= 2.4
 Package: pynag

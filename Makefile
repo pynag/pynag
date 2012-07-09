@@ -1,4 +1,4 @@
-VERSION		= 0.4.1
+VERSION		= 0.4.2
 RELEASE		= 1
 DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
@@ -88,8 +88,8 @@ rpms: build sdist
 	-ba pynag.spec
 debs: build sdist
 	mkdir -p deb-build
-	cp dist/*.gz deb-build
-	cd deb-build
-	#tar -zxvf pynag-${VERSION}.tar.gz
-	debuild -i -us -us -b
-	
+	cp dist/*gz deb-build/pynag_${VERSION}.orig.tar.gz
+	cd deb-build/ ; \
+	  tar -zxvf pynag_${VERSION}.orig.tar.gz ; \
+	  cd pynag-${VERSION} ;\
+	  debuild
