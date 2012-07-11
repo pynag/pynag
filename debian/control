@@ -2,15 +2,15 @@ Source: pynag
 Maintainer: Pall Sigurdsson <palli@opensource.is>
 Section: python
 Priority: optional
-Build-Depends: python (>= 2.4), debhelper (>= 7.4.3)
+Build-Depends: python (>= 2.6.6-3~), debhelper (>= 7.4.3)
 Standards-Version: 3.9.3
+Homepage: http://code.google.com/p/pynag
 
 X-Python-Version: >= 2.4
 Package: pynag
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Description: Python Modules for Nagios plugins and configuration
- .
- pynag contains tools for pragmatically handling configuration
- file maintenance and plugin development.
- .
+ pynag contains modules for pragmatically parsing and modifying
+ nagios configuration objects as well as modules to simplify
+ plugin development and communicate with the nagios process.
