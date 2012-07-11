@@ -423,6 +423,7 @@ class ObjectDefinition(object):
         """
         if config is None: self.objects.reload_cache()
         # If this is a new object, we save it with config.item_add()
+        number_of_changes = len(self._changes.keys())
         if self.is_new is True or self._meta['filename'] is None:
             if not self._meta['filename']:
                 'discover a new filename'
@@ -432,35 +433,40 @@ class ObjectDefinition(object):
                 self._original_attributes[k] = v
                 del self._changes[k]
             config.item_add(self._original_attributes, self._meta['filename'])
-            return
-        # If we get here, we are making modifications to an object
-        number_of_changes = 0
-        for field_name, new_value in self._changes.items():
-            save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
-            if save_result == True:
-                del self._changes[field_name]
-                self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
-                if not new_value:
-                    if self._defined_attributes.has_key(field_name):
-                        del self._defined_attributes[field_name]
-                    if self._original_attributes.has_key(field_name):
-                        del self._original_attributes[field_name]
+        else:
+            # If we get here, we are making modifications to an object
+            number_of_changes = 0
+            for field_name, new_value in self._changes.items():
+                save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
+                if save_result == True:
+                    del self._changes[field_name]
+                    self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
+                    if not new_value:
+                        if self._defined_attributes.has_key(field_name):
+                            del self._defined_attributes[field_name]
+                        if self._original_attributes.has_key(field_name):
+                            del self._original_attributes[field_name]
+                    else:
+                        self._defined_attributes[field_name] = new_value
+                        self._original_attributes[field_name] = new_value
+                    number_of_changes += 1
                 else:
-                    self._defined_attributes[field_name] = new_value
-                    self._original_attributes[field_name] = new_value
-                number_of_changes += 1
-            else:
-                raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
+                    raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
 
         # this piece of code makes sure that when we current object contains all current info
-        new_me = self.__class__.objects.get_by_id(self.get_id())
+        self.reload_object()
+        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
+        return number_of_changes
+    
+    def reload_object(self):
+        """ Re applies templates to this object (handy when you have changed the use attribute """
+        i = config._apply_template(self._original_attributes)
+        new_me = self.__class__(item=i)
         self._defined_attributes = new_me._defined_attributes
         self._original_attributes = new_me._original_attributes
         self._inherited_attributes = new_me._inherited_attributes
         self._meta = new_me._meta
-
-        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
-        return number_of_changes
+        
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
         
@@ -1238,6 +1244,4 @@ def do_relations():
 if __name__ == '__main__':
     #s = Service.objects.all
     #h = Host.objects.all
-    services = Service.objects.filter(host_name='argon.ok.is',service_description__contains='')
-    for i in services:
-        print i.service_description, i.get_filename()
+    pass
