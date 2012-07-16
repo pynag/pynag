@@ -58,7 +58,7 @@ import time
 
 
 # Path To Nagios configuration file
-cfg_file = '/etc/nagios/nagios.cfg'
+cfg_file = None # '/etc/nagios/nagios.cfg'
 
 # Were new objects are written by default
 pynag_directory = '/etc/nagios/pynag/'

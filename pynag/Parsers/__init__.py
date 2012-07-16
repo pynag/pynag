@@ -44,7 +44,7 @@ class config:
 	"""
 	Parse and write nagios config files
 	"""
-	def __init__(self, cfg_file = "/etc/nagios/nagios.cfg"):
+	def __init__(self, cfg_file = None):
 
 		self.cfg_file = cfg_file # Main configuration file
 
