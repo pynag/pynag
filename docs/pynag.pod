@@ -1,0 +1,50 @@
+=head1 NAME
+
+pynag - command line front for manipulating nagios configuration
+
+=head1 SYNOPSIS
+
+pynag <sub-command> <arguments>
+
+=head1 DESCRIPTION
+
+pynag is a command-line utility that can be used to view or change current nagios configuration.
+
+=head1 sub-commands
+
+=head2 list
+
+print to screen nagios configuration objects as specified by a WHERE clause
+
+	pynag list <attr1> <attr2> [WHERE attr1=value [AND attr2=value2] ... ]
+
+=head2 update
+
+modify specific attributes of nagios objects as specified by a WHERE and SET clause
+
+	pynag update set attr1=value WHERE attr=value and attr=value
+
+
+=head2 delete
+
+Delete objects from nagios configuration as specified by a WHERE clause
+
+
+=head1 EXAMPLES
+
+List all services that have "myhost" as a host_name
+
+	pynag list host_name service_description WHERE host_name=myhost and object_type=service
+
+Set check_period to 24x7 on all services that belong to host "myhost":
+
+	pynag update set check_period=24x7 WHERE host_name=myhost 
+
+=head1 ADDITIONAL RESOURCES
+
+See http://code.google.com/p/pynag/ for more information.
+
+
+=head1 AUTHOR
+
+Pall Sigurdsson <palli@opensource.is>
