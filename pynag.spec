@@ -57,6 +57,7 @@ rm -fr $RPM_BUILD_ROOT
 %endif
 %{python_sitelib}/pynag/
 %{_bindir}/pynag
+%{_mandir}/man1/pynag.1.gz
 
 %doc AUTHORS README LICENSE CHANGES
 %dir %{_datadir}/%{name}
