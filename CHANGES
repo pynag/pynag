@@ -1,73 +1,46 @@
 Changes in 0.4.2
 
-    NEW Command Line Tool pynag instead of scripts
+New features:
+	- new command-line tool pynag introduced (deprecated pynag-maincfg, etc).
+	pynag utility offers an easy way to create/update/delete configuration
+	objects from the command line. (palli@opensource.is)
 
-	Confirmation prompt added to update subcommand (palli@opensource.is)
-
-	pynag delete now asks for confirmation before deleting (palli@opensource.is)
-	delete subcommand added to pynag (palli@opensource.is)
-
-	pynag command line tool created. For easy way to list/update/add objects from
-	command-line (palli@opensource.is)
-
-	ObjectDefinition.copy() now returns a copy of the newly created object
+	- Model: ObjectDefinition.attributes are now defined according to
+	documentation, no longer dynamically created in order to ensure consistency
 	(palli@opensource.is)
 
-	Bugfix where appending cfg_dir to nagios maincfg and pathnames dont match
+	- Model: run_check_command() available for hosts and services
+	(palli@opensource.is)
+
+	- Parsers: Working with comma seperated attribute values now easier
+	via new AttributeList class (palli@opensource.is)
+
+    - Model: copy() feature added to ObjectDefinitions.
+    (palli@opensource.is)
+
+Bugs fixed:
+    - Model, ObjectDefinition.copy() now returns a copy of the newly created object
+
+    - Parsers, Appending cfg_dir to nagios maincfg and pathnames dont match
 	exactly what is in config before (for example double slashes would cause a
-	duplicate) (palli@opensource.is)
+	duplicate)
 
-    Parsers
-	make sure cache is reloaded if manual edit has been made
+	- Parsers: Cache is no longer reloaded as often (improves performance)
 	(palli@opensource.is)
 
-	Change cache reload debug to print only when actual reparse happens
+	- Parsers: Properly raise ParserError if unexpected '}' is encountered
+	while Parsing (palli@opensource.is)
+
+	- Parsers: ParserError class now has cleaner more detailed output
 	(palli@opensource.is)
 
-	ObjectDefinition.attributes are now defined according to documentation, no
-	longer dynamically created in order to ensure consistency
-	(palli@opensource.is)
+	- Model: get_all_macros() now returns custom macros (palli@opensource.is)
 
-	Feature: run_check_command() available for hosts and services
-	(palli@opensource.is)
+	- Fixed key errors where data is not present (tommi@tommi.org)
 
-	no longer reloads cache as often (palli@opensource.is)
+	- Parsers: improvements to reload_cache() to fix memory leak in save()
 
-	Bugfix: Properly raise ParserError if unexpected '}' is encountered while
-	Parsing (palli@opensource.is)
-
-	ParserError class now has cleaner more detailed output (palli@opensource.is)
-
-	get_all_macros() now also returns custom macros (palli@opensource.is)
-	New Feature: Working with comma seperated attribute values now easier
-  	(palli@opensource.is)
-
-	Fixed key errors where data is not present (tommi@tommi.org)
-
-	Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
-
-	improvements to reload_cache() to fix memory leak in save()
-	(palli@opensource.is)
-
-	invalidate_cache() removed (palli@opensource.is)
-
-	copy() feature added. host/service dependencies added in string_to_class
-	(palli@opensource.is)
-
-	.gitignore file added (palli@opensource.is)
-
-	Cleanup of spec, removed unneeded test condition (tommi@tommi.org)
-
-	--set attribute added (palli@opensource.is)
-
-	eclipse suggested codefixes, unused variables, etc (palli@opensource.is)
-
-    Model
-
-    Plugins
-
-    EventHandlers
-
+    - Code cleanup ala Eclipse python analyser. Unused variables etc removed.
 
 Changes in 0.4.1
 
