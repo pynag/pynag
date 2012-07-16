@@ -1,19 +1,19 @@
 Changes in 0.4.2
 
 New features:
-	- new command-line tool pynag introduced (deprecated pynag-maincfg, etc).
-	pynag utility offers an easy way to create/update/delete configuration
-	objects from the command line. (palli@opensource.is)
+    - new command-line tool pynag introduced (deprecated pynag-maincfg, etc).
+    pynag utility offers an easy way to create/update/delete configuration
+    objects from the command line. (palli@opensource.is)
 
-	- Model: ObjectDefinition.attributes are now defined according to
-	documentation, no longer dynamically created in order to ensure consistency
-	(palli@opensource.is)
+    - Model: ObjectDefinition.attributes are now defined according to
+    documentation, no longer dynamically created in order to ensure consistency
+    (palli@opensource.is)
 
-	- Model: run_check_command() available for hosts and services
-	(palli@opensource.is)
+    - Model: run_check_command() available for hosts and services
+    (palli@opensource.is)
 
-	- Parsers: Working with comma seperated attribute values now easier
-	via new AttributeList class (palli@opensource.is)
+    - Parsers: Working with comma seperated attribute values now easier
+    via new AttributeList class (palli@opensource.is)
 
     - Model: copy() feature added to ObjectDefinitions.
     (palli@opensource.is)
@@ -22,23 +22,23 @@ Bugs fixed:
     - Model, ObjectDefinition.copy() now returns a copy of the newly created object
 
     - Parsers, Appending cfg_dir to nagios maincfg and pathnames dont match
-	exactly what is in config before (for example double slashes would cause a
-	duplicate)
+    exactly what is in config before (for example double slashes would cause a
+    duplicate)
 
-	- Parsers: Cache is no longer reloaded as often (improves performance)
-	(palli@opensource.is)
+    - Parsers: Cache is no longer reloaded as often (improves performance)
+    (palli@opensource.is)
 
-	- Parsers: Properly raise ParserError if unexpected '}' is encountered
-	while Parsing (palli@opensource.is)
+    - Parsers: Properly raise ParserError if unexpected '}' is encountered
+    while Parsing (palli@opensource.is)
 
-	- Parsers: ParserError class now has cleaner more detailed output
-	(palli@opensource.is)
+    - Parsers: ParserError class now has cleaner more detailed output
+    (palli@opensource.is)
 
-	- Model: get_all_macros() now returns custom macros (palli@opensource.is)
+    - Model: get_all_macros() now returns custom macros (palli@opensource.is)
 
-	- Fixed key errors where data is not present (tommi@tommi.org)
+    - Fixed key errors where data is not present (tommi@tommi.org)
 
-	- Parsers: improvements to reload_cache() to fix memory leak in save()
+    - Parsers: improvements to reload_cache() to fix memory leak in save()
 
     - Code cleanup ala Eclipse python analyser. Unused variables etc removed.
 
