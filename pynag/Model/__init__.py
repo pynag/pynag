@@ -59,10 +59,12 @@ import time
 
 # Path To Nagios configuration file
 cfg_file = '/etc/nagios/nagios.cfg'
-pynag_directory = '/etc/nagios/pynag/' # Were new objects are written by default
-config = None
-# TODO: Make this a lazy load, so config is only parsed when it needs to be.
-#config = Parsers.config(cfg_file)
+
+# Were new objects are written by default
+pynag_directory = '/etc/nagios/pynag/'
+
+# This will be a Parsers.config instance once we have parsed 
+config = None 
 #config.parse()
 
 
@@ -313,9 +315,11 @@ class ObjectDefinition(object):
         self.__argument_macros = {}
 
         # Lets find common attributes that every object definition should have:
-	self._add_property('register')
-	self._add_property('name')
-	defs = all_attributes.object_definitions.get(self.object_type,[])
+        self._add_property('register')
+        self._add_property('name')
+        self._add_property('use')
+        
+        defs = all_attributes.object_definitions.get(self.object_type,{})
         for k in defs.keys():
             self._add_property(k)
     
@@ -419,6 +423,7 @@ class ObjectDefinition(object):
         """
         if config is None: self.objects.reload_cache()
         # If this is a new object, we save it with config.item_add()
+        number_of_changes = len(self._changes.keys())
         if self.is_new is True or self._meta['filename'] is None:
             if not self._meta['filename']:
                 'discover a new filename'
@@ -428,35 +433,40 @@ class ObjectDefinition(object):
                 self._original_attributes[k] = v
                 del self._changes[k]
             config.item_add(self._original_attributes, self._meta['filename'])
-            return
-        # If we get here, we are making modifications to an object
-        number_of_changes = 0
-        for field_name, new_value in self._changes.items():
-            save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
-            if save_result == True:
-                del self._changes[field_name]
-                self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
-                if not new_value:
-                    if self._defined_attributes.has_key(field_name):
-                        del self._defined_attributes[field_name]
-                    if self._original_attributes.has_key(field_name):
-                        del self._original_attributes[field_name]
+        else:
+            # If we get here, we are making modifications to an object
+            number_of_changes = 0
+            for field_name, new_value in self._changes.items():
+                save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
+                if save_result == True:
+                    del self._changes[field_name]
+                    self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
+                    if not new_value:
+                        if self._defined_attributes.has_key(field_name):
+                            del self._defined_attributes[field_name]
+                        if self._original_attributes.has_key(field_name):
+                            del self._original_attributes[field_name]
+                    else:
+                        self._defined_attributes[field_name] = new_value
+                        self._original_attributes[field_name] = new_value
+                    number_of_changes += 1
                 else:
-                    self._defined_attributes[field_name] = new_value
-                    self._original_attributes[field_name] = new_value
-                number_of_changes += 1
-            else:
-                raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
+                    raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
 
         # this piece of code makes sure that when we current object contains all current info
-        new_me = self.__class__.objects.get_by_id(self.get_id())
+        self.reload_object()
+        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
+        return number_of_changes
+    
+    def reload_object(self):
+        """ Re applies templates to this object (handy when you have changed the use attribute """
+        i = config._apply_template(self._original_attributes)
+        new_me = self.__class__(item=i)
         self._defined_attributes = new_me._defined_attributes
         self._original_attributes = new_me._original_attributes
         self._inherited_attributes = new_me._inherited_attributes
         self._meta = new_me._meta
-
-        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
-        return number_of_changes
+        
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
         
@@ -471,6 +481,13 @@ class ObjectDefinition(object):
         config.item_rewrite(self._original_attributes, str_new_definition)
         self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
+
+        # this piece of code makes sure that when we current object contains all current info
+        new_me = self.__class__.objects.get_by_id(self.get_id())
+        self._defined_attributes = new_me._defined_attributes
+        self._original_attributes = new_me._original_attributes
+        self._inherited_attributes = new_me._inherited_attributes
+        self._meta = new_me._meta
         return True
     def delete(self, cascade=False):
         """ Deletes this object definition from its configuration files.
@@ -485,19 +502,28 @@ class ObjectDefinition(object):
             result = config.item_remove(self._original_attributes)
             self._event(level="write", message="Object was deleted")
             return result
-    def copy(self, filename=None, **args):
+    def copy(self, recursive=False,filename=None, **args):
         """ Copies this object definition with any unsaved changes to a new configuration object
         
         Arguments:
           filename: If specified, new object will be saved in this file.
+          recursive: If true, also find any related children objects and copy those
           **args: Any argument will be treated a modified attribute in the new definition.
         Examples:
           myhost = Host.objects.get_by_shortname('myhost.example.com')
+          
+          # Copy this host to a new one
           myhost.copy( host_name="newhost.example.com", address="127.0.0.1")
+          
+          # Copy this host and all its services:
+                    myhost.copy(recursive=True, host_name="newhost.example.com", address="127.0.0.1")
+          
+        Returns:
+          A copy of the new ObjectDefinition
         """
         if args == {}:
                 raise ValueError('To copy an object definition you need at least one new attribute')
-
+        
         new_object = string_to_class[self.object_type]( filename=filename )
         for k,v in self._defined_attributes.items():
             new_object[k] = v
@@ -505,8 +531,17 @@ class ObjectDefinition(object):
             new_object[k] = v
         for k,v in args.items():
             new_object[k] = v
-        print new_object
         new_object.save()
+        
+        # If recursive copy, also copy any related objects
+        if recursive == True:
+            related_objects = self.get_related_objects()
+            for i in related_objects:
+                new_args = {}
+                for k,v in args.items():
+                    if i.has_key(k): new_args[k] = v
+                i.copy(filename=filename, **new_args)
+        return new_object
         
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
@@ -722,8 +757,11 @@ class ObjectDefinition(object):
         tmp = self._get_effective_attribute('hostgroups')
         for i in tmp.split(','):
             if i == '': continue
-            i = Hostgroup.objects.get_by_shortname(i)
-            if not i in result: result.append(i)
+            try:
+                i = Hostgroup.objects.get_by_shortname(i)
+                if not i in result: result.append(i)
+            except:
+                pass # fail silently if nonexistent hostgroups are defined
         '''
         # Case 1
         if self.has_key('hostgroups'):
@@ -808,6 +846,14 @@ class ObjectDefinition(object):
             contact = Contact.objects.get_by_shortname(c)
             result.append( contact )
         return result
+    def unregister(self, recursive=True):
+        ''' Short for self['register'] = 0 ; self.save() '''
+        self['register'] = 0
+        self.save()
+        if recursive is True:
+            for i in self.get_related_objects():
+                i.unregister()
+        
     def attribute_appendfield(self, attribute_name, value):
         '''Convenient way to append value to an attribute with a comma seperated value
         
@@ -947,6 +993,7 @@ class Host(ObjectDefinition):
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
+        
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
@@ -1197,6 +1244,4 @@ def do_relations():
 if __name__ == '__main__':
     #s = Service.objects.all
     #h = Host.objects.all
-    services = Service.objects.filter(host_name='argon.ok.is',service_description__contains='')
-    for i in services:
-        print i.service_description, i.get_filename()
+    pass

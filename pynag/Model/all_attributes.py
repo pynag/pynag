@@ -1,6 +1,10 @@
 # These are gathered from Nagios Object Definition documentation (Version 3.2.3)
 
 object_definitions = {}
+object_definitions["any"] = {}
+object_definitions["any"]["use"] = { "name":"use", "required":"optional", "value":"use" }
+object_definitions["any"]["register"] = { "name":"register", "required":"optional", "value":"register" }
+object_definitions["any"]["name"] = { "name":"name", "required":"optional", "value":"name" }
 object_definitions["host"] = {}
 object_definitions["host"]["host_name"] = { "name":"host_name", "required":"required", "value":"host_name" }
 object_definitions["host"]["alias"] = { "name":"alias", "required":"required", "value":"alias" }

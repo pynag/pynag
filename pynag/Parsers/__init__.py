@@ -232,6 +232,7 @@ class config:
 		in_definition = {}
 		tmp_buffer = []
 
+
 		for line in open(filename, 'rb').readlines():
 
 			## Cleanup and line skips
@@ -241,6 +242,8 @@ class config:
 			if line[0] == "#" or line[0] == ';':
 				continue
 
+			# TODO: Find out why this code append lives here, are there really any cases
+			# Where a nagios attributes expands more than one line ? 
 			# append saved text to the current line
 			if append:
 				append += ' '
@@ -251,7 +254,9 @@ class config:
 			if line.find("}") != -1:
 
 				in_definition = None
-				append = line.split("}", 1)[1]
+				
+				# Looks to me like nagios ignores everything after the } so why shouldn't we ?
+				rest = line.split("}", 1)[1]
 				
 				tmp_buffer.append(  line )
 				try:
@@ -279,7 +284,9 @@ class config:
 
 				## Start off an object
 				in_definition = True
-				append = m.groups()[1]
+				
+				# Looks to me like nagios ignores everything after the {, so why shouldn't we ?
+				rest = m.groups()[1]
 				continue
 			else:
 				tmp_buffer.append( '    ' + line )
@@ -993,6 +1000,10 @@ class config:
 				# New value is the same as current value
 				need_to_write = False
 				break
+			# Special so cfg_dir matches despite double-slashes, etc
+			elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
+				need_to_write = False
+				break
 			elif key == attribute and append is False and old_value is not None:
 				write_buffer[i] = new_line
 				is_dirty = True
@@ -1297,7 +1308,11 @@ class status:
 
 	def __getitem__(self, key):
 		return self.data[key]
-
+class object_cache(config):
+	''' Loads the configuration as it appears in objects.cache file '''
+	def get_cfg_files(self):
+		for k,v in self.maincfg_values:
+			if k == 'object_cache_file': return [ v ]
 class ParserError(Exception):
 	''' ParserError is used for errors that the Parser has when parsing config.
 	

@@ -1,14 +1,14 @@
-VERSION		= 0.4.1
+VERSION		= 0.4.2
 RELEASE		= 1
 DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
 PYTHON		= /usr/bin/python
 
 TOPDIR = $(shell pwd)
-DIRS	= build docs contrib etc examples pynag scripts
-PYDIRS	= pynag scripts examples 
+DIRS	= build docs contrib etc examples pynag scripts debian
+PYDIRS	= pynag scripts examples debian 
 EXAMPLEDIR = examples
-MANPAGES = pynag-add_host_to_group pynag-addservice pynag-maincfg pynag-safe_restart pynag-sql
+MANPAGES = pynag
 
 all: rpms
 
@@ -29,6 +29,7 @@ clean:
 	-rm -rf dist/ build/
 	-rm -rf *~
 	-rm -rf rpm-build/
+	-rm -rf deb-build/
 	-rm -rf docs/*.1
 	-rm -f etc/version
 
@@ -85,3 +86,10 @@ rpms: build sdist
 	--define "_specdir %{_topdir}" \
 	--define "_sourcedir  %{_topdir}" \
 	-ba pynag.spec
+debs: build sdist
+	mkdir -p deb-build
+	cp dist/*gz deb-build/pynag_${VERSION}.orig.tar.gz
+	cd deb-build/ ; \
+	  tar -zxvf pynag_${VERSION}.orig.tar.gz ; \
+	  cd pynag-${VERSION} ;\
+	  debuild

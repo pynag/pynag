@@ -3,10 +3,10 @@
 %{!?python_version: %global python_version %(%{__python} -c "from distutils.sysconfig import get_python_version; print get_python_version()")}
 %endif
 
-Summary: Python Nagios plug-in and configuration environment
+Summary: Python Modules for Nagios plugins and configuration
 Name: pynag
-Version: 0.4.1
-Release: 6%{?dist}
+Version: 0.4.2
+Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
@@ -17,8 +17,8 @@ Url: http://code.google.com/p/pynag/
 BuildArch: noarch
 
 %description
-Pynag contains tools for pragmatically handling Nagios configuration
-file maintenance and plug-in development.
+Contains python modules for pragmatically handling Nagios
+configuration file maintenance and plug-in development.
 
 %package examples
 Group: System Environment/Libraries
@@ -56,18 +56,9 @@ rm -fr $RPM_BUILD_ROOT
 %{python_sitelib}/pynag*.egg-info
 %endif
 %{python_sitelib}/pynag/
-%{_bindir}/pynag-add_host_to_group
-%{_bindir}/pynag-safe_restart
-%{_bindir}/pynag-addservice
-%{_bindir}/pynag-maincfg
-%{_bindir}/pynag-sql
+%{_bindir}/pynag
 
 %doc AUTHORS README LICENSE CHANGES
-%{_mandir}/man1/pynag-add_host_to_group.1.gz
-%{_mandir}/man1/pynag-safe_restart.1.gz
-%{_mandir}/man1/pynag-addservice.1.gz
-%{_mandir}/man1/pynag-maincfg.1.gz
-%{_mandir}/man1/pynag-sql.1.gz
 %dir %{_datadir}/%{name}
 
 %files examples
@@ -76,6 +67,63 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Fri Jun 29 2012 Pall Sigurdsson <palli@opensource.is> 0.4.2-1
+- pynag script added to spec file. Other scripts removed (palli@opensource.is)
+- pynag script added to spec file (palli@opensource.is)
+- confirmation prompt added to update subcommand (palli@opensource.is)
+- pynag delete now asks for confirmation before deleting (palli@opensource.is)
+- delete subcommand added to pynag (palli@opensource.is)
+- pynag command line tool created. For easy way to list/update/add objects from
+  command-line (palli@opensource.is)
+- ObjectDefinition.copy() now returns a copy of the newly created object
+  (palli@opensource.is)
+- Bugfix where appending cfg_dir to nagios maincfg and pathnames dont match
+  exactly what is in config before (for example double slashes would cause a
+  duplicate) (palli@opensource.is)
+- make sure cache is reloaded if manual edit has been made
+  (palli@opensource.is)
+- Change cache reload debug to print only when actual reparse happens
+  (palli@opensource.is)
+- ObjectDefinition.attributes are now defined according to documentation, no
+  longer dynamically created in order to ensure consistency
+  (palli@opensource.is)
+- Feature: run_check_command() available for hosts and services
+  (palli@opensource.is)
+- no longer reloads cache as often (palli@opensource.is)
+- Bugfix: Properly raise ParserError if unexpected '}' is encountered while
+  Parsing (palli@opensource.is)
+- ParserError class now has cleaner more detailed output (palli@opensource.is)
+- get_all_macros() now also returns custom macros (palli@opensource.is)
+- New Feature: Working with comma seperated attributevalues now easier
+  (palli@opensource.is)
+- Fixed key errors where data is not present (tommi@tommi.org)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- improvements to reload_cache() to fix memory leak in save()
+  (palli@opensource.is)
+- invalidate_cache() removed (palli@opensource.is)
+- copy() feature added. host/service dependencies added in string_to_class
+  (palli@opensource.is)
+- .gitignore file added (palli@opensource.is)
+- Cleanup of spec, removed unneeded test condition (tommi@tommi.org)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- --set attribute added (palli@opensource.is)
+- eclipse suggested codefixes, unused variables, etc (palli@opensource.is)
+- Updated build and added manpages for new scripts (tommi@tommi.org)
+- Updated versioning and some more license cleanups (tommi@tommi.org)
+- Updated license information (tommi@tommi.org)
+- Cleanup to build process (tommi@tommi.org)
+- Added changes from 0.4 (tommi@tommi.org)
+- Clarified licensing issues, GPLv2. (tommi@tommi.org)
+- Removed main function from library (tommi@tommi.org)
+- Simplified spec file, threw out lots of legacy conditionals (tommi@tommi.org)
+- Added Makefile to MANIFEST, should be included in the release.
+  (tommi@tommi.org)
+- Simple build instructions added to README (tommi@tommi.org)
+- Added Host and ServiceDependency objects and parser functionality.
+  (tommi@tommi.org)
+- pynag.spec conditions added for fedora 13+ (palli@opensource.is)
+- updated releasers to use tito as username (palli@opensource.is)
+
 * Tue May  9 2012 Tomas Edwardsson <tommi@tommi.org> 0.4.1-6
 - Simplified spec file, threw out lots of legacy conditionals
 - Added Requires parent for pynag-examples

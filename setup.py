@@ -2,12 +2,12 @@
 from distutils.core import setup
 
 NAME = "pynag"
-VERSION = '0.4.1'
-SHORT_DESC = "%s - Python Nagios Extension" % NAME
+VERSION = '0.4.2'
+SHORT_DESC = "Python Modules for Nagios plugins and configuration" 
 LONG_DESC = """
-%s contains tools for pragmatically handling configuration file maintenance a
-nd plugin development.
-""" % NAME
+Contains python modules for pragmatically handling configuration
+file maintenance and plugin development.
+"""
 
 if __name__ == "__main__":
 	manpath		= "share/man/man1/"
@@ -27,11 +27,7 @@ if __name__ == "__main__":
 		url='http://code.google.com/p/pynag/',
 		license='GPLv2',
 		scripts = [
-			'scripts/pynag-add_host_to_group',
-			'scripts/pynag-safe_restart',
-			'scripts/pynag-addservice',
-			'scripts/pynag-maincfg',
-			'scripts/pynag-sql'
+			'scripts/pynag'
 		],
 		packages = [
 			'pynag',
@@ -42,11 +38,7 @@ if __name__ == "__main__":
 			'pynag.Control'
 		],
       	data_files = [(manpath, [
-			'docs/pynag-add_host_to_group.1',
-			'docs/pynag-safe_restart.1',
-			'docs/pynag-addservice.1',
-			'docs/pynag-maincfg.1',
-			'docs/pynag-sql.1'
+		'docs/pynag.1',
 		]),
 		],
 	)

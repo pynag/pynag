@@ -1,8 +1,7 @@
 #!/usr/bin/python
 import os,sys
 
-## This is for the custom nagios module
-sys.path.insert(1, '../')
+## Import plugin from nagios Module
 from pynag.Plugins import simple as Plugin
 
 
@@ -25,7 +24,7 @@ if not os.path.isfile(load_file):
 	np.nagios_exit("UNKNOWN", "Missing Load average file %s" % load_file)
 
 ## Get the check value
-current_load = os.popen("cat %s" % load_file).readline().split()[0]
+current_load = open(load_file).readline().split()[0]
 
 ## Add the perdata
 np.add_perfdata("1min", current_load)
