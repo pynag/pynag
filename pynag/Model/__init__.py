@@ -74,7 +74,7 @@ config = None
 eventhandlers = []
 
 def debug(text):
-    if debug: print text
+    if debug == True: print text
 
 
 
