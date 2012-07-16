@@ -193,3 +193,46 @@ object_definitions["serviceextinfo"]["notes_url"] = { "name":"notes_url", "requi
 object_definitions["serviceextinfo"]["action_url"] = { "name":"action_url", "required":"optional", "value":"url" }
 object_definitions["serviceextinfo"]["icon_image"] = { "name":"icon_image", "required":"optional", "value":"image_file" }
 object_definitions["serviceextinfo"]["icon_image_alt"] = { "name":"icon_image_alt", "required":"optional", "value":"alt_string" }
+
+# Missing from documentation, manually added
+object_definitions["host"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["hostgroup"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["service"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["servicegroup"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["contact"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["contactgroup"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["timeperiod"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["command"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["servicedependency"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["serviceescalation"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["hostdependency"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["hostextinfo"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+object_definitions["serviceextinfo"]["use"] = { "name":"use", "required":"optional", "value":"name" }
+
+object_definitions["host"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["hostgroup"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["service"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["servicegroup"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["contact"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["contactgroup"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["timeperiod"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["command"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["servicedependency"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["serviceescalation"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["hostdependency"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["hostextinfo"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+object_definitions["serviceextinfo"]["name"] = { "name":"name", "required":"optional", "value":"name" }
+
+object_definitions["host"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["hostgroup"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["service"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["servicegroup"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["contact"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["contactgroup"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["timeperiod"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["command"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["servicedependency"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["serviceescalation"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["hostdependency"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["hostextinfo"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
+object_definitions["serviceextinfo"]["register"] = { "name":"register", "required":"optional", "value":"[0/1]" }
