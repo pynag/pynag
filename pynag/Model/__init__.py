@@ -93,6 +93,7 @@ def has_field(str1, str2):
     '''
     str1 = str1.strip('+')
     str1 = str1.split(',')
+    str1 = map(lambda x: x.strip(), str1)
     if str2 in str1: return True
     return False
 class ObjectFetcher(object):
