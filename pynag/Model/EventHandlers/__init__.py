@@ -120,7 +120,6 @@ class GitEventHandler(BaseEventHandler):
         pass
 
     def write(self, object_definition, message):
-        print "write"
         self.gitrepo.index.add([object_definition._meta['filename']])
         self.gitrepo.index.commit("%s: %s %s modified by %s" % (self.source, object_definition.object_type.capitalize(), object_definition.get_shortname(), self.modified_by))
 
