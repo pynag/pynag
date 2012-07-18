@@ -66,7 +66,7 @@ config = None
 eventhandlers = []
 
 def debug(text):
-    if debug: print text
+    if debug == True: print text
 
 
 
@@ -417,15 +417,15 @@ class ObjectDefinition(object):
         if config is None: self.objects.reload_cache()
         # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
-        if self.is_new is True or self._meta['filename'] is None:
-            if not self._meta['filename']:
+        if self.is_new is True or self.get_filename() is None:
+            if not self.get_filename():
                 'discover a new filename'
-                self._meta['filename'] = self.get_suggested_filename()
+                self.set_filename( self.get_suggested_filename() )
             for k,v in self._changes.items():
                 self._defined_attributes[k] = v
                 self._original_attributes[k] = v
                 del self._changes[k]
-            config.item_add(self._original_attributes, self._meta['filename'])
+            config.item_add(self._original_attributes, self.get_filename())
         else:
             # If we get here, we are making modifications to an object
             number_of_changes = 0
@@ -444,11 +444,11 @@ class ObjectDefinition(object):
                         self._original_attributes[field_name] = new_value
                     number_of_changes += 1
                 else:
-                    raise Exception("Failure saving object. filename=%s, object=%s" % (self['meta']['filename'], self['shortname']) )
+                    raise Exception("Failure saving object. filename=%s, object=%s" % (self.get_filename(), self['shortname']) )
 
         # this piece of code makes sure that when we current object contains all current info
         self.reload_object()
-        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self['meta']['filename']))
+        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self.get_filename()))
         return number_of_changes
     
     def reload_object(self):
@@ -587,10 +587,14 @@ class ObjectDefinition(object):
     def get_filename(self):
         """ Get name of the config file which defines this object
         """
-        return self._meta['filename']
+        if self._meta['filename'] is None: return None
+        return os.path.normpath( self._meta['filename'] )
     def set_filename(self, filename):
         """ set name of the config file which defines this object"""
-        self._meta['filename'] = filename
+        if filename is None:
+            self._meta['filename'] = filename
+        else:
+            self._meta['filename'] = os.path.normpath( filename )
     def get_macro(self, macroname, host_name=None ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):
@@ -753,7 +757,7 @@ class ObjectDefinition(object):
             try:
                 i = Hostgroup.objects.get_by_shortname(i)
                 if not i in result: result.append(i)
-            except:
+            except Exception:
                 pass # fail silently if nonexistent hostgroups are defined
         '''
         # Case 1
@@ -818,8 +822,9 @@ class ObjectDefinition(object):
         result = []
         if not self['use']: return result
         for parent_name in self['use'].split(','):
-            parent = self.objects.filter(name=parent_name)[0]
-            result.append(parent)
+            search = self.objects.filter(name=parent_name)
+            if len(search) < 1: continue
+            result.append(search[0])
         return result
     def get_effective_contact_groups(self):
         "Returns a list of all contactgroups that belong to this service"
@@ -1001,7 +1006,7 @@ class Service(ObjectDefinition):
         try:
             myhost = Host.objects.get_by_shortname(host_name)
             return myhost._get_host_macro(macroname)     
-        except:
+        except Exception:
             return None
             
 class Command(ObjectDefinition):

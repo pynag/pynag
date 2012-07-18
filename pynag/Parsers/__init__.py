@@ -123,7 +123,7 @@ class config:
 				self.item_cache[tmp_item_type][name] = item
 		try:
 			return self.item_cache[item_type][item_name]
-		except:
+		except Exception:
 			return None
 		if self.item_cache[item_type].has_key(item_name):
 			return self.item_cache[item_type][item_name]
@@ -137,7 +137,7 @@ class config:
 			try:
 				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
 					return test_item
-			except:
+			except Exception:
 				raise ParserError("Loop detected, exiting", item=test_item)
 			
 		## If we make it this far, it means there is no matching item
@@ -252,7 +252,7 @@ class config:
 				tmp_buffer.append(  line )
 				try:
 					current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
-				except:
+				except Exception:
 					raise ParserError("Encountered Unexpected end of object definition in file '%s'." % filename)
 				self.pre_object_list.append(current)
 
@@ -815,7 +815,7 @@ class config:
 					try:
 						if k == 'use':
 							source_item = self._append_use(source_item, v)
-					except:
+					except Exception:
 						raise ParserError("Recursion error on %s %s" % (source_item, v) )
 
 

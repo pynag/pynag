@@ -3,3 +3,6 @@
 .pydevproject
 .settings
 debian/pynag
+MANIFEST
+build
+dist
