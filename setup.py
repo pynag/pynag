@@ -40,7 +40,7 @@ if __name__ == "__main__":
 			'pynag.Control'
 		],
       	data_files = [(manpath, [
-		'docs/pynag.1',
+		'docs/pynag.1.gz',
 		]),
 		],
 	)
