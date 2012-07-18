@@ -326,8 +326,10 @@ def pretty_print(objects,width=40, attributes=None):
             else: value = i.get(attr,"null")
             print width % value,
         print
-    
-    print "-"*80
+    message = "%s objects matches search condition" % ( len(objects) )
+    pre = "-"*10
+    post = "-"*(80-10-len(message))
+    print pre + message + post
     
 def update_many(objects, **kwargs):
     for i in objects:

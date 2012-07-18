@@ -45,6 +45,7 @@ class config:
 			for file in possible_files:
 				if os.path.isfile(file):
 					self.cfg_file = file
+					break
 
 		if not os.path.isfile(self.cfg_file):
 			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
