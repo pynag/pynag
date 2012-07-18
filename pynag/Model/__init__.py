@@ -37,25 +37,17 @@ for i in canadian_hosts:
     i.save()
 """
 
-__author__ = "Pall Sigurdsson"
-__copyright__ = "Copyright 2011, Pall Sigurdsson"
-__credits__ = ["Pall Sigurdsson"]
-__license__ = "GPLv2"
-__version__ = "0.4.1"
-__maintainer__ = "Pall Sigurdsson"
-__email__ = "palli@opensource.is"
-__status__ = "Development"
 
 
 import sys
 import os
 import re
-from pynag import Parsers
-from macros import _standard_macros
-import all_attributes
 import subprocess
 import time
 
+from pynag import Parsers
+from macros import _standard_macros
+import all_attributes
 
 # Path To Nagios configuration file
 cfg_file = None # '/etc/nagios/nagios.cfg'

@@ -28,11 +28,4 @@ Plugin = Plugins.simple
 Python Nagios extensions
 """
 
-__author__ = "Drew Stinnett"
-__copyright__ = "Copyright 2008, Drew Stinnett"
-__credits__ = ["Drew Stinnett", "Pall Sigurdsson"]
-__license__ = "GPLv2"
-__version__ = "0.4.1"
-__maintainer__ = "Pall Sigurdsson"
-__email__ = "palli@opensource.is"
-__status__ = "Development"
+__version__ = "0.4.2"
