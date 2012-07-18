@@ -761,7 +761,7 @@ class ObjectDefinition(object):
             try:
                 i = Hostgroup.objects.get_by_shortname(i)
                 if not i in result: result.append(i)
-            except:
+            except Exception:
                 pass # fail silently if nonexistent hostgroups are defined
         '''
         # Case 1
@@ -826,8 +826,9 @@ class ObjectDefinition(object):
         result = []
         if not self['use']: return result
         for parent_name in self['use'].split(','):
-            parent = self.objects.filter(name=parent_name)[0]
-            result.append(parent)
+            search = self.objects.filter(name=parent_name)
+            if len(search) < 1: continue
+            result.append(search[0])
         return result
     def get_effective_contact_groups(self):
         "Returns a list of all contactgroups that belong to this service"
@@ -1009,7 +1010,7 @@ class Service(ObjectDefinition):
         try:
             myhost = Host.objects.get_by_shortname(host_name)
             return myhost._get_host_macro(macroname)     
-        except:
+        except Exception:
             return None
             
 class Command(ObjectDefinition):
