@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 ## setup.py ###
 from distutils.core import setup
 
