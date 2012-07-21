@@ -482,19 +482,19 @@ class ObjectDefinition(object):
         self._inherited_attributes = new_me._inherited_attributes
         self._meta = new_me._meta
         return True
-    def delete(self, cascade=False):
+    def delete(self, recursive=False ):
         """ Deletes this object definition from its configuration files.
         
         Arguments:
-            Cascade: If True, look for items that depend on this object and delete them as well
+            recursive: If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
         """
-        if cascade == True:
-            raise NotImplementedError()
-        else:
-            result = config.item_remove(self._original_attributes)
-            self._event(level="write", message="Object was deleted")
-            return result
+        if recursive == True:
+            # Recursive does not have any meaning for a generic object, this should subclassed.
+            pass
+        result = config.item_remove(self._original_attributes)
+        self._event(level="write", message="Object was deleted")
+        return result
     def copy(self, recursive=False,filename=None, **args):
         """ Copies this object definition with any unsaved changes to a new configuration object
         
@@ -985,6 +985,14 @@ class Host(ObjectDefinition):
                 if service not in result:
                     result.append(service)
         return result
+    def delete(self, recursive=False ):
+        ''' Overwrites objectdefinition so that recursive=True will delete all services as well '''
+        # Find all services and delete them as well
+        if recursive == True:
+            for i in self.get_effective_services():
+                i.delete(recursive=recursive)
+        # Call parent to get delete myself
+        super(self.__class__, self).delete(recursive=recursive)
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
         if self['host_name'] != None:
