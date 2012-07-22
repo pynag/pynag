@@ -26,15 +26,6 @@ import time
 Python Nagios extensions
 """
 
-__author__ = "Drew Stinnett"
-__copyright__ = "Copyright 2008, Drew Stinnett"
-__credits__ = ["Drew Stinnett", "Pall Sigurdsson"]
-__license__ = "GPLv2"
-__version__ = "0.4.1"
-__maintainer__ = "Pall Sigurdsson"
-__email__ = "palli@opensource.is"
-__status__ = "Development"
-
 def debug(text):
 	debug = True
 	if debug: print text
@@ -54,6 +45,7 @@ class config:
 			for file in possible_files:
 				if os.path.isfile(file):
 					self.cfg_file = file
+					break
 
 		if not os.path.isfile(self.cfg_file):
 			raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)

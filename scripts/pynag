@@ -185,7 +185,11 @@ Run %prog delete --help for full list of command line arguments.
     for i in objects:
         if opts.verbose:
             print i
-        i.delete(recursive=opts.recursive)
+        try:
+            i.delete(recursive=opts.recursive)
+            print i.get_shortname(), "deleted."
+        except ValueError, e:
+            print i.get_shortname(), "not found."
     print len(objects), "objects deleted"
 def add_object():
     parser.usage = ''' %prog add <object_type> <attributes>
@@ -326,8 +330,10 @@ def pretty_print(objects,width=40, attributes=None):
             else: value = i.get(attr,"null")
             print width % value,
         print
-    
-    print "-"*80
+    message = "%s objects matches search condition" % ( len(objects) )
+    pre = "-"*10
+    post = "-"*(80-10-len(message))
+    print pre + message + post
     
 def update_many(objects, **kwargs):
     for i in objects:

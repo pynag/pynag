@@ -2,9 +2,9 @@
 
 ## setup.py ###
 from distutils.core import setup
+from pynag import __version__
 
 NAME = "pynag"
-VERSION = '0.4.2'
 SHORT_DESC = "Python Modules for Nagios plugins and configuration" 
 LONG_DESC = """
 Contains python modules for pragmatically handling configuration
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 	rotpath		= "/etc/logrotate.d"
 	setup(
 		name='%s' % NAME,
-		version = VERSION,
+		version = __version__,
 		author='Drew Stinnett',
 		description = SHORT_DESC,
 		long_description = LONG_DESC,
