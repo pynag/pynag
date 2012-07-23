@@ -1191,6 +1191,20 @@ class config:
 
 		return return_hosts
 
+	def get_cfg_dirs(self):
+		"""
+		Return a list of all cfg directories used in this configuration
+
+		Example:
+		print get_cfg_dirs()
+		['/etc/nagios/hosts','/etc/nagios/objects',...]
+		"""
+		cfg_dirs = []
+		for config_object, config_value in self.maincfg_values:
+			if config_object == "cfg_dir":
+				cfg_dirs.append(config_value)
+		return cfg_dirs
+
 	def get_cfg_files(self):
 		"""
 		Return a list of all cfg files used in this configuration
