@@ -5,7 +5,7 @@
 
 Summary: Python Modules for Nagios plugins and configuration
 Name: pynag
-Version: 0.4.2
+Version: 0.4.3
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -69,6 +69,83 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Mon Jul 23 2012 Pall Sigurdsson <palli@opensource.is> 0.4.3-1
+- Improvements to ObjectDefinition.delete()  (Fixes issue 28) * cascade
+  parameter renamed to recursive * recursive implemented for Host (deletes all
+  services that belong to the host) * Bugfix in command-line utility where it
+  would give traceback if you recursively delete a host and all its services in
+  the same command. (palli@opensource.is)
+- minor cleanups (palli@opensource.is)
+- Merge branch 'master' of https://code.google.com/p/pynag
+  (palli@opensource.is)
+- pretty print now lists number of objects (palli@opensource.is)
+- priority changed when no nagios.cfg is specified and multiple suggested ones
+  are possible (palli@opensource.is)
+- Merge branch 'master' of https://code.google.com/p/pynag
+  (palli@opensource.is)
+- __author__ and other meta tags removed from modules. Version number synced
+  between different modules (palli@opensource.is)
+- Fixed setup.py bdist_rpm process (tommi@tommi.org)
+- Added dedicated Makefile for building docs (tommi@tommi.org)
+- Added MANIFEST build/ dist/ to git ignore (tommi@tommi.org)
+- Merge branch 'master' of https://code.google.com/p/pynag (tommi@tommi.org)
+- Added shebang to top (tommi@tommi.org)
+- Fixed path handling so all paths are normalized when working with object's
+  filename (palli@opensource.is)
+- updated changelog with recent improvements to debian package
+  (palli@opensource.is)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- Bugfix: 'except:' clauses removed to avoid catching keyboardinterupt
+  (palli@opensource.is)
+- releasers.conf updated to include source tarballs (palli@opensource.is)
+- releasers.conf updated and is now split into production and testing
+  (palli@opensource.is)
+- added make manpage in build step (palli@opensource.is)
+- Removed print from GitEventHandler (tommi@tommi.org)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- Fixed indentation on CHANGES (tommi@tommi.org)
+- debug messages to screen removed when reparsing configuration
+  (palli@opensource.is)
+- nagios.cfg path no longer hardcoded to /etc/nagios/nagios.cfg
+  (palli@opensource.is)
+- CHANGES proposal for version 0.4.2 (palli@opensource.is)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- nagios.cfg path no longer hardcoded to /etc/nagios/nagios.cfg
+  (palli@opensource.is)
+- Added intermediate changes, needs review (tommi@tommi.org)
+- Added reference to pynag man page. (tommi@tommi.org)
+- bugfix: searching with __has_field=x now works even if configuration item has
+  spaces in a comma seperated list (palli@opensource.is)
+- Revert "Added missing parameters which are not in documentation."
+  (palli@opensource.is)
+- Merge branch 'master' of http://code.google.com/p/pynag (palli@opensource.is)
+- docs added (palli@opensource.is)
+- Merge branch 'master' of https://code.google.com/p/pynag (tommi@tommi.org)
+- Added missing parameters which are not in documentation. (tommi@tommi.org)
+- optimized object being saved and re-applying templates without reparsing
+  whole config (palli@opensource.is)
+- no longer using os.popen(cat) to read /proc/loadavg (palli@opensource.is)
+- debian/* updated as per comments on debian bug 680954 (palli@opensource.is)
+- edit_service.py example added (palli@opensource.is)
+- all_attributes updated to reflect fields that apply to any object definition
+  (palli@opensource.is)
+- unregister function added. use property now accessable for object definitions
+  (palli@opensource.is)
+- Lintian bugfixes for debian packaging (palli@opensource.is)
+- package description updated (palli@opensource.is)
+- build environment modified to support debian (palli@opensource.is)
+- debian/pynag source directory removed and put in .gitignore
+  (palli@opensource.is)
+- updates to debian packaging files (palli@opensource.is)
+- deprecated pynag-* scripts removed (palli@opensource.is)
+- Usage updated. Copy improved. Catch exception when ctrl+c pressed
+  (palli@opensource.is)
+- comments directly after '{' and '}' are no longer treated as part of next
+  line (Fixes issue 24). (palli@opensource.is)
+- Recursive copy for hosts now supported (palli@opensource.is)
+- debian packaging files added (palli@opensource.is)
+- New parser created for objects_cache (palli@opensource.is)
+
 * Fri Jun 29 2012 Pall Sigurdsson <palli@opensource.is> 0.4.2-1
 - pynag script added to spec file. Other scripts removed (palli@opensource.is)
 - pynag script added to spec file (palli@opensource.is)
