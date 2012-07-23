@@ -1,3 +1,17 @@
+Changes in 0.4.3 (Jul 13 2012)
+
+Bugfixes:
+    - Model: Objectdefinition.delete() cascade parameter renamed to recursive.
+    Recursive implemented for host.
+
+    - Various fixes where nagios.cfg is not located in /etc/nagios/
+    
+    - Improvements to build process 
+
+    - Parsers: Exception handling loosened to not catch kill signals
+
+    - Model: calling filter() with __has_field now works on items seperated by ", "      
+
 Changes in 0.4.2
 
 New features:
@@ -45,44 +59,44 @@ Bugs fixed:
 Changes in 0.4.1
 
     Plugins
-	Fix to check_range which now support multiple status lines
-	Modifications for python-2.3 support
+    Fix to check_range which now support multiple status lines
+    Modifications for python-2.3 support
 
     Scripts
-	Added pynag-maincfg which allows for editing nagios.cfg
-	Added pynag-addservice for easy addition of services
+    Added pynag-maincfg which allows for editing nagios.cfg
+    Added pynag-addservice for easy addition of services
 
     Model
-	Ability to set filename for new objects
-	save() now works on when changing 'use'
-	Modifications for python-2.3 support
+    Ability to set filename for new objects
+    save() now works on when changing 'use'
+    Modifications for python-2.3 support
 
     Parsers
-	typo fixed in edit_service 
-	Memory leak fix
-	Added servicedependency and hostdependency support
+    typo fixed in edit_service 
+    Memory leak fix
+    Added servicedependency and hostdependency support
 
     EventHandlers
-	Added GitEventHandler which automaticly commits to git
+    Added GitEventHandler which automaticly commits to git
 
 
 
 Changes in 0.4.0
 
 Features added:
-		- Model, New module that turns configuration into python objects
-		- Parsers, major refactoring
+        - Model, New module that turns configuration into python objects
+        - Parsers, major refactoring
 
 
 Changes in 0.3.1
 
 Bugs Fixed:
-		- Plugin, Fixed joinallstr, wasn't being added between severity levels.
+        - Plugin, Fixed joinallstr, wasn't being added between severity levels.
 
 Features added:
-		- Plugin, Add must_threshold variable for programs that do not need classic -w or -c
-		- Plugin, allow add_arg to be specified multiple times if multiple=True specified
-		- Plugin, removed space character between severity and colon, "OK:" instead of "OK :"
+        - Plugin, Add must_threshold variable for programs that do not need classic -w or -c
+        - Plugin, allow add_arg to be specified multiple times if multiple=True specified
+        - Plugin, removed space character between severity and colon, "OK:" instead of "OK :"
 
 
 
@@ -93,8 +107,8 @@ Bugs Fixed:
 
 
 Features added:
-		- Plugin add_messages() and check_messages()
-		- new build system for easier RPM creation
+        - Plugin add_messages() and check_messages()
+        - new build system for easier RPM creation
 
 
 Misc Changes:
@@ -102,4 +116,4 @@ Misc Changes:
 
 New Contributors:
 
-	Tomas Ewdardsson, Pall Sigurdsson
+    Tomas Ewdardsson, Pall Sigurdsson
