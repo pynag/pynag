@@ -49,7 +49,7 @@ For help on specific sub-command type:
 parser = OptionParser(usage=usage)
 
 def parse_arguments():
-    ''' Parse command line arguments and run command specified commands '''
+    """ Parse command line arguments and run command specified commands """
     if len(sys.argv) < 2:
         parser.error("No sub-command specified")
     elif sys.argv[1] == 'list':
@@ -93,7 +93,7 @@ def search_objects(search_statements):
     return sorted( set(objects) )
 
 def main_config():
-    ''' Get or change a value in main configuration file '''
+    """ Get or change a value in main configuration file """
     parser.add_option("--filename", dest="filename", 
                       default=pynag.Model.cfg_file, help="Path to Nagios configuration file")
     parser.add_option("--verbose", dest="verbose", action="store_true",
@@ -120,7 +120,7 @@ def main_config():
         if opts.verbose:
             print "%s:%s changed: %s" % (opts.filename, k, result)
 def list_objects():
-    ''' List nagios objects given a specified search filter '''
+    """ List nagios objects given a specified search filter """
     parser.usage = ''' %prog list <attributes> [WHERE <search>]
 
 Examples:
@@ -151,7 +151,7 @@ Run %prog list --help for full list of command line arguments.
     else:
         pretty_print(objects=objects, attributes=attributes,width=opts.width)
 def delete_object():
-    ''' Delete one specific nagios object '''
+    """ Delete one specific nagios object """
     parser.usage = ''' %prog delete <WHERE statement>
 
 Examples:
@@ -309,7 +309,7 @@ Run %prog update --help for full list of command line arguments.
     print "Updated %s objects" % (len(objects))
 
 def pretty_print(objects,width=40, attributes=None):
-    ''' Takes in a list of objects and prints them in a pretty table format '''
+    """ Takes in a list of objects and prints them in a pretty table format """
     # Set default attributes if none are specified
     if not attributes:
         attributes = ['object_type','shortname', 'filename']
@@ -343,7 +343,7 @@ def update_many(objects, **kwargs):
             print "%s (%s): changed %s to %s" % (i.get_filename(), i.get_shortname(),attr, value)
 
 def parse_configfile():
-    ''' Parse configuration file '''
+    """ Parse configuration file """
 
 
 if __name__ == '__main__':

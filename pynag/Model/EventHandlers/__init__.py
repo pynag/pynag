@@ -17,14 +17,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-'''
+"""
 This module is experimental.
 
-The idea is to create a mechanism that allows you to hook your own events into 
+The idea is to create a mechanism that allows you to hook your own events into
 an ObjectDefinition instance.
 
 This enables you for example to log to file every time an object is rewritten.
-'''
+"""
 
 
 import time
@@ -33,32 +33,32 @@ class BaseEventHandler:
     def __init__(self, debug=False):
         self._debug = debug
     def debug(self, object_definition, message):
-        "Used for any particual debug notifications"
+        """Used for any particual debug notifications"""
         raise NotImplementedError()
     def write(self, object_definition, message):
-        "Called whenever a modification has been written to file"
+        """Called whenever a modification has been written to file"""
         raise NotImplementedError()
     def save(self, object_definition, message):
-        "Called when objectdefinition.save() has finished"
+        """Called when objectdefinition.save() has finished"""
         raise NotImplementedError()
 
 
 class PrintToScreenHandler(BaseEventHandler):
-    "Handler that prints everything to stdout"
+    """Handler that prints everything to stdout"""
     def debug(self, object_definition, message):
-        "Used for any particual debug notifications"
+        """Used for any particual debug notifications"""
         if self._debug:
             print "%s: %s" %( time.asctime(), message )
     def write(self, object_definition, message):
-        "Called whenever a modification has been written to file"
+        """Called whenever a modification has been written to file"""
         print "%s: file='%s' %s" %( time.asctime(), object_definition['meta']['filename'], message )
     def save(self, object_definition, message):
-        "Called when objectdefinition.save() has finished"
+        """Called when objectdefinition.save() has finished"""
         print "%s: %s" %( time.asctime(), message )
 
 
 class FileLogger(BaseEventHandler):
-    "Handler that logs everything to file"
+    """Handler that logs everything to file"""
     def __init__(self, logfile='/var/log/pynag.log', debug=False):
         self.file = logfile
         self._debug = debug
@@ -68,16 +68,16 @@ class FileLogger(BaseEventHandler):
         f.write( message  )
         f.close()
     def debug(self, object_definition, message):
-        "Used for any particular debug notifications"
+        """Used for any particular debug notifications"""
         if self.debug:
             message = "%s: %s" % ( time.asctime(), message )
             self._append_to_file( message )
     def write(self, object_definition, message):
-        "Called whenever a modification has been written to file"
+        """Called whenever a modification has been written to file"""
         message = "%s: file='%s' %s" %( time.asctime(), object_definition['meta']['filename'], message )
         self._append_to_file( message )
     def save(self, object_definition, message):
-        "Called when objectdefinition.save() has finished"
+        """Called when objectdefinition.save() has finished"""
         message = "%s: %s" %( time.asctime(), message )
         self._append_to_file( message )
  

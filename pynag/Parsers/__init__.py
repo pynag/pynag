@@ -203,7 +203,7 @@ class config:
 					return_list.append(item)
 		return return_list
 	def get_new_item(self, object_type, filename):
-		''' Returns an empty item with all necessary metadata '''
+		""" Returns an empty item with all necessary metadata """
 		current = {}
 		current['meta'] = {}
 		current['meta']['object_type'] = object_type
@@ -263,7 +263,7 @@ class config:
 				continue
 
 			# beginning of object definition
-			boo_re = re.compile("define\s+(\w+)\s*{?(.*)$")
+			boo_re = re.compile("define\s+(\w+)\s*\{?(.*)$")
 			m = boo_re.search(line)
 			if m:
 				tmp_buffer = [line]
@@ -414,10 +414,10 @@ class config:
 		else:
 			raise ValueError("We could not find object in %s\n%s" % (filename,item))
 	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
-		'''
+		"""
 		Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
 		If new_value and new_field_name are both None, the attribute is removed.
-		
+
 		Arguments:
 			item(dict) -- The item to be modified
 			field_name(str) -- The field_name to modify (if any)
@@ -430,7 +430,7 @@ class config:
 		Raises:
 			ValueError if object or field_name is not found
 			IOError is save is unsuccessful.
-		'''
+		"""
 		if field_name is None and new_item is None:
 			raise ValueError("either field_name or new_item must be set")
 		everything_before,object_definition, everything_after, filename = self._locate_item(item)
@@ -1014,7 +1014,7 @@ class config:
 
 
 	def needs_reload(self):
-		"Returns True if Nagios service needs reload of cfg files"
+		"""Returns True if Nagios service needs reload of cfg files"""
 		new_timestamps = self.get_timestamps()
 		for k,v in self.maincfg_values:
 			if k == 'lock_file': lockfile = v
@@ -1024,7 +1024,7 @@ class config:
 			if int(v) > lockfile: return True
 		return False 
 	def needs_reparse(self):
-		"Returns True if any Nagios configuration file has changed since last parse()"
+		"""Returns True if any Nagios configuration file has changed since last parse()"""
 		# If Parse has never been run:
 		if self.data == {}:
 			return True
@@ -1057,7 +1057,7 @@ class config:
 
 		self._post_parse()
 	def get_timestamps(self):
-		"Returns a hash map of all nagios related files and their timestamps"
+		"""Returns a hash map of all nagios related files and their timestamps"""
 		files = {}
 		files[self.cfg_file] = None
 		for k,v in self.maincfg_values:
@@ -1071,7 +1071,7 @@ class config:
 			files[k] = os.stat(k).st_mtime
 		return files
 	def get_resources(self):
-		"Returns a list of every private resources from nagios.cfg"
+		"""Returns a list of every private resources from nagios.cfg"""
 		resources = []
 		for config_object,config_value in self.maincfg_values:
 			if config_object == 'resource_file' and os.path.isfile(config_value):
@@ -1248,7 +1248,7 @@ class config:
 
 		return cfg_files
 	def get_object_types(self):
-		''' Returns a list of all discovered object types '''
+		""" Returns a list of all discovered object types """
 		return map(lambda x: re.sub("all_","", x), self.data.keys())
 	def cleanup(self):
 		"""
@@ -1315,15 +1315,15 @@ class status:
 	def __getitem__(self, key):
 		return self.data[key]
 class object_cache(config):
-	''' Loads the configuration as it appears in objects.cache file '''
+	""" Loads the configuration as it appears in objects.cache file """
 	def get_cfg_files(self):
 		for k,v in self.maincfg_values:
 			if k == 'object_cache_file': return [ v ]
 class ParserError(Exception):
-	''' ParserError is used for errors that the Parser has when parsing config.
-	
+	""" ParserError is used for errors that the Parser has when parsing config.
+
 	Typical usecase when there is a critical error while trying to read configuration.
-	'''
+	"""
 	def __init__(self, message, item=None):
 		self.message = message
 		if item == None: return
