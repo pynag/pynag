@@ -47,6 +47,7 @@ import time
 
 from pynag import Parsers
 from macros import _standard_macros
+from collections import defaultdict
 import all_attributes
 
 # Path To Nagios configuration file
@@ -88,60 +89,196 @@ def has_field(str1, str2):
     str1 = map(lambda x: x.strip(), str1)
     if str2 in str1: return True
     return False
+
+class ObjectRelations(object):
+    ''' Static container for objects and their respective neighbours '''
+    # c['contact_name'] = ['host_name1','host_name2']
+    contact_hosts = defaultdict(set)
+
+    # c['contact_name'] = ['contactgroup1','contactgroup2']
+    contact_contactgroups = defaultdict(set)
+
+    # c['contact_name'] = ['service1.get_id()','service2.get_id()']
+    contact_services = defaultdict(set)
+
+    # c['contactgroup_name'] = ['contact1.contact_name','contact2.contact_name','contact3.contact_name']
+    contactgroup_contacts = defaultdict(set)
+
+    # c['contactgroup_name'] = ['contactgroup1','contactgroup2','contactgroup3']
+    contactgroup_contactgroups = defaultdict(set)
+
+    # c['contactgroup_name'] = ['host_name1', 'host_name2']
+    contactgroup_hosts = defaultdict(set)
+
+    # c['contactgroup_name'] = ['service1.get_id()', 'service2.get_id()']
+    contactgroup_services = defaultdict(set)
+
+    # c['host_name'] = [service1.id, service2.id,service3.id]
+    host_services = defaultdict(set)
+
+    # c['host_name'] = ['contactgroup1', 'contactgroup2']
+    host_contact_groups = defaultdict(set)
+
+    # c['host_name'] = ['contact1','contact2']
+    host_contacts = defaultdict(set)
+
+    # c['host_name'] = '['hostgroup1.hostgroup_name','hostgroup2.hostgroup_name']
+    host_hostgroups = defaultdict(set)
+
+    # c['host_name'] = '['service1.get_id()','service2.get_id()']
+    host_services = defaultdict(set)
+
+
+    # c['hostgroup_name'] = ['host_name1','host_name2']
+    hostgroup_hosts = defaultdict(set)
+
+    # c['hostgroup_name'] = ['hostgroup1','hostgroup2']
+    hostgroup_hostgroups = defaultdict(set)
+
+    # c['hostgroup_name'] = ['service1.get_id()','service2.get_id()']
+    hostgroup_services = defaultdict(set)
+
+    # c['service.get_id()'] = '['contactgroup_name1','contactgroup_name2']
+    service_contact_groups = defaultdict(set)
+
+    # c['service.get_id()'] = '['contact_name1','contact_name2']
+    service_contacts = defaultdict(set)
+
+    # c['service.get_id()'] = '['hostgroup_name1','hostgroup_name2']
+    service_hostgroups = defaultdict(set)
+
+    # c['service.get_id()'] = '['servicegroup_name1','servicegroup_name2']
+    service_servicegroups = defaultdict(set)
+
+    # c['service.get_id()'] = '['host_name1','host_name2']
+    service_hosts = defaultdict(set)
+
+    # c[command_name] = '['service.get_id()','service.get_id()']
+    command_service = defaultdict(set)
+
+    # c[command_name] = '['host_name1','host_name2']
+    command_host = defaultdict(set)
+
+    # use['host']['host_name1'] = ['host_name2','host_name3']
+    # use['contact']['contact_name1'] = ['contact_name2','contact_name3']
+    _defaultdict_set = lambda: defaultdict(set)
+
+    #
+    contactgroup_subgroups = defaultdict(set)
+    use = defaultdict( _defaultdict_set )
+    @staticmethod
+    def _get_subgroups(group_name, dictname):
+        ''' Helper function that lets you get all sub-group members of a particular group
+
+        For example this call:
+          _get_all_group-members('admins', ObjectRelations.contactgroup_contacgroups)
+
+        Will return recursively go through contactgroup_members of 'admins' and return a list
+        of  all subgroups
+        '''
+        subgroups = dictname[group_name].copy()
+        checked_groups = set()
+        while len(subgroups) > 0:
+            i = subgroups.pop()
+            if i not in checked_groups:
+                checked_groups.add(i)
+                subgroups.update( dictname[i] )
+        return checked_groups
+    @staticmethod
+    def resolve_contactgroups():
+        ''' Update all contactgroup relations to take into account contactgroup.contactgroup_members '''
+        groups = ObjectRelations.contactgroup_contactgroups.keys()
+        for group in groups:
+            subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.contactgroup_contactgroups)
+            ObjectRelations.contactgroup_subgroups[group] = subgroups
+
+            # Loop through every subgroup and apply its attributes to ours
+            for subgroup in subgroups:
+                for i in ObjectRelations.contactgroup_contacts[group]:
+                    ObjectRelations.contact_contactgroups[i].add( group )
+                for i in ObjectRelations.contactgroup_hosts[group]:
+                    ObjectRelations.host_contact_groups[i].add( group )
+                for i in ObjectRelations.contactgroup_services[group]:
+                    ObjectRelations.service_contact_groups[i].add( group )
+                ObjectRelations.contactgroup_contacts[group].update( ObjectRelations.contactgroup_contacts[subgroup] )
+                ObjectRelations.contactgroup_hosts[group].update( ObjectRelations.contactgroup_hosts[subgroup] )
+                ObjectRelations.contactgroup_services[group].update( ObjectRelations.contactgroup_services[subgroup] )
+    @staticmethod
+    def resolve_hostgroups():
+        ''' Update all hostgroup relations to take into account hostgroup.hostgroup_members '''
+        groups = ObjectRelations.hostgroup_hostgroups.keys()
+        for group in groups:
+            subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.hostgroup_hostgroups)
+            ObjectRelations.hostgroup_subgroups[group] = subgroups
+
+            # Loop through every subgroup and apply its attributes to ours
+            for subgroup in subgroups:
+                for i in ObjectRelations.hostgroup_hosts[group]:
+                    ObjectRelations.host_hostgroups[i].add( group )
+                for i in ObjectRelations.hostgroup_services[group]:
+                    ObjectRelations.service_hostgroups[i].add( group )
+                ObjectRelations.hostgroup_hosts[group].update( ObjectRelations.hostgroup_hosts[subgroup] )
+                ObjectRelations.hostgroup_services[group].update( ObjectRelations.hostgroup_services[subgroup] )
+
 class ObjectFetcher(object):
     '''
     This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
     from config.data and turning into high ObjectDefinition objects
     '''
-    relations = {}
+    _cached_objects = []
+    _cached_ids = {}
+    _cached_shortnames = {}
+    _cached_object_type = defaultdict(list)
     def __init__(self, object_type):
         self.object_type = object_type
-        self.objects = []
     def get_all(self):
         " Return all object definitions of specified type"
-        if self.objects == []:
-            'we get here on first run'
+        if self.needs_reload():
             self.reload_cache()
-        elif config is None or config.needs_reparse():
-            'We get here if any configuration file has changed'
-            self.reload_cache()
-        return self.objects
+        if self.object_type != None:
+            return ObjectFetcher._cached_object_type[self.object_type]
+        else:
+            return ObjectFetcher._cached_objects
     all = property(get_all)
-    def clean_cache(self):
-        'Empties current object cache'
-        debug("Debug: clean_cache()")
-        global config
-        config = None
-        ObjectDefinition.objects.objects = []
     def reload_cache(self):
         'Reload configuration cache'
         # clear object list
-        self.objects = []
-        #del self.objects[:]
-        ObjectFetcher.relations= {}
+        ObjectFetcher._cached_objects = []
+        ObjectFetcher._cached_ids = {}
+        ObjectFetcher._cached_shortnames = {}
+        ObjectFetcher._cached_object_type = defaultdict(list)
         global config
         if not config:
             config = Parsers.config(cfg_file)
         if config.needs_reparse():
             debug('Debug: Doing a reparse of configuration')
             config.parse()
-        if self.object_type is not None:
-            key_name = "all_%s" % (self.object_type)
-            if not config.data.has_key(key_name):
-                return []
-            objects = config.data[ key_name ]
-        else:
-            # If no object type was requested
-            objects = []
-            for v in config.data.values():
-                objects += v
-        for i in objects:
-            object_type = i['meta']['object_type']
+        # Fetch all objects from Parsers.config
+
+        objects = config.data.values()
+        for object_type, objects in config.data.items():
+            # change "all_host" to just "host"
+            object_type = object_type[ len("all_"): ]
             Class = string_to_class.get( object_type, ObjectDefinition )
-            i = Class(item=i)
-            #    self.find_relations(i)
-            self.objects.append(i)
+            for i in objects:
+                i = Class(item=i)
+                ObjectFetcher._cached_objects.append(i)
+                ObjectFetcher._cached_object_type[object_type].append(i)
+                ObjectFetcher._cached_ids[i.get_id()] = i
+                ObjectFetcher._cached_shortnames[i.get_shortname()] = i
+                i._do_relations()
+        ObjectRelations.resolve_contactgroups()
+        ObjectRelations.resolve_hostgroups()
         return True
+    def needs_reload(self):
+        ''' Returns true if configuration files need to be reloaded/reparsed '''
+        if ObjectFetcher._cached_objects == []:
+            # we get here on first run
+            return True
+        elif config is None or config.needs_reparse():
+            # We get here if any configuration file has changed
+            return True
+        return False
     def get_by_id(self, id):
         ''' Get one specific object
         
@@ -150,11 +287,10 @@ class ObjectFetcher(object):
         Raises:
             ValueError if object is not found
         '''
+        if self.needs_reload():
+            self.reload_cache()
         id = str(id)
-        for item in self.all:
-            if str(item['id']) == id:
-                return item
-        raise ValueError('No object with ID=%s found'% (id))
+        return ObjectFetcher._cached_ids[id]
     def get_by_shortname(self, shortname):
         ''' Get one specific object by its shortname (i.e. host_name for host, etc)
         
@@ -163,11 +299,10 @@ class ObjectFetcher(object):
         Raises:
             ValueError if object is not found
         '''
-        attribute_name = "%s_name" % (self.object_type)
-        for item in self.all:
-            if item[attribute_name] == shortname:
-                return item
-        raise ValueError('No %s with %s=%s found' % (self.object_type, attribute_name,shortname))
+        if self.needs_reload():
+            self.reload_cache()
+        shortname = str(shortname)
+        return ObjectFetcher._cached_shortnames[shortname]
     def get_object_types(self):
         ''' Returns a list of all discovered object types '''
         if config is None: self.reload_cache()
@@ -714,7 +849,7 @@ class ObjectDefinition(object):
                 grandchildren += i.get_effective_children(recursive)
             children += grandchildren
         return children
-        
+
     def get_effective_parents(self, recursive=False):
         """ Get all objects that this one inherits via "use" attribute
         
@@ -736,73 +871,6 @@ class ObjectDefinition(object):
                 grandparents.append( i.get_effective_parents(recursive=True))
             results += grandparents
         return results
-    def get_effective_hostgroups(self):
-        """Get all hostgroups that this object belongs to (not just the ones it defines on its own
-        
-        How can a hostgroup be linked to this object:
-            1) This object has hostgroups defined via "hostgroups" attribute
-            2) This object inherits hostgroups attribute from a parent
-            3) A hostgroup names this object via members attribute
-            4) A hostgroup names another hostgroup via hostgroup_members attribute
-            5) A hostgroup inherits (via use) from a hostgroup who names this host
-        """
-        # TODO: This function is incomplete and untested
-        # TODO: Need error handling when object defines hostgroups but hostgroup does not exist
-        result = []
-        hostgroup_list = []
-        # Case 1 and Case 2:
-        tmp = self._get_effective_attribute('hostgroups')
-        for i in tmp.split(','):
-            if i == '': continue
-            try:
-                i = Hostgroup.objects.get_by_shortname(i)
-                if not i in result: result.append(i)
-            except Exception:
-                pass # fail silently if nonexistent hostgroups are defined
-        '''
-        # Case 1
-        if self.has_key('hostgroups'):
-            grp = self['hostgroups']
-            grp = grp.split(',')
-            for i in grp:
-                i = i.strip('+')
-                i = Hostgroup.objects.get_by_shortname(i)
-                if not i in result: result.append(i)
-        # Case 2:
-        if not self.has_key('hostgroups') or self['hostgroups'].startswith('+'):
-            parents = self.get_effective_parents()
-            for parent in parents:
-                parent_results += parent.get_effective_hostgroups()
-        '''
-        # Case 3:
-        if self.has_key('host_name'):
-            # We will use hostgroup_list in case 4 and 5 as well
-            hostgroup_list = Hostgroup.objects.filter(members__has_field=self['host_name'])
-            for hg in hostgroup_list:
-                    if hg not in result:
-                        result.append( hg )
-        # Case 4:    
-        for hg in hostgroup_list:
-            if not hg.has_key('hostgroup_name'): continue
-            grp = Hostgroup.objects.filter(hostgroup_members__has_field=hg['hostgroup_name'])
-            for i in grp:
-                if i not in result:
-                    result.append(i )
-        # Case 5:
-        for hg in hostgroup_list:
-            if not hg.has_key('hostgroup_name'): continue
-            grp = Hostgroup.objects.filter(use__has_field=hg['hostgroup_name'])
-            for i in grp:
-                if i not in result:
-                    result.append(i )
-        
-        return result
-    def get_effective_contactgroups(self):
-        # TODO: This function is incomplete and untested
-        raise NotImplementedError()
-    def get_effective_hosts(self):
-        # TODO: This function is incomplete and untested
-        raise NotImplementedError()
     def get_attribute_tuple(self):
         """ Returns all relevant attributes in the form of:
         
@@ -825,24 +893,6 @@ class ObjectDefinition(object):
             search = self.objects.filter(name=parent_name)
             if len(search) < 1: continue
             result.append(search[0])
-        return result
-    def get_effective_contact_groups(self):
-        "Returns a list of all contactgroups that belong to this service"
-        result = []
-        contactgroups = self._get_effective_attribute('contact_groups')
-        for c in contactgroups.split(','):
-            if c == '': continue
-            group = Contactgroup.objects.get_by_shortname(c)
-            result.append( group )
-        return result
-    def get_effective_contacts(self):
-        "Returns a list of all contacts that belong to this service"
-        result = []
-        contacts = self._get_effective_attribute('contacts')
-        for c in contacts.split(','):
-            if c == '': continue
-            contact = Contact.objects.get_by_shortname(c)
-            result.append( contact )
         return result
     def unregister(self, recursive=True):
         ''' Short for self['register'] = 0 ; self.save() '''
@@ -956,8 +1006,14 @@ class ObjectDefinition(object):
                 i.save( object_definition=self, message=message )
             else:
                 i.debug( object_definition=self, message=message )
-            
-                
+    def _do_relations(self):
+        ''' Discover all related objects (f.e. services that belong to this host, etc
+
+        ObjectDefinition only has relations via 'use' paramameter. Subclasses should extend this.
+        '''
+        parents = AttributeList( self.use )
+        for i in parents.fields:
+            ObjectRelations.use[self.object_type][ i ].add( self.get_id() )
                     
                 
         
@@ -969,22 +1025,25 @@ class Host(ObjectDefinition):
         """ Returns a friendly description of the object """
         return self['host_name']
     def get_effective_services(self):
-        """ Returns a list of all services that belong to this Host """
-        if self['host_name'] == None:
-            return []
-        result = []
-        myname = self['host_name']
-        # Find all services that define us via service.host_name directive
-        for service in Service.objects.all:
-            service_hostname = service['host_name'] or ""
-            if myname in service_hostname.split(","):
-                result.append( service )
-        # Find all services that define us via our hostgroup
-        for hostgroup in self.get_effective_hostgroups():
-            for service in hostgroup.get_effective_services():
-                if service not in result:
-                    result.append(service)
-        return result
+        """ Returns a list of all Service that belong to this Host """
+        get_object = lambda x: Service.objects.get_by_id(x)
+        list_of_shortnames = ObjectRelations.host_services[self.host_name]
+        return map( get_object, list_of_shortnames )
+    def get_effective_contacts(self):
+        """ Returns a list of all Contact that belong to this Host """
+        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.host_contacts[self.host_name]
+        return map( get_object, list_of_shortnames )
+    def get_effective_contact_groups(self):
+        """ Returns a list of all Contactgroup that belong to this Host """
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.host_contact_groups[self.host_name]
+        return map( get_object, list_of_shortnames )
+    def get_effective_hostgroups(self):
+        """ Returns a list of all Hostgroup that belong to this Host """
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.host_hostgroups[self.host_name]
+        return map( get_object, list_of_shortnames )
     def delete(self, recursive=False ):
         ''' Overwrites objectdefinition so that recursive=True will delete all services as well '''
         # Find all services and delete them as well
@@ -999,7 +1058,26 @@ class Host(ObjectDefinition):
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
-        
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+        # Do hostgroups
+        hg = AttributeList( self.hostgroups )
+        for i in hg.fields:
+            ObjectRelations.host_hostgroups[self.host_name].add( i )
+            ObjectRelations.hostgroup_hosts[i].add( self.host_name )
+        # Contactgroups
+        cg = AttributeList( self.contact_groups )
+        for i in cg.fields:
+            ObjectRelations.host_contact_groups[self.host_name].add( i )
+            ObjectRelations.contactgroup_hosts[i].add( self.host_name )
+        contacts = AttributeList( self.contacts )
+        for i in contacts.fields:
+            ObjectRelations.host_contacts[self.host_name].add( i )
+            ObjectRelations.contact_hosts[i].add( self.host_name )
+        if self.check_command:
+            command_name = self.check_command.split('!')[0]
+            ObjectRelations.command_service[ self.host_name ].add( command_name )
+
 class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
@@ -1016,6 +1094,53 @@ class Service(ObjectDefinition):
             return myhost._get_host_macro(macroname)     
         except Exception:
             return None
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+        # Do hostgroups
+        hg = AttributeList( self.hostgroup_name )
+        for i in hg.fields:
+            ObjectRelations.service_hostgroups[self.get_id()].add( i )
+            ObjectRelations.hostgroup_services[i].add( self.get_id() )
+            # Contactgroups
+        cg = AttributeList( self.contact_groups )
+        for i in cg.fields:
+            ObjectRelations.service_contact_groups[self.get_id()].add( i )
+            ObjectRelations.contactgroup_services[i].add( self.get_id() )
+        contacts = AttributeList( self.contacts )
+        for i in contacts.fields:
+            ObjectRelations.service_contacts[self.get_id()].add( i )
+            ObjectRelations.contact_services[i].add( self.get_id() )
+        sg = AttributeList( self.servicegroups )
+        for i in sg.fields:
+            ObjectRelations.service_servicegroups[self.get_id()].add( i )
+            ObjectRelations.servicegroup_services[i].add( self.get_id() )
+        if self.check_command:
+            command_name = self.check_command.split('!')[0]
+            ObjectRelations.command_service[ self.get_id() ].add( command_name )
+        hosts = AttributeList( self.host_name )
+        for i in hosts.fields:
+            ObjectRelations.service_hosts[ self.get_id() ].add( i )
+            ObjectRelations.host_services[ i ].add( self.get_id() )
+    def get_effective_hosts(self):
+        """ Returns a list of all Host that belong to this Service """
+        get_object = lambda x: Host.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.service_hosts[ self.get_id() ]
+        return map( get_object, list_of_shortnames )
+    def get_effective_contacts(self):
+        """ Returns a list of all Contact that belong to this Service """
+        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.service_contacts[self.get_id()]
+        return map( get_object, list_of_shortnames )
+    def get_effective_contact_groups(self):
+        """ Returns a list of all Contactgroup that belong to this Service """
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.service_contact_groups[self.get_id()]
+        return map( get_object, list_of_shortnames )
+    def get_effective_hostgroups(self):
+        """ Returns a list of all Hostgroup that belong to this Service """
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.service_hostgroups[self.get_id()]
+        return map( get_object, list_of_shortnames )
             
 class Command(ObjectDefinition):
     object_type = 'command'
@@ -1029,23 +1154,39 @@ class Contact(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['contact_name']
-    def get_effective_contact_groups(self):
-        "Contact uses contactgroups instead of contact_groups"
-        return self.get_effective_contactgroups()
     def get_effective_contactgroups(self):
-        ''' Get a list of all contactgroups that are hooked to this contact '''
-        result = []
-        contactgroups = self._get_effective_attribute('contactgroups')
-        for c in contactgroups.split(','):
-            if c == '': continue
-            group = Contactgroup.objects.get_by_shortname(c)
-            if group not in result: result.append( group )
-        # Additionally, check for contactgroups that define this contact as a member
-        if self['contact_name'] == None: return result
-        
-        for cgroup in Contactgroup.objects.filter( members__has_field=self['contact_name'] ):
-            if cgroup not in result: result.append( cgroup )
+        ''' Get a list of all Contactgroup that are hooked to this contact '''
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.contact_contactgroups[self.contact_name]
+        return map( get_object, list_of_shortnames )
+    def get_effective_hosts(self):
+        ''' Get a list of all Host that are hooked to this Contact '''
+        result = set()
+        # First add all hosts that name this contact specifically
+        get_object = lambda x: Host.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.contact_hosts[self.contact_name]
+        result.update( map( get_object, list_of_shortnames ) )
+
+        # Next do the same for all contactgroups this contact belongs in
+        for i in self.get_effective_contactgroups():
+            result.update( i.get_effective_hosts() )
         return result
+    def get_effective_services(self):
+        ''' Get a list of all Service that are hooked to this Contact '''
+        result = set()
+        # First add all services that name this contact specifically
+        get_object = lambda x: Service.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.contact_services[self.contact_name]
+        result.update( map( get_object, list_of_shortnames ) )
+        return result
+
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+        groups = AttributeList( self.contactgroups )
+        for i in groups.fields:
+            ObjectRelations.contact_contactgroups[self.contact_name].add( i )
+            ObjectRelations.contactgroup_contacts[i].add( self.contact_name )
+
 class ServiceDependency(ObjectDefinition):
     object_type = 'servicedependency'
     objects = ObjectFetcher('servicedependency')
@@ -1060,26 +1201,39 @@ class Contactgroup(ObjectDefinition):
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['contactgroup_name']
-    def get_effective_members(self):
-        ''' Returns every single member that belongs to this contactgroup, no matter where they are defined '''
-        result = []
-        do_relations()
-        myname = self.get_description()
-        contactgroups_tocheck = [ myname ]
-        contactgroups_alreadychecked = []
-        while len( contactgroups_tocheck ) > 0:
-            group = contactgroups_tocheck.pop(0)
-            if group in contactgroups_alreadychecked: continue
-            members = relations['contactgroup_member'][group]
-            for i in members:
-                if not i in result: result.append(i)
-            # expand group
-            tmp =relations['contactgroup_contactgroup'].get(group, [])
-            contactgroups_tocheck += tmp
-            contactgroups_alreadychecked.append( group )
-        result2 = []
-        for i in result: result2.append( Contact.objects.get_by_shortname(i) )
-        return result2
+    def get_effective_contactgroups(self):
+        """ Returns a list of every Contactgroup that is a member of this Contactgroup """
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.contactgroup_subgroups
+        return map( get_object, list_of_shortnames )
+    def get_effective_contacts(self):
+        ''' Returns a list of every Contact that is a member of this Contactgroup '''
+        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.contactgroup_contact[self.contactgroup_name]
+        return map( get_object, list_of_shortnames )
+    def get_effective_hosts(self):
+        ''' Return every Host that belongs to this contactgroup '''
+        list_of_shortnames = ObjectRelations.contactgroup_hosts[self.contactgroup_name]
+        get_object = lambda x: Host.objects.get_by_shortname(x)
+        return map( get_object, list_of_shortnames )
+    def get_effective_services(self):
+        ''' Return every Host that belongs to this contactgroup '''
+        services = {}
+        for i in Service.objects.all:
+            services[i.get_id()] = i
+        list_of_shortnames = ObjectRelations.contactgroup_services[self.contactgroup_name]
+        get_object = lambda x: services[x]
+        return map( get_object, list_of_shortnames )
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+        members = AttributeList( self.members )
+        for i in members.fields:
+            ObjectRelations.contactgroup_contacts[self.contactgroup_name].add( i )
+            ObjectRelations.contact_contactgroups[i].add( self.contactgroup_name )
+        groups = AttributeList( self.contactgroup_members )
+        for i in groups.fields:
+            ObjectRelations.contactgroup_contactgroups[self.contactgroup_name].add( i )
+
    
 class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
@@ -1089,18 +1243,29 @@ class Hostgroup(ObjectDefinition):
         return self['hostgroup_name']
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this hostgroup """
-        myname = self['hostgroup_name']
-        if not myname: return []
-        
-        result = []
-        for service in Service.objects.all:
-            hostgroup_name = service['hostgroup_name'] or ""
-            hostgroups = service['hostgroups'] or ""
-            if myname in hostgroups.split(','):
-                result.append( service )
-            elif myname in hostgroup_name.split(","):
-                result.append( service )
-        return result
+        list_of_shortnames = ObjectRelations.hostgroup_services[self.hostgroup_name]
+        get_object = lambda x: Service.objects.get_by_id(x)
+        return map( get_object, list_of_shortnames )
+    def get_effective_hosts(self):
+        """ Returns a list of all Host that belong to this hostgroup """
+        list_of_shortnames = ObjectRelations.hostgroup_hosts[self.hostgroup_name]
+        get_object = lambda x: Host.objects.get_by_shortname(x)
+        return map( get_object, list_of_shortnames )
+    def get_effective_hostgroups(self):
+        """ Returns a list of every Hostgroup that is a member of this Hostgroup """
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.hostgroup_subgroups
+        return map( get_object, list_of_shortnames )
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+        members = AttributeList( self.members )
+        for i in members.fields:
+            ObjectRelations.hostgroup_hosts[self.hostgroup_name].add( i )
+            ObjectRelations.host_hostgroups[i].add( self.hostgroup_name )
+        groups = AttributeList( self.hostgroup_members )
+        for i in groups.fields:
+            ObjectRelations.hostgroup_hostgroups[self.hostgroup_name].add( i )
+
 class Servicegroup(ObjectDefinition):
     object_type = 'servicegroup'
     objects = ObjectFetcher('servicegroup')
@@ -1179,75 +1344,7 @@ string_to_class['command'] = Command
 #string_to_class[None] = ObjectDefinition
 
 
-
-def _test_get_by_id():
-    'Do a quick unit test of the ObjectDefinition.get_by_id'
-    hosts = Host.objects.all
-    for h in hosts:
-        id = h.get_id()
-        h2 = Host.objects.get_by_id(id)
-        if h.get_id() != h2.get_id():
-            return False
-    return True
-"""
-How can a contact belong to a group:
-1) contact.contact_name is mentioned in contactgroup.members
-2) contactgroup.contactgroup_name is mentioned in contact.contactgroups
-3) contact belongs to contactgroup.use
-4) contact belongs to contactgroup.countactgroup.use
-"""
-
-relations = {
-             'contactgroup_member':{},
-             'member_contactgroup':{},
-             'contactgroup_contactgroup':{},
-             }
-
-def add_contact_to_group(contact_name, contactgroup_name):
-    global relations
-    if not relations['contactgroup_member'].has_key(contactgroup_name):
-        relations['contactgroup_member'][contactgroup_name] = []
-    if not relations['member_contactgroup'].has_key(contact_name):
-        relations['member_contactgroup'][contact_name] = []
-    if not contact_name in relations['contactgroup_member'][contactgroup_name]:
-        relations['contactgroup_member'][contactgroup_name].append(contact_name)
-    if not contactgroup_name in relations['member_contactgroup'][contact_name]:
-        relations['member_contactgroup'][contact_name].append(contactgroup_name)
-    return True
-
-def add_group_to_group(contactgroup1, contactgroup2):
-    global relations
-    group = relations['contactgroup_contactgroup'].get(contactgroup1, [])
-    if not contactgroup2 in group:
-        group.append(contactgroup2)
-    relations['contactgroup_contactgroup'][contactgroup1] = group
-    return True
-
-def do_relations():        
-    all_contactgroups = Contactgroup.objects.all
-    all_contacts = Contact.objects.all
-    
-    for i in all_contactgroups: relations['contactgroup_member'][i.get_shortname()] = []
-    for i in all_contacts: relations['member_contactgroup'][i.get_shortname()] = []
-    # Case 1
-    for group in all_contactgroups:
-        relations['contactgroup_member'][group.get_shortname()]
-        members = group._get_effective_attribute('members')
-        contactgroup_members = group._get_effective_attribute('contactgroup_members')
-        if members:
-            members = members.split(',')
-            for i in members: add_contact_to_group(i, group.get_shortname())
-        if contactgroup_members:
-            contactgroup_members = contactgroup_members.split(',')
-            for i in contactgroup_members:
-                add_group_to_group(group.get_shortname(), i)
-    for contact in all_contacts:
-        groups = contact._get_effective_attribute('contactgroups')
-        if groups:
-            groups = groups.split(',')
-            for i in groups: add_contact_to_group(contact.get_shortname(), i)
-    
 if __name__ == '__main__':
     #s = Service.objects.all
     #h = Host.objects.all
-    pass
+    o = ObjectDefinition.objects.all
