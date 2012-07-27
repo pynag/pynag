@@ -333,8 +333,13 @@ class ObjectFetcher(object):
 
         # Get all hosts that are not in the 'testservers' hostgroup
         Host.objects.filter(hostgroup_name__notcontains='testservers')
+
         # Get all services with non-empty name
         Service.objects.filter(name__isnot=None)
+
+        # Get all hosts that have an address:
+        Host.objects.filter(address_exists=True)
+        
         """
         # TODO: Better testing of these cases:
         # register = 1
@@ -351,11 +356,10 @@ class ObjectFetcher(object):
         for i in self.all:
             object_matches = True
             for k, v in kwargs.items():
-                if k == ('exists'):
-                    raise NotImplementedError('Dont use this. Doesnt work.')
-                    v = k[:-8]
-                    k = i
-                    match_function = dict.has_key
+                if k.endswith('__exists'):
+                    k = k[:-len('__exists')]
+                    object_matches = str(i.has_key(k)) == str(v)
+                    break
                 elif k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
