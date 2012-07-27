@@ -44,6 +44,7 @@ import os
 import re
 import subprocess
 import time
+from hashlib import md5
 
 from pynag import Parsers
 from macros import _standard_macros
@@ -72,18 +73,18 @@ def debug(text):
 
 
 def contains(str1, str2):
-    'Returns True if str1 contains str2'
+    """Returns True if str1 contains str2"""
     if str1.find(str2) > -1: return True
 
 def not_contains(str1, str2):
-    'Returns True if str1 does not contain str2'
+    """Returns True if str1 does not contain str2"""
     return not contains(str1, str2)
 
 def has_field(str1, str2):
-    '''Returns True if str2 is a field in str1
-    
+    """Returns True if str2 is a field in str1
+
     For this purpose the string 'example' is a field in '+this,is,an,example'
-    '''
+    """
     str1 = str1.strip('+')
     str1 = str1.split(',')
     str1 = map(lambda x: x.strip(), str1)
@@ -91,7 +92,7 @@ def has_field(str1, str2):
     return False
 
 class ObjectRelations(object):
-    ''' Static container for objects and their respective neighbours '''
+    """ Static container for objects and their respective neighbours """
     # c['contact_name'] = ['host_name1','host_name2']
     contact_hosts = defaultdict(set)
 
@@ -168,14 +169,14 @@ class ObjectRelations(object):
     use = defaultdict( _defaultdict_set )
     @staticmethod
     def _get_subgroups(group_name, dictname):
-        ''' Helper function that lets you get all sub-group members of a particular group
+        """ Helper function that lets you get all sub-group members of a particular group
 
         For example this call:
           _get_all_group-members('admins', ObjectRelations.contactgroup_contacgroups)
 
         Will return recursively go through contactgroup_members of 'admins' and return a list
         of  all subgroups
-        '''
+        """
         subgroups = dictname[group_name].copy()
         checked_groups = set()
         while len(subgroups) > 0:
@@ -186,7 +187,7 @@ class ObjectRelations(object):
         return checked_groups
     @staticmethod
     def resolve_contactgroups():
-        ''' Update all contactgroup relations to take into account contactgroup.contactgroup_members '''
+        """ Update all contactgroup relations to take into account contactgroup.contactgroup_members """
         groups = ObjectRelations.contactgroup_contactgroups.keys()
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.contactgroup_contactgroups)
@@ -205,7 +206,7 @@ class ObjectRelations(object):
                 ObjectRelations.contactgroup_services[group].update( ObjectRelations.contactgroup_services[subgroup] )
     @staticmethod
     def resolve_hostgroups():
-        ''' Update all hostgroup relations to take into account hostgroup.hostgroup_members '''
+        """ Update all hostgroup relations to take into account hostgroup.hostgroup_members """
         groups = ObjectRelations.hostgroup_hostgroups.keys()
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.hostgroup_hostgroups)
@@ -221,10 +222,10 @@ class ObjectRelations(object):
                 ObjectRelations.hostgroup_services[group].update( ObjectRelations.hostgroup_services[subgroup] )
 
 class ObjectFetcher(object):
-    '''
+    """
     This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
     from config.data and turning into high ObjectDefinition objects
-    '''
+    """
     _cached_objects = []
     _cached_ids = {}
     _cached_shortnames = {}
@@ -232,16 +233,16 @@ class ObjectFetcher(object):
     def __init__(self, object_type):
         self.object_type = object_type
     def get_all(self):
-        " Return all object definitions of specified type"
+        """ Return all object definitions of specified type"""
         if self.needs_reload():
             self.reload_cache()
-        if self.object_type != None:
+        if self.object_type is not None:
             return ObjectFetcher._cached_object_type[self.object_type]
         else:
             return ObjectFetcher._cached_objects
     all = property(get_all)
     def reload_cache(self):
-        'Reload configuration cache'
+        """Reload configuration cache"""
         # clear object list
         ObjectFetcher._cached_objects = []
         ObjectFetcher._cached_ids = {}
@@ -271,7 +272,7 @@ class ObjectFetcher(object):
         ObjectRelations.resolve_hostgroups()
         return True
     def needs_reload(self):
-        ''' Returns true if configuration files need to be reloaded/reparsed '''
+        """ Returns true if configuration files need to be reloaded/reparsed """
         if ObjectFetcher._cached_objects == []:
             # we get here on first run
             return True
@@ -280,53 +281,53 @@ class ObjectFetcher(object):
             return True
         return False
     def get_by_id(self, id):
-        ''' Get one specific object
-        
+        """ Get one specific object
+
         Returns:
             ObjectDefinition
         Raises:
             ValueError if object is not found
-        '''
+        """
         if self.needs_reload():
             self.reload_cache()
         id = str(id)
         return ObjectFetcher._cached_ids[id]
     def get_by_shortname(self, shortname):
-        ''' Get one specific object by its shortname (i.e. host_name for host, etc)
-        
+        """ Get one specific object by its shortname (i.e. host_name for host, etc)
+
         Returns:
             ObjectDefinition
         Raises:
             ValueError if object is not found
-        '''
+        """
         if self.needs_reload():
             self.reload_cache()
         shortname = str(shortname)
         return ObjectFetcher._cached_shortnames[shortname]
     def get_object_types(self):
-        ''' Returns a list of all discovered object types '''
+        """ Returns a list of all discovered object types """
         if config is None: self.reload_cache()
         return config.get_object_types()
     def filter(self, **kwargs):
-        '''
+        """
         Returns all objects that match the selected filter
-        
+
         Examples:
         # Get all services where host_name is examplehost.example.com
         Service.objects.filter(host_name='examplehost.example.com')
-        
+
         # Get service with host_name=examplehost.example.com and service_description='Ping'
         Service.objects.filter(host_name='examplehost.example.com',service_description='Ping')
-        
+
         # Get all services that are registered but without a host_name
         Service.objects.filter(host_name=None,register='1')
 
         # Get all hosts that start with 'exampleh'
         Host.objects.filter(host_name__startswith='exampleh')
-        
+
         # Get all hosts that end with 'example.com'
         Service.objects.filter(host_name__endswith='example.com')
-        
+
         # Get all contactgroups that contain 'dba'
         Contactgroup.objects.filter(host_name__contains='dba')
 
@@ -334,7 +335,7 @@ class ObjectFetcher(object):
         Host.objects.filter(hostgroup_name__notcontains='testservers')
         # Get all services with non-empty name
         Service.objects.filter(name__isnot=None)
-        '''
+        """
         # TODO: Better testing of these cases:
         # register = 1
         # id attribute
@@ -344,7 +345,7 @@ class ObjectFetcher(object):
         tmp = {}
         for k,v in kwargs.items():
             k = str(k)
-            if v != None: v = str(v)
+            if v is not None: v = str(v)
             tmp[k] = v
         kwargs = tmp
         for i in self.all:
@@ -379,13 +380,13 @@ class ObjectFetcher(object):
                     object_matches = True
                     break
                 if k == 'register' and v == '1' and not i.has_key(k):
-                    'not defined means item is registered'
+                    # not defined means item is registered
                     continue
-                if v == None and i.has_key(k):
+                if v is None and i.has_key(k):
                     object_matches = False
                     break
                 if not i.has_key(k):
-                    if v == None: continue # if None was the search attribute
+                    if v is None: continue # if None was the search attribute
                     object_matches = False
                     break
                 if not match_function(i[k], v):
@@ -397,12 +398,12 @@ class ObjectFetcher(object):
 
     
 class ObjectDefinition(object):
-    '''
+    """
     Holds one instance of one particular Object definition
     Example usage:
         objects = ObjectDefinition.objects.all
         my_object ObjectDefinition( dict ) # dict = hash map of configuration attributes
-    '''
+    """
     object_type = None
     objects = ObjectFetcher(None)
     def __init__(self, item=None, filename=None):
@@ -452,26 +453,26 @@ class ObjectDefinition(object):
             self._add_property(k)
     
     def _add_property(self, name):
-        ''' Creates dynamic properties for every attribute of out definition.
-        
+        """ Creates dynamic properties for every attribute of out definition.
+
         i.e. this makes sure host_name attribute is accessable as self.host_name
-        
+
         Returns: None
-        '''
+        """
         fget = lambda self: self.get_attribute(name)
         fset = lambda self, value: self.set_attribute(name, value)
         fdel = lambda self: self.set_attribute(name, None)
         fdoc = "This is the %s attribute for object definition"
         setattr( self.__class__, name, property(fget,fset,fdel,fdoc))
     def get_attribute(self, attribute_name):
-        'Get one attribute from our object definition'
+        """Get one attribute from our object definition"""
         return self[attribute_name]
     def set_attribute(self, attribute_name, attribute_value):
-        'Set (but does not save) one attribute in our object'
+        """Set (but does not save) one attribute in our object"""
         self[attribute_name] = attribute_value
         self._event(level="debug", message="attribute changed: %s = %s" % (attribute_name, attribute_value))
     def is_dirty(self):
-        "Returns true if any attributes has been changed on this object, and therefore it needs saving"
+        """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
         return len(self._changes.keys()) == 0
     def is_registered(self):
         """ Returns true if object is enabled (registered)
@@ -525,21 +526,19 @@ class ObjectDefinition(object):
         object_name = self['name']
         filename = self['filename']
         object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
-        import md5
-        return md5.new(object_id).hexdigest()
-        return object_id
+        return md5(object_id).hexdigest()
     def get_suggested_filename(self):
-        "Returns a suitable configuration filename to store this object in"
+        """Returns a suitable configuration filename to store this object in"""
         path = "" # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
         object_type = self.object_type
         shortname = self.get_shortname()
         if self['register'] == "0":
-            'This is a template'
+            # This is a template
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
         else:
-            'Not a template'
+            # Not a template
             if object_type == 'service':
-                'Services written in same file as their host'
+                # Services written in same file as their host
                 shortname = self['host_name']
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
         return path
@@ -554,7 +553,7 @@ class ObjectDefinition(object):
         number_of_changes = len(self._changes.keys())
         if self.is_new is True or self.get_filename() is None:
             if not self.get_filename():
-                'discover a new filename'
+                # discover a new filename
                 self.set_filename( self.get_suggested_filename() )
             for k,v in self._changes.items():
                 self._defined_attributes[k] = v
@@ -604,8 +603,8 @@ class ObjectDefinition(object):
         Returns: 
             True on success
         """
-        if str_new_definition == None:
-            str_new_definition = self['meta']['raw_definition']
+        if str_new_definition is None:
+            str_new_definition = self._meta.get('raw_definition')
         config.item_rewrite(self._original_attributes, str_new_definition)
         self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
@@ -680,12 +679,12 @@ class ObjectDefinition(object):
             List of ObjectDefinition objects
         """
         result = []
-        if self['name'] != None:
+        if self['name'] is not None:
             tmp = ObjectDefinition.objects.filter(use__has_field=self['name'], object_type=self['object_type'])
             for i in tmp: result.append(i)
         return result
     def __str__(self):
-        return_buffer = "define %s {\n" % (self.object_type)
+        return_buffer = "define %s {\n" % self.object_type
         fields = self._defined_attributes.keys()
         for i in self._changes.keys():
             if i not in fields: fields.append(i)
@@ -703,16 +702,8 @@ class ObjectDefinition(object):
         return return_buffer
     def __repr__(self):
         return "%s: %s" % (self['object_type'], self.get_shortname())
-        result = ""
-        result += "%s: " % self.__class__.__name__
-        for i in  ['object_type', 'host_name', 'name', 'use', 'service_description']:
-            if self.has_key(i):
-                result += " %s=%s " % (i, self[i])
-            else:
-                result += "%s=None " % (i)
-        return result
     def get(self, value, default=None):
-        ''' self.get(x) == self[x] '''
+        """ self.get(x) == self[x] """
         if self.has_key(value): return self[value]
         return default
     def get_description(self):
@@ -733,10 +724,10 @@ class ObjectDefinition(object):
     def get_macro(self, macroname, host_name=None ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):
-            'Command macros handled in a special function'
+            # Command macros handled in a special function
             return self._get_command_macro(macroname)
         if macroname.startswith('$USER'):
-            '$USERx$ macros are supposed to be private, but we will display them anyway'
+            # $USERx$ macros are supposed to be private, but we will display them anyway
             for mac,val in config.resource_values:
                 if macroname == mac:
                     return val
@@ -750,9 +741,9 @@ class ObjectDefinition(object):
             return self[ attr ]
         return ''
     def get_all_macros(self):
-        "Returns {macroname:macrovalue} hash map of this object's macros"
+        """Returns {macroname:macrovalue} hash map of this object's macros"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] == None: return None
+        if self['check_command'] is None: return None
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
@@ -773,9 +764,9 @@ class ObjectDefinition(object):
             result[i] = self.get_macro(i)
         return result
     def get_effective_command_line(self, host_name=None):
-        "Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"
+        """Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] == None: return None
+        if self['check_command'] is None: return None
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
@@ -788,15 +779,15 @@ class ObjectDefinition(object):
         result = regex.sub(get_macro, command['command_line'])
         return result
     def run_check_command(self, host_name=None):
-        "Run the check_command defined by this service. Returns return_code,stdout,stderr"
+        """Run the check_command defined by this service. Returns return_code,stdout,stderr"""
         
         command = self.get_effective_command_line(host_name=host_name)
-        if command == None: return None
+        if command is None: return None
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         return proc.returncode,stdout,stderr
     def _get_command_macro(self, macroname):
-        "Resolve any command argument ($ARG1$) macros from check_command"
+        """Resolve any command argument ($ARG1$) macros from check_command"""
         # TODO: This function is incomplete and untested
         a = self.__argument_macros
         if a == {}:
@@ -814,7 +805,7 @@ class ObjectDefinition(object):
     def _get_service_macro(self,macroname):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$_SERVICE'):
-            'If this is a custom macro'
+            # If this is a custom macro
             name = macroname[9:-1]
             return self["_%s" % name]
         if _standard_macros.has_key( macroname ):
@@ -824,7 +815,7 @@ class ObjectDefinition(object):
     def _get_host_macro(self, macroname, host_name=None):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$_HOST'):
-            'if this is a custom macro'
+            # if this is a custom macro
             name = macroname[6:-1]
             return self["_%s" % name]
         if _standard_macros.has_key( macroname ):
@@ -886,7 +877,7 @@ class ObjectDefinition(object):
             result.append((k, defin, inher))
         return result
     def get_parents(self):
-        "Returns an ObjectDefinition list of all parents (via use attribute)"
+        """Returns an ObjectDefinition list of all parents (via use attribute)"""
         result = []
         if not self['use']: return result
         for parent_name in self['use'].split(','):
@@ -895,7 +886,7 @@ class ObjectDefinition(object):
             result.append(search[0])
         return result
     def unregister(self, recursive=True):
-        ''' Short for self['register'] = 0 ; self.save() '''
+        """ Short for self['register'] = 0 ; self.save() """
         self['register'] = 0
         self.save()
         if recursive is True:
@@ -903,8 +894,8 @@ class ObjectDefinition(object):
                 i.unregister()
         
     def attribute_appendfield(self, attribute_name, value):
-        '''Convenient way to append value to an attribute with a comma seperated value
-        
+        """Convenient way to append value to an attribute with a comma seperated value
+
         Example:
            >>> print myservice
            define service {
@@ -917,7 +908,7 @@ class ObjectDefinition(object):
                 ...
                 contactgroups +alladmins,localadmins,webmasters
             }
-           '''
+           """
         aList = AttributeList( self[attribute_name] )
         
         if value not in aList.fields:
@@ -925,8 +916,8 @@ class ObjectDefinition(object):
             self[attribute_name] = str(aList)
         return
     def attribute_removefield(self, attribute_name, value):
-        '''Convenient way to remove value to an attribute with a comma seperated value
-        
+        """Convenient way to remove value to an attribute with a comma seperated value
+
         Example:
            >>> print myservice
            define service {
@@ -939,7 +930,7 @@ class ObjectDefinition(object):
                 ...
                 contactgroups +alladmins
             }
-           '''
+           """
         aList = AttributeList(self[attribute_name])
 
         if value in aList.fields:
@@ -947,8 +938,8 @@ class ObjectDefinition(object):
             self[attribute_name] = str(aList)
         return
     def attribute_replacefield(self, attribute_name, old_value, new_value):
-        '''Convenient way to replace field within an attribute with a comma seperated value
-        
+        """Convenient way to replace field within an attribute with a comma seperated value
+
         Example:
            >>> print myservice
            define service {
@@ -961,7 +952,7 @@ class ObjectDefinition(object):
                 ...
                 contactgroups +alladmins,webmasters
             }
-           '''
+           """
         aList = AttributeList(self[attribute_name])
         
         if old_value in aList.fields:
@@ -981,12 +972,12 @@ class ObjectDefinition(object):
         """
         result = []
         tmp = self[attribute_name]
-        if tmp != None:
+        if tmp is not None:
             result.append( tmp )
-        if tmp == None or tmp.startswith('+'):
+        if tmp is None or tmp.startswith('+'):
             for parent in self.get_parents():
                 result.append( parent._get_effective_attribute(attribute_name) )
-                if parent[attribute_name] != None and not parent[attribute_name].startswith('+'):
+                if parent[attribute_name] is not None and not parent[attribute_name].startswith('+'):
                     break
         return_value = []
         for value in  result :
@@ -1007,10 +998,10 @@ class ObjectDefinition(object):
             else:
                 i.debug( object_definition=self, message=message )
     def _do_relations(self):
-        ''' Discover all related objects (f.e. services that belong to this host, etc
+        """ Discover all related objects (f.e. services that belong to this host, etc
 
         ObjectDefinition only has relations via 'use' paramameter. Subclasses should extend this.
-        '''
+        """
         parents = AttributeList( self.use )
         for i in parents.fields:
             ObjectRelations.use[self.object_type][ i ].add( self.get_id() )
@@ -1045,7 +1036,7 @@ class Host(ObjectDefinition):
         list_of_shortnames = ObjectRelations.host_hostgroups[self.host_name]
         return map( get_object, list_of_shortnames )
     def delete(self, recursive=False ):
-        ''' Overwrites objectdefinition so that recursive=True will delete all services as well '''
+        """ Overwrites objectdefinition so that recursive=True will delete all services as well """
         # Find all services and delete them as well
         if recursive == True:
             for i in self.get_effective_services():
@@ -1054,7 +1045,7 @@ class Host(ObjectDefinition):
         super(self.__class__, self).delete(recursive=recursive)
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
-        if self['host_name'] != None:
+        if self['host_name'] is not None:
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
@@ -1155,12 +1146,12 @@ class Contact(ObjectDefinition):
         """ Returns a friendly description of the object """
         return self['contact_name']
     def get_effective_contactgroups(self):
-        ''' Get a list of all Contactgroup that are hooked to this contact '''
+        """ Get a list of all Contactgroup that are hooked to this contact """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.contact_contactgroups[self.contact_name]
         return map( get_object, list_of_shortnames )
     def get_effective_hosts(self):
-        ''' Get a list of all Host that are hooked to this Contact '''
+        """ Get a list of all Host that are hooked to this Contact """
         result = set()
         # First add all hosts that name this contact specifically
         get_object = lambda x: Host.objects.get_by_shortname(x)
@@ -1172,7 +1163,7 @@ class Contact(ObjectDefinition):
             result.update( i.get_effective_hosts() )
         return result
     def get_effective_services(self):
-        ''' Get a list of all Service that are hooked to this Contact '''
+        """ Get a list of all Service that are hooked to this Contact """
         result = set()
         # First add all services that name this contact specifically
         get_object = lambda x: Service.objects.get_by_shortname(x)
@@ -1207,17 +1198,17 @@ class Contactgroup(ObjectDefinition):
         list_of_shortnames = ObjectRelations.contactgroup_subgroups
         return map( get_object, list_of_shortnames )
     def get_effective_contacts(self):
-        ''' Returns a list of every Contact that is a member of this Contactgroup '''
+        """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.contactgroup_contact[self.contactgroup_name]
         return map( get_object, list_of_shortnames )
     def get_effective_hosts(self):
-        ''' Return every Host that belongs to this contactgroup '''
+        """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = ObjectRelations.contactgroup_hosts[self.contactgroup_name]
         get_object = lambda x: Host.objects.get_by_shortname(x)
         return map( get_object, list_of_shortnames )
     def get_effective_services(self):
-        ''' Return every Host that belongs to this contactgroup '''
+        """ Return every Host that belongs to this contactgroup """
         services = {}
         for i in Service.objects.all:
             services[i.get_id()] = i
@@ -1280,20 +1271,20 @@ class Timeperiod(ObjectDefinition):
         return self['timeperiod_name']
 
 class AttributeList(object):
-    ''' Parse a list of nagios attributes (e. contact_groups) into a parsable format
-    
+    """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
+
     This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
-    
+
     Typical comma-seperated format in nagios configuration files looks something like this:
         contact_groups     +group1,group2,group3
-        
+
     Example:
         >>> i = AttributeList('+group1,group2,group3')
         >>> print "Operator is:", i.operator
         Operator is: +
         >>> print i.values
         ['group1','group2','group3']
-    '''
+    """
     def __init__(self, value=None):
         self.operator = ''
         self.fields = []

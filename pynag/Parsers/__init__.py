@@ -22,9 +22,6 @@ import os
 import re
 import time
 
-"""
-Python Nagios extensions
-"""
 
 def debug(text):
 	debug = True
@@ -122,27 +119,7 @@ class config:
 				if not self.item_cache.has_key( tmp_item_type ):
 					self.item_cache[tmp_item_type] = {}
 				self.item_cache[tmp_item_type][name] = item
-		try:
-			return self.item_cache[item_type][item_name]
-		except Exception:
-			return None
-		if self.item_cache[item_type].has_key(item_name):
-			return self.item_cache[item_type][item_name]
-		return None
-		for test_item in self.item_list:  
-			## Skip items without a name
-			if not test_item.has_key('name'):
-				continue
-
-			## Make sure there isn't an infinite loop going on
-			try:
-				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
-					return test_item
-			except Exception:
-				raise ParserError("Loop detected, exiting", item=test_item)
-			
-		## If we make it this far, it means there is no matching item
-		return None
+		return self.item_cache[item_type].get(item_name, None)
 
 	def _apply_template(self, original_item):
 		"""
@@ -161,7 +138,7 @@ class config:
 		parent_items = []
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
-			if parent_item == None: 
+			if parent_item is None:
 				error_string = ""
 				#error_string = "error in %s\n" % (original_item['meta']['filename'])
 				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
@@ -203,7 +180,7 @@ class config:
 					return_list.append(item)
 		return return_list
 	def get_new_item(self, object_type, filename):
-		''' Returns an empty item with all necessary metadata '''
+		""" Returns an empty item with all necessary metadata """
 		current = {}
 		current['meta'] = {}
 		current['meta']['object_type'] = object_type
@@ -263,7 +240,7 @@ class config:
 				continue
 
 			# beginning of object definition
-			boo_re = re.compile("define\s+(\w+)\s*{?(.*)$")
+			boo_re = re.compile("define\s+(\w+)\s*\{?(.*)$")
 			m = boo_re.search(line)
 			if m:
 				tmp_buffer = [line]
@@ -347,16 +324,16 @@ class config:
 		i_am_within_definition = False
 		for line in file.readlines():
 			if object_has_been_found:
-				'If we have found an object, lets just spool to the end'
+				# If we have found an object, lets just spool to the end
 				everything_after.append( line )
 				continue
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
-				'empty line'
+				# empty line
 				keyword = ''
 				rest = ''
 			if len(tmp) == 1:
-				'single word on the line'
+				# single word on the line
 				keyword = tmp[0]
 				rest = ''
 			if len(tmp) > 1:
@@ -403,21 +380,21 @@ class config:
 					#current_candidate = self._apply_template(current_candidate)
 				# Compare objects
 				if self.compareObjects( item, current_candidate ) == True:
-					'This is the object i am looking for'
+					# This is the object i am looking for
 					object_has_been_found = True
 					object_definition = tmp_buffer
 				else:
-					'This is not the item you are looking for'
+					# This is not the item you are looking for
 					everything_before += tmp_buffer
 		if object_has_been_found:
-			return (everything_before, object_definition, everything_after, filename)
+			return everything_before, object_definition, everything_after, filename
 		else:
 			raise ValueError("We could not find object in %s\n%s" % (filename,item))
 	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
-		'''
+		"""
 		Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
 		If new_value and new_field_name are both None, the attribute is removed.
-		
+
 		Arguments:
 			item(dict) -- The item to be modified
 			field_name(str) -- The field_name to modify (if any)
@@ -430,12 +407,12 @@ class config:
 		Raises:
 			ValueError if object or field_name is not found
 			IOError is save is unsuccessful.
-		'''
+		"""
 		if field_name is None and new_item is None:
 			raise ValueError("either field_name or new_item must be set")
 		everything_before,object_definition, everything_after, filename = self._locate_item(item)
 		if new_item is not None:
-			'We have instruction on how to write new object, so we dont need to parse it'
+			# We have instruction on how to write new object, so we dont need to parse it
 			change = True
 			object_definition = [new_item]
 		else:
@@ -447,23 +424,23 @@ class config:
 				if len(tmp) == 2: value = tmp[1]
 				k = tmp[0].strip()
 				if k == field_name:
-					'Attribute was found, lets change this line'
+					# Attribute was found, lets change this line
 					if not new_field_name and not new_value:
-						'We take it that we are supposed to remove this attribute'
+						# We take it that we are supposed to remove this attribute
 						change = object_definition.pop(i)
 						break
 					elif new_field_name:
-						'Field name has changed'
+						# Field name has changed
 						k = new_field_name
 					if new_value:
-						'value has changed '
+						# value has changed
 						value = new_value
 					# Here we do the actual change	
 					change = "\t%-30s%s\n" % (k, value)
 					object_definition[i] = change
 					break
 			if not change:
-					'Attribute was not found. Lets add it'
+					# Attribute was not found. Lets add it
 					change = "\t%-30s%s\n" % (field_name, new_value)
 					object_definition.insert(i,change)
 		# Lets put a banner in front of our item
@@ -620,7 +597,7 @@ class config:
 		"""
 
 		original_object = self.get_service(target_host, service_description)
-		if original_object == None:
+		if original_object is None:
 			raise ParserError("Service not found")
 		return self.edit_object( original_object, field_name, new_value)
 
@@ -1014,7 +991,7 @@ class config:
 
 
 	def needs_reload(self):
-		"Returns True if Nagios service needs reload of cfg files"
+		"""Returns True if Nagios service needs reload of cfg files"""
 		new_timestamps = self.get_timestamps()
 		for k,v in self.maincfg_values:
 			if k == 'lock_file': lockfile = v
@@ -1024,7 +1001,7 @@ class config:
 			if int(v) > lockfile: return True
 		return False 
 	def needs_reparse(self):
-		"Returns True if any Nagios configuration file has changed since last parse()"
+		"""Returns True if any Nagios configuration file has changed since last parse()"""
 		# If Parse has never been run:
 		if self.data == {}:
 			return True
@@ -1057,7 +1034,7 @@ class config:
 
 		self._post_parse()
 	def get_timestamps(self):
-		"Returns a hash map of all nagios related files and their timestamps"
+		"""Returns a hash map of all nagios related files and their timestamps"""
 		files = {}
 		files[self.cfg_file] = None
 		for k,v in self.maincfg_values:
@@ -1071,7 +1048,7 @@ class config:
 			files[k] = os.stat(k).st_mtime
 		return files
 	def get_resources(self):
-		"Returns a list of every private resources from nagios.cfg"
+		"""Returns a list of every private resources from nagios.cfg"""
 		resources = []
 		for config_object,config_value in self.maincfg_values:
 			if config_object == 'resource_file' and os.path.isfile(config_value):
@@ -1243,12 +1220,12 @@ class config:
 				for raw_file in raw_file_list:
 					if raw_file.endswith('.cfg'):
 						if os.path.exists(raw_file):
-							'Nagios doesnt care if cfg_file exists or not, so we will not throws errors'
+							# Nagios doesnt care if cfg_file exists or not, so we will not throws errors
 							cfg_files.append(raw_file)
 
 		return cfg_files
 	def get_object_types(self):
-		''' Returns a list of all discovered object types '''
+		""" Returns a list of all discovered object types """
 		return map(lambda x: re.sub("all_","", x), self.data.keys())
 	def cleanup(self):
 		"""
@@ -1315,18 +1292,18 @@ class status:
 	def __getitem__(self, key):
 		return self.data[key]
 class object_cache(config):
-	''' Loads the configuration as it appears in objects.cache file '''
+	""" Loads the configuration as it appears in objects.cache file """
 	def get_cfg_files(self):
 		for k,v in self.maincfg_values:
 			if k == 'object_cache_file': return [ v ]
 class ParserError(Exception):
-	''' ParserError is used for errors that the Parser has when parsing config.
-	
+	""" ParserError is used for errors that the Parser has when parsing config.
+
 	Typical usecase when there is a critical error while trying to read configuration.
-	'''
+	"""
 	def __init__(self, message, item=None):
 		self.message = message
-		if item == None: return
+		if item is None: return
 		self.item = item
 		self.filename = item['meta']['filename']
 		#self.object_id = item.get_id()

@@ -17,11 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-'''
+"""
 This file contains a dict object that maps Nagios Standard macronames to specific values.
 
 i.e. macros['$HOSTADDR$'] should return 'address'
-'''
+"""
 
 # TODO: This hash map is incomplete, someone should type everything from the documentation to here:
 # See: http://nagios.sourceforge.net/docs/3_0/macrolist.html
