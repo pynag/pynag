@@ -215,18 +215,18 @@ class simple:
 
 			## 10:     < 10, (outside {10 .. #})
 			if (end == "") and (float(value) < float(start)):
-				self.hr_range = "< %s" % (start)
+				self.hr_range = "< %s" % start
 				return True
 			elif (end == "") and (float(value) >= float(start)):
-				self.hr_range = "< %s" % (start)
+				self.hr_range = "< %s" % start
 				return False
 
 			## ~:10    > 10, (outside the range of {-# .. 10})
 			if (start == "~") and (float(value) > float(end)):
-				self.hr_range = "> %s" % (end)
+				self.hr_range = "> %s" % end
 				return True
 			elif (start == "~") and (float(value) <= float(end)):
-				self.hr_range = "> %s" % (end)
+				self.hr_range = "> %s" % end
 				return False
 
 			## 10:20   < 10 or > 20, (outside the range of {10 .. 20})
@@ -255,7 +255,7 @@ class simple:
 	
 		# Execute send_nsca
                 from popen2 import Popen3
-		command = "send_nsca -H %s" % (ncsahost)
+		command = "send_nsca -H %s" % ncsahost
 		p = Popen3(command,  capturestderr=True)
 
 		# Service check
@@ -364,12 +364,13 @@ class simple:
 		# code
 		keys = self.data['messages'].keys()
 		keys.sort(reverse=True)
+		code = UNKNOWN
 		for code in keys:
 			if len(self.data['messages'][code]):
 				break
 
 		# Create the relevant message for the most severe code
-		if joinallstr == None:
+		if joinallstr is None:
 			message = joinstr.join(self.data['messages'][code])
 		# Join all strings whether OK, WARN...
 		else:
@@ -378,7 +379,7 @@ class simple:
 				if len(self.data['messages'][c]):
 					message += joinallstr.join(self.data['messages'][c]) + joinallstr
 
-		return (code, message.rstrip(joinallstr))
+		return code, message.rstrip(joinallstr)
 
 	def code_string2int( self, code_text ):
 		"""

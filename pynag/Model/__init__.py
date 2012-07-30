@@ -44,6 +44,7 @@ import os
 import re
 import subprocess
 import time
+from hashlib import md5
 
 from pynag import Parsers
 from macros import _standard_macros
@@ -72,7 +73,7 @@ def debug(text):
 
 
 def contains(str1, str2):
-    """  Returns True if str1 contains str2 """
+    """Returns True if str1 contains str2"""
     if str1.find(str2) > -1: return True
 
 def not_contains(str1, str2):
@@ -81,7 +82,7 @@ def not_contains(str1, str2):
 
 def has_field(str1, str2):
     """Returns True if str2 is a field in str1
-    
+
     For this purpose the string 'example' is a field in '+this,is,an,example'
     """
     str1 = str1.strip('+')
@@ -235,7 +236,7 @@ class ObjectFetcher(object):
         """ Return all object definitions of specified type"""
         if self.needs_reload():
             self.reload_cache()
-        if not self.object_type:
+        if self.object_type is not None:
             return ObjectFetcher._cached_object_type[self.object_type]
         else:
             return ObjectFetcher._cached_objects
@@ -253,9 +254,8 @@ class ObjectFetcher(object):
         if config.needs_reparse():
             debug('Debug: Doing a reparse of configuration')
             config.parse()
-        # Fetch all objects from Parsers.config
 
-        objects = config.data.values()
+        # Fetch all objects from Parsers.config
         for object_type, objects in config.data.items():
             # change "all_host" to just "host"
             object_type = object_type[ len("all_"): ]
@@ -281,7 +281,7 @@ class ObjectFetcher(object):
         return False
     def get_by_id(self, id):
         """ Get one specific object
-        
+
         Returns:
             ObjectDefinition
         Raises:
@@ -293,7 +293,7 @@ class ObjectFetcher(object):
         return ObjectFetcher._cached_ids[id]
     def get_by_shortname(self, shortname):
         """ Get one specific object by its shortname (i.e. host_name for host, etc)
-        
+
         Returns:
             ObjectDefinition
         Raises:
@@ -310,51 +310,51 @@ class ObjectFetcher(object):
     def filter(self, **kwargs):
         """
         Returns all objects that match the selected filter
-        
+
         Examples:
         # Get all services where host_name is examplehost.example.com
         Service.objects.filter(host_name='examplehost.example.com')
-        
+
         # Get service with host_name=examplehost.example.com and service_description='Ping'
         Service.objects.filter(host_name='examplehost.example.com',service_description='Ping')
-        
+
         # Get all services that are registered but without a host_name
         Service.objects.filter(host_name=None,register='1')
 
         # Get all hosts that start with 'exampleh'
         Host.objects.filter(host_name__startswith='exampleh')
-        
+
         # Get all hosts that end with 'example.com'
         Service.objects.filter(host_name__endswith='example.com')
-        
+
         # Get all contactgroups that contain 'dba'
         Contactgroup.objects.filter(host_name__contains='dba')
 
         # Get all hosts that are not in the 'testservers' hostgroup
         Host.objects.filter(hostgroup_name__notcontains='testservers')
+
         # Get all services with non-empty name
         Service.objects.filter(name__isnot=None)
+
+        # Get all hosts that have an address:
+        Host.objects.filter(address_exists=True)
+
         """
-        # TODO: Better testing of these cases:
-        # register = 1
-        # id attribute
-        # any attribute = None or 'None'
         result = []
         # Lets convert all values to str()
         tmp = {}
         for k,v in kwargs.items():
             k = str(k)
-            if v: v = str(v)
+            if v is not None: v = str(v)
             tmp[k] = v
         kwargs = tmp
         for i in self.all:
             object_matches = True
             for k, v in kwargs.items():
-                if k == ('exists'):
-                    raise NotImplementedError('Dont use this. Doesnt work.')
-                    v = k[:-8]
-                    k = i
-                    match_function = dict.has_key
+                if k.endswith('__exists'):
+                    k = k[:-len('__exists')]
+                    object_matches = str(i.has_key(k)) == str(v)
+                    break
                 elif k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
@@ -381,11 +381,11 @@ class ObjectFetcher(object):
                 if k == 'register' and v == '1' and not i.has_key(k):
                     # not defined means item is registered
                     continue
-                if not v and i.has_key(k):
+                if v is None and i.has_key(k):
                     object_matches = False
                     break
                 if not i.has_key(k):
-                    if not v: continue # if None was the search attribute
+                    if v is None: continue # if None was the search attribute
                     object_matches = False
                     break
                 if not match_function(i[k], v):
@@ -453,9 +453,9 @@ class ObjectDefinition(object):
     
     def _add_property(self, name):
         """ Creates dynamic properties for every attribute of out definition.
-        
+
         i.e. this makes sure host_name attribute is accessable as self.host_name
-        
+
         Returns: None
         """
         fget = lambda self: self.get_attribute(name)
@@ -525,11 +525,11 @@ class ObjectDefinition(object):
         object_name = self['name']
         filename = self['filename']
         object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
-        import md5
-        return md5.new(object_id).hexdigest()
+        return md5(object_id).hexdigest()
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in"""
-        path = "" # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
+        # results will be in a variable called path
+        # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
         object_type = self.object_type
         shortname = self.get_shortname()
         if self['register'] == "0":
@@ -603,8 +603,8 @@ class ObjectDefinition(object):
         Returns: 
             True on success
         """
-        if str_new_definition == None:
-            str_new_definition = self['meta']['raw_definition']
+        if str_new_definition is None:
+            str_new_definition = self._meta.get('raw_definition')
         config.item_rewrite(self._original_attributes, str_new_definition)
         self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
@@ -679,12 +679,12 @@ class ObjectDefinition(object):
             List of ObjectDefinition objects
         """
         result = []
-        if self['name']:
+        if self['name'] is not None:
             tmp = ObjectDefinition.objects.filter(use__has_field=self['name'], object_type=self['object_type'])
             for i in tmp: result.append(i)
         return result
     def __str__(self):
-        return_buffer = "define %s {\n" % (self.object_type)
+        return_buffer = "define %s {\n" % self.object_type
         fields = self._defined_attributes.keys()
         for i in self._changes.keys():
             if i not in fields: fields.append(i)
@@ -697,19 +697,11 @@ class ObjectDefinition(object):
         for key in fields:
             if key == 'meta' or key in self['meta'].keys(): continue
             value = self[key]
-            return_buffer = return_buffer + "  %-30s %s\n" % (key, value)
-        return_buffer = return_buffer + "}\n"
+            return_buffer += "  %-30s %s\n" % (key, value)
+        return_buffer += "}\n"
         return return_buffer
     def __repr__(self):
         return "%s: %s" % (self['object_type'], self.get_shortname())
-        result = ""
-        result += "%s: " % self.__class__.__name__
-        for i in  ['object_type', 'host_name', 'name', 'use', 'service_description']:
-            if self.has_key(i):
-                result += " %s=%s " % (i, self[i])
-            else:
-                result += "%s=None " % (i)
-        return result
     def get(self, value, default=None):
         """ self.get(x) == self[x] """
         if self.has_key(value): return self[value]
@@ -732,10 +724,10 @@ class ObjectDefinition(object):
     def get_macro(self, macroname, host_name=None ):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$ARG'):
-            'Command macros handled in a special function'
+            # Command macros handled in a special function
             return self._get_command_macro(macroname)
         if macroname.startswith('$USER'):
-            '$USERx$ macros are supposed to be private, but we will display them anyway'
+            # $USERx$ macros are supposed to be private, but we will display them anyway
             for mac,val in config.resource_values:
                 if macroname == mac:
                     return val
@@ -751,7 +743,7 @@ class ObjectDefinition(object):
     def get_all_macros(self):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] == None: return None
+        if self['check_command'] is None: return None
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
@@ -774,7 +766,7 @@ class ObjectDefinition(object):
     def get_effective_command_line(self, host_name=None):
         """Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] == None: return None
+        if self['check_command'] is None: return None
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
@@ -790,7 +782,7 @@ class ObjectDefinition(object):
         """Run the check_command defined by this service. Returns return_code,stdout,stderr"""
         
         command = self.get_effective_command_line(host_name=host_name)
-        if command == None: return None
+        if command is None: return None
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         return proc.returncode,stdout,stderr
@@ -813,7 +805,7 @@ class ObjectDefinition(object):
     def _get_service_macro(self,macroname):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$_SERVICE'):
-            'If this is a custom macro'
+            # If this is a custom macro
             name = macroname[9:-1]
             return self["_%s" % name]
         if _standard_macros.has_key( macroname ):
@@ -823,7 +815,7 @@ class ObjectDefinition(object):
     def _get_host_macro(self, macroname, host_name=None):
         # TODO: This function is incomplete and untested
         if macroname.startswith('$_HOST'):
-            'if this is a custom macro'
+            # if this is a custom macro
             name = macroname[6:-1]
             return self["_%s" % name]
         if _standard_macros.has_key( macroname ):
@@ -903,7 +895,7 @@ class ObjectDefinition(object):
         
     def attribute_appendfield(self, attribute_name, value):
         """Convenient way to append value to an attribute with a comma seperated value
-        
+
         Example:
            >>> print myservice
            define service {
@@ -925,7 +917,7 @@ class ObjectDefinition(object):
         return
     def attribute_removefield(self, attribute_name, value):
         """Convenient way to remove value to an attribute with a comma seperated value
-        
+
         Example:
            >>> print myservice
            define service {
@@ -947,7 +939,7 @@ class ObjectDefinition(object):
         return
     def attribute_replacefield(self, attribute_name, old_value, new_value):
         """Convenient way to replace field within an attribute with a comma seperated value
-        
+
         Example:
            >>> print myservice
            define service {
@@ -980,12 +972,12 @@ class ObjectDefinition(object):
         """
         result = []
         tmp = self[attribute_name]
-        if tmp != None:
+        if tmp is not None:
             result.append( tmp )
-        if tmp == None or tmp.startswith('+'):
+        if tmp is None or tmp.startswith('+'):
             for parent in self.get_parents():
                 result.append( parent._get_effective_attribute(attribute_name) )
-                if parent[attribute_name] != None and not parent[attribute_name].startswith('+'):
+                if parent[attribute_name] is not None and not parent[attribute_name].startswith('+'):
                     break
         return_value = []
         for value in  result :
@@ -1053,7 +1045,7 @@ class Host(ObjectDefinition):
         super(self.__class__, self).delete(recursive=recursive)
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
-        if self['host_name'] != None:
+        if self['host_name'] is not None:
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
@@ -1280,12 +1272,12 @@ class Timeperiod(ObjectDefinition):
 
 class AttributeList(object):
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
-    
+
     This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
-    
+
     Typical comma-seperated format in nagios configuration files looks something like this:
         contact_groups     +group1,group2,group3
-        
+
     Example:
         >>> i = AttributeList('+group1,group2,group3')
         >>> print "Operator is:", i.operator

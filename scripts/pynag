@@ -188,7 +188,7 @@ Run %prog delete --help for full list of command line arguments.
         try:
             i.delete(recursive=opts.recursive)
             print i.get_shortname(), "deleted."
-        except ValueError, e:
+        except ValueError:
             print i.get_shortname(), "not found."
     print len(objects), "objects deleted"
 def add_object():

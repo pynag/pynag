@@ -21,9 +21,6 @@ import sys
 import os
 import re
 
-"""
-Python Nagios extensions
-"""
 
 class daemon:
 	"""

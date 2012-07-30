@@ -22,9 +22,6 @@ import os
 import re
 import time
 
-"""
-Python Nagios extensions
-"""
 
 def debug(text):
 	debug = True
@@ -41,7 +38,7 @@ class config:
 
 		# If nagios.cfg is not set, lets do some minor autodiscover.
 		if self.cfg_file is None:
-			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
+			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/etc/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
 			for file in possible_files:
 				if os.path.isfile(file):
 					self.cfg_file = file
@@ -122,34 +119,13 @@ class config:
 				if not self.item_cache.has_key( tmp_item_type ):
 					self.item_cache[tmp_item_type] = {}
 				self.item_cache[tmp_item_type][name] = item
-		try:
-			return self.item_cache[item_type][item_name]
-		except Exception:
-			return None
-		if self.item_cache[item_type].has_key(item_name):
-			return self.item_cache[item_type][item_name]
-		return None
-		for test_item in self.item_list:  
-			## Skip items without a name
-			if not test_item.has_key('name'):
-				continue
-
-			## Make sure there isn't an infinite loop going on
-			try:
-				if (test_item['name'] == item_name) and (test_item['meta']['object_type'] == item_type):
-					return test_item
-			except Exception:
-				raise ParserError("Loop detected, exiting", item=test_item)
-			
-		## If we make it this far, it means there is no matching item
-		return None
+		return self.item_cache[item_type].get(item_name, None)
 
 	def _apply_template(self, original_item):
 		"""
 		Apply all attributes of item named parent_name to "original_item".
 		"""
-		# TODO: Performance optimization. Don't recursively call _apply_template on hosts we have already
-		# applied templates to. This needs more work.
+		# If item does not inherit from anyone else, lets just return item as is.
 		if not original_item.has_key('use'):
 			return original_item
 		object_type = original_item['meta']['object_type']
@@ -161,11 +137,8 @@ class config:
 		parent_items = []
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
-			if parent_item == None: 
-				error_string = ""
-				#error_string = "error in %s\n" % (original_item['meta']['filename'])
-				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
-				#error_string = error_string + self.print_conf(original_item)
+			if parent_item is None:
+				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
 				self.errors.append( ParserError(error_string,item=original_item) )
 				continue
 			# Parent item probably has use flags on its own. So lets apply to parent first
@@ -219,7 +192,6 @@ class config:
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
 		append = ""
-		type = None
 		current = None
 		in_definition = {}
 		tmp_buffer = []
@@ -344,22 +316,24 @@ class config:
 		everything_before = [] # Every line before our object definition
 		everything_after = []  # Every line after our object definition
 		object_definition = [] # List of every line of our object definition
+		tmp_buffer = []        # Every line of current object being parsed is stored here.
+		current_object_type = None # Object type of current object goes in here
 		i_am_within_definition = False
 		for line in file.readlines():
 			if object_has_been_found:
-				'If we have found an object, lets just spool to the end'
+				# If we have found an object, lets just spool to the end
 				everything_after.append( line )
 				continue
 			tmp  = line.split(None, 1)
 			if len(tmp) == 0:
-				'empty line'
+				# empty line
 				keyword = ''
 				rest = ''
-			if len(tmp) == 1:
-				'single word on the line'
+			elif len(tmp) == 1:
+				# single word on the line
 				keyword = tmp[0]
 				rest = ''
-			if len(tmp) > 1:
+			else:
 				keyword,rest = tmp[0],tmp[1]
 			keyword = keyword.strip()
 			# If we reach a define statement, we log every line to a special buffer
@@ -403,14 +377,14 @@ class config:
 					#current_candidate = self._apply_template(current_candidate)
 				# Compare objects
 				if self.compareObjects( item, current_candidate ) == True:
-					'This is the object i am looking for'
+					# This is the object i am looking for
 					object_has_been_found = True
 					object_definition = tmp_buffer
 				else:
-					'This is not the item you are looking for'
+					# This is not the item you are looking for
 					everything_before += tmp_buffer
 		if object_has_been_found:
-			return (everything_before, object_definition, everything_after, filename)
+			return everything_before, object_definition, everything_after, filename
 		else:
 			raise ValueError("We could not find object in %s\n%s" % (filename,item))
 	def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
@@ -435,35 +409,35 @@ class config:
 			raise ValueError("either field_name or new_item must be set")
 		everything_before,object_definition, everything_after, filename = self._locate_item(item)
 		if new_item is not None:
-			'We have instruction on how to write new object, so we dont need to parse it'
-			change = True
+			# We have instruction on how to write new object, so we dont need to parse it
 			object_definition = [new_item]
 		else:
 			change = None
+			i = 0
 			for i in range( len(object_definition)):
 				tmp = object_definition[i].split(None, 1)
 				if len(tmp) == 0: continue
-				if len(tmp) == 1: value = ''
-				if len(tmp) == 2: value = tmp[1]
+				elif len(tmp) == 1: value = ''
+				else: value = tmp[1]
 				k = tmp[0].strip()
 				if k == field_name:
-					'Attribute was found, lets change this line'
+					# Attribute was found, lets change this line
 					if not new_field_name and not new_value:
-						'We take it that we are supposed to remove this attribute'
+						# We take it that we are supposed to remove this attribute
 						change = object_definition.pop(i)
 						break
 					elif new_field_name:
-						'Field name has changed'
+						# Field name has changed
 						k = new_field_name
 					if new_value:
-						'value has changed '
+						# value has changed
 						value = new_value
 					# Here we do the actual change	
 					change = "\t%-30s%s\n" % (k, value)
 					object_definition[i] = change
 					break
 			if not change:
-					'Attribute was not found. Lets add it'
+					# Attribute was not found. Lets add it
 					change = "\t%-30s%s\n" % (field_name, new_value)
 					object_definition.insert(i,change)
 		# Lets put a banner in front of our item
@@ -620,7 +594,7 @@ class config:
 		"""
 
 		original_object = self.get_service(target_host, service_description)
-		if original_object == None:
+		if original_object is None:
 			raise ParserError("Service not found")
 		return self.edit_object( original_object, field_name, new_value)
 
@@ -887,11 +861,9 @@ class config:
 		Flag every item in the configuration to be committed
 		This should probably only be used for debugging purposes
 		"""
-		for k in self.data.keys():
-			index = 0
-			for item in self[k]:
-				self.data[k][index]['meta']['needs_commit'] = True
-				index += 1
+		for object_type in self.data.keys():
+			for item in self.data[object_type]:
+				item['meta']['needs_commit'] = True
 
 	def print_conf(self, item):
 		"""
@@ -1016,6 +988,7 @@ class config:
 	def needs_reload(self):
 		"""Returns True if Nagios service needs reload of cfg files"""
 		new_timestamps = self.get_timestamps()
+		lockfile = None
 		for k,v in self.maincfg_values:
 			if k == 'lock_file': lockfile = v
 		if not os.path.isfile(lockfile): return False
@@ -1243,7 +1216,7 @@ class config:
 				for raw_file in raw_file_list:
 					if raw_file.endswith('.cfg'):
 						if os.path.exists(raw_file):
-							'Nagios doesnt care if cfg_file exists or not, so we will not throws errors'
+							# Nagios doesnt care if cfg_file exists or not, so we will not throws errors
 							cfg_files.append(raw_file)
 
 		return cfg_files
@@ -1279,8 +1252,6 @@ class status:
 		self.data = {}
 
 	def parse(self):
-		## Set globals (This is stolen from the perl module)
-		type = None
 
 		for line in open(self.filename, 'rb').readlines():
 
@@ -1290,11 +1261,9 @@ class status:
 				continue
 			if line[0] == "#" or line[0] == ';':
 				continue
-
+			status = {}
+			status['meta'] = {}
 			if line.find("{") != -1:
-
-				status = {}
-				status['meta'] = {}
 				status['meta']['type'] = line.split("{")[0].strip()
 				continue
 
@@ -1326,7 +1295,7 @@ class ParserError(Exception):
 	"""
 	def __init__(self, message, item=None):
 		self.message = message
-		if item == None: return
+		if item is None: return
 		self.item = item
 		self.filename = item['meta']['filename']
 		#self.object_id = item.get_id()

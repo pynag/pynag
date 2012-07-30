@@ -60,6 +60,7 @@ class PrintToScreenHandler(BaseEventHandler):
 class FileLogger(BaseEventHandler):
     """Handler that logs everything to file"""
     def __init__(self, logfile='/var/log/pynag.log', debug=False):
+        BaseEventHandler.__init__(self)
         self.file = logfile
         self._debug = debug
     def _append_to_file(self, message):
@@ -93,6 +94,7 @@ class GitEventHandler(BaseEventHandler):
         source = prepended to git commit messages
         modified_by = is the username in username@<hostname> for commit messages
         """
+        BaseEventHandler.__init__(self)
         import git
         from os import environ
         from platform import node

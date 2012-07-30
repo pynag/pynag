@@ -24,8 +24,5 @@ from optparse import OptionParser
 from pynag import Plugins
 Plugin = Plugins.simple
 
-"""
-Python Nagios extensions
-"""
 
 __version__ = "0.4.3"
