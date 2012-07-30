@@ -108,8 +108,10 @@ class simple:
         self.parser.add_option("-v", "--verbose", dest="verbose", help="Verbosity Level", metavar="VERBOSE", default=0)
         self.parser.add_option("-H", "--host", dest="host", help="Target Host", metavar="HOST")
         self.parser.add_option("-t", "--timeout", dest="timeout", help="Connection Timeout", metavar="TIMEOUT")
-        self.parser.add_option("-c", "--critical", dest="critical", help="Critical Threshhold", metavar="CRITICAL")
-        self.parser.add_option("-w", "--warning", dest="warning", help="Warn Threshhold", metavar="WARNING")
+
+        if self.must_threshold == True:
+            self.parser.add_option("-c", "--critical", dest="critical", help="Critical Threshhold", metavar="CRITICAL")
+            self.parser.add_option("-w", "--warning", dest="warning", help="Warn Threshhold", metavar="WARNING")
 
         (options, args) = self.parser.parse_args()
 
@@ -349,6 +351,37 @@ class simple:
             return self.data[key]
         else:
             return None
+
+def check_threshold(value, warning=None, critical=None):
+    """ Checks value against warning/critical and returns Nagios exit code.
+
+    Format of range_threshold is according to:
+    http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT
+
+    Returns (in order of appearance):
+        UNKNOWN int(3)  -- On errors or bad input
+        CRITICAL int(2) -- if value is within critical threshold
+        WARNING int(1)  -- If value is within warning threshold
+        OK int(0)       -- If value is outside both tresholds
+    Arguments:
+        value -- value to check
+        warning -- warning range
+        critical -- critical range
+
+    # Example Usage:
+    >>> check_threshold(88, warning="90:", critical="95:")
+    0
+    >>> check_threshold(92, warning="90:", critical="95:")
+    1
+    >>> check_threshold(96, warning="90:", critical="95:")
+    2
+    """
+    if critical and check_range(value, critical):
+        return CRITICAL
+    elif warning and check_range(value, warning):
+        return WARNING
+    else:
+        return OK
 
 
 def check_range(value, range_threshold=None):
