@@ -179,13 +179,14 @@ class simple:
         """
         critical = self.data['critical']
         warning = self.data['warning']
+        self.hr_range = ""
 
         if critical and self._range_checker(value, critical):
-            self.add_message(CRITICAL,"%s meets the range: %s" % (value, self.hr_range))
+            self.add_message(CRITICAL,"%s is within critical range: %s" % (value, critical))
         elif warning and self._range_checker(value, warning):
-            self.add_message(WARNING,"%s meets the range: %s" % (value, self.hr_range))
+            self.add_message(WARNING,"%s is within warning range: %s" % (value, warning))
         else:
-            self.add_message(OK,"%s does not meet the range: %s" % (value, self.hr_range))
+            self.add_message(OK,"%s is outside warning=%s and critical=%s" % (value, warning, critical))
 
         # Get all messages appended and exit code
         (code, message) = self.check_messages()
@@ -193,60 +194,9 @@ class simple:
         # Exit with appropriate exit status and message
         self.nagios_exit(code, message)
 
-    def _range_checker(self, value, check_range):
-        """
-        Builtin check using nagios development guidelines
-        """
-        import re
-
-        ## Simple number check
-        simple_num_re = re.compile('^\d+$')
-        if simple_num_re.match(str(check_range)):
-            self.hr_range = "> %s" % check_range
-            value = float(value)
-            check_range = float(check_range)
-            if (value < 0) or (value > check_range):
-                return True
-            else:
-                return False
-
-        if (check_range.find(":") != -1) and (check_range.find("@") == -1):
-            (start, end) = check_range.split(":")
-
-            ## 10:     < 10, (outside {10 .. #})
-            if (end == "") and (float(value) < float(start)):
-                self.hr_range = "< %s" % start
-                return True
-            elif (end == "") and (float(value) >= float(start)):
-                self.hr_range = "< %s" % start
-                return False
-
-            ## ~:10    > 10, (outside the range of {-# .. 10})
-            if (start == "~") and (float(value) > float(end)):
-                self.hr_range = "> %s" % end
-                return True
-            elif (start == "~") and (float(value) <= float(end)):
-                self.hr_range = "> %s" % end
-                return False
-
-            ## 10:20   < 10 or > 20, (outside the range of {10 .. 20})
-            if (start < float(value)) or (end > float(value)):
-                self.hr_range = "< %s or > %s" % (start,end)
-                return True
-            else:
-                self.hr_range = "< %s or > %s" % (start,end)
-                return False
-
-        ## Inclusive range check
-        if check_range[0] == "@":
-            (start, end) = check_range[1:].split(":")
-            start = float(start)
-            end = float(end)
-            self.hr_range = "Between %s and %s" % (start, end)
-            if ( float(value) >= start ) and ( float(value) <= end ):
-                return True
-            else:
-                return False
+    def _range_checker(self, value, range_threshold):
+        """ deprecated. Use pynag.Plugins.check_range() """
+        return check_range(value=value, range_threshold=range_threshold)
 
     def send_nsca(self, code, message, ncsahost, hostname=node(), service=None):
         """
@@ -286,9 +236,6 @@ class simple:
 
         return 0
 
-
-        
-        
     def nagios_exit(self, code_text, message):
         """
         Exit with exit_code, message, and optionally perfdata
@@ -402,3 +349,90 @@ class simple:
             return self.data[key]
         else:
             return None
+
+
+def check_range(value, range_threshold=None):
+    """ Returns True if value is within range_threshold.
+
+    Format of range_threshold is according to:
+    http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT
+
+    Arguments:
+        value -- Numerical value to check (i.e. 70 )
+        range -- Range to compare against (i.e. 0:90 )
+    Returns:
+        True  -- If value is inside the range (alert if this happens)
+        False -- If value is outside the range
+
+    Summary from plugin developer guidelines:
+    ---------------------------------------------------------
+    x       Generate an alert if x...
+    ---------------------------------------------------------
+    10  	< 0 or > 10, (outside the range of {0 .. 10})
+    10:     < 10, (outside {10 .. ∞})
+    ~:10    > 10, (outside the range of {-∞ .. 10})
+    10:20   < 10 or > 20, (outside the range of {10 .. 20})
+    @10:20  ≥ 10 and ≤ 20, (inside the range of {10 .. 20})
+    10      < 0 or > 10, (outside the range of {0 .. 10})
+    ---------------------------------------------------------
+
+
+    # Example runs for doctest, True should mean alert
+    >>> check_range(78, "90:") # Example disk is 78% full, threshold is 90
+    False
+    >>> check_range(5, 10) # Everything between 0 and 10 is True
+    True
+    >>> check_range(0, 10) # Everything between 0 and 10 is True
+    True
+    >>> check_range(10, 10) # Everything between 0 and 10 is True
+    True
+    >>> check_range(11, 10) # Everything between 0 and 10 is True
+    False
+    >>> check_range(-1, 10) # Everything between 0 and 10 is True
+    False
+    >>> check_range(-1, "~:10") # Everything Below 10
+    True
+    >>> check_range(11, "10:") # Everything above 10 is True
+    True
+    >>> check_range(1, "10:") # Everything above 10 is True
+    False
+    >>> check_range(0, "5:10") # Everything between 5 and 10 is True
+    False
+    >>> check_range(0, "@5:10") # Everything outside 5:10 is True
+    True
+    """
+
+    # if no range_threshold is provided, assume everything is ok
+    if not range_threshold:
+        range_threshold='~:'
+    range_threshold = str(range_threshold)
+    # If range starts with @, then we do the opposite
+    if range_threshold[0] == '@':
+        return not check_range(value, range_threshold[1:])
+
+    value = float(value)
+    if range_threshold.find(':') > -1:
+        (start,end) = (range_threshold.split(':', 1))
+    # we get here if ":" was not provided in range_threshold
+    else:
+        start = ''
+        end = range_threshold
+    # assume infinity if start is not provided
+    if start == '~':
+        start = None
+    # assume start=0 if start is not provided
+    if start == '':
+        start = 0
+    # assume infinity if end is not provided
+    if end == '':
+        end = None
+    # start is defined and value is lower than start
+    if start is not None and float(value) < float(start):
+        return False
+    if end is not None and float(value) > float(end):
+        return False
+    return True
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
