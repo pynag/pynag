@@ -38,7 +38,7 @@ class config:
 
 		# If nagios.cfg is not set, lets do some minor autodiscover.
 		if self.cfg_file is None:
-			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
+			possible_files = ('/etc/nagios/nagios.cfg','/etc/nagios3/nagios.cfg','/usr/local/nagios/etc/nagios.cfg','/nagios/etc/nagios/nagios.cfg')
 			for file in possible_files:
 				if os.path.isfile(file):
 					self.cfg_file = file
