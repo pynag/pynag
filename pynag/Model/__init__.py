@@ -52,7 +52,7 @@ from collections import defaultdict
 import all_attributes
 
 # Path To Nagios configuration file
-cfg_file = None # '/etc/nagios/nagios.cfg'
+cfg_file = None  # '/etc/nagios/nagios.cfg'
 
 # Were new objects are written by default
 pynag_directory = '/etc/nagios/pynag/'
@@ -156,8 +156,11 @@ class ObjectRelations(object):
     # c['service.get_id()'] = '['servicegroup_name1','servicegroup_name2']
     service_servicegroups = defaultdict(set)
 
-    # c['service.get_id()'] = '['host_name1','host_name2']
+    # c['service.get_id()'] = ['host_name1','host_name2']
     service_hosts = defaultdict(set)
+
+    # c['servicegroup_name'] = ['service1.get_id()', ['service2.get_id()']
+    servicegroup_services = defaultdict(set)
 
     # c[command_name] = '['service.get_id()','service.get_id()']
     command_service = defaultdict(set)
@@ -1200,7 +1203,11 @@ class Service(ObjectDefinition):
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.service_hostgroups[self.get_id()]
         return map( get_object, list_of_shortnames )
-
+    def get_effective_servicegroups(self):
+        """ Returns a list of all Servicegroup that belong to this Service """
+        get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.service_servicegroups[self.get_id()]
+        return map( get_object, list_of_shortnames )
 
 class Command(ObjectDefinition):
     object_type = 'command'
@@ -1352,6 +1359,11 @@ class Servicegroup(ObjectDefinition):
     object_type = 'servicegroup'
     objects = ObjectFetcher('servicegroup')
 
+    def get_effective_services(self):
+        """ Returns a list of all Service that belong to this Servicegroup """
+        list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
+        get_object = lambda x: Service.objects.get_by_id(x)
+        return map( get_object, list_of_shortnames )
     def get_description(self):
         """ Returns a friendly description of the object """
         return self['servicegroup_name']
