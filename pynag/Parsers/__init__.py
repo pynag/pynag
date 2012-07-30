@@ -1300,7 +1300,7 @@ class ParserError(Exception):
     Typical usecase when there is a critical error while trying to read configuration.
     """
     def __init__(self, message, item=None):
-        self.message = message12
+        self.message = message
         if item is None: return
         self.item = item
         self.filename = item['meta']['filename']
