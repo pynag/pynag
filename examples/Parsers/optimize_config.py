@@ -8,7 +8,7 @@ from pynag.Parsers import config
 def is_ip(ip_address):
 	import socket
 	try:
-		mm = socket.inet_aton(ip_address)
+		socket.inet_aton(ip_address)
 		return True # We got through that call without an error, so it is valid
 	except socket.error:
 		return False # There was an error, so it is invalid

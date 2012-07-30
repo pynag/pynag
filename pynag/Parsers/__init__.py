@@ -125,8 +125,7 @@ class config:
 		"""
 		Apply all attributes of item named parent_name to "original_item".
 		"""
-		# TODO: Performance optimization. Don't recursively call _apply_template on hosts we have already
-		# applied templates to. This needs more work.
+		# If item does not inherit from anyone else, lets just return item as is.
 		if not original_item.has_key('use'):
 			return original_item
 		object_type = original_item['meta']['object_type']
@@ -139,10 +138,7 @@ class config:
 		for parent_name in parent_names:
 			parent_item = self._get_item( parent_name, object_type )
 			if parent_item is None:
-				error_string = ""
-				#error_string = "error in %s\n" % (original_item['meta']['filename'])
-				error_string = error_string + "Can not find any %s named %s\n" % (object_type,parent_name)
-				#error_string = error_string + self.print_conf(original_item)
+				error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
 				self.errors.append( ParserError(error_string,item=original_item) )
 				continue
 			# Parent item probably has use flags on its own. So lets apply to parent first
@@ -196,7 +192,6 @@ class config:
 	def _load_file(self, filename):
 		## Set globals (This is stolen from the perl module)
 		append = ""
-		type = None
 		current = None
 		in_definition = {}
 		tmp_buffer = []
@@ -321,6 +316,8 @@ class config:
 		everything_before = [] # Every line before our object definition
 		everything_after = []  # Every line after our object definition
 		object_definition = [] # List of every line of our object definition
+		tmp_buffer = []        # Every line of current object being parsed is stored here.
+		current_object_type = None # Object type of current object goes in here
 		i_am_within_definition = False
 		for line in file.readlines():
 			if object_has_been_found:
@@ -332,11 +329,11 @@ class config:
 				# empty line
 				keyword = ''
 				rest = ''
-			if len(tmp) == 1:
+			elif len(tmp) == 1:
 				# single word on the line
 				keyword = tmp[0]
 				rest = ''
-			if len(tmp) > 1:
+			else:
 				keyword,rest = tmp[0],tmp[1]
 			keyword = keyword.strip()
 			# If we reach a define statement, we log every line to a special buffer
@@ -413,15 +410,15 @@ class config:
 		everything_before,object_definition, everything_after, filename = self._locate_item(item)
 		if new_item is not None:
 			# We have instruction on how to write new object, so we dont need to parse it
-			change = True
 			object_definition = [new_item]
 		else:
 			change = None
+			i = 0
 			for i in range( len(object_definition)):
 				tmp = object_definition[i].split(None, 1)
 				if len(tmp) == 0: continue
-				if len(tmp) == 1: value = ''
-				if len(tmp) == 2: value = tmp[1]
+				elif len(tmp) == 1: value = ''
+				else: value = tmp[1]
 				k = tmp[0].strip()
 				if k == field_name:
 					# Attribute was found, lets change this line
@@ -864,11 +861,9 @@ class config:
 		Flag every item in the configuration to be committed
 		This should probably only be used for debugging purposes
 		"""
-		for k in self.data.keys():
-			index = 0
-			for item in self[k]:
-				self.data[k][index]['meta']['needs_commit'] = True
-				index += 1
+		for object_type in self.data.keys():
+			for item in self.data[object_type]:
+				item['meta']['needs_commit'] = True
 
 	def print_conf(self, item):
 		"""
@@ -993,6 +988,7 @@ class config:
 	def needs_reload(self):
 		"""Returns True if Nagios service needs reload of cfg files"""
 		new_timestamps = self.get_timestamps()
+		lockfile = None
 		for k,v in self.maincfg_values:
 			if k == 'lock_file': lockfile = v
 		if not os.path.isfile(lockfile): return False
@@ -1256,8 +1252,6 @@ class status:
 		self.data = {}
 
 	def parse(self):
-		## Set globals (This is stolen from the perl module)
-		type = None
 
 		for line in open(self.filename, 'rb').readlines():
 
@@ -1267,11 +1261,9 @@ class status:
 				continue
 			if line[0] == "#" or line[0] == ';':
 				continue
-
+			status = {}
+			status['meta'] = {}
 			if line.find("{") != -1:
-
-				status = {}
-				status['meta'] = {}
 				status['meta']['type'] = line.split("{")[0].strip()
 				continue
 

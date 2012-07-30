@@ -254,9 +254,8 @@ class ObjectFetcher(object):
         if config.needs_reparse():
             debug('Debug: Doing a reparse of configuration')
             config.parse()
-        # Fetch all objects from Parsers.config
 
-        objects = config.data.values()
+        # Fetch all objects from Parsers.config
         for object_type, objects in config.data.items():
             # change "all_host" to just "host"
             object_type = object_type[ len("all_"): ]
@@ -339,12 +338,8 @@ class ObjectFetcher(object):
 
         # Get all hosts that have an address:
         Host.objects.filter(address_exists=True)
-        
+
         """
-        # TODO: Better testing of these cases:
-        # register = 1
-        # id attribute
-        # any attribute = None or 'None'
         result = []
         # Lets convert all values to str()
         tmp = {}
@@ -533,7 +528,8 @@ class ObjectDefinition(object):
         return md5(object_id).hexdigest()
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in"""
-        path = "" # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
+        # results will be in a variable called path
+        # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
         object_type = self.object_type
         shortname = self.get_shortname()
         if self['register'] == "0":
@@ -701,8 +697,8 @@ class ObjectDefinition(object):
         for key in fields:
             if key == 'meta' or key in self['meta'].keys(): continue
             value = self[key]
-            return_buffer = return_buffer + "  %-30s %s\n" % (key, value)
-        return_buffer = return_buffer + "}\n"
+            return_buffer += "  %-30s %s\n" % (key, value)
+        return_buffer += "}\n"
         return return_buffer
     def __repr__(self):
         return "%s: %s" % (self['object_type'], self.get_shortname())

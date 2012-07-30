@@ -364,6 +364,7 @@ class simple:
 		# code
 		keys = self.data['messages'].keys()
 		keys.sort(reverse=True)
+		code = UNKNOWN
 		for code in keys:
 			if len(self.data['messages'][code]):
 				break
