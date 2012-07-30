@@ -3,8 +3,8 @@
 import os,sys
 
 if len(sys.argv) != 3:
-	sys.stderr.write("Usage:  %s 'Host Name' 'Hostgroup Name' \n" % (sys.argv[0]))
-	sys.exit(2)
+    sys.stderr.write("Usage:  %s 'Host Name' 'Hostgroup Name' \n" % (sys.argv[0]))
+    sys.exit(2)
 
 ## This is for the custom nagios module
 sys.path.insert(1, '../')
@@ -22,22 +22,22 @@ target_group = sys.argv[2]
 ## Get the host object
 host_obj = nc.get_host(target_host)
 if not host_obj:
-	sys.stderr.write("host_name '%s' does not exist\n" % target_host)
-	sys.exit(2)
+    sys.stderr.write("host_name '%s' does not exist\n" % target_host)
+    sys.exit(2)
 
 ## Find the hostgroup from our global dictionaries
 group_obj = nc.get_hostgroup(target_group)
 if not group_obj:
-	sys.stderr.write("%s does not exist\n" % target_group)
-	sys.exit(2)
+    sys.stderr.write("%s does not exist\n" % target_group)
+    sys.exit(2)
 
 ## Get a list of the host_name's in this group
 existing_list = group_obj['members'].split(",")
 if target_host not in existing_list:
-	sys.stderr.write("%s is not in the group\n" % target_host)
-	sys.exit(2)
+    sys.stderr.write("%s is not in the group\n" % target_host)
+    sys.exit(2)
 else:
-	existing_list.remove(target_host)
+    existing_list.remove(target_host)
 
 print "Removing %s from %s" % (target_host, target_group)
 

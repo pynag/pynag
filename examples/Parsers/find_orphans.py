@@ -17,13 +17,13 @@ top_level_items = ['main data center']
 
 orphan_hosts = []
 for host in nc['all_host']:
-	if not host.has_key('parents'):
-		if host['alias'] not in top_level_items:
-			orphan_hosts.append(host)
+    if not host.has_key('parents'):
+        if host['alias'] not in top_level_items:
+            orphan_hosts.append(host)
 
 if len(orphan_hosts) != 0:
-	print "The following hosts do not have parent items:"
-	for host in orphan_hosts:
-		print "%s (%s)" % (host['alias'], host['meta']['filename'])
+    print "The following hosts do not have parent items:"
+    for host in orphan_hosts:
+        print "%s (%s)" % (host['alias'], host['meta']['filename'])
 else:
-	print "No ophaned hosts found"
+    print "No ophaned hosts found"

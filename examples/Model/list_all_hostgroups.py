@@ -11,5 +11,5 @@ from pynag import Model
 hostgroups = Model.Hostgroup.objects.all
 
 for hostgroup in hostgroups:
-	print hostgroup['hostgroup_name']
+    print hostgroup['hostgroup_name']
 

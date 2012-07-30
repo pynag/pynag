@@ -2,8 +2,8 @@
 import os,sys
 
 if len(sys.argv) != 2:
-	sys.stderr.write("Usage:  %s 'Hostgroup'\n" % (sys.argv[0]))
-	sys.exit(2)
+    sys.stderr.write("Usage:  %s 'Hostgroup'\n" % (sys.argv[0]))
+    sys.exit(2)
 
 ## This is for the custom nagios module
 sys.path.insert(1, '../')
@@ -19,8 +19,8 @@ nc.parse()
 hostgroup = nc.get_hostgroup(target_host)
 
 if not hostgroup:
-	sys.stderr.write("Hostgroup not found: %s\n" % hostgroup)
-	sys.exit(2)
+    sys.stderr.write("Hostgroup not found: %s\n" % hostgroup)
+    sys.exit(2)
 
 print nc.print_conf(hostgroup)
 

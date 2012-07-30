@@ -16,12 +16,12 @@ np.activate()
 
 ## Use a custom load average file, if specified to
 if np['load-file']:
-	load_file = np['load-file']
+    load_file = np['load-file']
 else:
-	load_file = "/proc/loadavg"
+    load_file = "/proc/loadavg"
 
 if not os.path.isfile(load_file):
-	np.nagios_exit("UNKNOWN", "Missing Load average file %s" % load_file)
+    np.nagios_exit("UNKNOWN", "Missing Load average file %s" % load_file)
 
 ## Get the check value
 current_load = open(load_file).readline().split()[0]

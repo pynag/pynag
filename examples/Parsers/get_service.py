@@ -2,8 +2,8 @@
 import os,sys
 
 if len(sys.argv) != 3:
-	sys.stderr.write("Usage:  %s 'Service Description' 'Host Name'\n" % (sys.argv[0]))
-	sys.exit(2)
+    sys.stderr.write("Usage:  %s 'Service Description' 'Host Name'\n" % (sys.argv[0]))
+    sys.exit(2)
 
 ## This is for the custom nagios module
 sys.path.insert(1, '../')
@@ -20,8 +20,8 @@ nc.extended_parse()
 service = nc.get_service(target_host, service_description)
 
 if not service:
-	sys.stderr.write("Service not found: %s %s\n" % (service_description, target_host))
-	sys.exit(2)
+    sys.stderr.write("Service not found: %s %s\n" % (service_description, target_host))
+    sys.exit(2)
 
 print nc.print_conf(service)
 

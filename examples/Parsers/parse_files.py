@@ -10,4 +10,4 @@ nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
 #nc._post_parse()
 for host in nc['all_host']:
-	print nc.print_conf(host)
+    print nc.print_conf(host)

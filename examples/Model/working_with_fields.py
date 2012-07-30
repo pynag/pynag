@@ -45,7 +45,7 @@ print "\n--- More advanced example, editing multiple objects at once..."
 my_services = pynag.Model.Service.objects.filter(use__hasfield='generic-service')
 
 for service in my_services:
-	service.attribute_replacefield('use','generic-service','my-specific-service')
-	# service.save()
+    service.attribute_replacefield('use','generic-service','my-specific-service')
+    # service.save()
 
 
