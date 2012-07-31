@@ -465,7 +465,3 @@ def check_range(value, range_threshold=None):
     if end is not None and float(value) > float(end):
         return False
     return True
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

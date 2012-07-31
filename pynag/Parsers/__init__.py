@@ -17,7 +17,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 import os
 import re
 import time
@@ -59,7 +58,7 @@ class config:
         self.item_list = None
         self.item_cache = None
         self.maincfg_values = [] # The contents of main nagios.cfg
-        self.resource_values = [] # The contents of any resource_files
+        self._resource_values = [] # The contents of any resource_files
 
         ## This is a pure listof all the key/values in the config files.  It
         ## shouldn't be useful until the items in it are parsed through with the proper
@@ -86,7 +85,7 @@ class config:
         return 'use' in target
 
     def _get_hostgroup(self, hostgroup_name):
-        return self.data['all_hostgroup'].get('hostgroup_name', None)
+        return self.data['all_hostgroup'].get(hostgroup_name, None)
 
     def _get_key(self, object_type, user_key = None):
         """
@@ -278,6 +277,11 @@ class config:
                 if (current['meta']['object_type'] == 'service') and key == 'description':
                     key = 'service_description'
 
+                # Special hack for timeperiods as they are not consistent with other objects
+                # We will treat whole line as a key with an empty value
+                if (current['meta']['object_type'] == 'timeperiod' ) and key not in  ('timeperiod_name', 'alias'):
+                    key = line
+                    value = ''
                 current[key] = value
                 current['meta']['defined_attributes'][key] = value
             ## Something is wrong in the config
@@ -352,7 +356,13 @@ class config:
                 for i in tmp_buffer:
                     i = i.strip()
                     tmp = i.split(None, 1)
-                    if len(tmp) == 1:
+                    # Hack that makes timeperiod attributes be contained only in the key
+                    if len(tmp) == 0:
+                        continue
+                    if current_object_type == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
+                        k = i
+                        v = ''
+                    elif len(tmp) == 1:
                         k = tmp[0]
                         v = ''
                     elif len(tmp) > 1:
@@ -401,6 +411,7 @@ class config:
             ValueError if object or field_name is not found
             IOError is save is unsuccessful.
         """
+        print field_name, new_value,new_field_name
         if field_name is None and new_item is None:
             raise ValueError("either field_name or new_item must be set")
         everything_before,object_definition, everything_after, filename = self._locate_item(item)
@@ -413,23 +424,33 @@ class config:
             for i in range( len(object_definition)):
                 tmp = object_definition[i].split(None, 1)
                 if len(tmp) == 0: continue
+                # Hack for timeperiods, they dont work like other objects
+                elif item['meta']['object_type'] == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
+                    tmp = [object_definition[i]]
+                    # we can't change timeperiod, so we fake a field rename
+                    if new_value is not None:
+                        new_field_name = new_value
+                        new_value = None
+                        value = ''
                 elif len(tmp) == 1: value = ''
                 else: value = tmp[1]
                 k = tmp[0].strip()
                 if k == field_name:
                     # Attribute was found, lets change this line
-                    if not new_field_name and not new_value:
+                    if new_field_name is None and new_value is None:
                         # We take it that we are supposed to remove this attribute
                         change = object_definition.pop(i)
                         break
                     elif new_field_name:
                         # Field name has changed
                         k = new_field_name
-                    if new_value:
+                    if new_value is not None:
                         # value has changed
                         value = new_value
                     # Here we do the actual change    
                     change = "\t%-30s%s\n" % (k, value)
+                    if item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
+                        change = "\t%s\n" % (new_field_name)
                     object_definition[i] = change
                     break
             if not change:
@@ -1019,8 +1040,14 @@ class config:
         self.maincfg_values = self._load_static_file(self.cfg_file)
         
         self.cfg_files = self.get_cfg_files()
-        
-        self.resource_values = self.get_resources()
+
+        # When parsing config, we will softly fail if permission denied
+        # comes on resource files. If later someone tries to get them via
+        # get_resource, we will fail hard
+        try:
+            self._resource_values = self.get_resources()
+        except IOError, e:
+            self.errors.append( str(e) )
         
         self.timestamps = self.get_timestamps()
         
@@ -1029,6 +1056,23 @@ class config:
             self._load_file(cfg_file)
 
         self._post_parse()
+
+    def get_resource(self, resource_name):
+        """ Get a single resource value which can be located in any resource.cfg file
+
+         Arguments:
+            resource_name: Name as it appears in resource file (i.e. $USER1$)
+        Returns:
+            String value of the resource value.
+        Raises:
+            * KeyError if resource is not found
+            * ParserError if resource is not found and you do not have permissions
+        """
+        resources = self.get_resources()
+        for k,v in resources:
+            if k == resource_name:
+                return v
+
 
     def get_timestamps(self):
         """Returns a hash map of all nagios related files and their timestamps"""

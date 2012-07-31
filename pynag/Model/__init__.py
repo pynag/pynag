@@ -39,11 +39,9 @@ for i in canadian_hosts:
 """
 
 
-import sys
 import os
 import re
 import subprocess
-import time
 from hashlib import md5
 
 from pynag import Parsers
@@ -550,7 +548,8 @@ class ObjectDefinition(object):
 
     def get_id(self):
         """ Return a unique ID for this object"""
-        #return self.__str__().__hash__()
+        #TODO: md5 is slow to a point where it is a major bottleneck for parsing. Find a faster algorithm.
+        #return self.__hash__()
         object_type = self['object_type']
         shortname = self.get_description()
         object_name = self['name']
@@ -559,9 +558,10 @@ class ObjectDefinition(object):
         return md5(object_id).hexdigest()
 
     def get_suggested_filename(self):
-        """Returns a suitable configuration filename to store this object in"""
-        # results will be in a variable called path
-        # End result will be something like '/etc/nagios/pynag/templates/hosts.cfg'
+        """Returns a suitable configuration filename to store this object in
+
+        Typical result value: str('/etc/nagios/pynag/templates/hosts.cfg')
+        """
         object_type = self.object_type
         shortname = self.get_shortname()
         if self['register'] == "0":
@@ -771,10 +771,7 @@ class ObjectDefinition(object):
             return self._get_command_macro(macroname)
         if macroname.startswith('$USER'):
             # $USERx$ macros are supposed to be private, but we will display them anyway
-            for mac,val in config.resource_values:
-                if macroname == mac:
-                    return val
-            return ''
+            return config.get_resource(macroname)
         if macroname.startswith('$HOST') or macroname.startswith('$_HOST'):
             return self._get_host_macro(macroname, host_name=host_name)
         if macroname.startswith('$SERVICE') or macroname.startswith('$_SERVICE'):
@@ -1203,6 +1200,7 @@ class Service(ObjectDefinition):
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.service_hostgroups[self.get_id()]
         return map( get_object, list_of_shortnames )
+
     def get_effective_servicegroups(self):
         """ Returns a list of all Servicegroup that belong to this Service """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
@@ -1458,3 +1456,8 @@ if __name__ == '__main__':
     #s = Service.objects.all
     #h = Host.objects.all
     o = ObjectDefinition.objects.all
+    t = Timeperiod.objects.all.pop(0)
+    key_to_delete = t.keys().pop()
+    print "changing, ",key_to_delete
+    t[key_to_delete] = "This is the new value"
+    t.save()
