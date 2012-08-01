@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys
+import sys
 
 ## This is for the custom nagios module
 sys.path.insert(1, '../')

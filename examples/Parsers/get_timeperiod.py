@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys
+import sys
 
 if len(sys.argv) != 2:
     sys.stderr.write("Usage:  %s 'Timeperiod Name'\n" % (sys.argv[0]))

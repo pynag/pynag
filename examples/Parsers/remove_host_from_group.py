@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os,sys
+import sys
 
 if len(sys.argv) != 3:
     sys.stderr.write("Usage:  %s 'Host Name' 'Hostgroup Name' \n" % (sys.argv[0]))

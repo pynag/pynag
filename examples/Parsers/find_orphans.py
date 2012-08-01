@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os,sys
+import sys
 
 ## This is for the custom nagios module
 sys.path.insert(1, '../')
@@ -16,14 +16,18 @@ top_level_items = ['main data center']
 
 
 orphan_hosts = []
-for host in nc['all_host']:
-    if not host.has_key('parents'):
-        if host['alias'] not in top_level_items:
-            orphan_hosts.append(host)
+print "The following hosts do not have parent items:"
 
-if len(orphan_hosts) != 0:
-    print "The following hosts do not have parent items:"
-    for host in orphan_hosts:
-        print "%s (%s)" % (host['alias'], host['meta']['filename'])
-else:
+for host in nc['all_host']:
+    use_attr = ''
+    for attribute in ['host_name', 'name', 'alias']:
+        if host.has_key(attribute):
+            use_attr = attribute
+    
+    if not host.has_key('parents') or not host['parents']:
+        if  host[use_attr] not in top_level_items:
+		orphan_hosts.append(host)
+        	print "%-12s %-32s (%s)" % (use_attr, host[use_attr], host['meta']['filename'])
+
+if not len(orphan_hosts):
     print "No ophaned hosts found"
