@@ -411,7 +411,6 @@ class config:
             ValueError if object or field_name is not found
             IOError is save is unsuccessful.
         """
-        print field_name, new_value,new_field_name
         if field_name is None and new_item is None:
             raise ValueError("either field_name or new_item must be set")
         everything_before,object_definition, everything_after, filename = self._locate_item(item)
@@ -976,7 +975,6 @@ class config:
             key = key.strip()
             value = value.strip()
             if key == attribute and value == old_value:
-                print "old value at work", old_value
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
