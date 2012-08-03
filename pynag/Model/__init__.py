@@ -53,7 +53,7 @@ import all_attributes
 cfg_file = None  # '/etc/nagios/nagios.cfg'
 
 # Were new objects are written by default
-pynag_directory = '/etc/nagios/pynag/'
+pynag_directory = '/etc/nagios/pynag'
 
 # This will be a Parsers.config instance once we have parsed 
 config = None 
