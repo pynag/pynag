@@ -235,10 +235,18 @@ class ObjectFetcher(object):
     """
     This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
     from config.data and turning into high ObjectDefinition objects
+
+    Internal variables:
+     _cached_objects = List of every ObjectDefinition
+     _cached_id[o.get_id()] = o
+     _cached_shortnames[o.object_type][o.get_shortname()] = o
+     _cached_names[o.object_type][o.name] = o
+     _cached_object_type[o.object_type].append( o )
     """
     _cached_objects = []
     _cached_ids = {}
-    _cached_shortnames = {}
+    _cached_shortnames = defaultdict(dict)
+    _cached_names = defaultdict(dict)
     _cached_object_type = defaultdict(list)
 
     def __init__(self, object_type):
@@ -260,7 +268,8 @@ class ObjectFetcher(object):
         # clear object list
         ObjectFetcher._cached_objects = []
         ObjectFetcher._cached_ids = {}
-        ObjectFetcher._cached_shortnames = {}
+        ObjectFetcher._cached_shortnames = defaultdict(dict)
+        ObjectFetcher._cached_names = defaultdict(dict)
         ObjectFetcher._cached_object_type = defaultdict(list)
         global config
         if not config:
@@ -279,7 +288,9 @@ class ObjectFetcher(object):
                 ObjectFetcher._cached_objects.append(i)
                 ObjectFetcher._cached_object_type[object_type].append(i)
                 ObjectFetcher._cached_ids[i.get_id()] = i
-                ObjectFetcher._cached_shortnames[i.get_shortname()] = i
+                ObjectFetcher._cached_shortnames[i.object_type][i.get_shortname()] = i
+                if i.name is not None:
+                    ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
         ObjectRelations.resolve_contactgroups()
         ObjectRelations.resolve_hostgroups()
@@ -319,7 +330,19 @@ class ObjectFetcher(object):
         if self.needs_reload():
             self.reload_cache()
         shortname = str(shortname)
-        return ObjectFetcher._cached_shortnames[shortname]
+        return ObjectFetcher._cached_shortnames[self.object_type][shortname]
+
+    def get_by_name(self, object_name):
+        """ Get one specific object by its object_name (i.e. name attribute)
+
+        Returns:
+            ObjectDefinition
+        Raises:
+            ValueError if object is not found
+        """
+        if self.needs_reload():
+            self.reload_cache()
+        return ObjectFetcher._cached_names[self.object_type][object_name]
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
@@ -902,7 +925,7 @@ class ObjectDefinition(object):
         results = []
         use = self['use'].split(',')
         for parent_name in use:
-            results.append( self.objects.filter(name=parent_name)[0] )
+            results.append( self.objects.get_by_name(parent_name) )
         if recursive is True:
             grandparents = []
             for i in results:
