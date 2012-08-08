@@ -1306,9 +1306,9 @@ class status:
                 continue
             if line[0] == "#" or line[0] == ';':
                 continue
-            status = {}
-            status['meta'] = {}
             if line.find("{") != -1:
+                status = {}
+                status['meta'] = {}
                 status['meta']['type'] = line.split("{")[0].strip()
                 continue
 
