@@ -28,6 +28,8 @@ This enables you for example to log to file every time an object is rewritten.
 
 
 import time
+from platform import node
+
 
 class BaseEventHandler:
     def __init__(self, debug=False):
@@ -95,9 +97,8 @@ class GitEventHandler(BaseEventHandler):
         modified_by = is the username in username@<hostname> for commit messages
         """
         BaseEventHandler.__init__(self)
-        import git
+        import dulwich
         from os import environ
-        from platform import node
 
         # Git base is the nagios config directory
         self.gitdir = gitdir
@@ -108,24 +109,33 @@ class GitEventHandler(BaseEventHandler):
         # Which program did the change
         self.source = source
 
+        # Every string in self.messages indicated a line in the eventual commit message
+        self.messages = []
         # Init the git repository
         try:
-            self.gitrepo = git.Repo(self.gitdir)
+            self.gitrepo = dulwich.repo.Repo(self.gitdir)
         except Exception, e:
             raise Exception("Unable to open git repo %s, do you need to git init?" % (str(e)))
 
         # Set the author information for the commit
-        environ['GIT_AUTHOR_NAME'] = self.modified_by
-        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.modified_by, node())
+        #environ['GIT_AUTHOR_NAME'] = self.modified_by
+        #environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.modified_by, node())
 
     def debug(self, object_definition, message):
         pass
 
     def write(self, object_definition, message):
-        self.gitrepo.index.add([object_definition._meta['filename']])
-        self.gitrepo.index.commit("%s: %s %s modified by %s" % (self.source, object_definition.object_type.capitalize(), object_definition.get_shortname(), self.modified_by))
+        filename = object_definition._meta['filename']
+        if filename.startswith(self.gitdir):
+            filename = filename[len( self.gitdir)+1:]
+            print filename
+        self.gitrepo.stage([filename] )
+        message = [message] + self.messages
+        message = '\n'.join(message)
+        self.gitrepo.do_commit( message, committer="%s <%s>" % (self.modified_by, node() ) )
+        self.messages = []
 
     def save(self, object_definition, message):
-        pass
+        self.messages.append( message )
 
 
