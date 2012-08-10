@@ -75,6 +75,8 @@ def debug(text):
 
 def contains(str1, str2):
     """Returns True if str1 contains str2"""
+    if not str1:
+        return False
     if str1.find(str2) > -1: return True
 
 
@@ -643,7 +645,13 @@ class ObjectDefinition(object):
     
     def reload_object(self):
         """ Re applies templates to this object (handy when you have changed the use attribute """
-        i = config._apply_template(self._original_attributes)
+        old_me = config.get_new_item(self.object_type, self.get_filename())
+        old_me['meta']['defined_attributes'] = self._defined_attributes
+        for k,v in self._defined_attributes.items():
+            old_me[k] = v
+        for k,v in self._changes.items():
+            old_me[k] = v
+        i = config._apply_template(old_me)
         new_me = self.__class__(item=i)
         self._defined_attributes = new_me._defined_attributes
         self._original_attributes = new_me._original_attributes
@@ -666,11 +674,7 @@ class ObjectDefinition(object):
         self._event(level='write', message="Object definition rewritten")
 
         # this piece of code makes sure that when we current object contains all current info
-        new_me = self.__class__.objects.get_by_id(self.get_id())
-        self._defined_attributes = new_me._defined_attributes
-        self._original_attributes = new_me._original_attributes
-        self._inherited_attributes = new_me._inherited_attributes
-        self._meta = new_me._meta
+        self.reload_object()
         return True
 
     def delete(self, recursive=False ):
@@ -1477,10 +1481,4 @@ string_to_class['command'] = Command
 
 if __name__ == '__main__':
     #s = Service.objects.all
-    #h = Host.objects.all
-    o = ObjectDefinition.objects.all
-    t = Timeperiod.objects.all.pop(0)
-    key_to_delete = t.keys().pop()
-    print "changing, ",key_to_delete
-    t[key_to_delete] = "This is the new value"
-    t.save()
+    pass
