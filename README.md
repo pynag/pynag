@@ -14,13 +14,16 @@ The pynag modules offer the following features:
 
 INSTALL
 =======
-Using fedora/redhat
+Using fedora/redhat:
+
     yum install pynag
 
-Using debian/ubuntu
+Using debian/ubuntu:
+
     apt-get install python-pynag
 
-Install latest git repository from source
+Install latest git repository from source:
+
     git clone https://github.com/pynag/pynag.git
     cd pynag
     python setup.py build
@@ -36,6 +39,7 @@ for i in all_services:
 print i.host_name, i.service_description
 ```
 Change an address of a host:
+
     import pynag.Model
     myhost = pynag.Model.Host.objects.get_by_shortname('myhost.example.com')
     myhost.address = '127.0.0.1'
@@ -44,6 +48,7 @@ Change an address of a host:
     print myhost
 
 Create a new ssh service check for every host in the unix hostgroup:
+
     import pynag.Model
     hosts = pynag.Model.Host.objects.filter(hostgroup="unixservers")
     for host in hosts:
@@ -61,12 +66,15 @@ Pynag also comes with a command-line tool that gives good examples what is
 possible with the library. Some example commands:
 
 list all hosts and their ip address:
+
     pynag list host_name address where object_type=host
 
 Change contactgroup for all services for a particular host:
+
     pynag update set contactgroups=admins where host_name="myhost" and object_type=service
 
 Copy a host, give it a new hostname and ip address:
+
     pynag copy set host_name=newhost address=newaddress \\
         where object_type=host and host_name=oldhost
     # Same for all its services:
@@ -75,6 +83,7 @@ Copy a host, give it a new hostname and ip address:
 KNOWN ISSUES
 ============
 Model module's get_effective_* functions are not complete if your configuration is using regular expressions. For example, pynag.Model.Service.get_effective_hosts will fail on the following service definition:
+
     define service {
         service_description check http
         check_command check_http
@@ -82,6 +91,7 @@ Model module's get_effective_* functions are not complete if your configuration 
     } 
 
 Same applies for exemptions like this one:
+
     define service {
         service_description check http
         check_command check_http
