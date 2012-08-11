@@ -4,12 +4,17 @@ Pynag a tool and a library for managing nagios configuration and provides a
 framework to write plugins.
 
 Pynag command-line utility offers the following features:
-  - Command-line tool to view/edit configuration
+  - list python object definitions (e.g. list all hosts/services)
+  - create new object definitions from command line
+  - copy object definitions
+  - remove object definitions
+  - edit nagios.cfg from command-line
   
-The pynag modules offer the following features:
-  - Parse, view and edit configuration
-  - Framework for writing your own nagios plugins
-  - stop/start/reload nagios service
+Pynag also has the following modules:
+  - Model   - Easy way to work with configuration as python objects
+  - Plugins - convenience classes for writing python plugins
+  - Parsers - Various parsers for nagios configuration files
+  - Control - Control of Nagios daemon
 
 
 INSTALL
@@ -95,5 +100,5 @@ Same applies for exemptions like this one:
         service_description check http
         check_command check_http
         hostgroup_name webservers
-	host_name !dmzhost1,dmzhost2
+        host_name !dmzhost1,dmzhost2
     }
