@@ -32,12 +32,12 @@ Install latest git repository from source:
 Getting started
 ===============
 List all services:
-```python
-import pynag.Model
-all_services pynag.Model.Service.objects.all
-for i in all_services:
-print i.host_name, i.service_description
-```
+
+    import pynag.Model
+    all_services pynag.Model.Service.objects.all
+    for i in all_services:
+    print i.host_name, i.service_description
+
 Change an address of a host:
 
     import pynag.Model
@@ -75,8 +75,7 @@ Change contactgroup for all services for a particular host:
 
 Copy a host, give it a new hostname and ip address:
 
-    pynag copy set host_name=newhost address=newaddress \\
-        where object_type=host and host_name=oldhost
+    pynag copy set host_name=newhost address=newaddress where object_type=host and host_name=oldhost
     # Same for all its services:
     pynag copy set host_name=newhost where object_type=service and host_name=oldhost
 
