@@ -29,11 +29,12 @@ Install latest git repository from source
 Getting started
 ===============
 List all services:
-    import pynag.Model
-    all_services pynag.Model.Service.objects.all
-    for i in all_services:
-        print i.host_name, i.service_description
-
+```python
+import pynag.Model
+all_services pynag.Model.Service.objects.all
+for i in all_services:
+print i.host_name, i.service_description
+```
 Change an address of a host:
     import pynag.Model
     myhost = pynag.Model.Host.objects.get_by_shortname('myhost.example.com')
