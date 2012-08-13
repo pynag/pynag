@@ -2,17 +2,17 @@
 #
 # pynag - Python Nagios plug-in and configuration environment
 # Copyright (C) 2010 Pall Sigurdsson
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -29,7 +29,11 @@ This enables you for example to log to file every time an object is rewritten.
 
 import time
 from platform import node
-
+from os.path import dirname
+import subprocess
+import shlex
+from os import environ
+from os.path import dirname
 
 class BaseEventHandler:
     def __init__(self, debug=False):
@@ -83,22 +87,21 @@ class FileLogger(BaseEventHandler):
         """Called when objectdefinition.save() has finished"""
         message = "%s: %s" %( time.asctime(), message )
         self._append_to_file( message )
- 
- 
+
+
 class GitEventHandler(BaseEventHandler):
     def __init__(self, gitdir, source, modified_by):
         """
         Commits to git repo rooted in nagios configuration directory
-        
+
         It automatically raises an exception if the configuration directory
         is not a git repository.
-        
+
         source = prepended to git commit messages
         modified_by = is the username in username@<hostname> for commit messages
         """
         BaseEventHandler.__init__(self)
-        import dulwich
-        from os import environ
+        import subprocess
 
         # Git base is the nagios config directory
         self.gitdir = gitdir
@@ -111,28 +114,39 @@ class GitEventHandler(BaseEventHandler):
 
         # Every string in self.messages indicated a line in the eventual commit message
         self.messages = []
-        # Init the git repository
-        try:
-            self.gitrepo = dulwich.repo.Repo(self.gitdir)
-        except Exception, e:
-            raise Exception("Unable to open git repo %s, do you need to git init?" % (str(e)))
+        subprocess.check_call('git status --short'.split(),cwd=self.gitdir)
 
-        # Set the author information for the commit
-        #environ['GIT_AUTHOR_NAME'] = self.modified_by
-        #environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.modified_by, node())
-
+        self._update_author()
     def debug(self, object_definition, message):
         pass
+    def _update_author(self):
+        """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
 
+        Returns: None
+        """
+        environ['GIT_AUTHOR_NAME'] = self.modified_by
+        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
+
+    def _git_add(self, filename):
+        """ Wrapper around git add command """
+        directory = dirname(filename)
+        git_command= shlex.split( "git add %s" % (filename) )
+        stdout=open('/dev/null','w')
+        return subprocess.check_call(git_command, cwd=directory, stdout=stdout )
+    def _git_commit(self, filename, message):
+        """ Wrapper around git commit command """
+        directory = dirname(filename)
+        git_command = shlex.split( "git commit %s -m" % (filename) )
+        git_command.append("%s" % message)
+        self._update_author()
+        stdout=open('/dev/null','w')
+        return subprocess.check_call(git_command, cwd=directory,stdout=stdout)
     def write(self, object_definition, message):
         filename = object_definition._meta['filename']
-        if filename.startswith(self.gitdir):
-            filename = filename[len( self.gitdir)+1:]
-            print filename
-        self.gitrepo.stage([filename] )
         message = [message] + self.messages
         message = '\n'.join(message)
-        self.gitrepo.do_commit( message, committer="%s <%s>" % (self.modified_by, node() ) )
+        self._git_add(filename)
+        self._git_commit(filename, message)
         self.messages = []
 
     def save(self, object_definition, message):
