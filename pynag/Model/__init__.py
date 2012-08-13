@@ -42,7 +42,6 @@ for i in canadian_hosts:
 import os
 import re
 import subprocess
-from hashlib import md5
 
 from pynag import Parsers
 from macros import _standard_macros
@@ -573,14 +572,12 @@ class ObjectDefinition(object):
 
     def get_id(self):
         """ Return a unique ID for this object"""
-        #TODO: md5 is slow to a point where it is a major bottleneck for parsing. Find a faster algorithm.
-        #return self.__hash__()
         object_type = self['object_type']
         shortname = self.get_description()
         object_name = self['name']
         filename = self['filename']
         object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
-        return md5(object_id).hexdigest()
+        return str(object_id.__hash__())
 
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in
