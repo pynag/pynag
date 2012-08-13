@@ -721,16 +721,8 @@ class ObjectDefinition(object):
         for k,v in args.items():
             new_object[k] = v
         new_object.save()
-        
-        # If recursive copy, also copy any related objects
-        if recursive == True:
-            related_objects = self.get_related_objects()
-            for i in related_objects:
-                new_args = {}
-                for k,v in args.items():
-                    if i.has_key(k): new_args[k] = v
-                i.copy(filename=filename, **new_args)
         return new_object
+
         
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
@@ -1155,6 +1147,15 @@ class Host(ObjectDefinition):
             tmp = Service.objects.filter(host_name=self['host_name'])
             for i in tmp: result.append( i )
         return result
+
+    def copy(self, recursive=False,filename=None, **args):
+        """ Same as ObjectDefinition.copy() except can recursively copy services """
+        new_object = ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args)
+        if recursive == True and 'host_name' in args:
+            for i in self.get_effective_services():
+                print i.get_shortname()
+                i.copy(filename=filename, host_name=args.get('host_name'))
+        return new_object
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
