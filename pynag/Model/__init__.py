@@ -640,7 +640,7 @@ class ObjectDefinition(object):
 
         # this piece of code makes sure that when we current object contains all current info
         self.reload_object()
-        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self.get_filename()))
+        self._event(level='write', message="%s '%s'." % (self.object_type, self['shortname'] ))
         return number_of_changes
     
     def reload_object(self):
@@ -792,7 +792,16 @@ class ObjectDefinition(object):
             self._meta['filename'] = os.path.normpath( filename )
 
     def get_macro(self, macroname, host_name=None ):
-        # TODO: This function is incomplete and untested
+        """ Take macroname (e.g. $USER1$) and return its actual value
+
+        Arguments:
+          macroname -- Macro that is to be resolved. For example $HOSTADDRESS$
+          host_name -- Optionally specify host (use this for services that
+                    -- don't define host specifically for example ones that only
+                    -- define hostgroups
+        Returns:
+          (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
+        """
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname)
@@ -843,9 +852,20 @@ class ObjectDefinition(object):
             command = Command.objects.get_by_shortname(command_name)
         except ValueError:
             return None
+        return self._resolve_macros(command.command_line, host_name=host_name)
+    def _resolve_macros(self, string, host_name=None):
+        """ Returns string with every $NAGIOSMACRO$ resolved to actual value.
+
+        Arguments:
+            string    -- Arbitary string that contains macros
+            host_name -- Optionally supply host_name if this service does not define it
+        Example:
+        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS')
+        '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
+        """
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
-        result = regex.sub(get_macro, command['command_line'])
+        result = regex.sub(get_macro, string)
         return result
 
     def run_check_command(self, host_name=None):
@@ -869,10 +889,10 @@ class ObjectDefinition(object):
                 if v.startswith('$') and v.endswith('$') and not v.startswith('$ARG'):
                     v = self.get_macro(v)
                 a['$ARG%s$' % tmp] = v
-        if a.has_key( macroname ):
-            return a[ macroname ]
-        else:
-            return '' # Return empty string if macro is invalid.
+        result = a.get(macroname, '')
+        # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
+        result = self._resolve_macros(result)
+        return result
 
     def _get_service_macro(self,macroname):
         # TODO: This function is incomplete and untested
