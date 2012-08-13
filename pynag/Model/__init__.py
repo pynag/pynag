@@ -52,7 +52,7 @@ import all_attributes
 cfg_file = None  # '/etc/nagios/nagios.cfg'
 
 # Were new objects are written by default
-pynag_directory = '/etc/nagios/pynag'
+pynag_directory = None
 
 # This will be a Parsers.config instance once we have parsed 
 config = None 
@@ -586,14 +586,19 @@ class ObjectDefinition(object):
         """
         object_type = self.object_type
         shortname = self.get_shortname()
+        # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
+        global pynag_directory
+        if pynag_directory is None:
+            from os.path import dirname
+            pynag_directory = dirname(config.cfg_file) + "/pynag"
+        # templates go to the template directory
         if self['register'] == "0":
-            # This is a template
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
+        # Services go to same file as their host
+        elif object_type == 'service' and self.host_name is not None:
+            host = self.get_effective_hosts()[0]
+            path = host.get_filename()
         else:
-            # Not a template
-            if object_type == 'service':
-                # Services written in same file as their host
-                shortname = self['host_name']
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
         return path
 
@@ -685,7 +690,7 @@ class ObjectDefinition(object):
             # Recursive does not have any meaning for a generic object, this should subclassed.
             pass
         result = config.item_remove(self._original_attributes)
-        self._event(level="write", message="Object was deleted")
+        self._event(level="write", message="%s '%s' was deleted." %( self.object_type, self.get_shortname()))
         return result
 
     def copy(self, recursive=False,filename=None, **args):

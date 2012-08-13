@@ -90,7 +90,7 @@ class FileLogger(BaseEventHandler):
 
 
 class GitEventHandler(BaseEventHandler):
-    def __init__(self, gitdir, source, modified_by):
+    def __init__(self, gitdir, source, modified_by, ignore_errors=False):
         """
         Commits to git repo rooted in nagios configuration directory
 
@@ -99,6 +99,7 @@ class GitEventHandler(BaseEventHandler):
 
         source = prepended to git commit messages
         modified_by = is the username in username@<hostname> for commit messages
+        ignore_errors = if True, do not raise exceptions on git errors
         """
         BaseEventHandler.__init__(self)
         import subprocess
@@ -114,6 +115,8 @@ class GitEventHandler(BaseEventHandler):
 
         # Every string in self.messages indicated a line in the eventual commit message
         self.messages = []
+
+        self.ignore_errors = ignore_errors
         subprocess.check_call('git status --short'.split(),cwd=self.gitdir)
 
         self._update_author()
@@ -126,21 +129,32 @@ class GitEventHandler(BaseEventHandler):
         """
         environ['GIT_AUTHOR_NAME'] = self.modified_by
         environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
+    def _run_command(self, command):
+        """ Run a specified command from the command line """
+        import subprocess
+        import os
+        cwd = self.gitdir
+        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        stdout, stderr = proc.communicate('through stdin to stdout')
+        returncode = proc.returncode
+        if returncode > 0 and self.ignore_errors == False:
+            errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s"
+            errorstring = errorstring % (command, returncode, stdout, stderr)
+            raise BaseException( errorstring )
+
+
 
     def _git_add(self, filename):
         """ Wrapper around git add command """
         directory = dirname(filename)
-        git_command= shlex.split( "git add %s" % (filename) )
-        stdout=open('/dev/null','w')
-        return subprocess.check_call(git_command, cwd=directory, stdout=stdout )
+        command= "git add %s" % filename
+        return self._run_command(command)
     def _git_commit(self, filename, message):
         """ Wrapper around git commit command """
-        directory = dirname(filename)
-        git_command = shlex.split( "git commit %s -m" % (filename) )
-        git_command.append("%s" % message)
         self._update_author()
-        stdout=open('/dev/null','w')
-        return subprocess.check_call(git_command, cwd=directory,stdout=stdout)
+        directory = dirname(filename)
+        command = "git commit %s -m '%s'" % (filename, message)
+        return self._run_command(command=command)
     def write(self, object_definition, message):
         filename = object_definition._meta['filename']
         message = [message] + self.messages
