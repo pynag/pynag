@@ -152,7 +152,8 @@ class GitEventHandler(BaseEventHandler):
     def _git_commit(self, filename, message):
         """ Wrapper around git commit command """
         self._update_author()
-        directory = dirname(filename)
+        # Lets strip out any single quotes from the message:
+        message = message.replace("'",'"')
         command = "git commit %s -m '%s'" % (filename, message)
         return self._run_command(command=command)
     def write(self, object_definition, message):
