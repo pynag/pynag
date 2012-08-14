@@ -59,7 +59,7 @@ rm -fr $RPM_BUILD_ROOT
 %{_bindir}/pynag
 %{_mandir}/man1/pynag.1.gz
 
-%doc AUTHORS README LICENSE CHANGES
+%doc AUTHORS README.md LICENSE CHANGES
 %dir %{_datadir}/%{name}
 
 %files examples

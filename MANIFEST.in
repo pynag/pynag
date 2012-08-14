@@ -4,7 +4,7 @@ recursive-include examples *
 recursive-include debian *
 include AUTHORS
 include LICENSE
-include README
+include README.md
 include CHANGES
 include pynag.spec
 include Makefile
