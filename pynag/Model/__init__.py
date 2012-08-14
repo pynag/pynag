@@ -45,7 +45,7 @@ import subprocess
 
 from pynag import Parsers
 from macros import _standard_macros
-from collections import defaultdict
+from pynag.Parsers import defaultdict
 import all_attributes
 
 # Path To Nagios configuration file

@@ -20,13 +20,23 @@
 import os
 import re
 import time
-from collections import defaultdict
+#from collections import defaultdict
 
 
 def debug(text):
     debug = True
     if debug: print text
 
+class defaultdict(dict):
+    """ This is a re-implementation of collections.defaultdict
+
+    It does not exist in python-2.4 so we implement our own.
+    """
+    def __init__(self, defaultfactory, *args,**kwargs):
+        self.defaultfactory = defaultfactory
+        super(self.__class__,self).__init__(*args,**kwargs)
+    def __getitem__(self, item):
+        return super(self.__class__,self).get(item, self.defaultfactory())
 
 class config:
     """
