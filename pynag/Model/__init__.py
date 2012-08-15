@@ -1152,6 +1152,16 @@ class Host(ObjectDefinition):
             for i in tmp: result.append( i )
         return result
 
+    def get_effective_check_command(self):
+        """ Returns a Command object as defined by check_command attribute
+
+        Raises KeyError if check_command is not found or not defined.
+        """
+        c = self.check_command
+        if not c or c == '':
+            raise KeyError(None)
+        check_command = c.split('!')[0]
+        return Command.objects.get_by_shortname(check_command)
     def copy(self, recursive=False,filename=None, **args):
         """ Same as ObjectDefinition.copy() except can recursively copy services """
         new_object = ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args)
@@ -1258,6 +1268,17 @@ class Service(ObjectDefinition):
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.service_servicegroups[self.get_id()]
         return map( get_object, list_of_shortnames )
+
+    def get_effective_check_command(self):
+        """ Returns a Command object as defined by check_command attribute
+
+        Raises KeyError if check_command is not found or not defined.
+        """
+        c = self.check_command
+        if not c or c == '':
+            raise KeyError(None)
+        check_command = c.split('!')[0]
+        return Command.objects.get_by_shortname(check_command)
 
 class Command(ObjectDefinition):
     object_type = 'command'
