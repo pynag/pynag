@@ -609,6 +609,8 @@ class ObjectDefinition(object):
             Number of changes made to the object
         """
         if config is None: self.objects.reload_cache()
+        # Let event-handlers know we are about to save an object
+        self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname'] ))
         # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
         if self.is_new is True or self.get_filename() is None:
@@ -627,7 +629,7 @@ class ObjectDefinition(object):
                 save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
                 if save_result == True:
                     del self._changes[field_name]
-                    self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
+                    self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
                     if not new_value:
                         if self._defined_attributes.has_key(field_name):
                             del self._defined_attributes[field_name]
@@ -642,7 +644,7 @@ class ObjectDefinition(object):
 
         # this piece of code makes sure that when we current object contains all current info
         self.reload_object()
-        self._event(level='write', message="%s '%s'." % (self.object_type, self['shortname'] ))
+        self._event(level='save', message="%s '%s' saved." % (self.object_type, self['shortname'] ))
         return number_of_changes
     
     def reload_object(self):
@@ -669,6 +671,7 @@ class ObjectDefinition(object):
         Returns: 
             True on success
         """
+        self._event(level='pre_save', message="Object definition is being rewritten")
         if str_new_definition is None:
             str_new_definition = self._meta.get('raw_definition')
         config.item_rewrite(self._original_attributes, str_new_definition)
@@ -677,6 +680,7 @@ class ObjectDefinition(object):
 
         # this piece of code makes sure that when we current object contains all current info
         self.reload_object()
+        self._event(level='save', message="Object definition was rewritten")
         return True
 
     def delete(self, recursive=False ):
@@ -686,11 +690,13 @@ class ObjectDefinition(object):
             recursive: If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
         """
+        self._event(level="pre_save", message="%s '%s' will be deleted." %( self.object_type, self.get_shortname()))
         if recursive == True:
             # Recursive does not have any meaning for a generic object, this should subclassed.
             pass
         result = config.item_remove(self._original_attributes)
         self._event(level="write", message="%s '%s' was deleted." %( self.object_type, self.get_shortname()))
+        self._event(level="save", message="%s '%s' was deleted." %( self.object_type, self.get_shortname()))
         return result
 
     def copy(self, recursive=False,filename=None, **args):
@@ -1091,6 +1097,8 @@ class ObjectDefinition(object):
                 i.write( object_definition=self, message=message )
             elif level == 'save':
                 i.save( object_definition=self, message=message )
+            elif level == 'pre_save':
+                i.pre_save( object_definition=self, message=message )
             else:
                 i.debug( object_definition=self, message=message )
 

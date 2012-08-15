@@ -44,6 +44,8 @@ class BaseEventHandler:
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
         raise NotImplementedError()
+    def pre_save(self, object_definition, message):
+        """ Called at the beginning of save() """
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
         raise NotImplementedError()
@@ -130,7 +132,7 @@ class GitEventHandler(BaseEventHandler):
         environ['GIT_AUTHOR_NAME'] = self.modified_by
         environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
     def _run_command(self, command):
-        """ Run a specified command from the command line """
+        """ Run a specified command from the command line. Return stdout """
         import subprocess
         import os
         cwd = self.gitdir
@@ -140,7 +142,8 @@ class GitEventHandler(BaseEventHandler):
         if returncode > 0 and self.ignore_errors == False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s"
             errorstring = errorstring % (command, returncode, stdout, stderr)
-            raise BaseException( errorstring )
+            raise subprocess.CalledProcessError( returncode, command, stderr )
+        return stdout
 
 
 
@@ -156,15 +159,31 @@ class GitEventHandler(BaseEventHandler):
         message = message.replace("'",'"')
         command = "git commit %s -m '%s'" % (filename, message)
         return self._run_command(command=command)
-    def write(self, object_definition, message):
-        filename = object_definition._meta['filename']
-        message = [message] + self.messages
-        message = '\n'.join(message)
-        self._git_add(filename)
-        self._git_commit(filename, message)
-        self.messages = []
-
+    def pre_save(self, object_definition, message):
+        """ Commits object_definition.get_filename() if it has any changes """
+        filename = object_definition.get_filename()
+        if self._is_dirty(filename):
+            self._git_commit(filename,
+                message="External changes commited in %s '%s'" %
+                        (object_definition.object_type, object_definition.get_shortname()))
     def save(self, object_definition, message):
-        self.messages.append( message )
+        filename = object_definition.get_filename()
+        if len(self.messages) > 0:
+            message = [message, '\n'] + self.messages
+            message = '\n'.join(message)
+        self._git_add(filename)
+        if self._is_dirty(filename):
+            self._git_commit(filename, message)
+        self.messages = []
+    def _is_dirty(self,filename):
+        """ Returns True if filename needs to be committed to git """
+        command = "git status --porcelain '%s'" % filename
+        output = self._run_command(command)
+        # Return True if there is any output
+        return len(output) > 0
+    def write(self, object_definition, message):
+        # When write is called ( something was written to file )
+        # We will log it in a buffer, and commit when save() is called.
+        self.messages.append( " * %s" % message )
 
 
