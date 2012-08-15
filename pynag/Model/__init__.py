@@ -45,7 +45,7 @@ import subprocess
 
 from pynag import Parsers
 from macros import _standard_macros
-from pynag.Parsers import defaultdict
+from collections import defaultdict
 import all_attributes
 
 # Path To Nagios configuration file
@@ -857,6 +857,8 @@ class ObjectDefinition(object):
         >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS')
         '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
         """
+        if not string:
+            return None
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
         result = regex.sub(get_macro, string)
