@@ -33,6 +33,7 @@ from os.path import dirname
 import subprocess
 import shlex
 from os import environ
+from getpass import getuser
 from os.path import dirname
 
 class BaseEventHandler:
@@ -140,8 +141,9 @@ class GitEventHandler(BaseEventHandler):
         stdout, stderr = proc.communicate('through stdin to stdout')
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors == False:
-            errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s"
-            errorstring = errorstring % (command, returncode, stdout, stderr)
+            errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
+            errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
+            raise EventHandlerError( errorstring )
             raise subprocess.CalledProcessError( returncode, command, stderr )
         return stdout
 
@@ -149,6 +151,7 @@ class GitEventHandler(BaseEventHandler):
 
     def _git_add(self, filename):
         """ Wrapper around git add command """
+        self._update_author()
         directory = dirname(filename)
         command= "git add %s" % filename
         return self._run_command(command)
@@ -187,3 +190,7 @@ class GitEventHandler(BaseEventHandler):
         self.messages.append( " * %s" % message )
 
 
+
+
+class EventHandlerError(Exception):
+    pass
