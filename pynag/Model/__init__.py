@@ -98,7 +98,7 @@ def has_field(str1, str2):
 
 class ObjectRelations(object):
     """ Static container for objects and their respective neighbours """
-    # c['contact_name'] = ['host_name1','host_name2']
+    # c['contact_name'] = [host1.get_id(),host2.get_id()]
     contact_hosts = defaultdict(set)
 
     # c['contact_name'] = ['contactgroup1','contactgroup2']
@@ -113,7 +113,7 @@ class ObjectRelations(object):
     # c['contactgroup_name'] = ['contactgroup1','contactgroup2','contactgroup3']
     contactgroup_contactgroups = defaultdict(set)
 
-    # c['contactgroup_name'] = ['host_name1', 'host_name2']
+    # c['contactgroup_name'] = ['host1.get_id()', 'host2.get_id()']
     contactgroup_hosts = defaultdict(set)
 
     # c['contactgroup_name'] = ['service1.get_id()', 'service2.get_id()']
@@ -1190,11 +1190,11 @@ class Host(ObjectDefinition):
         cg = AttributeList( self.contact_groups )
         for i in cg.fields:
             ObjectRelations.host_contact_groups[self.host_name].add( i )
-            ObjectRelations.contactgroup_hosts[i].add( self.host_name )
+            ObjectRelations.contactgroup_hosts[i].add( self.get_id() )
         contacts = AttributeList( self.contacts )
         for i in contacts.fields:
             ObjectRelations.host_contacts[self.host_name].add( i )
-            ObjectRelations.contact_hosts[i].add( self.host_name )
+            ObjectRelations.contact_hosts[i].add( self.get_id() )
         if self.check_command:
             command_name = self.check_command.split('!')[0]
             ObjectRelations.command_service[ self.host_name ].add( command_name )
@@ -1315,7 +1315,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Host that are hooked to this Contact """
         result = set()
         # First add all hosts that name this contact specifically
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_id(x)
         list_of_shortnames = ObjectRelations.contact_hosts[self.contact_name]
         result.update( map( get_object, list_of_shortnames ) )
 
@@ -1374,7 +1374,7 @@ class Contactgroup(ObjectDefinition):
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = ObjectRelations.contactgroup_hosts[self.contactgroup_name]
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
 
     def get_effective_services(self):

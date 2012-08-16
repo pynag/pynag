@@ -166,6 +166,7 @@ class GitEventHandler(BaseEventHandler):
         """ Commits object_definition.get_filename() if it has any changes """
         filename = object_definition.get_filename()
         if self._is_dirty(filename):
+            self._git_add(filename)
             self._git_commit(filename,
                 message="External changes commited in %s '%s'" %
                         (object_definition.object_type, object_definition.get_shortname()))
