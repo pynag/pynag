@@ -1035,7 +1035,7 @@ class config:
         if len(new_timestamps) != len( self.timestamps ):
             return True
         for k,v in new_timestamps.items():
-            if self.timestamps[k] != v:
+            if self.timestamps.get(k, None) != v:
                 return True
         return False
 
