@@ -820,7 +820,7 @@ class ObjectDefinition(object):
     def get_all_macros(self):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] is None: return None
+        if self['check_command'] is None: return {}
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
