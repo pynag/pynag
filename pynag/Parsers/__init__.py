@@ -20,7 +20,6 @@
 import os
 import re
 import time
-from collections import defaultdict
 
 
 def debug(text):
@@ -1327,8 +1326,6 @@ class status:
             for key,value in c._load_static_file():
                 if key == "status_file":
                     filename=value
-        if not os.path.isfile(filename):
-            raise ParserError("status.dat file %s not found." % filename)
 
         self.filename = filename
         self.data = None
@@ -1343,11 +1340,12 @@ class status:
             ParserError -- if status.dat is not found
             IOError -- if status.dat cannot be read
         """
-        self.data = defaultdict(list)
+        self.data = {}
         status = {} # Holds all attributes of a single item
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
-        for line_num,line in enumerate( open(self.filename, 'rb').readlines() ):
+        lines = open(self.filename, 'rb').readlines()
+        for line_num,line in enumerate( lines ):
 
             ## Cleanup and line skips
             line = line.strip()
@@ -1362,6 +1360,8 @@ class status:
             elif line.find("}") != -1:
                 # Status definition has finished, lets add it to
                 # self.data
+                if status['meta']['type'] not in self.data:
+                    self.data[status['meta']['type']] = []
                 self.data[status['meta']['type']].append(status)
             else:
                 tmp = line.split("=", 1)
@@ -1457,4 +1457,6 @@ class ParserError(Exception):
 
 
 if __name__ == '__main__':
-    pass
+    s = status()
+    s.parse()
+
