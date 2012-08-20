@@ -20,6 +20,7 @@
 import os
 import re
 import time
+from collections import defaultdict
 
 
 def debug(text):
@@ -37,20 +38,25 @@ class config:
 
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
-            possible_files = ('/etc/nagios/nagios.cfg',
-                              '/etc/nagios3/nagios.cfg',
-                              '/usr/local/nagios/etc/nagios.cfg',
-                              '/nagios/etc/nagios/nagios.cfg'
-                )
-            for file in possible_files:
-                if os.path.isfile(file):
-                    self.cfg_file = file
-                    break
-
-        if not os.path.isfile(self.cfg_file):
-            raise ParserError("Main Nagios config not found. %s does not exist\n" % self.cfg_file)
+            self.cfg_file = self.guess_cfg_file()
         self.data = {}
+    def guess_cfg_file(self):
+        """ Returns a path to any nagios.cfg found on your system
 
+        Use this function if you don't want specify path to nagios.cfg in your
+        code and you are confident that it is located in a common location
+        """
+        possible_files = ('/etc/nagios/nagios.cfg',
+                          '/etc/nagios3/nagios.cfg',
+                          '/usr/local/nagios/etc/nagios.cfg',
+                          '/nagios/etc/nagios/nagios.cfg',
+                          './nagios.cfg',
+                          './nagios/nagios.cfg',
+            )
+        for file in possible_files:
+            if os.path.isfile(file):
+                return file
+        raise ParserError('Could not find nagios.cfg')
     def reset(self):
         self.cfg_files = [] # List of other configuration files
         self.data = {} # dict of every known object definition
@@ -919,12 +925,18 @@ class config:
         output += "}\n\n"
         return output
 
-    def _load_static_file(self, filename):
+    def _load_static_file(self, filename=None):
         """Load a general config file (like nagios.cfg) that has key=value config file format. Ignore comments
-        
-        Returns: a [ (key,value), (key,value) ] list
+
+        Arguments:
+          filename -- name of file to parse, if none nagios.cfg will be used
+
+        Returns:
+            a [ (key,value), (key,value) ] list
         """
         result = []
+        if not filename:
+            filename = self.cfg_file
         for line in open(filename).readlines():
             ## Strip out new line characters
             line = line.strip()
@@ -1023,7 +1035,7 @@ class config:
         if len(new_timestamps) != len( self.timestamps ):
             return True
         for k,v in new_timestamps.items():
-            if self.timestamps[k] != v:
+            if self.timestamps.get(k, None) != v:
                 return True
         return False
 
@@ -1287,40 +1299,133 @@ class config:
 
 
 class status:
+    """ Easy way to parse status.dat file from nagios
 
-    def __init__(self, filename = "/var/log/nagios/status.dat"):
+    After calling parse() contents of status.dat are kept in status.data
+    Example usage:
+    >>> s = status() # filename autodetected
+    >>> s.parse()
+    >>> print s.data.keys()
+    ['info', 'servicestatus', 'contactstatus', 'hoststatus', 'programstatus']
+    >>> for service in s.data.get('servicestatus',[]):
+    ...     host_name=service.get('host_name', None)
+    ...     description=service.get('service_description',None)
+    """
 
+    def __init__(self, filename=None, cfg_file=None ):
+        """ Initilize a new instance of status
+
+        Arguments (you only need to provide one of these):
+            filename -- path to your status.dat file
+            cfg_file -- path to your nagios.cfg file, path to status.dat
+              will be looked up in this file
+        """
+        # If filename is not provided, lets try to discover it from
+        # nagios.cfg
+        if filename is None:
+            c = config(cfg_file=cfg_file)
+            for key,value in c._load_static_file():
+                if key == "status_file":
+                    filename=value
         if not os.path.isfile(filename):
             raise ParserError("status.dat file %s not found." % filename)
 
         self.filename = filename
-        self.data = {}
+        self.data = None
 
     def parse(self):
+        """ Parses your status.dat file and stores in a dictionary under self.data
 
-        for line in open(self.filename, 'rb').readlines():
+        Returns:
+            None
+        Raises:
+            ParserError -- if problem arises while reading status.dat
+            ParserError -- if status.dat is not found
+            IOError -- if status.dat cannot be read
+        """
+        self.data = defaultdict(list)
+        status = {} # Holds all attributes of a single item
+        key = None # if within definition, store everything before =
+        value = None # if within definition, store everything after =
+        for line_num,line in enumerate( open(self.filename, 'rb').readlines() ):
 
             ## Cleanup and line skips
             line = line.strip()
             if line == "":
-                continue
-            if line[0] == "#" or line[0] == ';':
-                continue
-            status = {}
-            status['meta'] = {}
-            if line.find("{") != -1:
+                pass
+            elif line[0] == "#" or line[0] == ';':
+                pass
+            elif line.find("{") != -1:
+                status = {}
+                status['meta'] = {}
                 status['meta']['type'] = line.split("{")[0].strip()
-                continue
-
-            if line.find("}") != -1:
-                if not self.data.has_key(status['meta']['type']):
-                    self.data[status['meta']['type']] = []
-    
+            elif line.find("}") != -1:
+                # Status definition has finished, lets add it to
+                # self.data
                 self.data[status['meta']['type']].append(status)
-                continue
+            else:
+                tmp = line.split("=", 1)
+                if len(tmp) == 2:
+                    (key, value) = line.split("=", 1)
+                    status[key] = value
+                elif key == "long_plugin_output":
+                    # special hack for long_output support. We get here if:
+                    # * line does not contain {
+                    # * line does not contain }
+                    # * line does not contain =
+                    # * last line parsed started with long_plugin_output=
+                    status[key] += "\n" + line
+                else:
+                    raise ParserError("Error on %s:%s: Could not parse line: %s" % (self.filename,line_num,line))
+    def get_contactstatus(self, contact_name):
+        """ Returns a dictionary derived from status.dat for one particular contact
 
-            (key, value) = line.split("=", 1)
-            status[key] = value
+        Returns:
+            dict
+        Raises:
+            ValueError if object is not found
+        >>> s = status()
+        >>> s.get_contactstatus(contact_name='invalid_contact')
+        ValueError('invalid_contact',)
+        >>> first_contact = s.data['contactstatus'][0]['contact_name']
+        >>> s.get_contactstatus(first_contact)['contact_name'] == first_contact
+        True
+        """
+        if self.data is None:
+            self.parse()
+        for i in self.data['contactstatus']:
+            if i.get('contact_name') == contact_name:
+                return i
+        return ValueError(contact_name)
+    def get_hoststatus(self, host_name):
+        """ Returns a dictionary derived from status.dat for one particular contact
+
+        Returns:
+            dict
+        Raises:
+            ValueError if object is not found
+        """
+        if self.data is None:
+            self.parse()
+        for i in self.data['hoststatus']:
+            if i.get('host_name') == host_name:
+                return i
+        return ValueError(host_name)
+    def get_servicestatus(self, host_name, service_description):
+        """ Returns a dictionary derived from status.dat for one particular service
+        Returns:
+            dict
+        Raises:
+            ValueError if object is not found
+        """
+        if self.data is None:
+            self.parse()
+        for i in self.data['servicestatus']:
+            if i.get('host_name') == host_name:
+                if i.get('service_description') == service_description:
+                    return i
+        return ValueError(host_name, service_description)
+
 
     def __setitem__(self, key, item):
         self.data[key] = item
@@ -1346,7 +1451,10 @@ class ParserError(Exception):
         if item is None: return
         self.item = item
         self.filename = item['meta']['filename']
-        #self.object_id = item.get_id()
 
     def __str__(self):
         return repr(self.message)
+
+
+if __name__ == '__main__':
+    pass

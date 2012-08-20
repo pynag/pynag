@@ -38,6 +38,7 @@ Available subcommands:
   add           Create a new object definition
   copy          Copy a current object definition to a new one
   delete        Delete a specific object definition
+  execute       Execute a check command for host/service
   config-set    set a specific value for nagios.cfg
   config-append append a specific value to nagios.cfg
   
@@ -60,6 +61,8 @@ def parse_arguments():
         add_object()
     elif sys.argv[1] == 'copy':
         copy_object()
+    elif sys.argv[1] == 'execute':
+        execute_check_command()
     elif sys.argv[1] == 'delete':
         delete_object()
     elif sys.argv[1] == 'config-set':
@@ -72,6 +75,39 @@ def parse_arguments():
         parser.print_help()
     else:
         parser.error("Unknown sub-command '%s'" % sys.argv[1])
+
+def execute_check_command():
+    """ Execute a host or service check_command """
+    parser.usage = ''' %prog execute <host_name> [service_description]
+
+Examples:
+  # %prog execute localhost
+  # %prog execute localhost "Disk Space"
+
+Run %prog list --help for full list of command line arguments.
+'''
+    (opts,args) = parser.parse_args(sys.argv[2:])
+    try:
+        if len(args) == 1:
+            obj = pynag.Model.Host.objects.get_by_shortname(args[0])
+        elif len(args) == 2:
+            host_name = args[0]
+            service_description = args[1]
+            obj = pynag.Model.Service.objects.get_by_shortname("%s/%s" % (host_name,service_description) )
+        else:
+            parser.error("You need to provide at least one argument to execute")
+        print "# %s" %(obj.get_effective_command_line())
+        exit_code,stdout,stderr = obj.run_check_command()
+        print stdout,
+        if stderr != '':
+            print ""
+            print "----- errors -------"
+            print stderr,
+            print "--------------------"
+        print ""
+        print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
+    except KeyError, e:
+        parser.error("Could not find host or service %s" % e)
 
 def search_objects(search_statements):
     conditions = {}

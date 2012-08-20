@@ -42,7 +42,6 @@ for i in canadian_hosts:
 import os
 import re
 import subprocess
-from hashlib import md5
 
 from pynag import Parsers
 from macros import _standard_macros
@@ -53,7 +52,7 @@ import all_attributes
 cfg_file = None  # '/etc/nagios/nagios.cfg'
 
 # Were new objects are written by default
-pynag_directory = '/etc/nagios/pynag'
+pynag_directory = None
 
 # This will be a Parsers.config instance once we have parsed 
 config = None 
@@ -75,6 +74,8 @@ def debug(text):
 
 def contains(str1, str2):
     """Returns True if str1 contains str2"""
+    if not str1:
+        return False
     if str1.find(str2) > -1: return True
 
 
@@ -97,7 +98,7 @@ def has_field(str1, str2):
 
 class ObjectRelations(object):
     """ Static container for objects and their respective neighbours """
-    # c['contact_name'] = ['host_name1','host_name2']
+    # c['contact_name'] = [host1.get_id(),host2.get_id()]
     contact_hosts = defaultdict(set)
 
     # c['contact_name'] = ['contactgroup1','contactgroup2']
@@ -112,7 +113,7 @@ class ObjectRelations(object):
     # c['contactgroup_name'] = ['contactgroup1','contactgroup2','contactgroup3']
     contactgroup_contactgroups = defaultdict(set)
 
-    # c['contactgroup_name'] = ['host_name1', 'host_name2']
+    # c['contactgroup_name'] = ['host1.get_id()', 'host2.get_id()']
     contactgroup_hosts = defaultdict(set)
 
     # c['contactgroup_name'] = ['service1.get_id()', 'service2.get_id()']
@@ -235,10 +236,18 @@ class ObjectFetcher(object):
     """
     This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
     from config.data and turning into high ObjectDefinition objects
+
+    Internal variables:
+     _cached_objects = List of every ObjectDefinition
+     _cached_id[o.get_id()] = o
+     _cached_shortnames[o.object_type][o.get_shortname()] = o
+     _cached_names[o.object_type][o.name] = o
+     _cached_object_type[o.object_type].append( o )
     """
     _cached_objects = []
     _cached_ids = {}
-    _cached_shortnames = {}
+    _cached_shortnames = defaultdict(dict)
+    _cached_names = defaultdict(dict)
     _cached_object_type = defaultdict(list)
 
     def __init__(self, object_type):
@@ -260,7 +269,8 @@ class ObjectFetcher(object):
         # clear object list
         ObjectFetcher._cached_objects = []
         ObjectFetcher._cached_ids = {}
-        ObjectFetcher._cached_shortnames = {}
+        ObjectFetcher._cached_shortnames = defaultdict(dict)
+        ObjectFetcher._cached_names = defaultdict(dict)
         ObjectFetcher._cached_object_type = defaultdict(list)
         global config
         if not config:
@@ -279,7 +289,9 @@ class ObjectFetcher(object):
                 ObjectFetcher._cached_objects.append(i)
                 ObjectFetcher._cached_object_type[object_type].append(i)
                 ObjectFetcher._cached_ids[i.get_id()] = i
-                ObjectFetcher._cached_shortnames[i.get_shortname()] = i
+                ObjectFetcher._cached_shortnames[i.object_type][i.get_shortname()] = i
+                if i.name is not None:
+                    ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
         ObjectRelations.resolve_contactgroups()
         ObjectRelations.resolve_hostgroups()
@@ -319,7 +331,19 @@ class ObjectFetcher(object):
         if self.needs_reload():
             self.reload_cache()
         shortname = str(shortname)
-        return ObjectFetcher._cached_shortnames[shortname]
+        return ObjectFetcher._cached_shortnames[self.object_type][shortname]
+
+    def get_by_name(self, object_name):
+        """ Get one specific object by its object_name (i.e. name attribute)
+
+        Returns:
+            ObjectDefinition
+        Raises:
+            ValueError if object is not found
+        """
+        if self.needs_reload():
+            self.reload_cache()
+        return ObjectFetcher._cached_names[self.object_type][object_name]
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
@@ -548,14 +572,12 @@ class ObjectDefinition(object):
 
     def get_id(self):
         """ Return a unique ID for this object"""
-        #TODO: md5 is slow to a point where it is a major bottleneck for parsing. Find a faster algorithm.
-        #return self.__hash__()
         object_type = self['object_type']
         shortname = self.get_description()
         object_name = self['name']
         filename = self['filename']
         object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
-        return md5(object_id).hexdigest()
+        return str(object_id.__hash__())
 
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in
@@ -564,14 +586,19 @@ class ObjectDefinition(object):
         """
         object_type = self.object_type
         shortname = self.get_shortname()
+        # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
+        global pynag_directory
+        if pynag_directory is None:
+            from os.path import dirname
+            pynag_directory = dirname(config.cfg_file) + "/pynag"
+        # templates go to the template directory
         if self['register'] == "0":
-            # This is a template
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
+        # Services go to same file as their host
+        elif object_type == 'service' and self.host_name is not None:
+            host = self.get_effective_hosts()[0]
+            path = host.get_filename()
         else:
-            # Not a template
-            if object_type == 'service':
-                # Services written in same file as their host
-                shortname = self['host_name']
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
         return path
 
@@ -582,6 +609,8 @@ class ObjectDefinition(object):
             Number of changes made to the object
         """
         if config is None: self.objects.reload_cache()
+        # Let event-handlers know we are about to save an object
+        self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname'] ))
         # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
         if self.is_new is True or self.get_filename() is None:
@@ -600,7 +629,7 @@ class ObjectDefinition(object):
                 save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name, new_value=new_value)
                 if save_result == True:
                     del self._changes[field_name]
-                    self._event(level='save', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
+                    self._event(level='write', message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
                     if not new_value:
                         if self._defined_attributes.has_key(field_name):
                             del self._defined_attributes[field_name]
@@ -615,12 +644,18 @@ class ObjectDefinition(object):
 
         # this piece of code makes sure that when we current object contains all current info
         self.reload_object()
-        self._event(level='write', message="Object %s changed in file %s" % (self['shortname'], self.get_filename()))
+        self._event(level='save', message="%s '%s' saved." % (self.object_type, self['shortname'] ))
         return number_of_changes
     
     def reload_object(self):
         """ Re applies templates to this object (handy when you have changed the use attribute """
-        i = config._apply_template(self._original_attributes)
+        old_me = config.get_new_item(self.object_type, self.get_filename())
+        old_me['meta']['defined_attributes'] = self._defined_attributes
+        for k,v in self._defined_attributes.items():
+            old_me[k] = v
+        for k,v in self._changes.items():
+            old_me[k] = v
+        i = config._apply_template(old_me)
         new_me = self.__class__(item=i)
         self._defined_attributes = new_me._defined_attributes
         self._original_attributes = new_me._original_attributes
@@ -636,6 +671,7 @@ class ObjectDefinition(object):
         Returns: 
             True on success
         """
+        self._event(level='pre_save', message="Object definition is being rewritten")
         if str_new_definition is None:
             str_new_definition = self._meta.get('raw_definition')
         config.item_rewrite(self._original_attributes, str_new_definition)
@@ -643,11 +679,8 @@ class ObjectDefinition(object):
         self._event(level='write', message="Object definition rewritten")
 
         # this piece of code makes sure that when we current object contains all current info
-        new_me = self.__class__.objects.get_by_id(self.get_id())
-        self._defined_attributes = new_me._defined_attributes
-        self._original_attributes = new_me._original_attributes
-        self._inherited_attributes = new_me._inherited_attributes
-        self._meta = new_me._meta
+        self.reload_object()
+        self._event(level='save', message="Object definition was rewritten")
         return True
 
     def delete(self, recursive=False ):
@@ -657,11 +690,13 @@ class ObjectDefinition(object):
             recursive: If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
         """
+        self._event(level="pre_save", message="%s '%s' will be deleted." %( self.object_type, self.get_shortname()))
         if recursive == True:
             # Recursive does not have any meaning for a generic object, this should subclassed.
             pass
         result = config.item_remove(self._original_attributes)
-        self._event(level="write", message="Object was deleted")
+        self._event(level="write", message="%s '%s' was deleted." %( self.object_type, self.get_shortname()))
+        self._event(level="save", message="%s '%s' was deleted." %( self.object_type, self.get_shortname()))
         return result
 
     def copy(self, recursive=False,filename=None, **args):
@@ -694,16 +729,8 @@ class ObjectDefinition(object):
         for k,v in args.items():
             new_object[k] = v
         new_object.save()
-        
-        # If recursive copy, also copy any related objects
-        if recursive == True:
-            related_objects = self.get_related_objects()
-            for i in related_objects:
-                new_args = {}
-                for k,v in args.items():
-                    if i.has_key(k): new_args[k] = v
-                i.copy(filename=filename, **new_args)
         return new_object
+
         
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
@@ -765,7 +792,16 @@ class ObjectDefinition(object):
             self._meta['filename'] = os.path.normpath( filename )
 
     def get_macro(self, macroname, host_name=None ):
-        # TODO: This function is incomplete and untested
+        """ Take macroname (e.g. $USER1$) and return its actual value
+
+        Arguments:
+          macroname -- Macro that is to be resolved. For example $HOSTADDRESS$
+          host_name -- Optionally specify host (use this for services that
+                    -- don't define host specifically for example ones that only
+                    -- define hostgroups
+        Returns:
+          (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
+        """
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname)
@@ -784,7 +820,7 @@ class ObjectDefinition(object):
     def get_all_macros(self):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
         # TODO: This function is incomplete and untested
-        if self['check_command'] is None: return None
+        if self['check_command'] is None: return {}
         c = self['check_command']
         c = c.split('!')
         command_name = c.pop(0)
@@ -816,9 +852,22 @@ class ObjectDefinition(object):
             command = Command.objects.get_by_shortname(command_name)
         except ValueError:
             return None
+        return self._resolve_macros(command.command_line, host_name=host_name)
+    def _resolve_macros(self, string, host_name=None):
+        """ Returns string with every $NAGIOSMACRO$ resolved to actual value.
+
+        Arguments:
+            string    -- Arbitary string that contains macros
+            host_name -- Optionally supply host_name if this service does not define it
+        Example:
+        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS')
+        '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
+        """
+        if not string:
+            return None
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
-        result = regex.sub(get_macro, command['command_line'])
+        result = regex.sub(get_macro, string)
         return result
 
     def run_check_command(self, host_name=None):
@@ -842,10 +891,10 @@ class ObjectDefinition(object):
                 if v.startswith('$') and v.endswith('$') and not v.startswith('$ARG'):
                     v = self.get_macro(v)
                 a['$ARG%s$' % tmp] = v
-        if a.has_key( macroname ):
-            return a[ macroname ]
-        else:
-            return '' # Return empty string if macro is invalid.
+        result = a.get(macroname, '')
+        # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
+        result = self._resolve_macros(result)
+        return result
 
     def _get_service_macro(self,macroname):
         # TODO: This function is incomplete and untested
@@ -902,7 +951,7 @@ class ObjectDefinition(object):
         results = []
         use = self['use'].split(',')
         for parent_name in use:
-            results.append( self.objects.filter(name=parent_name)[0] )
+            results.append( self.objects.get_by_name(parent_name) )
         if recursive is True:
             grandparents = []
             for i in results:
@@ -1048,6 +1097,8 @@ class ObjectDefinition(object):
                 i.write( object_definition=self, message=message )
             elif level == 'save':
                 i.save( object_definition=self, message=message )
+            elif level == 'pre_save':
+                i.pre_save( object_definition=self, message=message )
             else:
                 i.debug( object_definition=self, message=message )
 
@@ -1109,6 +1160,25 @@ class Host(ObjectDefinition):
             for i in tmp: result.append( i )
         return result
 
+    def get_effective_check_command(self):
+        """ Returns a Command object as defined by check_command attribute
+
+        Raises KeyError if check_command is not found or not defined.
+        """
+        c = self.check_command
+        if not c or c == '':
+            raise KeyError(None)
+        check_command = c.split('!')[0]
+        return Command.objects.get_by_shortname(check_command)
+    def copy(self, recursive=False,filename=None, **args):
+        """ Same as ObjectDefinition.copy() except can recursively copy services """
+        new_object = ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args)
+        if recursive == True and 'host_name' in args:
+            for i in self.get_effective_services():
+                print i.get_shortname()
+                i.copy(filename=filename, host_name=args.get('host_name'))
+        return new_object
+
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
         # Do hostgroups
@@ -1120,11 +1190,11 @@ class Host(ObjectDefinition):
         cg = AttributeList( self.contact_groups )
         for i in cg.fields:
             ObjectRelations.host_contact_groups[self.host_name].add( i )
-            ObjectRelations.contactgroup_hosts[i].add( self.host_name )
+            ObjectRelations.contactgroup_hosts[i].add( self.get_id() )
         contacts = AttributeList( self.contacts )
         for i in contacts.fields:
             ObjectRelations.host_contacts[self.host_name].add( i )
-            ObjectRelations.contact_hosts[i].add( self.host_name )
+            ObjectRelations.contact_hosts[i].add( self.get_id() )
         if self.check_command:
             command_name = self.check_command.split('!')[0]
             ObjectRelations.command_service[ self.host_name ].add( command_name )
@@ -1207,6 +1277,17 @@ class Service(ObjectDefinition):
         list_of_shortnames = ObjectRelations.service_servicegroups[self.get_id()]
         return map( get_object, list_of_shortnames )
 
+    def get_effective_check_command(self):
+        """ Returns a Command object as defined by check_command attribute
+
+        Raises KeyError if check_command is not found or not defined.
+        """
+        c = self.check_command
+        if not c or c == '':
+            raise KeyError(None)
+        check_command = c.split('!')[0]
+        return Command.objects.get_by_shortname(check_command)
+
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
@@ -1234,7 +1315,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Host that are hooked to this Contact """
         result = set()
         # First add all hosts that name this contact specifically
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_id(x)
         list_of_shortnames = ObjectRelations.contact_hosts[self.contact_name]
         result.update( map( get_object, list_of_shortnames ) )
 
@@ -1293,7 +1374,7 @@ class Contactgroup(ObjectDefinition):
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = ObjectRelations.contactgroup_hosts[self.contactgroup_name]
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
 
     def get_effective_services(self):
@@ -1454,10 +1535,4 @@ string_to_class['command'] = Command
 
 if __name__ == '__main__':
     #s = Service.objects.all
-    #h = Host.objects.all
-    o = ObjectDefinition.objects.all
-    t = Timeperiod.objects.all.pop(0)
-    key_to_delete = t.keys().pop()
-    print "changing, ",key_to_delete
-    t[key_to_delete] = "This is the new value"
-    t.save()
+    pass

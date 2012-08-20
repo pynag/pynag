@@ -2,17 +2,17 @@
 #
 # pynag - Python Nagios plug-in and configuration environment
 # Copyright (C) 2010 Pall Sigurdsson
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -28,6 +28,13 @@ This enables you for example to log to file every time an object is rewritten.
 
 
 import time
+from platform import node
+from os.path import dirname
+import subprocess
+import shlex
+from os import environ
+from getpass import getuser
+from os.path import dirname
 
 class BaseEventHandler:
     def __init__(self, debug=False):
@@ -38,6 +45,8 @@ class BaseEventHandler:
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
         raise NotImplementedError()
+    def pre_save(self, object_definition, message):
+        """ Called at the beginning of save() """
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
         raise NotImplementedError()
@@ -81,23 +90,22 @@ class FileLogger(BaseEventHandler):
         """Called when objectdefinition.save() has finished"""
         message = "%s: %s" %( time.asctime(), message )
         self._append_to_file( message )
- 
- 
+
+
 class GitEventHandler(BaseEventHandler):
-    def __init__(self, gitdir, source, modified_by):
+    def __init__(self, gitdir, source, modified_by, ignore_errors=False):
         """
         Commits to git repo rooted in nagios configuration directory
-        
+
         It automatically raises an exception if the configuration directory
         is not a git repository.
-        
+
         source = prepended to git commit messages
         modified_by = is the username in username@<hostname> for commit messages
+        ignore_errors = if True, do not raise exceptions on git errors
         """
         BaseEventHandler.__init__(self)
-        import git
-        from os import environ
-        from platform import node
+        import subprocess
 
         # Git base is the nagios config directory
         self.gitdir = gitdir
@@ -108,24 +116,82 @@ class GitEventHandler(BaseEventHandler):
         # Which program did the change
         self.source = source
 
-        # Init the git repository
-        try:
-            self.gitrepo = git.Repo(self.gitdir)
-        except Exception, e:
-            raise Exception("Unable to open git repo %s, do you need to git init?" % (str(e)))
+        # Every string in self.messages indicated a line in the eventual commit message
+        self.messages = []
 
-        # Set the author information for the commit
-        environ['GIT_AUTHOR_NAME'] = self.modified_by
-        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.modified_by, node())
+        self.ignore_errors = ignore_errors
+        subprocess.check_call('git status --short'.split(),cwd=self.gitdir)
 
+        self._update_author()
     def debug(self, object_definition, message):
         pass
+    def _update_author(self):
+        """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
 
-    def write(self, object_definition, message):
-        self.gitrepo.index.add([object_definition._meta['filename']])
-        self.gitrepo.index.commit("%s: %s %s modified by %s" % (self.source, object_definition.object_type.capitalize(), object_definition.get_shortname(), self.modified_by))
+        Returns: None
+        """
+        environ['GIT_AUTHOR_NAME'] = self.modified_by
+        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
+    def _run_command(self, command):
+        """ Run a specified command from the command line. Return stdout """
+        import subprocess
+        import os
+        cwd = self.gitdir
+        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        stdout, stderr = proc.communicate('through stdin to stdout')
+        returncode = proc.returncode
+        if returncode > 0 and self.ignore_errors == False:
+            errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
+            errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
+            raise EventHandlerError( errorstring )
+            raise subprocess.CalledProcessError( returncode, command, stderr )
+        return stdout
 
+
+
+    def _git_add(self, filename):
+        """ Wrapper around git add command """
+        self._update_author()
+        directory = dirname(filename)
+        command= "git add %s" % filename
+        return self._run_command(command)
+    def _git_commit(self, filename, message):
+        """ Wrapper around git commit command """
+        self._update_author()
+        # Lets strip out any single quotes from the message:
+        message = message.replace("'",'"')
+        command = "git commit %s -m '%s'" % (filename, message)
+        return self._run_command(command=command)
+    def pre_save(self, object_definition, message):
+        """ Commits object_definition.get_filename() if it has any changes """
+        filename = object_definition.get_filename()
+        if self._is_dirty(filename):
+            self._git_add(filename)
+            self._git_commit(filename,
+                message="External changes commited in %s '%s'" %
+                        (object_definition.object_type, object_definition.get_shortname()))
     def save(self, object_definition, message):
-        pass
+        filename = object_definition.get_filename()
+        if len(self.messages) > 0:
+            message = [message, '\n'] + self.messages
+            message = '\n'.join(message)
+        self._git_add(filename)
+        if self._is_dirty(filename):
+            self._git_commit(filename, message)
+        self.messages = []
+    def _is_dirty(self,filename):
+        """ Returns True if filename needs to be committed to git """
+        command = "git status --porcelain '%s'" % filename
+        output = self._run_command(command)
+        # Return True if there is any output
+        return len(output) > 0
+    def write(self, object_definition, message):
+        # When write is called ( something was written to file )
+        # We will log it in a buffer, and commit when save() is called.
+        self.messages.append( " * %s" % message )
 
 
+
+
+class EventHandlerError(Exception):
+    pass
