@@ -26,7 +26,6 @@ import os
 import re
 from platform import node
 from optparse import OptionParser
-from popen2 import Popen3
 
 
 # Map the return codes
@@ -206,6 +205,7 @@ class simple:
         """
     
         # Execute send_nsca
+        from popen2 import Popen3
         command = "send_nsca -H %s" % ncsahost
         p = Popen3(command,  capturestderr=True)
 
