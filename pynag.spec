@@ -5,7 +5,7 @@
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.4.3
+Version: 0.4.4
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -68,6 +68,71 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Fri Aug 17 2012 Pall Sigurdsson <palli@opensource.is> 0.4.4-1
+- Fix unhandled exception  in Parsers.need_reparse() (palli@opensource.is)
+- Fix issues with giteventhandler and objectrelations (palli@opensource.is)
+- Improved errorhandling on giteventhandler. author is updated before any git
+  add is called (palli@opensource.is)
+- get_all_macros returns empty hash map on non-existant check_command
+  (palli@opensource.is)
+- EventHandler improvements. (palli@opensource.is)
+- get_effective_check_command() function added. pynag script now supports
+  execute subcommand (palli@opensource.is)
+- defaultdict added back. error handling in get_macro (palli@opensource.is)
+- Temporary re-implementation of defaultdict (palli@opensource.is)
+- Added reference to changed README(.md) filename (tommi@tommi.org)
+- GitEventhandler escaping for commit message fixed (palli@opensource.is)
+- improved error handling in giteventhandler. better default pynag write
+  directory (palli@opensource.is)
+- GitEventHandler updated to use subprocess instead of dulwich
+  (palli@opensource.is)
+- ObjectDefinition.get_id() changed from md5sum to built-in __hash__()
+  (palli@opensource.is)
+- Host.copy() now recursively copies services (palli@opensource.is)
+- Fixes to get_effective_command_line() where macro within another macro was
+  not properly solved. (palli@opensource.is)
+- Added comment on attribute generation (tommi@tommi.org)
+- Added parser for configmain.html for all_attributes (tommi@tommi.org)
+- Merge branch 'master' of github.com:pynag/pynag (tommi@tommi.org)
+- Added maincfg fields to all_attributes (tommi@tommi.org)
+- README syntax fix (palli@opensource.is)
+- README syntax fix (palli@opensource.is)
+- README syntax fix (palli@opensource.is)
+- README moved to markdown format (palli@opensource.is)
+- README Updated (palli@opensource.is)
+- Bugfix, when Objectdefinition.filter was called with None passed to a
+  *__contains argument (palli@opensource.is)
+- giteventhandler changed to use dulwich module instead of gitpython
+  (palli@opensource.is)
+- Merge github.com:pynag/pynag (palli@opensource.is)
+- Big improvements to Parsers.status; minor refactoring in Parsers.config
+  (palli@opensource.is)
+- Merge branch 'master' of https://code.google.com/p/pynag (tommi@tommi.org)
+- fixes #3 status[] variable was reset per line (tommi@tommi.org)
+- Remove trailing slash from pynag_dir. get_suggested_filename() now produces
+  correct pathnames. (er.abhinav.upadhyay@gmail.com)
+- print statements removed from parsers library functions (palli@opensource.is)
+- Moved to parse instead of extended_parse (tommi@tommi.org)
+- Removed static arguments to get_service (tommi@tommi.org)
+- Removed import os and fixed find_orphans (tommi@tommi.org)
+- Removed unused module os by Abhinav Upadhyay. (tommi@tommi.org)
+- Timeperiod hack +permission fix for resource.cfg (palli@opensource.is)
+- check_thresholds() added (Issue 22) (palli@opensource.is)
+- check_range() rewritten and stuffed outside simple module (Fixes issue 22)
+  (palli@opensource.is)
+- Missing Objectrelations between servicegroup_services added
+  (palli@opensource.is)
+- fixed which causes traceback on parsererror (palli@opensource.is)
+- All Tabs converted to spaces. Started to enforce PEP8 line spacing
+  (palli@opensource.is)
+- /usr/local/nagios/etc/ added to paths where nagios.cfg might be found (Thanks
+  Abhinav Upadhyay) (palli@opensource.is)
+- More optimizations from pycharm inspections (palli@opensource.is)
+- filter() now supports __exists suffix for as a search condition
+  (palli@opensource.is)
+- pycharm code inspection cleanup (palli@opensource.is)
+- Major rework og object relations and object cache (palli@opensource.is)
+
 * Mon Jul 23 2012 Tomas Edwardsson <tommi@tommi.org> 0.4.3-1
 - New upstream version
 
