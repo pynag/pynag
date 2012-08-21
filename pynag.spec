@@ -5,7 +5,7 @@
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.4.4
+Version: 0.4.5
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -68,6 +68,16 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Tue Aug 21 2012 Pall Sigurdsson <palli@opensource.is> 0.4.5-1
+- Changelog updated (palli@opensource.is)
+- debian subdir renamed to debian.upstream (palli@opensource.is)
+- Version number bumped to 0.4.5 (palli@opensource.is)
+- Merge branch 'master' of github.com:pynag/pynag (palli@opensource.is)
+- popen2 import moved to send_nsca() to hide deprecationwarning
+  (palli@opensource.is)
+- pynag.Model no longer depends on defaultdict to work (palli@opensource.is)
+- Updates to pynag.Parsers.status (palli@opensource.is)
+
 * Fri Aug 17 2012 Pall Sigurdsson <palli@opensource.is> 0.4.4-1
 - Fix unhandled exception  in Parsers.need_reparse() (palli@opensource.is)
 - Fix issues with giteventhandler and objectrelations (palli@opensource.is)
