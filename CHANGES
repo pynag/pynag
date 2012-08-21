@@ -1,3 +1,39 @@
+Changes in 0.4.5 (Aug 21 2012)
+
+Bugfixes:
+    - popen2 import moved to send_nsca() to hide deprecationwarning
+    - pynag.Model no longer depends on defaultdict to work (for python 2.4)
+    - Removed dependency on defaultdict (does not exist on python 2.4)
+    - When permission problems occur for reading status.dat, exception is
+      now thrown in parse() rather than init()
+    - Version number is now correct
+    - debian subdir moved to debian.upstream for packaging
+
+
+
+Changes in 0.4.4 (Aug 20 2012)
+
+New Features:
+    - Host.copy(recursive=True) now recursively copies services
+    - README moved to markdown format (palli@opensource.is)
+    - Parsers.status class reworked. Now support get_servicestatus()
+    - filter() now supports __exists suffix for as a search condition
+    - Major rework og object relations and object cache (palli@opensource.is)
+Bugfixes:
+    - get_all_macros returns empty hash map on non-existant check_command
+    - New get_effective_* functions i.e. Host.get_effective_contacts()
+    - ObjectDefinition.get_id() changed from md5sum to built-in __hash__()
+    - Fixes to get_effective_command_line() where macro within another macro was
+      not properly solved. (palli@opensource.is)
+    - GitEventHandler changed to use subprocess module instead of GitPython
+
+    - Support for nagios's ambigious Timeperiod format.
+    - check_thresholds() added (Issue 22) (palli@opensource.is)
+    - check_range() conditions now inverted (Fixes issue 22)
+    - /usr/local/nagios/etc/ added to paths where nagios.cfg might be found (Thanks
+      Abhinav Upadhyay)
+    - pycharm code inspection cleanup (palli@opensource.is)
+
 Changes in 0.4.3 (Jul 13 2012)
 
 Bugfixes:
