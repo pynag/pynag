@@ -4,7 +4,7 @@ pynag - command line front for manipulating nagios configuration
 
 =head1 SYNOPSIS
 
-pynag <sub-command> <arguments>
+pynag <sub-command> [options] [arguments]
 
 =head1 DESCRIPTION
 
@@ -16,7 +16,7 @@ pynag is a command-line utility that can be used to view or change current nagio
 
 print to screen nagios configuration objects as specified by a WHERE clause
 
-	pynag list <attr1> <attr2> [WHERE attr1=value [AND attr2=value2] ... ]
+	pynag list [attribute1] [attribute2] [WHERE ...]
 
 =head2 update
 
@@ -29,6 +29,89 @@ modify specific attributes of nagios objects as specified by a WHERE and SET cla
 
 Delete objects from nagios configuration as specified by a WHERE clause
 
+	pynag delete delete <WHERE ...>
+
+=head2 add 
+
+Add a new object definition
+
+	pynag add <object_type> <attr1=value1> [attr2=value2]
+
+=head2 copy
+
+Copy objects, specifiying which attributes to change
+
+	pynag copy <WHERE ...> <SET attr1=value1 [attr2=value2] ...>
+
+=head2 execute
+
+Executes the currently configured check command for a host or a service
+
+	pynag execute <host_name> [service_description]
+	
+=head2 config-set
+
+set a specific value for nagios.cfg
+
+	pynag config-set <attr=value> [--filename=/etc/nagios/nagios.cfg]
+
+=head2 config-append
+
+Add a specific attribute to nagios.cfg
+
+	pynag config-append <attr=value> [--filename=/etc/nagios/nagios.cfg]
+
+=head1 WHERE statements
+
+Some Subcommands use WHERE statements to filter which objects to work with.
+Where has certain similarity with SQL syntax.
+
+Syntax:
+
+	WHERE <attr=value> [AND attr=value] [OR attr=value] [another where statement]
+
+where "attr" is any nagios attribute (i.e. host_name or service_description).
+
+Example:
+
+	pynag list WHERE host_name=localhost and object_type=service
+	pynag list WHERE object_type=host or object_type=service
+
+Any search attributes have the same syntax as the pynag filter. For example these
+work just fine:
+
+	pynag list WHERE host_name__contains=production
+	pynag list WHERE host_name__startswith=prod
+	pynag list WHERE host_name__notcontains=test
+	pynag list host_name address WHERE address__exists=True
+
+
+The pynag filter supports few parameters that are not just attributes. Example:
+
+	filename                 -- The filename which the object belongs to
+	id                       -- pynag unique identifier for the object
+	effective_command_line   -- command which nagios will execute
+
+Of course these can be combined with the pynag filter syntax:
+
+	pynag list where filename__startswith=/etc/nagios/conf.d/
+	pynag list host_name service_description effective_command_line
+
+For detailed description of the filter see pydoc for pynag.Model.ObjectDefintion.filter()
+
+
+=head1 SET statements
+
+Subcommands that use SET statements (like update or copy) use them a list of attributes
+change for a specific object.
+
+Syntax:
+
+	SET <attr1=value1> [attr2=value2] [...]
+
+Example:
+
+	pynag update SET address=127.0.0.1 WHERE host_name=localhost and object_type=host
 
 =head1 EXAMPLES
 
@@ -40,9 +123,39 @@ Set check_period to 24x7 on all services that belong to host "myhost":
 
 	pynag update set check_period=24x7 WHERE host_name=myhost 
 
+=head2 list examples
+
+	# pynag list host_name address WHERE object_type=host"
+	# pynag list host_name service_description WHERE host_name=examplehost and object_type=service"
+
+=head2 update examples
+
+	# pynag update SET host_name=newhostname WHERE host_name=oldhostname"
+	# pynag update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
+
+=head2 copy examples
+
+	# pynag copy SET host_name=newhostname WHERE  host_name=oldhostname"
+	# pynag copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
+
+=head2 add examples
+
+	# pynag add host host_name=examplehost use=generic-host address=127.0.0.1"
+	# pynag add service service_description="Test Service" use="check_nrpe" host_name="localhost"
+
+=head2 delete examples
+
+	# pynag delete where object_type=service and host_name='mydeprecated_host'
+	# pynag delete where filename__startswith='/etc/nagios/myoldhosts'
+
+=execute examples
+
+	# pynag execute localhost
+	# pynag execute localhost "Disk Space"
+
 =head1 ADDITIONAL RESOURCES
 
-See http://code.google.com/p/pynag/ for more information.
+See http://github.com/pynag/pynag.git for more information.
 
 
 =head1 AUTHOR
