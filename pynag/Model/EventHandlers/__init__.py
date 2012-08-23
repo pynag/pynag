@@ -120,7 +120,7 @@ class GitEventHandler(BaseEventHandler):
         self.messages = []
 
         self.ignore_errors = ignore_errors
-        subprocess.check_call('git status --short'.split(),cwd=self.gitdir)
+        self._run_command('git status --short')
 
         self._update_author()
     def debug(self, object_definition, message):
