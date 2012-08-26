@@ -574,8 +574,10 @@ class ObjectDefinition(object):
     def __getitem__(self, key):
         if key == 'id':
             return self.get_id()
-        if key == 'description' or key == 'shortname':
+        if key == 'description':
             return self.get_description()
+        if key == 'shortname':
+            return self.get_shortname()
         if key == 'register' and not self._defined_attributes.has_key('register'):
             return "1"
         if key == 'meta':
@@ -813,10 +815,34 @@ class ObjectDefinition(object):
         return default
 
     def get_description(self):
-        return self.get("%s_name" % self.object_type, None)
+        """ Returns a human friendly string describing current object.
+
+        It will try the following in order:
+        * return self get_shortname()
+        * return self.name
+        * return "Untitled $object_type"
+        It defaults to self.get_shortname()
+        """
+        if self.get_shortname():
+           return self.get_shortname()
+        if self.name:
+            return self.name
+        return "Untitled %s" % self.object_type
 
     def get_shortname(self):
-        return self.get_description()
+        """ Returns shortname of an object in string format.
+
+        For the confused, nagios documentation refers to shortnames
+        usually as <object_type>_name.
+
+        * In case of Host it returns host_name
+        * In case of Command it returns command_name
+        * etc
+        * Special case for services it returns "host_name/service_description"
+
+        Returns None if no attribute can be found to use as a shortname
+        """
+        return self.get("%s_name" % self.object_type, None)
 
     def get_filename(self):
         """ Get name of the config file which defines this object
@@ -1156,10 +1182,6 @@ class Host(ObjectDefinition):
     object_type = 'host'
     objects = ObjectFetcher('host')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['host_name']
-
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
@@ -1244,8 +1266,9 @@ class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
+    def get_shortname(self):
+        if not self.host_name and not self.service_description:
+            return None
         return "%s/%s" % (self['host_name'], self['service_description'])
 
     def _get_host_macro(self, macroname, host_name=None):
@@ -1332,10 +1355,6 @@ class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['command_name']
-
 
 class Contact(ObjectDefinition):
     object_type = 'contact'
@@ -1395,10 +1414,6 @@ class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
     objects = ObjectFetcher('contactgroup')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['contactgroup_name']
-
     def get_effective_contactgroups(self):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
@@ -1441,10 +1456,6 @@ class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
     objects = ObjectFetcher('hostgroup')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['hostgroup_name']
-
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this hostgroup """
         list_of_shortnames = ObjectRelations.hostgroup_services[self.hostgroup_name]
@@ -1483,18 +1494,12 @@ class Servicegroup(ObjectDefinition):
         list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['servicegroup_name']
 
 
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
     objects = ObjectFetcher('timeperiod')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['timeperiod_name']
 
 
 class AttributeList(object):
