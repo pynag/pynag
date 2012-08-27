@@ -189,7 +189,7 @@ class config:
         current['meta']['delete_me'] = None
         current['meta']['defined_attributes'] = {}
         current['meta']['inherited_attributes'] = {}
-        current['meta']['raw_definition'] = ""
+        current['meta']['raw_definition'] = "define %s {\n\n}" % object_type
         return current
 
     def _load_file(self, filename):
@@ -199,7 +199,7 @@ class config:
         in_definition = {}
         tmp_buffer = []
 
-        for line in open(filename, 'rb').readlines():
+        for line_num, line in enumerate( open(filename, 'rb').readlines() ):
 
             ## Cleanup and line skips
             line = line.strip()
@@ -220,6 +220,7 @@ class config:
             if line.find("}") != -1:
 
                 in_definition = None
+                current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
                 rest = line.split("}", 1)[1]
                 
@@ -241,6 +242,7 @@ class config:
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
                 current = self.get_new_item(object_type, filename)
+                current['meta']['line_start'] = line_num
 
                 if in_definition:
                     raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)

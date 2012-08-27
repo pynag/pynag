@@ -159,7 +159,7 @@ def list_objects():
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
     parser.add_option("--width", dest="width", 
-                      default=40, help="Column width in output (default 40)")
+                      default=20, help="Column width in output (default 20)")
     (opts,args) = parser.parse_args(sys.argv[2:])
     if opts.examples == True:
         return print_examples()

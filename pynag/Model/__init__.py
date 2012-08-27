@@ -638,8 +638,11 @@ class ObjectDefinition(object):
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
         # Services go to same file as their host
         elif object_type == 'service' and self.host_name is not None:
-            host = self.get_effective_hosts()[0]
-            path = host.get_filename()
+            try:
+                host = self.get_effective_hosts()[0]
+                path = host.get_filename()
+            except IndexError:
+                path = "%s/hosts/%s.cfg" % (pynag_directory, self.host_name)
         else:
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
         return path
@@ -758,7 +761,8 @@ class ObjectDefinition(object):
                     myhost.copy(recursive=True, host_name="newhost.example.com", address="127.0.0.1")
           
         Returns:
-          A copy of the new ObjectDefinition
+          * A copy of the new ObjectDefinition
+          * A list of all copies objects if recursive == True
         """
         if args == {}:
                 raise ValueError('To copy an object definition you need at least one new attribute')
@@ -1234,12 +1238,13 @@ class Host(ObjectDefinition):
         return Command.objects.get_by_shortname(check_command)
     def copy(self, recursive=False,filename=None, **args):
         """ Same as ObjectDefinition.copy() except can recursively copy services """
-        new_object = ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args)
+        copies = []
+        copies.append( ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args) )
         if recursive == True and 'host_name' in args:
             for i in self.get_effective_services():
                 print i.get_shortname()
-                i.copy(filename=filename, host_name=args.get('host_name'))
-        return new_object
+                copies.append( i.copy(filename=filename, host_name=args.get('host_name')) )
+        return copies
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()

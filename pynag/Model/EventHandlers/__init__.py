@@ -144,7 +144,6 @@ class GitEventHandler(BaseEventHandler):
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
             raise EventHandlerError( errorstring )
-            raise subprocess.CalledProcessError( returncode, command, stderr )
         return stdout
 
 
@@ -153,14 +152,14 @@ class GitEventHandler(BaseEventHandler):
         """ Wrapper around git add command """
         self._update_author()
         directory = dirname(filename)
-        command= "git add %s" % filename
+        command= "git add '%s'" % filename
         return self._run_command(command)
     def _git_commit(self, filename, message):
         """ Wrapper around git commit command """
         self._update_author()
         # Lets strip out any single quotes from the message:
         message = message.replace("'",'"')
-        command = "git commit %s -m '%s'" % (filename, message)
+        command = "git commit '%s' -m '%s'" % (filename, message)
         return self._run_command(command=command)
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
