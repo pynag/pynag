@@ -210,11 +210,17 @@ class ObjectRelations(object):
     # use['host']['host_name1'] = ['host_name2','host_name3']
     # use['contact']['contact_name1'] = ['contact_name2','contact_name3']
     _defaultdict_set = lambda: defaultdict(set)
-
-    #
-    contactgroup_subgroups = defaultdict(set)
     use = defaultdict( _defaultdict_set )
 
+    # contactgroup_subgroups['contactgroup_name'] = ['group1_name','group2_name']
+    contactgroup_subgroups = defaultdict(set)
+
+    @staticmethod
+    def reset():
+        """ Runs clear() on every member attribute in ObjectRelations """
+        for k,v in ObjectRelations.__dict__.items():
+            if type(v) == type(defaultdict):
+                v.clear()
     @staticmethod
     def _get_subgroups(group_name, dictname):
         """ Helper function that lets you get all sub-group members of a particular group
@@ -318,6 +324,8 @@ class ObjectFetcher(object):
         if config.needs_reparse():
             debug('Debug: Doing a reparse of configuration')
             config.parse()
+        # Reset our list of how objects are related to each other
+        ObjectRelations.reset()
 
         # Fetch all objects from Parsers.config
         for object_type, objects in config.data.items():
