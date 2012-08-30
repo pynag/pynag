@@ -28,6 +28,6 @@ i.e. macros['$HOSTADDR$'] should return 'address'
 
 _standard_macros = {
                    '$HOSTADDRESS$':'address',
-                   '$HOSTNAME':'host_name',
-                   '$SERVICEDESC':'service_description',
+                   '$HOSTNAME$':'host_name',
+                   '$SERVICEDESC$':'service_description',
                    }
