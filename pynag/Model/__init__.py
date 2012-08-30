@@ -1513,6 +1513,170 @@ class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
     objects = ObjectFetcher('timeperiod')
 
+class CheckResult(object):
+    """ Contains Status for one specific pynag host or service """
+    plugin_output = ""
+    long_output = ""
+    performance_data = ""
+    current_state = ""
+    def __init__(self, objectdefinition):
+        pass
+
+class PerfData(object):
+    """ Data Structure for a nagios perfdata string with multiple perfdata metric
+
+    Example string:
+    >>> perf = PerfData("load1=10 load2=10 load3=20")
+    >>> for i in perf.metrics:
+    >>>     print i.label, i.value
+    """
+    def __init__(self, perfdatastring):
+        """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
+        import shlex
+        perfdata = shlex.split(perfdatastring)
+        self.metrics = []
+        self.invalid_metrics = []
+        for metric in perfdata:
+            try:
+                self.metrics.append( PerfDataMetric(metric) )
+            except Exception:
+                self.invalid_metrics.append( metric )
+    def is_valid(self):
+        """ Returns True if the every metric in the string is valid """
+        for i in self.metrics:
+            if not i.is_valid():
+                return False
+
+class PerfDataMetric(object):
+    """ Data structure for one single Nagios Perfdata Metric """
+    label = ""
+    value = ""
+    warn = ""
+    crit = ""
+    min = ""
+    max = ""
+    uom = ""
+    status = "ok"
+    def __repr__(self):
+        return "'%s'=%s%s;%s;%s;%s;%s" % (
+            self.label,
+            self.value,
+            self.uom,
+            self.warn,
+            self.crit,
+            self.min,
+            self.max,
+        )
+    def __str__(self):
+        return """
+            label: %s
+            value: %s %s
+            warning: %s
+            critical: %s
+            min: %s
+            max: %s
+            """ % (
+            self.label,
+            self.value,
+            self.uom,
+            self.warn,
+            self.crit,
+            self.min,
+            self.max,
+            )
+
+    def __init__(self, perfdatastring):
+        """
+        >>> p = PerfData(perdatastring="size=10M;20M;;;"
+        >>> print p.label
+        size
+        >>> print p.value
+        >>> 10
+        print p.value_unit
+        >>> M
+        """
+        # If label is single quoted, there might be any symbol in the label
+        # including other single quotes and the = sign. Therefore, we take special precautions if it is so
+        if perfdatastring.startswith("'"):
+            tmp = perfdatastring.split("'")
+            everything_but_label = tmp.pop()
+            tmp.pop(0)
+            label = "'".join(tmp)
+        else:
+            label, everything_but_label = perfdatastring.split('=', 1)
+        self.label = label
+
+        # Next split string into value;warning;critical;min;max
+        tmp = everything_but_label.split(';')
+        if len(tmp) > 0:
+            val = tmp.pop(0).strip('=')
+            self.value, self.uom = self.split_value_and_uom(val)
+        if len(tmp) > 0:
+            self.warn = tmp.pop(0)
+        if len(tmp) > 0:
+            self.crit = tmp.pop(0)
+        if len(tmp) > 0:
+            self.min = tmp.pop(0)
+        if len(tmp) > 0:
+            self.max = tmp.pop(0)
+        self.value = float(self.value)
+        import pynag.Plugins
+        status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
+        self.status = "unknown"
+        if status == 0:
+            self.status = "ok"
+        if status == 1:
+            self.status = "warning"
+        if status == 2:
+            self.status = "critical"
+
+
+    def is_valid(self):
+        """ Returns True if all Performance data is valid. Otherwise False """
+        try:
+            self.value == '' or float(self.value)
+        except ValueError:
+            return False
+        try:
+            self.min == '' or float(self.min)
+        except ValueError:
+            return False
+        try:
+            self.max == '' or float(self.max)
+        except ValueError:
+            return False
+        if self.label.find(' ') > -1 and not self.label.startswith("'") and not self.label.endswith("'"):
+            return False
+
+
+    def split_value_and_uom(self, value):
+        """ get value="10M" and return (10,"M")
+
+        >>> split_value_and_uom( "10" )
+        (10, '')
+        >>> split_value_and_uom( "10c" )
+        (10, 'c')
+        >>> split_value_and_uom( "10B" )
+        (10, 'B')
+        >>> split_value_and_uom( "10MB" )
+        (10, 'MB')
+        >>> split_value_and_uom( "10KB" )
+        (10, 'KB')
+        >>> split_value_and_uom( "10TB" )
+        (10, 'TB')
+        >>> split_value_and_uom( "10%" )
+        (10, '%')
+        >>> split_value_and_uom( "10s" )
+        (10, 's')
+        >>> split_value_and_uom( "10us" )
+        (10, 'us')
+        >>> split_value_and_uom( "10ms" )
+        (10, 'ms')
+        """
+        tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
+        if len(tmp) == 0:
+            return '',''
+        return tmp[0]
 
 
 class AttributeList(object):
@@ -1593,4 +1757,9 @@ string_to_class['command'] = Command
 
 if __name__ == '__main__':
     #s = Service.objects.all
-    pass
+    s = PerfData("'label this'=10m;10;-13.1;")
+    d = PerfData("label_that=10m;;;;")
+    k = PerfData(r"""'C:\'=30615760896B;500;50;0;52427898880""")
+    perfdata = process_perfdata(r"""'a=10 C:\ %'=42%;99;99 'C:\'=30617227264B;500;50;0;52427898880 'E:\ %'=83%;99;99 'E:\'=35152691200B;500;50;0;197562998784 'F:\ %'=40%;99;99 'F:\'=304405491712B;500;50;0;500073230336""")
+    s = Parsers.status()
+    s.parse()

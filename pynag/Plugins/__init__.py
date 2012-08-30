@@ -376,9 +376,9 @@ def check_threshold(value, warning=None, critical=None):
     >>> check_threshold(96, warning="90:", critical="95:")
     2
     """
-    if critical and check_range(value, critical):
+    if critical and not check_range(value, critical):
         return CRITICAL
-    elif warning and check_range(value, warning):
+    elif warning and not check_range(value, warning):
         return WARNING
     else:
         return OK
@@ -394,8 +394,8 @@ def check_range(value, range_threshold=None):
         value -- Numerical value to check (i.e. 70 )
         range -- Range to compare against (i.e. 0:90 )
     Returns:
-        True  -- If value is inside the range (alert if this happens)
-        False -- If value is outside the range
+        True  -- If value is inside the range
+        False -- If value is outside the range (alert if this happens)
 
     Summary from plugin developer guidelines:
     ---------------------------------------------------------
@@ -410,9 +410,9 @@ def check_range(value, range_threshold=None):
     ---------------------------------------------------------
 
 
-    # Example runs for doctest, True should mean alert
-    >>> check_range(78, "90:") # Example disk is 78% full, threshold is 90
-    False
+    # Example runs for doctest, False should mean alert
+    >>> check_range(78, "90") # Example disk is 78% full, threshold is 90
+    True
     >>> check_range(5, 10) # Everything between 0 and 10 is True
     True
     >>> check_range(0, 10) # Everything between 0 and 10 is True
