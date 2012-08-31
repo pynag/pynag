@@ -1244,6 +1244,9 @@ class Host(ObjectDefinition):
             raise KeyError(None)
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command)
+    def get_current_status(self):
+        """ Same as Service.get_current_status() """
+        return Status(self.host_name)
     def copy(self, recursive=False,filename=None, **args):
         """ Same as ObjectDefinition.copy() except can recursively copy services """
         copies = []
@@ -1363,7 +1366,10 @@ class Service(ObjectDefinition):
             raise KeyError(None)
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command)
-
+    def get_current_status(self):
+        """ Returns a Status object, reflecting this object status (i.e. status.dat)
+        """
+        return Status(self.host_name, self.service_description)
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
@@ -1512,6 +1518,32 @@ class Servicegroup(ObjectDefinition):
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
     objects = ObjectFetcher('timeperiod')
+
+class Status(object):
+    """ Contains current status info (i.e. status.dat) for one specific Host or Service """
+    plugin_output = ''
+    perfdata = ''
+    long_plugin_output = ''
+    current_state = ''
+    perfdatalist = []
+    def __init__(self, host_name, service_description=None):
+        self.host_name = host_name
+        s = Parsers.status()
+        s.parse()
+        try:
+            if not service_description:
+                # This is a host status
+                self.status = s.get_hoststatus(host_name)
+            else:
+                # This is a service status
+                self.status = s.get_servicestatus(host_name, service_description)
+        except ValueError:
+            self.status = None
+        self.plugin_output = self.status['plugin_output']
+        self.perfdata = self.status['performance_data']
+        self.long_plugin_output = self.status['long_plugin_output']
+        self.current_state = self.status['current_state']
+        self.perfdatalist = PerfData(self.perfdata)
 
 class CheckResult(object):
     """ Contains Status for one specific pynag host or service """
