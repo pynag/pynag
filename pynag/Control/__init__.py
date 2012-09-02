@@ -63,6 +63,10 @@ class daemon:
         cmd = "%s restart" % self.nagios_init
 
         return os.system(cmd)
+    def status(self):
+        cmd = "%s status" % self.nagios_init
+
+        return os.system(cmd)
     def reload(self):
         cmd = "%s reload" % self.nagios_init
 

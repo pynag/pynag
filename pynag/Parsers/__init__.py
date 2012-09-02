@@ -950,6 +950,8 @@ class config:
             if line[0] == "#" or line[0] == ';':
                 continue
             key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
             result.append( (key, value) )
         return result
 
@@ -1021,10 +1023,14 @@ class config:
         lockfile = None
         for k,v in self.maincfg_values:
             if k == 'lock_file': lockfile = v
-        if not os.path.isfile(lockfile): return False
+        if not lockfile:
+            return False
+        if not os.path.isfile(lockfile):
+            return False
         lockfile = new_timestamps.pop(lockfile)
         for k,v in new_timestamps.items():
-            if int(v) > lockfile: return True
+            if int(v) > lockfile:
+                return True
         return False 
 
     def needs_reparse(self):
