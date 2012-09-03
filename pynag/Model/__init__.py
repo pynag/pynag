@@ -823,8 +823,11 @@ class ObjectDefinition(object):
 
     def get(self, value, default=None):
         """ self.get(x) == self[x] """
-        if self.has_key(value): return self[value]
-        return default
+        result = self[value]
+        if result is None:
+            return default
+        else:
+            return result
 
     def get_description(self):
         """ Returns a human friendly string describing current object.
@@ -1024,7 +1027,7 @@ class ObjectDefinition(object):
             a list of ObjectDefinition objects
         """
         # TODO: This function is incomplete and untested
-        if not self.has_key('use'):
+        if self['use'] is None:
             return []
         results = []
         use = self['use'].split(',')
