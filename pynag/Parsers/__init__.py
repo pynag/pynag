@@ -1018,18 +1018,21 @@ class config:
         return False
 
     def needs_reload(self):
-        """Returns True if Nagios service needs reload of cfg files"""
+        """Returns True if Nagios service needs reload of cfg files
+
+        Returns True also if nagios is not running.
+        """
         new_timestamps = self.get_timestamps()
-        lockfile = None
+        object_cache_file = None
         for k,v in self.maincfg_values:
-            if k == 'lock_file': lockfile = v
-        if not lockfile:
+            if k == 'object_cache_file': object_cache_file = v
+        if not object_cache_file:
             return False
-        if not os.path.isfile(lockfile):
-            return False
-        lockfile = new_timestamps.pop(lockfile)
+        if not os.path.isfile(object_cache_file):
+            return True
+        object_cache_file = new_timestamps.pop(object_cache_file)
         for k,v in new_timestamps.items():
-            if int(v) > lockfile:
+            if int(v) > object_cache_file:
                 return True
         return False 
 
@@ -1096,7 +1099,7 @@ class config:
         files = {}
         files[self.cfg_file] = None
         for k,v in self.maincfg_values:
-            if k == 'resource_file' or k == 'lock_file':
+            if k in ('resource_file','lock_file','object_cache_file'):
                 files[v] = None
         for i in self.get_cfg_files():
             files[i] = None
