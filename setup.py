@@ -37,7 +37,8 @@ if __name__ == "__main__":
             'pynag.Model.EventHandlers',
             'pynag.Plugins',
             'pynag.Parsers',
-            'pynag.Control'
+            'pynag.Control',
+            'pynag.Utils',
         ],
           data_files = [(manpath, [
         'docs/pynag.1.gz',

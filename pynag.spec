@@ -40,6 +40,7 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %{__python} setup.py install --prefix=/usr --root=$RPM_BUILD_ROOT
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model
+install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Utils
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers
 install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins
 install -m 755 examples/Model/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model/
