@@ -454,6 +454,8 @@ class ObjectFetcher(object):
                     match_function = str.endswith
                 elif k.endswith('__isnot'):
                     k = k[:-7]
+                    object_matches = str(i[k]) != str(v)
+                    break
                     match_function = str.__ne__
                 elif k.endswith('__contains'):
                     k = k[:-10]
