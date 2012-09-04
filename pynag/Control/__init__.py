@@ -21,6 +21,7 @@ import sys
 import os
 import re
 
+from pynag.Utils import PynagError
 
 class daemon:
     """
@@ -28,18 +29,6 @@ class daemon:
     """
 
     def __init__(self, nagios_bin = "/usr/bin/nagios", nagios_cfg = "/etc/nagios/nagios.cfg", nagios_init = "/etc/init.d/nagios"):
-
-        if not os.path.isfile(nagios_bin):
-            sys.stderr.write("Missing Nagios Binary (%s)\n" % nagios_bin)
-            return
-
-        if not os.path.isfile(nagios_cfg):
-            sys.stderr.write("Missing Nagios Configuration (%s)\n" % nagios_cfg)
-            return
-
-        if not os.path.isfile(nagios_init):
-            sys.stderr.write("Missing Nagios Init File (%s)\n" % nagios_init)
-            return
 
         self.nagios_bin = nagios_bin
         self.nagios_cfg = nagios_cfg
