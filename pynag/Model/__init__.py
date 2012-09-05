@@ -943,7 +943,7 @@ class ObjectDefinition(object):
             string    -- Arbitary string that contains macros
             host_name -- Optionally supply host_name if this service does not define it
         Example:
-        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS')
+        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS$')
         '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
         """
         if not string:
@@ -965,7 +965,7 @@ class ObjectDefinition(object):
     def _get_command_macro(self, macroname):
         """Resolve any command argument ($ARG1$) macros from check_command"""
         # TODO: This function is incomplete and untested
-        a = self.__argument_macros
+        a = {}
         if a == {}:
             c = self['check_command'].split('!')
             c.pop(0) # First item is the command, we dont need it
@@ -1793,10 +1793,8 @@ string_to_class['command'] = Command
 
 
 if __name__ == '__main__':
-    #s = Service.objects.all
-    s = PerfData("'label this'=10m;10;-13.1;")
-    d = PerfData("label_that=10m;;;;")
-    k = PerfData(r"""'C:\'=30615760896B;500;50;0;52427898880""")
-    perfdata = process_perfdata(r"""'a=10 C:\ %'=42%;99;99 'C:\'=30617227264B;500;50;0;52427898880 'E:\ %'=83%;99;99 'E:\'=35152691200B;500;50;0;197562998784 'F:\ %'=40%;99;99 'F:\'=304405491712B;500;50;0;500073230336""")
-    s = Parsers.status()
-    s.parse()
+    o = Service.objects.all[17]
+    print o['__EXTRAOPTS']
+    print o.get_effective_command_line()
+    o['__EXTRAOPTS'] = "new value"
+    print o.get_effective_command_line()
