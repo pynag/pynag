@@ -1031,7 +1031,11 @@ class config:
         if not os.path.isfile(object_cache_file):
             return True
         object_cache_file = new_timestamps.pop(object_cache_file)
+        # Reload not needed if no object_cache file
+        if object_cache_file is None:
+            return False
         for k,v in new_timestamps.items():
+            if v is None: continue
             if int(v) > object_cache_file:
                 return True
         return False 
