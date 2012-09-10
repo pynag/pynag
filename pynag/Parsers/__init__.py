@@ -145,7 +145,10 @@ class config:
                 self.errors.append( ParserError(error_string,item=original_item) )
                 continue
             # Parent item probably has use flags on its own. So lets apply to parent first
-            parent_item = self._apply_template( parent_item )
+            try:
+                parent_item = self._apply_template( parent_item )
+            except RuntimeError, e:
+                self.errors.append( ParserError("Error while parsing item: %s (it might have circular use=)" % str(e), item=original_item) )
             parent_items.append( parent_item )
         for parent_item in parent_items:
             for k,v in parent_item.iteritems():
@@ -1027,16 +1030,15 @@ class config:
         for k,v in self.maincfg_values:
             if k == 'object_cache_file': object_cache_file = v
         if not object_cache_file:
-            return False
+            return True
         if not os.path.isfile(object_cache_file):
             return True
-        object_cache_file = new_timestamps.pop(object_cache_file)
+        object_cache_timestamp = new_timestamps.get(object_cache_file, 0)
         # Reload not needed if no object_cache file
         if object_cache_file is None:
             return False
         for k,v in new_timestamps.items():
-            if v is None: continue
-            if int(v) > object_cache_file:
+            if not v or int(v) > object_cache_file:
                 return True
         return False 
 
