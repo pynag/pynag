@@ -250,11 +250,11 @@ class ObjectRelations(object):
 
             # Loop through every subgroup and apply its attributes to ours
             for subgroup in subgroups:
-                for i in ObjectRelations.contactgroup_contacts[group]:
+                for i in ObjectRelations.contactgroup_contacts[subgroup]:
                     ObjectRelations.contact_contactgroups[i].add( group )
-                for i in ObjectRelations.contactgroup_hosts[group]:
+                for i in ObjectRelations.contactgroup_hosts[subgroup]:
                     ObjectRelations.host_contact_groups[i].add( group )
-                for i in ObjectRelations.contactgroup_services[group]:
+                for i in ObjectRelations.contactgroup_services[subgroup]:
                     ObjectRelations.service_contact_groups[i].add( group )
                 ObjectRelations.contactgroup_contacts[group].update( ObjectRelations.contactgroup_contacts[subgroup] )
                 ObjectRelations.contactgroup_hosts[group].update( ObjectRelations.contactgroup_hosts[subgroup] )
@@ -270,9 +270,9 @@ class ObjectRelations(object):
 
             # Loop through every subgroup and apply its attributes to ours
             for subgroup in subgroups:
-                for i in ObjectRelations.hostgroup_hosts[group]:
+                for i in ObjectRelations.hostgroup_hosts[subgroup]:
                     ObjectRelations.host_hostgroups[i].add( group )
-                for i in ObjectRelations.hostgroup_services[group]:
+                for i in ObjectRelations.hostgroup_services[subgroup]:
                     ObjectRelations.service_hostgroups[i].add( group )
                 ObjectRelations.hostgroup_hosts[group].update( ObjectRelations.hostgroup_hosts[subgroup] )
                 ObjectRelations.hostgroup_services[group].update( ObjectRelations.hostgroup_services[subgroup] )
@@ -1441,13 +1441,13 @@ class Contactgroup(ObjectDefinition):
     def get_effective_contactgroups(self):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_subgroups
+        list_of_shortnames = ObjectRelations.contactgroup_subgroups[self.contactgroup_name]
         return map( get_object, list_of_shortnames )
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_contact[self.contactgroup_name]
+        list_of_shortnames = ObjectRelations.contactgroup_contacts[self.contactgroup_name]
         return map( get_object, list_of_shortnames )
 
     def get_effective_hosts(self):
@@ -1495,7 +1495,7 @@ class Hostgroup(ObjectDefinition):
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.hostgroup_subgroups
+        list_of_shortnames = ObjectRelations.hostgroup_subgroups[self.hostgroup_name]
         return map( get_object, list_of_shortnames )
 
     def _do_relations(self):
@@ -1549,172 +1549,6 @@ class Status(object):
         self.long_plugin_output = self.status['long_plugin_output']
         self.current_state = self.status['current_state']
         self.perfdatalist = PerfData(self.perfdata)
-
-class CheckResult(object):
-    """ Contains Status for one specific pynag host or service """
-    plugin_output = ""
-    long_output = ""
-    performance_data = ""
-    current_state = ""
-    def __init__(self, objectdefinition):
-        pass
-
-class PerfData(object):
-    """ Data Structure for a nagios perfdata string with multiple perfdata metric
-
-    Example string:
-    >>> perf = PerfData("load1=10 load2=10 load3=20")
-    >>> for i in perf.metrics:
-    >>>     print i.label, i.value
-    """
-    def __init__(self, perfdatastring):
-        """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
-        import shlex
-        perfdata = shlex.split(perfdatastring)
-        self.metrics = []
-        self.invalid_metrics = []
-        for metric in perfdata:
-            try:
-                self.metrics.append( PerfDataMetric(metric) )
-            except Exception:
-                self.invalid_metrics.append( metric )
-    def is_valid(self):
-        """ Returns True if the every metric in the string is valid """
-        for i in self.metrics:
-            if not i.is_valid():
-                return False
-
-class PerfDataMetric(object):
-    """ Data structure for one single Nagios Perfdata Metric """
-    label = ""
-    value = ""
-    warn = ""
-    crit = ""
-    min = ""
-    max = ""
-    uom = ""
-    status = "ok"
-    def __repr__(self):
-        return "'%s'=%s%s;%s;%s;%s;%s" % (
-            self.label,
-            self.value,
-            self.uom,
-            self.warn,
-            self.crit,
-            self.min,
-            self.max,
-        )
-    def __str__(self):
-        return """
-            label: %s
-            value: %s %s
-            warning: %s
-            critical: %s
-            min: %s
-            max: %s
-            """ % (
-            self.label,
-            self.value,
-            self.uom,
-            self.warn,
-            self.crit,
-            self.min,
-            self.max,
-            )
-
-    def __init__(self, perfdatastring):
-        """
-        >>> p = PerfData(perdatastring="size=10M;20M;;;"
-        >>> print p.label
-        size
-        >>> print p.value
-        >>> 10
-        print p.value_unit
-        >>> M
-        """
-        # If label is single quoted, there might be any symbol in the label
-        # including other single quotes and the = sign. Therefore, we take special precautions if it is so
-        if perfdatastring.startswith("'"):
-            tmp = perfdatastring.split("'")
-            everything_but_label = tmp.pop()
-            tmp.pop(0)
-            label = "'".join(tmp)
-        else:
-            label, everything_but_label = perfdatastring.split('=', 1)
-        self.label = label
-
-        # Next split string into value;warning;critical;min;max
-        tmp = everything_but_label.split(';')
-        if len(tmp) > 0:
-            val = tmp.pop(0).strip('=')
-            self.value, self.uom = self.split_value_and_uom(val)
-        if len(tmp) > 0:
-            self.warn = tmp.pop(0)
-        if len(tmp) > 0:
-            self.crit = tmp.pop(0)
-        if len(tmp) > 0:
-            self.min = tmp.pop(0)
-        if len(tmp) > 0:
-            self.max = tmp.pop(0)
-        self.value = float(self.value)
-        import pynag.Plugins
-        status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
-        self.status = "unknown"
-        if status == 0:
-            self.status = "ok"
-        if status == 1:
-            self.status = "warning"
-        if status == 2:
-            self.status = "critical"
-
-
-    def is_valid(self):
-        """ Returns True if all Performance data is valid. Otherwise False """
-        try:
-            self.value == '' or float(self.value)
-        except ValueError:
-            return False
-        try:
-            self.min == '' or float(self.min)
-        except ValueError:
-            return False
-        try:
-            self.max == '' or float(self.max)
-        except ValueError:
-            return False
-        if self.label.find(' ') > -1 and not self.label.startswith("'") and not self.label.endswith("'"):
-            return False
-
-
-    def split_value_and_uom(self, value):
-        """ get value="10M" and return (10,"M")
-
-        >>> split_value_and_uom( "10" )
-        (10, '')
-        >>> split_value_and_uom( "10c" )
-        (10, 'c')
-        >>> split_value_and_uom( "10B" )
-        (10, 'B')
-        >>> split_value_and_uom( "10MB" )
-        (10, 'MB')
-        >>> split_value_and_uom( "10KB" )
-        (10, 'KB')
-        >>> split_value_and_uom( "10TB" )
-        (10, 'TB')
-        >>> split_value_and_uom( "10%" )
-        (10, '%')
-        >>> split_value_and_uom( "10s" )
-        (10, 's')
-        >>> split_value_and_uom( "10us" )
-        (10, 'us')
-        >>> split_value_and_uom( "10ms" )
-        (10, 'ms')
-        """
-        tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
-        if len(tmp) == 0:
-            return '',''
-        return tmp[0]
-
 
 class AttributeList(object):
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
