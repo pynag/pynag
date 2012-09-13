@@ -21,22 +21,23 @@
 
 import pynag.Model
 import pynag.Parsers
+import pynag.Utils
 
 from optparse import OptionParser
 
 import sys
+from pynag.Model import cfg_file
 
 usage = """usage: %prog <sub-command> [options] [arguments]
 
 Available subcommands:
-  list          List host/services, etc.
-  update        Update host/service etc.
-  add           Create a new object definition
-  copy          Copy a current object definition to a new one
-  delete        Delete a specific object definition
-  execute       Execute a check command for host/service
-  config-set    set a specific value for nagios.cfg
-  config-append append a specific value to nagios.cfg
+  list          List hosts, services, etc.
+  update        Update hosts, services, etc.
+  add           Create a new host, service, etc.
+  copy          Copy a current host, service, etc.
+  delete        Delete a host, service, etc.
+  execute       Execute a check command for host or service
+  config        View or edit values in your nagios.cfg
   
 For help on specific sub-command type:
  %prog <sub-command> --help
@@ -45,6 +46,9 @@ For help on specific sub-command type:
 parser = OptionParser(usage=usage)
 parser.add_option('--examples', dest="examples",
     default=False, action="store_true", help="Show example usage")
+parser.add_option('--cfg_file', dest="cfg_file",
+    default=None, help="Path to your nagios.cfg file")
+
 def parse_arguments():
     """ Parse command line arguments and run command specified commands """
     if len(sys.argv) < 2:
@@ -61,9 +65,8 @@ def parse_arguments():
         execute_check_command()
     elif sys.argv[1] == 'delete':
         delete_object()
-    elif sys.argv[1] == 'config-set':
-        main_config()
-    elif sys.argv[1] == 'config-append':
+    elif sys.argv[1] in ('config','config-set', 'config-append'):
+        # TODO: Deprecate config-set and config-append in 0.5.x series
         main_config()
     elif sys.argv[1] == "help":
         parser.print_help()
@@ -78,6 +81,7 @@ def execute_check_command():
     """ Execute a host or service check_command """
     parser.usage = '''%prog execute <host_name> [service_description]'''
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     try:
         if len(args) == 1:
             obj = pynag.Model.Host.objects.get_by_shortname(args[0])
@@ -129,30 +133,103 @@ def search_objects(search_statements):
 def main_config():
     """ Get or change a value in main configuration file """
     parser.add_option("--filename", dest="filename", 
-                      default=pynag.Model.cfg_file, help="Path to Nagios configuration file")
+                      default=None, help="Path to Nagios configuration file (deprecated, use --cfg_file)")
+    parser.add_option("--append", dest="append",
+        default=None, help="Append key=value pair to cfg file (example: cfg_file=/etc/nagios/myconfig.cfg)")
+    parser.add_option("--old_value", dest="old_value",
+        default=None, help="if specified, change only attributes that have this value set (by default change first occurance of key)")
+    parser.add_option("--set", dest="set",
+        default=None, help="Set key=value in cfg file (example: process_performance_data=1)")
+    parser.add_option("--remove", dest="remove",
+        default=None, help="Remove key=value in cfg file (example: cfg_file=/etc/nagios/myconfig.cfg)")
+    parser.add_option("--get", dest="get",
+        default=None, help="Print one specific value from your file")
     parser.add_option("--verbose", dest="verbose", action="store_true",
                       default=False,help="Increase verbosity")
     (opts,args) = parser.parse_args(sys.argv[1:])
-    attributes = {}
+    pynag.Model.cfg_file = opts.cfg_file
+
+    if opts.examples == True:
+        return print_examples()
+
+    # For backwards compatibility, let --filename act as --cfg_file if --cfg_file is not set
+    # If neither option is specified, cfg_file will be set to None which means auto-detect
+    # TODO: Deprecate --filename option in 0.5.x series
+    if not pynag.Model.cfg_file:
+        pynag.Model.cfg_file = opts.filename
+
+    if not opts.append and not opts.remove and not opts.set and not opts.get:
+        parser.error("Please specify at least one of --set --remove --get --append")
+
+    c = pynag.Parsers.config(cfg_file=pynag.Model.cfg_file)
+    c.parse()
+
+    # For backwards compatibility, lets accept config-set and config-append instead
     command = args.pop(0)
-    while len(args) > 0:
-        arg = args.pop(0)
-        tmp = arg.split('=',1)
-        if len(tmp) != 2: 
-            raise BaseException("attributes should be in the form of attribute=new_value for copy (got %s)" % arg )
-        attr,value = tmp
-        attributes[ attr ] = value
-    
-    # See if we are appending or replacing
-    if command == 'config-append': append = True
-    else: append = False
-    
-    c = pynag.Parsers.config()
-    
-    for k,v in attributes.items():
-        result = c._edit_static_file(filename=opts.filename, attribute=k, new_value=v, append=append)
-        if opts.verbose:
-            print "%s:%s changed: %s" % (opts.filename, k, result)
+    if command == 'config-append':
+        append = True
+    elif command == 'config-set':
+        append = False
+    if command in ('config-append','config-set'):
+        attributes = {}
+        while len(args) > 0:
+            arg = args.pop(0)
+            tmp = arg.split('=',1)
+            if len(tmp) != 2:
+                raise BaseException("attributes should be in the form of attribute=new_value for copy (got %s)" % arg )
+            attr,value = tmp
+            attributes[ attr ] = value
+        for k,v in attributes.items():
+            result = c._edit_static_file(attribute=k, new_value=v, old_value=opts.old_value, append=append)
+            if result:
+                print "%s: set %s=%s" % (c.cfg_file, k, result)
+            else:
+                print "%s: No changed were needed" % c.cfg_file
+        return
+
+
+    # Handle a --set operation
+    if opts.set is not None:
+        tmp = opts.set.split('=',1)
+        if len(tmp) != 2:
+            raise pynag.Utils.PynagError("attributes should be in the form of attribute=new_value (got %s)" % tmp)
+        k,v = tmp
+        result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=False)
+        if result:
+            print "%s: set %s=%s" % (c.cfg_file, k, v)
+        else:
+            print "%s: No changed were needed" % c.cfg_file
+
+    # Handle a --append operation
+    if opts.append is not None:
+        tmp = opts.append.split('=',1)
+        if len(tmp) != 2:
+            raise pynag.Utils.PynagError("attributes should be in the form of attribute=new_value (got %s)" % tmp)
+        k,v = tmp
+        result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=True)
+        if result:
+            print "%s: set %s=%s" % (c.cfg_file, k, v)
+        else:
+            print "%s: No changed were needed" % c.cfg_file
+    # Handle a remove operation
+    if opts.remove is not None:
+        result = c._edit_static_file(filename=c.cfg_file, attribute=opts.remove, new_value=None, old_value=opts.old_value, )
+        if result:
+            print "%s: %s was removed" % (c.cfg_file, k)
+        else:
+            print "%s: No changed were needed" % c.cfg_file
+    # Handle --get operation
+    if opts.get is not None:
+        found_some_attributes = False
+        for k,v in c.maincfg_values:
+            k = k.strip()
+            v = v.strip()
+            if k == opts.get:
+                found_some_attributes=True
+                print v
+        if not found_some_attributes:
+            print "no '%s=*' found in '%s'" % (opts.get, c.cfg_file)
+
 def list_objects():
     """ List nagios objects given a specified search filter """
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
@@ -161,6 +238,7 @@ def list_objects():
     parser.add_option("--width", dest="width", 
                       default=20, help="Column width in output (default 20)")
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
         return print_examples()
     objects = None
@@ -175,6 +253,7 @@ def list_objects():
             print i
     else:
         pretty_print(objects=objects, attributes=attributes,width=opts.width)
+
 def delete_object():
     """ Delete one specific nagios object """
     parser.usage = '''%prog delete <WHERE ...>'''
@@ -185,6 +264,7 @@ def delete_object():
     parser.add_option("--recursive", dest="recursive", action="store_true",
                       default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     objects = None
 
     attributes,where_statement=split_where_and_set(args)
@@ -206,6 +286,7 @@ def delete_object():
         except ValueError:
             print i.get_shortname(), "not found."
     print len(objects), "objects deleted"
+
 def add_object():
     parser.usage = ''' %prog add <object_type> <attr1=value1> [attr2=value2]'''
 
@@ -214,6 +295,7 @@ def add_object():
     parser.add_option("--filename", dest="filename",
                       help="Write to this specific file")
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     if len(args) == 0:
         parser.error("You need to specify object_type and attributes for add")
     attributes = {}
@@ -246,6 +328,7 @@ def copy_object():
     parser.add_option("--recursive", dest="recursive", action="store_true",
                       default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     set = {} # dict of which attributes to change
     attributes,where_statement=split_where_and_set(args)
     if len(where_statement) == 0:
@@ -283,6 +366,7 @@ def update_objects():
     parser.add_option("--force", dest="force", action="store_true",
                       default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
     set = {}
     attributes,where_statement=split_where_and_set(args)
     if len(where_statement) == 0:
@@ -338,6 +422,14 @@ def pretty_print(objects,width=40, attributes=None):
     print pre + message + post
     
 def update_many(objects, **kwargs):
+    """ Helper function to update many objects at once
+
+    Arguments:
+       objects -- List of pynag.Model.Objectdefinition
+       kwargs -- Arbitary list of arguments
+    Examples:
+      update_many(Service.objects.all, host_name="new_host_name", register="0")
+    """
     for i in objects:
         for attr,value in kwargs.items():
             i[attr] = value
@@ -388,6 +480,12 @@ examples['add'] = '''
 examples['delete'] = '''
   # %prog delete where object_type=service and host_name='mydeprecated_host'
   # %prog delete where filename__startswith='/etc/nagios/myoldhosts'
+'''
+examples['config'] = '''
+  # %prog config --set process_perfdata=1
+  # %prog config --append cfg_dir=/etc/nagios/conf.d
+  # %prog config --remove cfg_dir --old_value=/etc/nagios/conf.d
+  # %prog config --get object_cache_file
 '''
 examples['execute'] = '''
 # %prog execute localhost

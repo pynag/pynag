@@ -971,12 +971,21 @@ class config:
             _edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='check_external_commands', new_value='1')
             _edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='cfg_dir', new_value='/etc/nagios/okconfig', append=True)
         """
-        if filename is None: filename = self.cfg_file
-        if attribute in ('cfg_file','cfg_dir','broker_module'): append = True
+        if filename is None:
+            filename = self.cfg_file
+
+        # For some specific attributes, append should be implied
+        if attribute in ('cfg_file','cfg_dir','broker_module'):
+            append = True
+
+        # If/when we make a change, new_line is what will be written
         new_line = '%s=%s\n' % (attribute,new_value)
-        if new_value is None: new_line = ''
+
+        # new_value=None means line should be removed
+        if new_value is None:
+            new_line = ''
+
         write_buffer = open(filename).readlines()
-        need_to_write = True # False if there is no need to overwrite file
         is_dirty = False # dirty if we make any changes
         for i,line in enumerate(write_buffer):
             ## Strip out new line characters
@@ -992,33 +1001,39 @@ class config:
             key, value = line.split("=", 1)
             key = key.strip()
             value = value.strip()
-            if key == attribute and value == old_value:
+
+            # If key does not match, we are not interested in this line
+            if key != attribute:
+                continue
+
+            # If old_value was specified, and it matches, dont have to look any further
+            elif value == old_value:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-            elif key == attribute and value == new_value:
-                # New value is the same as current value
-                need_to_write = False
-                break
+            # if current value is the same as new_value, no need to make changes
+            elif value == new_value:
+                return False
             # Special so cfg_dir matches despite double-slashes, etc
             elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
-                need_to_write = False
-                break
-            elif key == attribute and append is False and old_value is not None:
+                return False
+            # We are not appending, and no old value was specified:
+            elif append == False and not old_value:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-        if need_to_write is False:
-            return False
-        if is_dirty is True:
+        if is_dirty == False:
+            # If we get here, it means we read the whole file,
+            # and we have not yet made any changes, So we assume
+            # We should append to the file
+            write_buffer.append(new_line)
+            is_dirty = True
+        # When we get down here, it is time to write changes to file
+        if is_dirty == True:
             open(filename,'w').write(''.join(write_buffer))
             return True
-        # If old_value was specifically mentioned. Then it should have been handled by now.
-        # If no old_value is specified we append to file
-        if old_value is None:
-            open(filename,'a').write('\n%s    ' % new_line)
-            return True
-        return False
+        else:
+            return False
 
     def needs_reload(self):
         """Returns True if Nagios service needs reload of cfg files
@@ -1474,6 +1489,6 @@ class ParserError(Exception):
 
 
 if __name__ == '__main__':
-    s = status()
-    s.parse()
+    c = config()
+    print c._edit_static_file('test','new_value')
 
