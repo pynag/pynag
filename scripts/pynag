@@ -38,9 +38,11 @@ Available subcommands:
   delete        Delete a host, service, etc.
   execute       Execute a check command for host or service
   config        View or edit values in your nagios.cfg
-  
+
+See "man pynag" for examples and clarification of "where" syntax.
+
 For help on specific sub-command type:
- %prog <sub-command> --help
+ %prog <sub-command> --help (or --examples)
 """
 
 parser = OptionParser(usage=usage)
@@ -132,6 +134,7 @@ def search_objects(search_statements):
 
 def main_config():
     """ Get or change a value in main configuration file """
+    parser.usage = '''%prog config <--set|--append|--remove|--get> <attribute[=new_value]> [OPTIONS]'''
     parser.add_option("--filename", dest="filename", 
                       default=None, help="Path to Nagios configuration file (deprecated, use --cfg_file)")
     parser.add_option("--append", dest="append",
@@ -269,6 +272,9 @@ def delete_object():
 
     attributes,where_statement=split_where_and_set(args)
     objects = search_objects(search_statements=where_statement)
+
+    if len(where_statement) == 0:
+        parser.error("Refusing to update every object. Please trim down the selection with a WHERE statement")
 
     if objects is None:
         parser.error('Refusing to delete every object. Please trim down the selection with a WHERE statement')

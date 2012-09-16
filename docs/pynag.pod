@@ -49,17 +49,15 @@ Executes the currently configured check command for a host or a service
 
 	pynag execute <host_name> [service_description]
 	
-=head2 config-set
+=head2 config
 
-set a specific value for nagios.cfg
+modify values in main nagios configuration file (nagios.cfg)
 
-	pynag config-set <attr=value> [--filename=/etc/nagios/nagios.cfg]
+	pynag config [--set <attribute=value>] [--old_value=attribute]
+	pynag config [--append <attribute=value>] [--old_value=attribute]
+	pynag config [--remove <attribute>] [--old_value=attribute]
+	pynag config [--get <attribute>] 
 
-=head2 config-append
-
-Add a specific attribute to nagios.cfg
-
-	pynag config-append <attr=value> [--filename=/etc/nagios/nagios.cfg]
 
 =head1 WHERE statements
 
