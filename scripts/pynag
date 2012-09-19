@@ -87,27 +87,49 @@ def execute_check_command():
     parser.usage = '''%prog execute <host_name> [service_description]'''
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+    if len(args) not in [1,2]:
+        parser.error("You need to provide at least one argument to execute")
+
     try:
-        if len(args) == 1:
-            obj = pynag.Model.Host.objects.get_by_shortname(args[0])
-        elif len(args) == 2:
-            host_name = args[0]
-            service_description = args[1]
-            obj = pynag.Model.Service.objects.get_by_shortname("%s/%s" % (host_name,service_description) )
-        else:
-            parser.error("You need to provide at least one argument to execute")
-        print "# %s" %(obj.get_effective_command_line())
-        exit_code,stdout,stderr = obj.run_check_command()
-        print stdout,
-        if stderr != '':
-            print ""
-            print "----- errors -------"
-            print stderr,
-            print "--------------------"
-        print ""
-        print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
+        host = pynag.Model.Host.objects.get_by_shortname(args[0])
     except KeyError, e:
-        parser.error("Could not find host or service %s" % e)
+        parser.error("Could not find host: %s" % e)
+
+    if len(args) == 1:
+        obj = host
+    elif len(args) == 2:
+        # Service name given, we'll want to execute a service check, not a host check.
+        host_name = args[0]
+        service_description = args[1]
+        objects = pynag.Model.ObjectDefinition.objects.filter(object_type="service", host_name=host_name)
+
+        groups = host.hostgroups.split(',')
+        if groups:
+            conditions = []
+            for group in groups[:-1]:
+                conditions.append("object_type=service")
+                conditions.append("and")  # the "or" forgets all the previous conditions
+                conditions.append("hostgroup_name=%s" % group)
+                conditions.append("or")
+            conditions.append("object_type=service")
+            conditions.append("and")  # the "or" forgets all the previous conditions
+            conditions.append("hostgroup_name=%s" % groups[-1])
+            objects += search_objects(conditions)
+        objs = filter(lambda x: x.service_description == service_description, objects)
+        if not objs:
+            parser.error("Could not find service %s for host %s" % (service_description, host_name))
+        obj = objs[0]
+
+    print "# %s" %(obj.get_effective_command_line())
+    exit_code,stdout,stderr = obj.run_check_command()
+    print stdout,
+    if stderr != '':
+        print ""
+        print "----- errors -------"
+        print stderr,
+        print "--------------------"
+    print ""
+    print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
 
 def search_objects(search_statements):
     """ takes a list of search statements, returns list of ObjectDefinition that matches the filter.
