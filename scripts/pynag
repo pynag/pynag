@@ -95,11 +95,12 @@ def execute_check_command():
     except KeyError, e:
         parser.error("Could not find host: %s" % e)
 
+    host_name = args[0]
+
     if len(args) == 1:
         obj = host
     elif len(args) == 2:
         # Service name given, we'll want to execute a service check, not a host check.
-        host_name = args[0]
         service_description = args[1]
         objects = pynag.Model.ObjectDefinition.objects.filter(object_type="service", host_name=host_name)
 
@@ -120,8 +121,8 @@ def execute_check_command():
             parser.error("Could not find service %s for host %s" % (service_description, host_name))
         obj = objs[0]
 
-    print "# %s" %(obj.get_effective_command_line())
-    exit_code,stdout,stderr = obj.run_check_command()
+    print "# %s" %(obj.get_effective_command_line(host_name=host_name))
+    exit_code,stdout,stderr = obj.run_check_command(host_name=host_name)
     print stdout,
     if stderr != '':
         print ""
