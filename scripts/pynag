@@ -117,8 +117,7 @@ def search_objects(search_statements):
     conditions = {}
     objects = []
     statements = search_statements
-    while len(statements) > 0:
-        statement = statements.pop(0)
+    for statement in search_statements:
         tmp = statement.split('=',1)
         if statement.lower() == 'and': continue
         if statement.lower() == 'or':
