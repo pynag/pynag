@@ -19,15 +19,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import sys
+import traceback
+from optparse import OptionParser
+
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
-
-from optparse import OptionParser
-
-import sys
 from pynag.Model import cfg_file
 
+debug = False
 usage = """usage: %prog <sub-command> [options] [arguments]
 
 Available subcommands:
@@ -48,6 +49,8 @@ For help on specific sub-command type:
 parser = OptionParser(usage=usage)
 parser.add_option('--examples', dest="examples",
     default=False, action="store_true", help="Show example usage")
+parser.add_option('--debug', dest="debug",
+    default=False, action="store_true", help="Print debug information to screen")
 parser.add_option('--cfg_file', dest="cfg_file",
     default=None, help="Path to your nagios.cfg file")
 
@@ -519,4 +522,15 @@ def print_examples():
     sys.exit()
 
 if __name__ == '__main__':
-    parse_arguments()
+    # since optparse runs inside various places, a quick hack to enable --debug globally
+    # TODO: Put all optparsing inside to a single function.
+    if "--debug" in sys.argv:
+        debug = True
+    try:
+        parse_arguments()
+    except Exception, e:
+        print "Error occured, use --debug to see full traceback:"
+        print ""
+        print "%s: %s" % (e.__class__.__name__, e)
+        if debug:
+            traceback.print_exc(file=sys.stdout)
