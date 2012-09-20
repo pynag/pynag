@@ -1204,7 +1204,11 @@ class Host(ObjectDefinition):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
         list_of_shortnames = ObjectRelations.host_services[self.host_name]
-        return map( get_object, list_of_shortnames )
+        services = map( get_object, list_of_shortnames )
+        # Look for services that define hostgroup_name that we belong to
+        for hg in self.get_effective_hostgroups():
+            services += hg.get_effective_services()
+        return services
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Host """
@@ -1336,7 +1340,10 @@ class Service(ObjectDefinition):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.service_hosts[ self.get_id() ]
-        return map( get_object, list_of_shortnames )
+        hosts = map( get_object, list_of_shortnames )
+        for hg in self.get_effective_hostgroups():
+            hosts += hg.get_effective_hosts()
+        return hosts
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Service """

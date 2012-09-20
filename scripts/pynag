@@ -88,16 +88,24 @@ def execute_check_command():
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     try:
-        if len(args) == 1:
-            obj = pynag.Model.Host.objects.get_by_shortname(args[0])
-        elif len(args) == 2:
-            host_name = args[0]
-            service_description = args[1]
-            obj = pynag.Model.Service.objects.get_by_shortname("%s/%s" % (host_name,service_description) )
-        else:
+        if len(args) == 0:
             parser.error("You need to provide at least one argument to execute")
+        host_name = args[0]
+        host = pynag.Model.Host.objects.get_by_shortname(host_name)
+        if len(args) == 1:
+            obj = host
+        else:
+            host_name = args[0]
+            service_description = " ".join(args[1:])
+            for i in host.get_effective_services():
+                if i.service_description == service_description:
+                    obj = i
+                    break
+            else:
+                raise pynag.Utils.PynagError("Host %s does not seem to have any service named '%s'" % (host_name,service_description))
+
         print "# %s" %(obj.get_effective_command_line())
-        exit_code,stdout,stderr = obj.run_check_command()
+        exit_code,stdout,stderr = obj.run_check_command(host_name=host_name)
         print stdout,
         if stderr != '':
             print ""
@@ -107,7 +115,7 @@ def execute_check_command():
         print ""
         print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
     except KeyError, e:
-        parser.error("Could not find host or service %s" % e)
+        parser.error("Could not find host '%s'" % e)
 
 def search_objects(search_statements):
     """ takes a list of search statements, returns list of ObjectDefinition that matches the filter.
