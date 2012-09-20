@@ -445,7 +445,7 @@ class ObjectFetcher(object):
                 if k.endswith('__exists'):
                     k = k[:-len('__exists')]
                     object_matches = str(i.has_key(k)) == str(v)
-                    break
+                    continue
                 elif k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
@@ -455,8 +455,7 @@ class ObjectFetcher(object):
                 elif k.endswith('__isnot'):
                     k = k[:-7]
                     object_matches = str(i[k]) != str(v)
-                    break
-                    match_function = str.__ne__
+                    continue
                 elif k.endswith('__contains'):
                     k = k[:-10]
                     match_function = contains
@@ -468,8 +467,10 @@ class ObjectFetcher(object):
                     match_function = not_contains
                 else:
                     match_function = str.__eq__
-                if k == 'id' and str(v) == str(i.get_id()):
-                    object_matches = True
+                if object_matches == False:
+                    break
+                if k == 'id' and str(v) != str(i.get_id()):
+                    object_matches = False
                     break
                 if k == 'register' and v == '1' and not i.has_key(k):
                     # not defined means item is registered
