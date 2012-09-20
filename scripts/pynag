@@ -27,6 +27,7 @@ import pynag.Model
 import pynag.Parsers
 import pynag.Utils
 from pynag.Model import cfg_file
+from pynag import __version__
 
 debug = False
 usage = """usage: %prog <sub-command> [options] [arguments]
@@ -39,6 +40,7 @@ Available subcommands:
   delete        Delete a host, service, etc.
   execute       Execute a check command for host or service
   config        View or edit values in your nagios.cfg
+  version       Output version information and exit
 
 See "man pynag" for examples and clarification of "where" syntax.
 
@@ -77,8 +79,10 @@ def parse_arguments():
         parser.print_help()
     elif sys.argv[1] == "--help":
         parser.print_help()
-    elif sys.argv[1] == '--examples':
+    elif sys.argv[1] in ('--examples','examples'):
         print_examples()
+    elif sys.argv[1] in ('version','--version'):
+        print __version__
     else:
         parser.error("Unknown sub-command '%s'" % sys.argv[1])
 
