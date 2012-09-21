@@ -215,6 +215,10 @@ class ObjectRelations(object):
     # contactgroup_subgroups['contactgroup_name'] = ['group1_name','group2_name']
     contactgroup_subgroups = defaultdict(set)
 
+    # hostgroup_subgroups['hostgroup_name'] = ['group1_name','group2_name']
+    hostgroup_subgroups = defaultdict(set)
+
+
     @staticmethod
     def reset():
         """ Runs clear() on every member attribute in ObjectRelations """
