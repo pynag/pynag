@@ -108,7 +108,7 @@ def execute_check_command():
             else:
                 raise pynag.Utils.PynagError("Host %s does not seem to have any service named '%s'" % (host_name,service_description))
 
-        print "# %s" %(obj.get_effective_command_line())
+        print "# %s" %(obj.get_effective_command_line(host_name=host_name))
         exit_code,stdout,stderr = obj.run_check_command(host_name=host_name)
         print stdout,
         if stderr != '':
