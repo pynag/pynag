@@ -32,7 +32,7 @@ Install latest git repository from source:
     git clone https://github.com/pynag/pynag.git
     cd pynag
     python setup.py build
-    python setup.py instal
+    python setup.py install
 
 Getting started
 ===============
