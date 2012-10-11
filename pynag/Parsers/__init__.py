@@ -1305,6 +1305,22 @@ class config:
                             cfg_files.append(raw_file)
 
         return cfg_files
+    def get_cfg_value(self, key):
+        """ Returns one specific value from your nagios.cfg file, None if value is not found.
+          Arguments:
+            key - what attribute to fetch from nagios.cfg (example: "command_file" )
+          Returns:
+            String of the first value found for
+          Example:
+            >>> get_cfg_value('log_file')
+            "log_file=/var/log/nagios3/nagios.log"
+        """
+        if self.maincfg_values == []:
+            self.maincfg_values = self._load_static_file(self.cfg_file)
+        for k,v in self.maincfg_values:
+            if k == key:
+                return v
+        return None
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
