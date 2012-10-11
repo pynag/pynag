@@ -82,6 +82,7 @@ work just fine:
 	pynag list WHERE host_name__startswith=prod
 	pynag list WHERE host_name__notcontains=test
 	pynag list host_name address WHERE address__exists=True
+	pynag list host_name WHERE register__isnot=0
 
 
 The pynag filter supports few parameters that are not just attributes. Example:
