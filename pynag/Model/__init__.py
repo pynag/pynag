@@ -44,6 +44,8 @@ import re
 import subprocess
 
 from pynag import Parsers
+from pynag import Control
+import pynag.Control.Command
 from macros import _standard_macros
 import all_attributes
 
@@ -1203,7 +1205,16 @@ class ObjectDefinition(object):
 class Host(ObjectDefinition):
     object_type = 'host'
     objects = ObjectFetcher('host')
-
+    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',timestamp=0):
+        pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
+            sticky=sticky,
+            notify=notify,
+            persistent=persistent,
+            author=author,
+            comment=comment,
+            timestamp=0,
+            command_file=config.get_cfg_value('command_file')
+        )
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
@@ -1339,7 +1350,17 @@ class Service(ObjectDefinition):
         for i in hosts.fields:
             ObjectRelations.service_hosts[ self.get_id() ].add( i )
             ObjectRelations.host_services[ i ].add( self.get_id() )
-
+    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',timestamp=0):
+        pynag.Control.Command.acknowledge_svc_problem(host_name=self.host_name,
+            service_description=self.service_description,
+            sticky=sticky,
+            notify=notify,
+            persistent=persistent,
+            author=author,
+            comment=comment,
+            timestamp=0,
+            command_file=config.get_cfg_value('command_file')
+        )
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x)

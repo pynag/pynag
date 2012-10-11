@@ -40,6 +40,7 @@ Available subcommands:
   delete        Delete a host, service, etc.
   execute       Execute a check command for host or service
   config        View or edit values in your nagios.cfg
+  acknowledge   Acknowledge host/service problems
   version       Output version information and exit
 
 See "man pynag" for examples and clarification of "where" syntax.
@@ -72,6 +73,8 @@ def parse_arguments():
         execute_check_command()
     elif sys.argv[1] == 'delete':
         delete_object()
+    elif sys.argv[1] == 'acknowledge':
+        acknowledge()
     elif sys.argv[1] in ('config','config-set', 'config-append'):
         # TODO: Deprecate config-set and config-append in 0.5.x series
         main_config()
@@ -339,14 +342,53 @@ def add_object():
         print "# This is what actual statement looks like"
         print obj
 
+def acknowledge():
+    parser.usage = ''' %prog acknowledge < HOST [SERVICE] | WHERE ... > '''
+    parser.add_option("--comment", dest="comment",
+        default="Acknowledged with pynag",help="Comment to put on the acknowledgement")
+    parser.add_option("--author", dest="author",
+        default="pynag",help="Author to put on the acknowledgement")
+    parser.add_option("--timestamp", dest="ts",
+        default="0",help="Timestamp of the acknowledgement (default: now)")
+    (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
+    objects =[]
+    if opts.examples == True:
+        return print_examples()
+    if len(args) == 0:
+        parser.error('No hosts or services specified.')
+    elif 'where' in str(args).lower():
+        attributes,where_statement=split_where_and_set(args)
+        objects = search_objects(search_statements=where_statement)
+    elif len(args) == 1:
+        objects = pynag.Model.ObjectDefinition.objects.filter(host_name=args[0])
+    elif len(args) == 2:
+        objects = pynag.Model.ObjectDefinition.objects.filter(host_name=args[0],service_description=args[1])
+    else:
+        parser.error('Invalid number of attributes specified')
+
+    for i in objects:
+        if i.object_type not in ('host','service') or i.register == '0':
+            objects.remove(i)
+
+    # Here we actually ack the objects
+    pretty_print(objects)
+    answer = raw_input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
+    if answer.lower() not in ('y', 'yes'):
+        return
+
+    for i in objects:
+        print "Acknowledge %s: %s" % (i.object_type,i.get_shortname())
+        i.acknowledge(comment=opts.comment,author=opts.author,timestamp=opts.ts)
+
 def copy_object():
     parser.usage = ''' %prog copy <SET attr1=value1 [attr2=val2]> <WHERE ...> [--filename /path/to/file] '''
     parser.add_option("--verbose", dest="verbose", action="store_true",
-                      default=False,help="Increase verbosity")
+        default=False,help="Increase verbosity")
     parser.add_option("--filename", dest="filename",
-                      help="Write to this specific file")
+        help="Write to this specific file")
     parser.add_option("--recursive", dest="recursive", action="store_true",
-                      default=False,help="Recursively apply to related child objects")
+        default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     set = {} # dict of which attributes to change
@@ -500,6 +542,10 @@ examples['add'] = '''
 examples['delete'] = '''
   # %prog delete where object_type=service and host_name='mydeprecated_host'
   # %prog delete where filename__startswith='/etc/nagios/myoldhosts'
+'''
+examples['acknowledge'] = '''
+  # %prog acknowledge localhost "Disk Usage" --comment "Freeing up some space" --author "admin" '
+  # %prog acknowledge where service_description__contains=vmware --comment "Bulk ack on all vmware checks" '
 '''
 examples['config'] = '''
   # %prog config --set process_perfdata=1
