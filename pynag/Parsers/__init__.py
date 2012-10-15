@@ -1053,7 +1053,7 @@ class config:
         if object_cache_file is None:
             return False
         for k,v in new_timestamps.items():
-            if not v or int(v) > object_cache_file:
+            if not v or int(v) > object_cache_timestamp:
                 return True
         return False 
 
