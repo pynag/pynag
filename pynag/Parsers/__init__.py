@@ -89,6 +89,17 @@ class config:
         """
         return 'use' in target
 
+    def _get_pid(self):
+        """
+        Checks the lock_file var in nagios.cfg and returns the pid from the file
+
+        If the pid file does not exist, returns None.
+        """
+        try:
+            return open(self.get_cfg_value('lock_file'), "r").readline().strip()
+        except IOError:
+            return None
+
     def _get_hostgroup(self, hostgroup_name):
         return self.data['all_hostgroup'].get(hostgroup_name, None)
 
@@ -1055,8 +1066,7 @@ class config:
         for k,v in new_timestamps.items():
             if not v or int(v) > object_cache_timestamp:
                 return True
-        return False 
-
+        return False
     def needs_reparse(self):
         """Returns True if any Nagios configuration file has changed since last parse()"""
         # If Parse has never been run:
