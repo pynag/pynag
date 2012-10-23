@@ -25,7 +25,7 @@ that are used throughout the pynag library.
 
 """
 import subprocess
-
+import re
 
 class PynagError(Exception):
     """ The default pynag exception.
@@ -193,7 +193,7 @@ class PerfData(object):
         self.invalid_metrics = []
         for metric in perfdata:
             try:
-                self.add_perfdatametric( PerfDataMetric(metric) )
+                self.add_perfdatametric( metric )
             except Exception:
                 self.invalid_metrics.append( metric )
     def is_valid(self):
@@ -210,6 +210,9 @@ class PerfData(object):
         """
         metric=PerfDataMetric(perfdatastring=perfdatastring, label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
         self.metrics.append(  metric )
+    def __str__(self):
+        metrics = map(lambda x: x.__str__(), self.metrics)
+        return ' '.join(metrics)
 
 class PerfDataMetric(object):
     """ Data structure for one single Nagios Perfdata Metric """
