@@ -99,7 +99,7 @@ class config:
         """
         try:
             return open(self.get_cfg_value('lock_file'), "r").readline().strip()
-        except IOError:
+        except Exception:
             return None
 
     def _get_hostgroup(self, hostgroup_name):
