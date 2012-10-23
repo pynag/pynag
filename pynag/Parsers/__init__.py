@@ -39,6 +39,8 @@ class config:
         if self.cfg_file is None:
             self.cfg_file = self.guess_cfg_file()
         self.data = {}
+        self.maincfg_values = []
+
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 
