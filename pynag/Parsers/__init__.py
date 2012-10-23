@@ -1051,12 +1051,13 @@ class config:
     def needs_reload(self):
         """Returns True if Nagios service needs reload of cfg files
 
-        Returns True also if nagios is not running.
+        Returns False if reload not needed or Nagios is not running
         """
         new_timestamps = self.get_timestamps()
-        object_cache_file = None
-        for k,v in self.maincfg_values:
-            if k == 'object_cache_file': object_cache_file = v
+        object_cache_file = self.get_cfg_value('object_cache_file')
+
+        if self._get_pid() is None:
+            return False
         if not object_cache_file:
             return True
         if not os.path.isfile(object_cache_file):
