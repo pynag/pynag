@@ -39,6 +39,8 @@ if __name__ == "__main__":
             'pynag.Parsers',
             'pynag.Control',
             'pynag.Utils',
+            'pynag.Control',
+            'pynag.Control.Command',
         ],
           data_files = [(manpath, [
         'docs/pynag.1.gz',

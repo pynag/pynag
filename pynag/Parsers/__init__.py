@@ -39,6 +39,8 @@ class config:
         if self.cfg_file is None:
             self.cfg_file = self.guess_cfg_file()
         self.data = {}
+        self.maincfg_values = []
+
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 
@@ -88,6 +90,17 @@ class config:
         Determine if an item has a template associated with it
         """
         return 'use' in target
+
+    def _get_pid(self):
+        """
+        Checks the lock_file var in nagios.cfg and returns the pid from the file
+
+        If the pid file does not exist, returns None.
+        """
+        try:
+            return open(self.get_cfg_value('lock_file'), "r").readline().strip()
+        except IOError:
+            return None
 
     def _get_hostgroup(self, hostgroup_name):
         return self.data['all_hostgroup'].get(hostgroup_name, None)
@@ -1038,12 +1051,13 @@ class config:
     def needs_reload(self):
         """Returns True if Nagios service needs reload of cfg files
 
-        Returns True also if nagios is not running.
+        Returns False if reload not needed or Nagios is not running
         """
         new_timestamps = self.get_timestamps()
-        object_cache_file = None
-        for k,v in self.maincfg_values:
-            if k == 'object_cache_file': object_cache_file = v
+        object_cache_file = self.get_cfg_value('object_cache_file')
+
+        if not self._get_pid():
+            return False
         if not object_cache_file:
             return True
         if not os.path.isfile(object_cache_file):
@@ -1055,8 +1069,7 @@ class config:
         for k,v in new_timestamps.items():
             if not v or int(v) > object_cache_timestamp:
                 return True
-        return False 
-
+        return False
     def needs_reparse(self):
         """Returns True if any Nagios configuration file has changed since last parse()"""
         # If Parse has never been run:
