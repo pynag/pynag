@@ -182,12 +182,12 @@ class simple:
         warning = self.data['warning']
         self.hr_range = ""
 
-        if critical and self._range_checker(value, critical):
-            self.add_message(CRITICAL,"%s is within critical range: %s" % (value, critical))
-        elif warning and self._range_checker(value, warning):
-            self.add_message(WARNING,"%s is within warning range: %s" % (value, warning))
+        if critical and not self._range_checker(value, critical):
+            self.add_message(CRITICAL,"%s is outside critical range: %s" % (value, critical))
+        elif warning and not self._range_checker(value, warning):
+            self.add_message(WARNING,"%s is outside warning range: %s" % (value, warning))
         else:
-            self.add_message(OK,"%s is outside warning=%s and critical=%s" % (value, warning, critical))
+            self.add_message(OK,"%s is inside warning=%s and critical=%s" % (value, warning, critical))
 
         # Get all messages appended and exit code
         (code, message) = self.check_messages()
