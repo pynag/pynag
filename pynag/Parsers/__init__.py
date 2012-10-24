@@ -1056,7 +1056,7 @@ class config:
         new_timestamps = self.get_timestamps()
         object_cache_file = self.get_cfg_value('object_cache_file')
 
-        if not self._get_pid():
+        if self._get_pid() is None:
             return False
         if not object_cache_file:
             return True
