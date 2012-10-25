@@ -132,6 +132,9 @@ class simple:
 
         if self.must_threshold == True and not options.critical and not options.warning:
             self.parser.error("You must provide a WARNING and/or CRITICAL value")
+        else:
+            options.critical = None
+            options.warning = None
 
         ## Set Critical
         if options.critical:
