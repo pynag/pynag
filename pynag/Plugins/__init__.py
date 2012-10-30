@@ -26,7 +26,6 @@ import os
 import re
 from platform import node
 from optparse import OptionParser
-from popen2 import Popen3
 
 
 # Map the return codes
@@ -133,6 +132,9 @@ class simple:
 
         if self.must_threshold == True and not options.critical and not options.warning:
             self.parser.error("You must provide a WARNING and/or CRITICAL value")
+        else:
+            options.critical = None
+            options.warning = None
 
         ## Set Critical
         if options.critical:
@@ -183,12 +185,12 @@ class simple:
         warning = self.data['warning']
         self.hr_range = ""
 
-        if critical and self._range_checker(value, critical):
-            self.add_message(CRITICAL,"%s is within critical range: %s" % (value, critical))
-        elif warning and self._range_checker(value, warning):
-            self.add_message(WARNING,"%s is within warning range: %s" % (value, warning))
+        if critical and not self._range_checker(value, critical):
+            self.add_message(CRITICAL,"%s is outside critical range: %s" % (value, critical))
+        elif warning and not self._range_checker(value, warning):
+            self.add_message(WARNING,"%s is outside warning range: %s" % (value, warning))
         else:
-            self.add_message(OK,"%s is outside warning=%s and critical=%s" % (value, warning, critical))
+            self.add_message(OK,"%s is inside warning=%s and critical=%s" % (value, warning, critical))
 
         # Get all messages appended and exit code
         (code, message) = self.check_messages()
@@ -206,6 +208,7 @@ class simple:
         """
     
         # Execute send_nsca
+        from popen2 import Popen3
         command = "send_nsca -H %s" % ncsahost
         p = Popen3(command,  capturestderr=True)
 
@@ -376,9 +379,9 @@ def check_threshold(value, warning=None, critical=None):
     >>> check_threshold(96, warning="90:", critical="95:")
     2
     """
-    if critical and check_range(value, critical):
+    if critical and not check_range(value, critical):
         return CRITICAL
-    elif warning and check_range(value, warning):
+    elif warning and not check_range(value, warning):
         return WARNING
     else:
         return OK
@@ -394,8 +397,8 @@ def check_range(value, range_threshold=None):
         value -- Numerical value to check (i.e. 70 )
         range -- Range to compare against (i.e. 0:90 )
     Returns:
-        True  -- If value is inside the range (alert if this happens)
-        False -- If value is outside the range
+        True  -- If value is inside the range
+        False -- If value is outside the range (alert if this happens)
 
     Summary from plugin developer guidelines:
     ---------------------------------------------------------
@@ -410,9 +413,9 @@ def check_range(value, range_threshold=None):
     ---------------------------------------------------------
 
 
-    # Example runs for doctest, True should mean alert
-    >>> check_range(78, "90:") # Example disk is 78% full, threshold is 90
-    False
+    # Example runs for doctest, False should mean alert
+    >>> check_range(78, "90") # Example disk is 78% full, threshold is 90
+    True
     >>> check_range(5, 10) # Everything between 0 and 10 is True
     True
     >>> check_range(0, 10) # Everything between 0 and 10 is True

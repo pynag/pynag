@@ -20,7 +20,6 @@
 import os
 import re
 import time
-from collections import defaultdict
 
 
 def debug(text):
@@ -40,6 +39,8 @@ class config:
         if self.cfg_file is None:
             self.cfg_file = self.guess_cfg_file()
         self.data = {}
+        self.maincfg_values = []
+
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 
@@ -89,6 +90,17 @@ class config:
         Determine if an item has a template associated with it
         """
         return 'use' in target
+
+    def _get_pid(self):
+        """
+        Checks the lock_file var in nagios.cfg and returns the pid from the file
+
+        If the pid file does not exist, returns None.
+        """
+        try:
+            return open(self.get_cfg_value('lock_file'), "r").readline().strip()
+        except Exception:
+            return None
 
     def _get_hostgroup(self, hostgroup_name):
         return self.data['all_hostgroup'].get(hostgroup_name, None)
@@ -146,7 +158,10 @@ class config:
                 self.errors.append( ParserError(error_string,item=original_item) )
                 continue
             # Parent item probably has use flags on its own. So lets apply to parent first
-            parent_item = self._apply_template( parent_item )
+            try:
+                parent_item = self._apply_template( parent_item )
+            except RuntimeError, e:
+                self.errors.append( ParserError("Error while parsing item: %s (it might have circular use=)" % str(e), item=original_item) )
             parent_items.append( parent_item )
         for parent_item in parent_items:
             for k,v in parent_item.iteritems():
@@ -190,7 +205,7 @@ class config:
         current['meta']['delete_me'] = None
         current['meta']['defined_attributes'] = {}
         current['meta']['inherited_attributes'] = {}
-        current['meta']['raw_definition'] = ""
+        current['meta']['raw_definition'] = "define %s {\n\n}" % object_type
         return current
 
     def _load_file(self, filename):
@@ -200,7 +215,7 @@ class config:
         in_definition = {}
         tmp_buffer = []
 
-        for line in open(filename, 'rb').readlines():
+        for line_num, line in enumerate( open(filename, 'rb').readlines() ):
 
             ## Cleanup and line skips
             line = line.strip()
@@ -221,6 +236,7 @@ class config:
             if line.find("}") != -1:
 
                 in_definition = None
+                current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
                 rest = line.split("}", 1)[1]
                 
@@ -242,6 +258,7 @@ class config:
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
                 current = self.get_new_item(object_type, filename)
+                current['meta']['line_start'] = line_num
 
                 if in_definition:
                     raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
@@ -948,7 +965,11 @@ class config:
             ## Skip comments
             if line[0] == "#" or line[0] == ';':
                 continue
-            key, value = line.split("=", 1)
+            tmp = line.split("=", 1)
+            if len(tmp) < 2: continue
+            key, value = tmp
+            key = key.strip()
+            value = value.strip()
             result.append( (key, value) )
         return result
 
@@ -965,12 +986,21 @@ class config:
             _edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='check_external_commands', new_value='1')
             _edit_static_file(filename='/etc/nagios/nagios.cfg', attribute='cfg_dir', new_value='/etc/nagios/okconfig', append=True)
         """
-        if filename is None: filename = self.cfg_file
-        if attribute in ('cfg_file','cfg_dir','broker_module'): append = True
+        if filename is None:
+            filename = self.cfg_file
+
+        # For some specific attributes, append should be implied
+        if attribute in ('cfg_file','cfg_dir','broker_module'):
+            append = True
+
+        # If/when we make a change, new_line is what will be written
         new_line = '%s=%s\n' % (attribute,new_value)
-        if new_value is None: new_line = ''
+
+        # new_value=None means line should be removed
+        if new_value is None:
+            new_line = ''
+
         write_buffer = open(filename).readlines()
-        need_to_write = True # False if there is no need to overwrite file
         is_dirty = False # dirty if we make any changes
         for i,line in enumerate(write_buffer):
             ## Strip out new line characters
@@ -986,46 +1016,62 @@ class config:
             key, value = line.split("=", 1)
             key = key.strip()
             value = value.strip()
-            if key == attribute and value == old_value:
+
+            # If key does not match, we are not interested in this line
+            if key != attribute:
+                continue
+
+            # If old_value was specified, and it matches, dont have to look any further
+            elif value == old_value:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-            elif key == attribute and value == new_value:
-                # New value is the same as current value
-                need_to_write = False
-                break
+            # if current value is the same as new_value, no need to make changes
+            elif value == new_value:
+                return False
             # Special so cfg_dir matches despite double-slashes, etc
             elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
-                need_to_write = False
-                break
-            elif key == attribute and append is False and old_value is not None:
+                return False
+            # We are not appending, and no old value was specified:
+            elif append == False and not old_value:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-        if need_to_write is False:
-            return False
-        if is_dirty is True:
+        if is_dirty == False:
+            # If we get here, it means we read the whole file,
+            # and we have not yet made any changes, So we assume
+            # We should append to the file
+            write_buffer.append(new_line)
+            is_dirty = True
+        # When we get down here, it is time to write changes to file
+        if is_dirty == True:
             open(filename,'w').write(''.join(write_buffer))
             return True
-        # If old_value was specifically mentioned. Then it should have been handled by now.
-        # If no old_value is specified we append to file
-        if old_value is None:
-            open(filename,'a').write('\n%s    ' % new_line)
-            return True
-        return False
+        else:
+            return False
 
     def needs_reload(self):
-        """Returns True if Nagios service needs reload of cfg files"""
-        new_timestamps = self.get_timestamps()
-        lockfile = None
-        for k,v in self.maincfg_values:
-            if k == 'lock_file': lockfile = v
-        if not os.path.isfile(lockfile): return False
-        lockfile = new_timestamps.pop(lockfile)
-        for k,v in new_timestamps.items():
-            if int(v) > lockfile: return True
-        return False 
+        """Returns True if Nagios service needs reload of cfg files
 
+        Returns False if reload not needed or Nagios is not running
+        """
+        new_timestamps = self.get_timestamps()
+        object_cache_file = self.get_cfg_value('object_cache_file')
+
+        if self._get_pid() is None:
+            return False
+        if not object_cache_file:
+            return True
+        if not os.path.isfile(object_cache_file):
+            return True
+        object_cache_timestamp = new_timestamps.get(object_cache_file, 0)
+        # Reload not needed if no object_cache file
+        if object_cache_file is None:
+            return False
+        for k,v in new_timestamps.items():
+            if not v or int(v) > object_cache_timestamp:
+                return True
+        return False
     def needs_reparse(self):
         """Returns True if any Nagios configuration file has changed since last parse()"""
         # If Parse has never been run:
@@ -1089,7 +1135,7 @@ class config:
         files = {}
         files[self.cfg_file] = None
         for k,v in self.maincfg_values:
-            if k == 'resource_file' or k == 'lock_file':
+            if k in ('resource_file','lock_file','object_cache_file'):
                 files[v] = None
         for i in self.get_cfg_files():
             files[i] = None
@@ -1274,6 +1320,22 @@ class config:
                             cfg_files.append(raw_file)
 
         return cfg_files
+    def get_cfg_value(self, key):
+        """ Returns one specific value from your nagios.cfg file, None if value is not found.
+          Arguments:
+            key - what attribute to fetch from nagios.cfg (example: "command_file" )
+          Returns:
+            String of the first value found for
+          Example:
+            >>> get_cfg_value('log_file')
+            "log_file=/var/log/nagios3/nagios.log"
+        """
+        if self.maincfg_values == []:
+            self.maincfg_values = self._load_static_file(self.cfg_file)
+        for k,v in self.maincfg_values:
+            if k == key:
+                return v
+        return None
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
@@ -1327,8 +1389,6 @@ class status:
             for key,value in c._load_static_file():
                 if key == "status_file":
                     filename=value
-        if not os.path.isfile(filename):
-            raise ParserError("status.dat file %s not found." % filename)
 
         self.filename = filename
         self.data = None
@@ -1343,11 +1403,12 @@ class status:
             ParserError -- if status.dat is not found
             IOError -- if status.dat cannot be read
         """
-        self.data = defaultdict(list)
+        self.data = {}
         status = {} # Holds all attributes of a single item
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
-        for line_num,line in enumerate( open(self.filename, 'rb').readlines() ):
+        lines = open(self.filename, 'rb').readlines()
+        for line_num,line in enumerate( lines ):
 
             ## Cleanup and line skips
             line = line.strip()
@@ -1362,6 +1423,8 @@ class status:
             elif line.find("}") != -1:
                 # Status definition has finished, lets add it to
                 # self.data
+                if status['meta']['type'] not in self.data:
+                    self.data[status['meta']['type']] = []
                 self.data[status['meta']['type']].append(status)
             else:
                 tmp = line.split("=", 1)
@@ -1457,4 +1520,6 @@ class ParserError(Exception):
 
 
 if __name__ == '__main__':
-    pass
+    c = config()
+    print c._edit_static_file('test','new_value')
+

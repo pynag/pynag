@@ -44,8 +44,9 @@ import re
 import subprocess
 
 from pynag import Parsers
+from pynag import Control
+import pynag.Control.Command
 from macros import _standard_macros
-from collections import defaultdict
 import all_attributes
 
 # Path To Nagios configuration file
@@ -66,6 +67,47 @@ config = None
 # For example FileLogger class is an event handler responsible for logging to
 # file whenever something has been written.
 eventhandlers = []
+
+
+try:
+    from collections import defaultdict
+except ImportError:
+    class defaultdict(dict):
+        def __init__(self, default_factory=None, *a, **kw):
+            if (default_factory is not None and
+                not hasattr(default_factory, '__call__')):
+                raise TypeError('first argument must be callable')
+            dict.__init__(self, *a, **kw)
+            self.default_factory = default_factory
+        def __getitem__(self, key):
+            try:
+                return dict.__getitem__(self, key)
+            except KeyError:
+                return self.__missing__(key)
+        def __missing__(self, key):
+            if self.default_factory is None:
+                raise KeyError(key)
+            self[key] = value = self.default_factory()
+            return value
+        def __reduce__(self):
+            if self.default_factory is None:
+                args = tuple()
+            else:
+                args = self.default_factory,
+            return type(self), args, None, None, self.items()
+        def copy(self):
+            return self.__copy__()
+        def __copy__(self):
+            return type(self)(self.default_factory, self)
+        def __deepcopy__(self, memo):
+            import copy
+            return type(self)(self.default_factory,
+                copy.deepcopy(self.items()))
+        def __repr__(self):
+            return 'defaultdict(%s, %s)' % (self.default_factory,
+                                            dict.__repr__(self))
+
+
 
 
 def debug(text):
@@ -170,11 +212,21 @@ class ObjectRelations(object):
     # use['host']['host_name1'] = ['host_name2','host_name3']
     # use['contact']['contact_name1'] = ['contact_name2','contact_name3']
     _defaultdict_set = lambda: defaultdict(set)
-
-    #
-    contactgroup_subgroups = defaultdict(set)
     use = defaultdict( _defaultdict_set )
 
+    # contactgroup_subgroups['contactgroup_name'] = ['group1_name','group2_name']
+    contactgroup_subgroups = defaultdict(set)
+
+    # hostgroup_subgroups['hostgroup_name'] = ['group1_name','group2_name']
+    hostgroup_subgroups = defaultdict(set)
+
+
+    @staticmethod
+    def reset():
+        """ Runs clear() on every member attribute in ObjectRelations """
+        for k,v in ObjectRelations.__dict__.items():
+            if type(v) == type(defaultdict):
+                v.clear()
     @staticmethod
     def _get_subgroups(group_name, dictname):
         """ Helper function that lets you get all sub-group members of a particular group
@@ -204,11 +256,11 @@ class ObjectRelations(object):
 
             # Loop through every subgroup and apply its attributes to ours
             for subgroup in subgroups:
-                for i in ObjectRelations.contactgroup_contacts[group]:
+                for i in ObjectRelations.contactgroup_contacts[subgroup]:
                     ObjectRelations.contact_contactgroups[i].add( group )
-                for i in ObjectRelations.contactgroup_hosts[group]:
+                for i in ObjectRelations.contactgroup_hosts[subgroup]:
                     ObjectRelations.host_contact_groups[i].add( group )
-                for i in ObjectRelations.contactgroup_services[group]:
+                for i in ObjectRelations.contactgroup_services[subgroup]:
                     ObjectRelations.service_contact_groups[i].add( group )
                 ObjectRelations.contactgroup_contacts[group].update( ObjectRelations.contactgroup_contacts[subgroup] )
                 ObjectRelations.contactgroup_hosts[group].update( ObjectRelations.contactgroup_hosts[subgroup] )
@@ -224,9 +276,9 @@ class ObjectRelations(object):
 
             # Loop through every subgroup and apply its attributes to ours
             for subgroup in subgroups:
-                for i in ObjectRelations.hostgroup_hosts[group]:
+                for i in ObjectRelations.hostgroup_hosts[subgroup]:
                     ObjectRelations.host_hostgroups[i].add( group )
-                for i in ObjectRelations.hostgroup_services[group]:
+                for i in ObjectRelations.hostgroup_services[subgroup]:
                     ObjectRelations.service_hostgroups[i].add( group )
                 ObjectRelations.hostgroup_hosts[group].update( ObjectRelations.hostgroup_hosts[subgroup] )
                 ObjectRelations.hostgroup_services[group].update( ObjectRelations.hostgroup_services[subgroup] )
@@ -278,6 +330,8 @@ class ObjectFetcher(object):
         if config.needs_reparse():
             debug('Debug: Doing a reparse of configuration')
             config.parse()
+        # Reset our list of how objects are related to each other
+        ObjectRelations.reset()
 
         # Fetch all objects from Parsers.config
         for object_type, objects in config.data.items():
@@ -397,7 +451,7 @@ class ObjectFetcher(object):
                 if k.endswith('__exists'):
                     k = k[:-len('__exists')]
                     object_matches = str(i.has_key(k)) == str(v)
-                    break
+                    continue
                 elif k.endswith('__startswith'):
                     k = k[:-12]
                     match_function = str.startswith
@@ -406,7 +460,8 @@ class ObjectFetcher(object):
                     match_function = str.endswith
                 elif k.endswith('__isnot'):
                     k = k[:-7]
-                    match_function = str.__ne__
+                    object_matches = str(i[k]) != str(v)
+                    continue
                 elif k.endswith('__contains'):
                     k = k[:-10]
                     match_function = contains
@@ -418,8 +473,10 @@ class ObjectFetcher(object):
                     match_function = not_contains
                 else:
                     match_function = str.__eq__
-                if k == 'id' and str(v) == str(i.get_id()):
-                    object_matches = True
+                if object_matches == False:
+                    break
+                if k == 'id' and str(v) != str(i.get_id()):
+                    object_matches = False
                     break
                 if k == 'register' and v == '1' and not i.has_key(k):
                     # not defined means item is registered
@@ -534,8 +591,10 @@ class ObjectDefinition(object):
     def __getitem__(self, key):
         if key == 'id':
             return self.get_id()
-        if key == 'description' or key == 'shortname':
+        if key == 'description':
             return self.get_description()
+        if key == 'shortname':
+            return self.get_shortname()
         if key == 'register' and not self._defined_attributes.has_key('register'):
             return "1"
         if key == 'meta':
@@ -596,8 +655,11 @@ class ObjectDefinition(object):
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
         # Services go to same file as their host
         elif object_type == 'service' and self.host_name is not None:
-            host = self.get_effective_hosts()[0]
-            path = host.get_filename()
+            try:
+                host = self.get_effective_hosts()[0]
+                path = host.get_filename()
+            except IndexError:
+                path = "%s/hosts/%s.cfg" % (pynag_directory, self.host_name)
         else:
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
         return path
@@ -716,7 +778,8 @@ class ObjectDefinition(object):
                     myhost.copy(recursive=True, host_name="newhost.example.com", address="127.0.0.1")
           
         Returns:
-          A copy of the new ObjectDefinition
+          * A copy of the new ObjectDefinition
+          * A list of all copies objects if recursive == True
         """
         if args == {}:
                 raise ValueError('To copy an object definition you need at least one new attribute')
@@ -769,14 +832,41 @@ class ObjectDefinition(object):
 
     def get(self, value, default=None):
         """ self.get(x) == self[x] """
-        if self.has_key(value): return self[value]
-        return default
+        result = self[value]
+        if result is None:
+            return default
+        else:
+            return result
 
     def get_description(self):
-        return self.get("%s_name" % self.object_type, None)
+        """ Returns a human friendly string describing current object.
+
+        It will try the following in order:
+        * return self get_shortname()
+        * return self.name
+        * return "Untitled $object_type"
+        It defaults to self.get_shortname()
+        """
+        if self.get_shortname():
+           return self.get_shortname()
+        if self.name:
+            return self.name
+        return "Untitled %s" % self.object_type
 
     def get_shortname(self):
-        return self.get_description()
+        """ Returns shortname of an object in string format.
+
+        For the confused, nagios documentation refers to shortnames
+        usually as <object_type>_name.
+
+        * In case of Host it returns host_name
+        * In case of Command it returns command_name
+        * etc
+        * Special case for services it returns "host_name/service_description"
+
+        Returns None if no attribute can be found to use as a shortname
+        """
+        return self.get("%s_name" % self.object_type, None)
 
     def get_filename(self):
         """ Get name of the config file which defines this object
@@ -860,7 +950,7 @@ class ObjectDefinition(object):
             string    -- Arbitary string that contains macros
             host_name -- Optionally supply host_name if this service does not define it
         Example:
-        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS')
+        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS$')
         '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
         """
         if not string:
@@ -882,7 +972,7 @@ class ObjectDefinition(object):
     def _get_command_macro(self, macroname):
         """Resolve any command argument ($ARG1$) macros from check_command"""
         # TODO: This function is incomplete and untested
-        a = self.__argument_macros
+        a = {}
         if a == {}:
             c = self['check_command'].split('!')
             c.pop(0) # First item is the command, we dont need it
@@ -946,7 +1036,7 @@ class ObjectDefinition(object):
             a list of ObjectDefinition objects
         """
         # TODO: This function is incomplete and untested
-        if not self.has_key('use'):
+        if self['use'] is None:
             return []
         results = []
         use = self['use'].split(',')
@@ -1115,16 +1205,25 @@ class ObjectDefinition(object):
 class Host(ObjectDefinition):
     object_type = 'host'
     objects = ObjectFetcher('host')
-
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['host_name']
-
+    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',timestamp=0):
+        pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
+            sticky=sticky,
+            notify=notify,
+            persistent=persistent,
+            author=author,
+            comment=comment,
+            timestamp=0,
+            command_file=config.get_cfg_value('command_file')
+        )
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
         list_of_shortnames = ObjectRelations.host_services[self.host_name]
-        return map( get_object, list_of_shortnames )
+        services = map( get_object, list_of_shortnames )
+        # Look for services that define hostgroup_name that we belong to
+        for hg in self.get_effective_hostgroups():
+            services += hg.get_effective_services()
+        return services
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Host """
@@ -1170,14 +1269,18 @@ class Host(ObjectDefinition):
             raise KeyError(None)
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command)
+    def get_current_status(self):
+        """ Same as Service.get_current_status() """
+        return Status(self.host_name)
     def copy(self, recursive=False,filename=None, **args):
         """ Same as ObjectDefinition.copy() except can recursively copy services """
-        new_object = ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args)
+        copies = []
+        copies.append( ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args) )
         if recursive == True and 'host_name' in args:
             for i in self.get_effective_services():
                 print i.get_shortname()
-                i.copy(filename=filename, host_name=args.get('host_name'))
-        return new_object
+                copies.append( i.copy(filename=filename, host_name=args.get('host_name')) )
+        return copies
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -1204,8 +1307,9 @@ class Service(ObjectDefinition):
     object_type = 'service'
     objects = ObjectFetcher('service')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
+    def get_shortname(self):
+        if not self.host_name and not self.service_description:
+            return None
         return "%s/%s" % (self['host_name'], self['service_description'])
 
     def _get_host_macro(self, macroname, host_name=None):
@@ -1246,12 +1350,25 @@ class Service(ObjectDefinition):
         for i in hosts.fields:
             ObjectRelations.service_hosts[ self.get_id() ].add( i )
             ObjectRelations.host_services[ i ].add( self.get_id() )
-
+    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',timestamp=0):
+        pynag.Control.Command.acknowledge_svc_problem(host_name=self.host_name,
+            service_description=self.service_description,
+            sticky=sticky,
+            notify=notify,
+            persistent=persistent,
+            author=author,
+            comment=comment,
+            timestamp=0,
+            command_file=config.get_cfg_value('command_file')
+        )
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.service_hosts[ self.get_id() ]
-        return map( get_object, list_of_shortnames )
+        hosts = map( get_object, list_of_shortnames )
+        for hg in self.get_effective_hostgroups():
+            hosts += hg.get_effective_hosts()
+        return hosts
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Service """
@@ -1287,14 +1404,13 @@ class Service(ObjectDefinition):
             raise KeyError(None)
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command)
-
+    def get_current_status(self):
+        """ Returns a Status object, reflecting this object status (i.e. status.dat)
+        """
+        return Status(self.host_name, self.service_description)
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
-
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['command_name']
 
 
 class Contact(ObjectDefinition):
@@ -1355,20 +1471,16 @@ class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
     objects = ObjectFetcher('contactgroup')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['contactgroup_name']
-
     def get_effective_contactgroups(self):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_subgroups
+        list_of_shortnames = ObjectRelations.contactgroup_subgroups[self.contactgroup_name]
         return map( get_object, list_of_shortnames )
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_contact[self.contactgroup_name]
+        list_of_shortnames = ObjectRelations.contactgroup_contacts[self.contactgroup_name]
         return map( get_object, list_of_shortnames )
 
     def get_effective_hosts(self):
@@ -1401,10 +1513,6 @@ class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
     objects = ObjectFetcher('hostgroup')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['hostgroup_name']
-
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this hostgroup """
         list_of_shortnames = ObjectRelations.hostgroup_services[self.hostgroup_name]
@@ -1420,7 +1528,7 @@ class Hostgroup(ObjectDefinition):
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.hostgroup_subgroups
+        list_of_shortnames = ObjectRelations.hostgroup_subgroups[self.hostgroup_name]
         return map( get_object, list_of_shortnames )
 
     def _do_relations(self):
@@ -1443,19 +1551,37 @@ class Servicegroup(ObjectDefinition):
         list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['servicegroup_name']
 
 
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
     objects = ObjectFetcher('timeperiod')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['timeperiod_name']
-
+class Status(object):
+    """ Contains current status info (i.e. status.dat) for one specific Host or Service """
+    plugin_output = ''
+    perfdata = ''
+    long_plugin_output = ''
+    current_state = ''
+    perfdatalist = []
+    def __init__(self, host_name, service_description=None):
+        self.host_name = host_name
+        s = Parsers.status()
+        s.parse()
+        try:
+            if not service_description:
+                # This is a host status
+                self.status = s.get_hoststatus(host_name)
+            else:
+                # This is a service status
+                self.status = s.get_servicestatus(host_name, service_description)
+        except ValueError:
+            self.status = None
+        self.plugin_output = self.status['plugin_output']
+        self.perfdata = self.status['performance_data']
+        self.long_plugin_output = self.status['long_plugin_output']
+        self.current_state = self.status['current_state']
+        self.perfdatalist = PerfData(self.perfdata)
 
 class AttributeList(object):
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
@@ -1534,5 +1660,8 @@ string_to_class['command'] = Command
 
 
 if __name__ == '__main__':
-    #s = Service.objects.all
-    pass
+    o = Service.objects.all[17]
+    print o['__EXTRAOPTS']
+    print o.get_effective_command_line()
+    o['__EXTRAOPTS'] = "new value"
+    print o.get_effective_command_line()

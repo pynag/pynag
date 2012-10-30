@@ -93,7 +93,7 @@ class FileLogger(BaseEventHandler):
 
 
 class GitEventHandler(BaseEventHandler):
-    def __init__(self, gitdir, source, modified_by, ignore_errors=False):
+    def __init__(self, gitdir, source, modified_by, auto_init=False, ignore_errors=False):
         """
         Commits to git repo rooted in nagios configuration directory
 
@@ -103,6 +103,7 @@ class GitEventHandler(BaseEventHandler):
         source = prepended to git commit messages
         modified_by = is the username in username@<hostname> for commit messages
         ignore_errors = if True, do not raise exceptions on git errors
+        auto_init = If True, run git init if no git repository is found.
         """
         BaseEventHandler.__init__(self)
         import subprocess
@@ -120,7 +121,13 @@ class GitEventHandler(BaseEventHandler):
         self.messages = []
 
         self.ignore_errors = ignore_errors
-        subprocess.check_call('git status --short'.split(),cwd=self.gitdir)
+        if auto_init:
+            try:
+                self._run_command('git status --short')
+            except EventHandlerError, e:
+                if e.errorcode == 128:
+                    self._git_init()
+        #self._run_command('git status --short')
 
         self._update_author()
     def debug(self, object_definition, message):
@@ -143,24 +150,43 @@ class GitEventHandler(BaseEventHandler):
         if returncode > 0 and self.ignore_errors == False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
-            raise EventHandlerError( errorstring )
-            raise subprocess.CalledProcessError( returncode, command, stderr )
+            raise EventHandlerError( errorstring, errorcode=returncode, errorstring=stderr )
         return stdout
-
-
+    def is_commited(self):
+        """ Returns True if all files in git repo are fully commited """
+        return self.get_uncommited_files() == 0
+    def get_uncommited_files(self):
+        """ Returns a list of files that are have unstaged changes """
+        output = self._run_command("git status --porcelain")
+        result = []
+        for line in output.split('\n'):
+            line = line.split()
+            if len(line) < 2:
+                continue
+            result.append( {'status':line[0], 'filename': line[1]} )
+        return result
+    def _git_init(self, directory=None):
+        """ Initilizes a new git repo in directory. If directory is none, use self.gitdir """
+        self._update_author()
+        command = "git init"
+        self._run_command("git init")
+        self._run_command("git add .")
+        self._run_command("git commit -a -m 'Initial Commit'")
 
     def _git_add(self, filename):
         """ Wrapper around git add command """
         self._update_author()
         directory = dirname(filename)
-        command= "git add %s" % filename
+        command= "git add '%s'" % filename
         return self._run_command(command)
-    def _git_commit(self, filename, message):
+    def _git_commit(self, filename, message, filelist=[]):
         """ Wrapper around git commit command """
         self._update_author()
         # Lets strip out any single quotes from the message:
         message = message.replace("'",'"')
-        command = "git commit %s -m '%s'" % (filename, message)
+        if len(filelist) > 0:
+            filename = "' '".join(filelist)
+        command = "git commit '%s' -m '%s'" % (filename, message)
         return self._run_command(command=command)
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
@@ -195,3 +221,9 @@ class GitEventHandler(BaseEventHandler):
 
 class EventHandlerError(Exception):
     pass
+    def __init__(self, message, errorcode=None, errorstring=None):
+        self.message = message
+        self.errorcode = errorcode
+        self.errorstring = errorstring
+    def __str__(self):
+        return self.errorstring

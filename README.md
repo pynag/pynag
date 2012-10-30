@@ -32,7 +32,7 @@ Install latest git repository from source:
     git clone https://github.com/pynag/pynag.git
     cd pynag
     python setup.py build
-    python setup.py instal
+    python setup.py install
 
 Getting started
 ===============
@@ -41,7 +41,7 @@ List all services:
     import pynag.Model
     all_services pynag.Model.Service.objects.all
     for i in all_services:
-    print i.host_name, i.service_description
+    	print i.host_name, i.service_description
 
 Change an address of a host:
 

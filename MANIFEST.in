@@ -1,7 +1,7 @@
 recursive-include etc *
 recursive-include docs *
 recursive-include examples *
-recursive-include debian *
+recursive-include debian.upstream *
 include AUTHORS
 include LICENSE
 include README.md

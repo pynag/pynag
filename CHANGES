@@ -1,3 +1,80 @@
+Changes in 0.4.7 (Oct 26 2012)
+
+New Features:
+    - pynag cli: new parameter --debug
+    - pynag cli: new parameter --version
+    - Parsers.config.get_cfg_value() implemented
+    - Parsers.config.get_pid() implemented
+    - New Module: pynag.Control.Command for interactions with command_pipe
+    - Parsers.config.get_pid() implemented
+
+Bugfixes:
+    - Discrepancy in CLI where filters between list and delete
+    - CLI now prints nice error message instead of stacktrace on errors
+    - ObjectFetcher.filter(): parameters ending in __isnot were always treated as an OR condition.
+    - "pynag execute" now works with services that define hostgroups instead of host_name
+    - Fixed macro resolving issues for services with hostgroups defined instead of host_name
+    - Fixed Default initilization of ObjectRelations.hostgroup_subgroups
+    - Bugfix: Nagios needs_reload() always returns false
+    - Bugfix: pynag.Parsers.config.needs_reload() always returns false
+    - Bugfix: Inverted conditions on pynag.Plugins.simple.check_range()
+    - Bugfix: Unhandled exception in pynag.Plugins.simple where must_thresholds=False
+
+
+Changes in 0.4.6 (Sep 16 2012)
+
+New Features:
+    - CLI Improvements
+    - manpage for pynag CLI updated
+    - New module Utils created
+    - Experimental new get_status() for ObjectDefinition
+    - Reworked GitEventHandler
+    - new function, Control.daemon.status()
+    - Experimental Perfdata analysis support
+
+Bugfixes:
+    - Various bugfixes for get_effective_*groups()
+    - Various bugfixes in Parsers.config._edit_static_file()
+    - needs_reload() now compares timestamps with object_cache_file instead of lockfile
+    - Removed unneeded error handling from Control.daemon class
+    - Model filter, bugfix in __isnot= parameter
+
+Changes in 0.4.5 (Aug 21 2012)
+
+Bugfixes:
+    - popen2 import moved to send_nsca() to hide deprecationwarning
+    - pynag.Model no longer depends on defaultdict to work (for python 2.4)
+    - Removed dependency on defaultdict (does not exist on python 2.4)
+    - When permission problems occur for reading status.dat, exception is
+      now thrown in parse() rather than init()
+    - Version number is now correct
+    - debian subdir moved to debian.upstream for packaging
+
+
+
+Changes in 0.4.4 (Aug 20 2012)
+
+New Features:
+    - Host.copy(recursive=True) now recursively copies services
+    - README moved to markdown format (palli@opensource.is)
+    - Parsers.status class reworked. Now support get_servicestatus()
+    - filter() now supports __exists suffix for as a search condition
+    - Major rework og object relations and object cache (palli@opensource.is)
+Bugfixes:
+    - get_all_macros returns empty hash map on non-existant check_command
+    - New get_effective_* functions i.e. Host.get_effective_contacts()
+    - ObjectDefinition.get_id() changed from md5sum to built-in __hash__()
+    - Fixes to get_effective_command_line() where macro within another macro was
+      not properly solved. (palli@opensource.is)
+    - GitEventHandler changed to use subprocess module instead of GitPython
+
+    - Support for nagios's ambigious Timeperiod format.
+    - check_thresholds() added (Issue 22) (palli@opensource.is)
+    - check_range() conditions now inverted (Fixes issue 22)
+    - /usr/local/nagios/etc/ added to paths where nagios.cfg might be found (Thanks
+      Abhinav Upadhyay)
+    - pycharm code inspection cleanup (palli@opensource.is)
+
 Changes in 0.4.3 (Jul 13 2012)
 
 Bugfixes:

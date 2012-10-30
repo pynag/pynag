@@ -1,11 +1,11 @@
-VERSION		= 0.4.3
+VERSION		= 0.4.7
 RELEASE		= 1
 DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
 PYTHON		= /usr/bin/python
 
 TOPDIR = $(shell pwd)
-DIRS	= build docs contrib etc examples pynag scripts debian
+DIRS	= build docs contrib etc examples pynag scripts debian.upstream
 PYDIRS	= pynag scripts examples debian 
 EXAMPLEDIR = examples
 MANPAGES = pynag
@@ -92,4 +92,5 @@ debs: build sdist
 	cd deb-build/ ; \
 	  tar -zxvf pynag_${VERSION}.orig.tar.gz ; \
 	  cd pynag-${VERSION} ;\
+	  ln -s debian.upstream debian ;\
 	  debuild
