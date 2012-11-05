@@ -163,7 +163,7 @@ class GitEventHandler(BaseEventHandler):
             line = line.split()
             if len(line) < 2:
                 continue
-            result.append( {'status':line[0], 'filename': line[1]} )
+            result.append( {'status':line[0], 'filename': " ".join(line[1:])} )
         return result
     def _git_init(self, directory=None):
         """ Initilizes a new git repo in directory. If directory is none, use self.gitdir """
