@@ -965,7 +965,9 @@ class config:
             ## Skip comments
             if line[0] == "#" or line[0] == ';':
                 continue
-            key, value = line.split("=", 1)
+            tmp = line.split("=", 1)
+            if len(tmp) < 2: continue
+            key, value = tmp
             key = key.strip()
             value = value.strip()
             result.append( (key, value) )

@@ -1,3 +1,26 @@
+Changes in 0.4.7 (Oct 26 2012)
+
+New Features:
+    - pynag cli: new parameter --debug
+    - pynag cli: new parameter --version
+    - Parsers.config.get_cfg_value() implemented
+    - Parsers.config.get_pid() implemented
+    - New Module: pynag.Control.Command for interactions with command_pipe
+    - Parsers.config.get_pid() implemented
+
+Bugfixes:
+    - Discrepancy in CLI where filters between list and delete
+    - CLI now prints nice error message instead of stacktrace on errors
+    - ObjectFetcher.filter(): parameters ending in __isnot were always treated as an OR condition.
+    - "pynag execute" now works with services that define hostgroups instead of host_name
+    - Fixed macro resolving issues for services with hostgroups defined instead of host_name
+    - Fixed Default initilization of ObjectRelations.hostgroup_subgroups
+    - Bugfix: Nagios needs_reload() always returns false
+    - Bugfix: pynag.Parsers.config.needs_reload() always returns false
+    - Bugfix: Inverted conditions on pynag.Plugins.simple.check_range()
+    - Bugfix: Unhandled exception in pynag.Plugins.simple where must_thresholds=False
+
+
 Changes in 0.4.6 (Sep 16 2012)
 
 New Features:
