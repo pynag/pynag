@@ -1,3 +1,8 @@
+Changes in git
+
+Bugfixes:
+    - GitEventHandler could not list files with spaces
+
 Changes in 0.4.7 (Oct 26 2012)
 
 New Features:
