@@ -98,6 +98,23 @@ info[k] = {
     'options': options
 }
 
+for k in info:
+    if info[k]['format'].endswith('=&lt;0/1&gt;'):
+        info[k]['type']='boolean'
+    elif info[k]['format'].endswith('=&lt;seconds&gt;'):
+        info[k]['type']='seconds'
+    elif info[k]['format'].endswith('=&lt;percent&gt;'):
+        info[k]['type']='percent'
+    elif info[k]['format'].endswith('=&lt;file_name&gt;'):
+        info[k]['type']='file_name'
+    elif info[k]['format'].endswith('=&lt;minutes&gt;'):
+        info[k]['type']='minutes'
+    elif info[k]['format'].endswith('=&lt;#&gt;'):
+        info[k]['type']='integer'
+    elif info[k]['format'].endswith('=&lt;command&gt;'):
+        info[k]['type']='command'
+    else:
+        info[k]['type']='unclassified'
 # PrettyPrint
 pprint(info)
 # vim: smartindent tabstop=4 shiftwidth=4 expandtab
