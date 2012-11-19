@@ -46,6 +46,7 @@ import subprocess
 from pynag import Parsers
 from pynag import Control
 import pynag.Control.Command
+import pynag.Utils
 from macros import _standard_macros
 import all_attributes
 
@@ -675,7 +676,7 @@ class ObjectDefinition(object):
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname'] ))
         # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
-        if self.is_new is True or self.get_filename() is None:
+        if self.is_new == True or self.get_filename() is None:
             if not self.get_filename():
                 # discover a new filename
                 self.set_filename( self.get_suggested_filename() )
@@ -734,6 +735,8 @@ class ObjectDefinition(object):
             True on success
         """
         self._event(level='pre_save', message="Object definition is being rewritten")
+        if self.is_new == True:
+            self.save()
         if str_new_definition is None:
             str_new_definition = self._meta.get('raw_definition')
         config.item_rewrite(self._original_attributes, str_new_definition)
@@ -842,15 +845,14 @@ class ObjectDefinition(object):
         """ Returns a human friendly string describing current object.
 
         It will try the following in order:
+        * return self.name (get the generic name)
         * return self get_shortname()
-        * return self.name
         * return "Untitled $object_type"
-        It defaults to self.get_shortname()
         """
-        if self.get_shortname():
-           return self.get_shortname()
         if self.name:
             return self.name
+        if self.get_shortname():
+           return self.get_shortname()
         return "Untitled %s" % self.object_type
 
     def get_shortname(self):
@@ -1581,8 +1583,67 @@ class Status(object):
         self.perfdata = self.status['performance_data']
         self.long_plugin_output = self.status['long_plugin_output']
         self.current_state = self.status['current_state']
-        self.perfdatalist = PerfData(self.perfdata)
+        self.perfdatalist = pynag.Utils.PerfData(self.perfdata)
 
+class HostStatus(Status):
+    """ Contains Status info (i.e. status.dat) for one specific Host """
+    def __init__(self,data):
+        self.data = data
+        self.plugin_output = self.data['plugin_output']
+        self.perfdata = self.data['performance_data']
+        self.long_plugin_output = self.data['long_plugin_output']
+        self.current_state = self.data['current_state']
+        self.perfdatalist = pynag.Utils.PerfData(self.perfdata)
+    def get_shortname(self):
+        return self.data['host_name']
+    def __str__(self):
+        return "%s - %s" % (self.get_shortname(), self.get_state())
+    def get_state(self):
+        return self.data['current_state']
+    def __repr__(self):
+        return self.__str__()
+
+class StatusFetcher(object):
+    """ Responsible for fetching multiple Status objects (from status.dat, mk-livestatus, etc) """
+    _cached_objects = []
+    _cached_shortnames = defaultdict(dict)
+    _cached_object_type = defaultdict(list)
+    object_type = None
+    def __init__(self, object_type):
+        """
+        """
+        self.object_type = object_type
+    def get_all(self):
+        """ Return all object definitions of specified type"""
+        if self.needs_reload():
+            self.reload_cache()
+        if self.object_type is not None:
+            return StatusFetcher._cached_object_type[self.object_type]
+        else:
+            return StatusFetcher._cached_objects
+
+    all = property(get_all)
+    def needs_reload(self):
+        """ Returns True if cached status data is out of date """
+        return True
+    def reload_cache(self):
+        """Reload status cache"""
+        status = Parsers.status()
+        status.parse()
+
+        # Fetch all objects from Parsers.config
+        for object_type, objects in status.data.items():
+            for i in objects:
+                print object_type
+                if object_type == 'hoststatus':
+                    item = HostStatus(data=i)
+                else:
+                    continue
+                    #item = Status(data=i)
+                StatusFetcher._cached_objects.append(item)
+                StatusFetcher._cached_object_type[object_type].append(item)
+                StatusFetcher._cached_shortnames[object_type][item.get_shortname()] = item
+        return True
 class AttributeList(object):
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
 

@@ -26,6 +26,7 @@ that are used throughout the pynag library.
 """
 import subprocess
 import re
+import pynag.Plugins
 
 class PynagError(Exception):
     """ The default pynag exception.
@@ -223,7 +224,6 @@ class PerfDataMetric(object):
     min = ""
     max = ""
     uom = ""
-    status = "ok"
     def __repr__(self):
         return "'%s'=%s%s;%s;%s;%s;%s" % (
             self.label,
@@ -300,7 +300,7 @@ class PerfDataMetric(object):
 
           self.value with self.warn and self.crit
         """
-        status = check_threshold(self.value, warning=self.warn, critical=self.crit)
+        status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
         return status
 
 

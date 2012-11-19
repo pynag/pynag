@@ -20,7 +20,7 @@
 import os
 import re
 import time
-
+import socket # for mk_livestatus
 
 def debug(text):
     debug = True
@@ -1085,15 +1085,30 @@ class config:
                 return True
         return False
 
-    def parse(self):
+    def parse_maincfg(self):
+        """ Parses your main configuration (nagios.cfg) and stores it as key/value pairs in self.maincfg_values
+
+        This function is mainly used by config.parse() which also parses your whole configuration set.
         """
-        Load the nagios.cfg file and parse it up
+        self.maincfg_values = self._load_static_file(self.cfg_file)
+    def parse(self):
+        """ Parse all objects in your nagios configuration
+
+        This functions starts by loading up your nagios.cfg ( parse_maincfg() ) then moving on to
+        your object configuration files (as defined via cfg_file and cfg_dir) and and your resource_file
+        as well
+
+        Returns:
+          None
+
+        Raises:
+          IOError if unable to read any file due to permission problems
         """
 
         # reset
         self.reset()
 
-        self.maincfg_values = self._load_static_file(self.cfg_file)
+        self.parse_maincfg()
         
         self.cfg_files = self.get_cfg_files()
 
@@ -1360,6 +1375,79 @@ class config:
         return self.data[key]
 
 
+class mk_livestatus:
+    """ Wrapper around MK-Livestatus
+
+    Example usage:
+    s = mk_livestatus()
+    for hostgroup s.get_hostgroups():
+        print hostgroup['name'], hostgroup['num_hosts']
+    """
+    def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None):
+        """ Initilize a new instance of mk_livestatus
+
+        Arguments:
+          livestatus_socket_path -- Path to livestatus socket (if none specified, use one specified in nagios.cfg)
+          nagios_cfg_file - -Path to your nagios.cfg. If None then try to auto-detect
+        """
+        if livestatus_socket_path is None:
+            c = config(cfg_file=nagios_cfg_file)
+            c.parse_maincfg()
+            for k,v in c.maincfg_values:
+                if k == 'broker_module' and v.find("livestatus.o") > -1:
+                    tmp = v.split()
+                    if len(tmp) > 1:
+                        livestatus_socket_path = tmp[1]
+        # If we get here then livestatus_socket_path should be resolved for us
+        if livestatus_socket_path is None:
+            raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
+        self.livestatus_socket_path = livestatus_socket_path
+    def test(self):
+        """ Raises ParserError if there are problems communicating with livestatus socket """
+        if not os.path.exists(self.livestatus_socket_path):
+            raise ParserError("Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
+        try:
+            test = self.query("GET hosts")
+        except KeyError, e:
+            raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
+        return True
+    def query(self, query, *args):
+
+        columns = None # Here we will keep a list of column names
+        # We break query up into a list, of commands, then put it back into a line seperated
+        # string before be talk to the socket
+        query = query.split('\n')
+        for i in args:
+            query.append(i)
+        query.append("OutputFormat: python")
+        for i in query:
+            if i.startswith('Columns:'):
+                columns = i[len('Columns:'):].split()
+        query = '\n'.join(query) + '\n'
+
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(self.livestatus_socket_path)
+        s.send(query)
+        s.shutdown(socket.SHUT_WR)
+        answer = eval(s.makefile().read())
+        s.close()
+        if columns is None:
+            columns = answer.pop(0)
+        # Lets throw everything into a hashmap before we return
+        result = []
+        for line in answer:
+            tmp = {}
+            for i,column in enumerate(line):
+                column_name = columns[i]
+                tmp[column_name] = column
+            result.append(tmp)
+        return result
+    def get_hosts(self):
+        return self.query('GET hosts')
+    def get_services(self):
+        return self.query('GET services')
+    def get_hostgroups(self):
+        return self.query('GET hostgroups')
 class status:
     """ Easy way to parse status.dat file from nagios
 
