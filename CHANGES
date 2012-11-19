@@ -1,5 +1,8 @@
 Changes in git
 
+New Features:
+    - MK Livestatus integration in pynag.Parsers.mk_livestatus
+
 Bugfixes:
     - GitEventHandler could not list files with spaces
 
