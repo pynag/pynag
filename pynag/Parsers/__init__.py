@@ -1442,6 +1442,10 @@ class mk_livestatus:
                 tmp[column_name] = column
             result.append(tmp)
         return result
+    def get_host(self, host_name):
+        return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
+    def get_service(self, host_name, service_description):
+        return self.query('GET services', 'Filter: host_name = %s' % host_name, 'Filter: description = %s' % service_description)[0]
     def get_hosts(self):
         return self.query('GET hosts')
     def get_services(self):
