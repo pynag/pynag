@@ -1565,7 +1565,7 @@ class status:
         for i in self.data['hoststatus']:
             if i.get('host_name') == host_name:
                 return i
-        return ValueError(host_name)
+        raise ValueError(host_name)
     def get_servicestatus(self, host_name, service_description):
         """ Returns a dictionary derived from status.dat for one particular service
         Returns:
@@ -1579,7 +1579,7 @@ class status:
             if i.get('host_name') == host_name:
                 if i.get('service_description') == service_description:
                     return i
-        return ValueError(host_name, service_description)
+        raise ValueError(host_name, service_description)
 
 
     def __setitem__(self, key, item):
