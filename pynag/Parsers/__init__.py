@@ -379,9 +379,9 @@ class config:
                 for i in tmp_buffer:
                     i = i.strip()
                     tmp = i.split(None, 1)
-                    # Hack that makes timeperiod attributes be contained only in the key
                     if len(tmp) == 0:
                         continue
+                    # Hack that makes timeperiod attributes be contained only in the key
                     if current_object_type == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
                         k = i
                         v = ''
@@ -447,7 +447,7 @@ class config:
                 tmp = object_definition[i].split(None, 1)
                 if len(tmp) == 0: continue
                 # Hack for timeperiods, they dont work like other objects
-                elif item['meta']['object_type'] == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
+                elif item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
                     tmp = [object_definition[i]]
                     # we can't change timeperiod, so we fake a field rename
                     if new_value is not None:
@@ -1383,12 +1383,13 @@ class mk_livestatus:
     for hostgroup s.get_hostgroups():
         print hostgroup['name'], hostgroup['num_hosts']
     """
-    def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None):
+    def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
         """ Initilize a new instance of mk_livestatus
 
         Arguments:
           livestatus_socket_path -- Path to livestatus socket (if none specified, use one specified in nagios.cfg)
-          nagios_cfg_file - -Path to your nagios.cfg. If None then try to auto-detect
+          nagios_cfg_file -- Path to your nagios.cfg. If None then try to auto-detect
+          authuser -- If specified. Every data pulled is with the access rights of that contact.
         """
         if livestatus_socket_path is None:
             c = config(cfg_file=nagios_cfg_file)
@@ -1402,6 +1403,7 @@ class mk_livestatus:
         if livestatus_socket_path is None:
             raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
         self.livestatus_socket_path = livestatus_socket_path
+        self.authuser = authuser
     def test(self):
         """ Raises ParserError if there are problems communicating with livestatus socket """
         if not os.path.exists(self.livestatus_socket_path):
@@ -1423,13 +1425,18 @@ class mk_livestatus:
         for i in query:
             if i.startswith('Columns:'):
                 columns = i[len('Columns:'):].split()
+        if not self.authuser is None and not self.authuser == '':
+            query.append("AuthUser: %s" % self.authuser)
         query = '\n'.join(query) + '\n'
 
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.connect(self.livestatus_socket_path)
         s.send(query)
         s.shutdown(socket.SHUT_WR)
-        answer = eval(s.makefile().read())
+        tmp = s.makefile().read()
+        if tmp == '':
+            return []
+        answer = eval(tmp)
         s.close()
         if columns is None:
             columns = answer.pop(0)
@@ -1452,6 +1459,10 @@ class mk_livestatus:
         return self.query('GET services')
     def get_hostgroups(self):
         return self.query('GET hostgroups')
+    def get_contacts(self):
+        return self.query('GET contacts')
+    def get_contact(self, contact_name):
+        return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 class status:
     """ Easy way to parse status.dat file from nagios
 
