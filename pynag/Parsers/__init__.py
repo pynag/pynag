@@ -1428,6 +1428,7 @@ class mk_livestatus:
         if not self.authuser is None and not self.authuser == '':
             query.append("AuthUser: %s" % self.authuser)
         query = '\n'.join(query) + '\n'
+        self.last_query = query
 
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.connect(self.livestatus_socket_path)
