@@ -1,0 +1,75 @@
+
+
+
+function runexpect() {
+	local expected=$1
+	local runcmd=$2
+
+	OUT=$(./${runcmd})
+	ret=$?
+	if [ "${expected}" != "${ret}" ]; then
+		echo EVIL ${runcmd}
+		echo ${OUT}
+	fi
+
+	
+}
+
+plug=./fakeplugin.py
+# Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
+case="-w 10 -c 20"
+runexpect 2 "${plug} -F -23 ${case}"
+runexpect 0 "${plug} -F 3   ${case}"
+runexpect 1 "${plug} -F 13  ${case}"
+runexpect 2 "${plug} -F 23  ${case}"
+
+
+# Same as above. Negative "stuff" is OK
+case="-w ~:10 -c ~:20"
+runexpect 0 "${plug} -F -23 ${case}"
+runexpect 0 "${plug} -F 3 ${case}"
+runexpect 1 "${plug} -F 13 ${case}"
+runexpect 2 "${plug} -F 23 ${case}"
+
+# Critical if "stuff" is over 20, else warn if "stuff" is below 10 (will be critical if "stuff" is less than 0)
+case="-w 10: -c 20"
+runexpect 2 "${plug} -F -23 ${case}"
+runexpect 1 "${plug} -F 3   ${case}"
+runexpect 0 "${plug} -F 13  ${case}"
+runexpect 2 "${plug} -F 23  ${case}"
+
+# Critical if "stuff" is less than 1
+case="-c 1:"
+runexpect 2 "${plug} -F -23 ${case}"
+runexpect 2 "${plug} -F 0   ${case}"
+runexpect 0 "${plug} -F 13  ${case}"
+runexpect 0 "${plug} -F 23  ${case}"
+
+case="-w ~:0 -c 10"
+runexpect 0 "${plug} -F -23 ${case}"
+runexpect 0 "${plug} -F 0   ${case}"
+runexpect 1 "${plug} -F 7   ${case}"
+runexpect 2 "${plug} -F 23  ${case}"
+
+# The only noncritical range is 5:6
+case="-c 5:6"
+runexpect 2 "${plug} -F -23 ${case}"
+runexpect 2 "${plug} -F 0   ${case}"
+runexpect 2 "${plug} -F 2   ${case}"
+runexpect 0 "${plug} -F 5   ${case}"
+runexpect 0 "${plug} -F 6   ${case}"
+
+
+# Critical if "stuff" is 10 to 20
+case="-c @10:20"
+runexpect 0 "${plug} -F -23 ${case}"
+runexpect 0 "${plug} -F 0   ${case}"
+runexpect 0 "${plug} -F 2   ${case}"
+runexpect 2 "${plug} -F 10   ${case}"
+runexpect 2 "${plug} -F 15   ${case}"
+runexpect 2 "${plug} -F 20   ${case}"
+runexpect 0 "${plug} -F 23  ${case}"
+
+
+
+
