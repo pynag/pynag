@@ -5,7 +5,7 @@ function runexpect() {
 	local expected=$1
 	local runcmd=$2
 
-	OUT=$(./${runcmd})
+	OUT=$(${runcmd})
 	ret=$?
 	if [ "${expected}" != "${ret}" ]; then
 		echo EVIL ${runcmd}
@@ -15,7 +15,8 @@ function runexpect() {
 	
 }
 
-plug=./fakeplugin.py
+scriptsdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+plug=${scriptsdir}/fakeplugin.py
 # Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
 case="-w 10 -c 20"
 runexpect 2 "${plug} -F -23 ${case}"
