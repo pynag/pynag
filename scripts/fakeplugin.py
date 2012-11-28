@@ -1,5 +1,10 @@
 #!/usr/bin/python
 
+import os.path
+import sys
+
+pynagbase = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+sys.path[0] = pynagbase
 
 # Standard init
 import pynag.Plugins
