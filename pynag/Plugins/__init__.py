@@ -133,14 +133,14 @@ class simple:
         if self.must_threshold == True and not options.critical and not options.warning:
             self.parser.error("You must provide a WARNING and/or CRITICAL value")
 
-        ## Set Critical
-        if options.critical:
+        ## Set Critical; if the option is available in the plugin
+        if hasattr(options, 'critical'):
             self.data['critical'] = options.critical
         else:
             self.data['critical'] = None
 
-        ## Set Warn
-        if options.warning:
+        ## Set Warn; if the option is available in the plugin
+        if hasattr(options, 'warning'):
             self.data['warning'] = options.warning
         else:
             self.data['warning'] = None
