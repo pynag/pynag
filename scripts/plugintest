@@ -73,4 +73,10 @@ runexpect 0 "${plug} -F 23  ${case}"
 
 
 
-
+plugnothres=${scriptsdir}/fakepluginnothres.py
+case=""
+runexpect 0 "${plugnothres} -F -23 ${case}"
+runexpect 0 "${plugnothres} -F 0   ${case}"
+runexpect 0 "${plugnothres} -F 2   ${case}"
+runexpect 0 "${plugnothres} -F 10   ${case}"
+runexpect 0 "${plugnothres} -F 15   ${case}"
