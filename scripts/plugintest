@@ -47,7 +47,7 @@ runexpect 0 "${plug} -F 13  ${case}"
 runexpect 0 "${plug} -F 23  ${case}"
 
 case="-w ~:0 -c 10"
-runexpect 0 "${plug} -F -23 ${case}"
+runexpect 2 "${plug} -F -23 ${case}"
 runexpect 0 "${plug} -F 0   ${case}"
 runexpect 1 "${plug} -F 7   ${case}"
 runexpect 2 "${plug} -F 23  ${case}"
