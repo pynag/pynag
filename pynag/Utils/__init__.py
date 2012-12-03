@@ -27,6 +27,7 @@ that are used throughout the pynag library.
 import subprocess
 import re
 import pynag.Plugins
+import shlex
 
 class PynagError(Exception):
     """ The default pynag exception.
@@ -188,7 +189,8 @@ class PerfData(object):
     """
     def __init__(self, perfdatastring):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
-        import shlex
+        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
+        perfdatastring = perfdatastring.replace('\x00','')
         perfdata = shlex.split(perfdatastring)
         self.metrics = []
         self.invalid_metrics = []
@@ -262,6 +264,8 @@ class PerfDataMetric(object):
         print p.value_unit
         >>> M
         """
+        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
+        perfdatastring = perfdatastring.replace('\x00','')
         self.label = label
         self.value = value
         self.warn = warn
