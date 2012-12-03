@@ -1421,7 +1421,9 @@ class mk_livestatus:
         query = query.split('\n')
         for i in args:
             query.append(i)
-        query.append("OutputFormat: python")
+        if query[0].startswith('GET'):
+            query.append("ResponseHeader: fixed16")
+            query.append("OutputFormat: python")
         for i in query:
             if i.startswith('Columns:'):
                 columns = i[len('Columns:'):].split()
@@ -1434,10 +1436,17 @@ class mk_livestatus:
         s.connect(self.livestatus_socket_path)
         s.send(query)
         s.shutdown(socket.SHUT_WR)
-        tmp = s.makefile().read()
-        if tmp == '':
+        tmp = s.makefile()
+        response_header = tmp.readline()
+        if len(response_header) == 0:
             return []
-        answer = eval(tmp)
+        return_code = response_header.split()[0]
+        answer = tmp.read()
+        if not return_code.startswith('2'):
+            raise ParserError("Error '%s' from livestatus socket\n%s" % (return_code,answer))
+        if answer == '':
+            return []
+        answer = eval(answer)
         s.close()
         if columns is None:
             columns = answer.pop(0)
