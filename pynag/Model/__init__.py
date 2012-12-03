@@ -1446,7 +1446,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Service that are hooked to this Contact """
         result = set()
         # First add all services that name this contact specifically
-        get_object = lambda x: Service.objects.get_by_shortname(x)
+        get_object = lambda x: Service.objects.get_by_id(x)
         list_of_shortnames = ObjectRelations.contact_services[self.contact_name]
         result.update( map( get_object, list_of_shortnames ) )
         return result
