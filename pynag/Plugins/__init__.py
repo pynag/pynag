@@ -555,7 +555,7 @@ class PluginHelper:
         self.show_perfdata = self.options.show_perfdata
         self.show_debug = self.options.show_debug
         self.verbose = self.options.verbose
-        self.show_status_in_summary = self.options.show_status_in_summary
+        #self.show_status_in_summary = self.options.show_status_in_summary
 
     def add_long_output(self, message):
         """ Appends message to the end of Plugin long_output. Message does not need a \n suffix
@@ -615,7 +615,7 @@ class PluginHelper:
 
         self._nagios_status = max(self._nagios_status, new_status)
 
-    def add_metric(self, label="",value="",warn="",crit="",min="",max="",uom=""):
+    def add_metric(self, label="",value="",warn="",crit="",min="",max="",uom="", perfdatastring=None):
         """ Add numerical metric (will be outputted as nagios performanca data)
 
         Examples:
@@ -625,7 +625,10 @@ class PluginHelper:
           >>> get_perfdata()
           "'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
         """
-        self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
+        if not perfdatastring is None:
+            self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)
+        else:
+            self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
 
     def get_metric(self, label):
         """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found. """
