@@ -1,5 +1,15 @@
+#!/bin/bash
 
-
+# This script runs a series of cases on testplugins and makes sure that they
+# return correctly.
+#
+# Example, here we run a plugin where:
+#	Critical is set to 10
+#	Warning is set to 5
+#	Fakedata is set to 7
+#	Expect 1 (warning)
+#
+# 	runexpect 1 /plugin/path -c 10 -w 5 -F 7
 
 function runexpect() {
 	local expected=$1
@@ -7,17 +17,57 @@ function runexpect() {
 
 	OUT=$(${runcmd})
 	ret=$?
+	(( subtestno++ ))
+	(( total++ ))
 	if [ "${expected}" != "${ret}" ]; then
-		echo EVIL ${runcmd}
-		echo ${OUT}
+		echo t/${testno}/${subtestno} EVIL ${runcmd}, expected return ${expected} actual ${ret}
+		echo t/${testno}/${subtestno} Output: ${OUT}
+		(( errors++ ))
+	elif [ $verbose != 0 ]; then
+		echo "t/${testno}/${subtestno} OK"
 	fi
+
+	
 
 	
 }
 
+function inittest() {
+	local desc=$1
+
+	testdesc="${desc}"
+	subtestno=0
+	(( testno++ ))
+	if [ ${verbose} != 0 ]; then
+		echo "Test ${testno} - 	${desc}"
+	fi
+}
+
+errors=0
+total=0
+testno=0
+subtestno=0
+testdesc=""
+
+if [ "$1" ==  "-v" ]; then
+	verbose=1
+else
+	verbose=0
+fi
+
+
 scriptsdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Plugin where warning and critical thresholds are mandatory
 plug=${scriptsdir}/fakeplugin.py
+
+# Plugin without mandatory warning and critical
+plugnothres=${scriptsdir}/fakepluginnothres.py
+
+
 # Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
+inittest 'Critical if "stuff" is over 20, else warn if 
+		over 10 (will be critical if "stuff" is less than 0)'
 case="-w 10 -c 20"
 runexpect 2 "${plug} -F -23 ${case}"
 runexpect 0 "${plug} -F 3   ${case}"
@@ -26,6 +76,7 @@ runexpect 2 "${plug} -F 23  ${case}"
 
 
 # Same as above. Negative "stuff" is OK
+inittest 'Same as above. Negative "stuff" is OK'
 case="-w ~:10 -c ~:20"
 runexpect 0 "${plug} -F -23 ${case}"
 runexpect 0 "${plug} -F 3 ${case}"
@@ -33,6 +84,8 @@ runexpect 1 "${plug} -F 13 ${case}"
 runexpect 2 "${plug} -F 23 ${case}"
 
 # Critical if "stuff" is over 20, else warn if "stuff" is below 10 (will be critical if "stuff" is less than 0)
+inittest 'Critical if "stuff" is over 20, else warn if "stuff" is 
+		below 10 (will be critical if "stuff" is less than 0)'
 case="-w 10: -c 20"
 runexpect 2 "${plug} -F -23 ${case}"
 runexpect 1 "${plug} -F 3   ${case}"
@@ -40,19 +93,22 @@ runexpect 0 "${plug} -F 13  ${case}"
 runexpect 2 "${plug} -F 23  ${case}"
 
 # Critical if "stuff" is less than 1
+inittest 'Critical if "stuff" is less than 1'
 case="-c 1:"
 runexpect 2 "${plug} -F -23 ${case}"
 runexpect 2 "${plug} -F 0   ${case}"
 runexpect 0 "${plug} -F 13  ${case}"
 runexpect 0 "${plug} -F 23  ${case}"
 
+inittest '1-9 is warning, negative or above 10 is critical'
 case="-w ~:0 -c 10"
-runexpect 0 "${plug} -F -23 ${case}"
+runexpect 2 "${plug} -F -23 ${case}"
 runexpect 0 "${plug} -F 0   ${case}"
 runexpect 1 "${plug} -F 7   ${case}"
 runexpect 2 "${plug} -F 23  ${case}"
 
 # The only noncritical range is 5:6
+inittest 'The only noncritical range is 5:6'
 case="-c 5:6"
 runexpect 2 "${plug} -F -23 ${case}"
 runexpect 2 "${plug} -F 0   ${case}"
@@ -62,6 +118,7 @@ runexpect 0 "${plug} -F 6   ${case}"
 
 
 # Critical if "stuff" is 10 to 20
+inittest 'Critical if "stuff" is 10 to 20'
 case="-c @10:20"
 runexpect 0 "${plug} -F -23 ${case}"
 runexpect 0 "${plug} -F 0   ${case}"
@@ -72,11 +129,21 @@ runexpect 2 "${plug} -F 20   ${case}"
 runexpect 0 "${plug} -F 23  ${case}"
 
 
-
-plugnothres=${scriptsdir}/fakepluginnothres.py
+inittest 'All checks should return ok (non-threshold based)'
 case=""
 runexpect 0 "${plugnothres} -F -23 ${case}"
 runexpect 0 "${plugnothres} -F 0   ${case}"
 runexpect 0 "${plugnothres} -F 2   ${case}"
 runexpect 0 "${plugnothres} -F 10   ${case}"
 runexpect 0 "${plugnothres} -F 15   ${case}"
+
+
+if [ ${verbose} != 0 ]; then
+	echo OK $(( $total - $errors )) Errors ${errors}
+fi
+
+if [ $errors != 0 ]; then
+	exit 1
+else
+	exit 0
+fi
