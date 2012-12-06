@@ -187,13 +187,13 @@ class PerfData(object):
     >>> for i in perf.metrics:
     >>>     print i.label, i.value
     """
-    def __init__(self, perfdatastring):
+    metrics = []
+    invalid_metrics = []
+    def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
         # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
         perfdatastring = perfdatastring.replace('\x00','')
         perfdata = shlex.split(perfdatastring)
-        self.metrics = []
-        self.invalid_metrics = []
         for metric in perfdata:
             try:
                 self.add_perfdatametric( metric )
@@ -215,6 +215,9 @@ class PerfData(object):
         self.metrics.append(  metric )
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
+        return ' '.join(metrics)
+    def __str__(self):
+        metrics = map(lambda x: x.__repr__(), self.metrics)
         return ' '.join(metrics)
 
 class PerfDataMetric(object):
@@ -264,8 +267,6 @@ class PerfDataMetric(object):
         print p.value_unit
         >>> M
         """
-        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
-        perfdatastring = perfdatastring.replace('\x00','')
         self.label = label
         self.value = value
         self.warn = warn
@@ -273,6 +274,13 @@ class PerfDataMetric(object):
         self.min = min
         self.max = max
         self.uom = uom
+
+        perfdatastring = str(perfdatastring)
+
+        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
+        perfdatastring = perfdatastring.replace('\x00','')
+        if len(perfdatastring) == 0:
+            return
 
         # If label is single quoted, there might be any symbol in the label
         # including other single quotes and the = sign. Therefore, we take special precautions if it is so
