@@ -7,7 +7,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,15 +24,37 @@ Python Nagios extensions
 import sys
 import os
 import re
+import traceback
 from platform import node
-from optparse import OptionParser
-
+from optparse import OptionParser,OptionGroup
+from pynag.Utils import PerfData,PerfDataMetric
+import new_threshold_syntax
 
 # Map the return codes
 OK = 0
 WARNING = 1
 CRITICAL = 2
 UNKNOWN = 3
+
+ok,warning,critical,unknown = 0,1,2,3
+
+state = {}
+state['ok'] = 0
+state['warning'] = 1
+state['warn'] = 1
+state['w'] = 1
+state['critical'] = 2
+state['crit'] = 2
+state['c'] = 2
+state['unknown'] = 3
+state['u'] = 3
+
+
+state_text = {}
+state_text[ok] = 'OK'
+state_text[warning] = 'Warning'
+state_text[critical] = "Critical"
+state_text[unknown] = "Unknown"
 
 class simple:
     """
@@ -466,3 +488,300 @@ def check_range(value, range_threshold=None):
     if end is not None and float(value) > float(end):
         return False
     return True
+
+
+class PluginHelper:
+    """ PluginHelper takes away some of the tedious work of writing Nagios plugins. Primary features include:
+
+    * Keep a collection of your plugin messages (queue for both summary and longoutput)
+    * Keep record of exit status
+    * Keep a collection of your metrics (for both perfdata and thresholds)
+    * Automatic Command-line arguments
+    * Make sure output of your plugin is within Plugin Developer Guidelines
+
+    Usage:
+    p = PluginHelper()
+    p.status(warning)
+    p.add_summary('Example Plugin with warning status')
+    p.add_metric('cpu load', '90')
+    p.exit()
+    """
+    _nagios_status = -1     # exit status of the plugin
+    _long_output = []       # Long output of the plugin
+    _summary = []           # Summary of the plugin
+    _perfdata = PerfData()  # Performance and Threshold Metrics are stored here
+    show_longoutput = True  # If True, print longoutput
+    show_perfdata = True    # If True, print perfdata
+    show_summary = True     # If True, print Summary
+    show_status_in_summary = False
+    verbose = False         # Extra verbosity
+    show_debug = False      # Extra debugging
+
+    thresholds = [] # List of strings in the nagios threshold format
+    options = None          # OptionParser() options
+    arguments = None        # OptionParser() arguments
+
+    def __init__(self):
+        self.parser = OptionParser()
+        general = OptionGroup(self.parser, "Generic Options")
+        self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
+
+        display_group = OptionGroup(self.parser, "Display Options")
+        display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=False)
+        general.add_option("-d", "--debug", dest="show_debug", help="Print debug info", metavar="d", action="store_true", default=False)
+        display_group.add_option("--no-perfdata", dest="show_perfdata", help="Dont show any performance data", action="store_false", default=True)
+        display_group.add_option("--no-longoutput", dest="show_longoutput", help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=True)
+        display_group.add_option("--no-summary", dest="show_summary", help="Hide summary from plugin output", action="store_false", default=True)
+        #display_group.add_option("--show-status-in-summary", dest="show_status_in_summary", help="Prefix the summary of the plugin with OK- or WARN- ", action="store_true", default=False)
+        display_group.add_option("--get-metrics", dest="get_metrics", help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
+
+        self.parser.add_option_group(display_group)
+
+    def parse_arguments(self, argument_list=None):
+        """ Parsers commandline arguments, prints error if there is a syntax error.
+
+        Creates:
+            self.options   -- As created by OptionParser.parse()
+            self.arguments -- As created by OptionParser.parse()
+        Arguments:
+            argument_list -- By default use sys.argv[1:], override only if you know what you are doing.
+        Returns:
+            None
+        """
+        self.options, self.arguments = self.parser.parse_args(args=argument_list)
+        # TODO: Handle it if developer decides to remove some options before calling parse_arguments()
+        self.thresholds = self.options.thresholds
+        self.show_longoutput = self.options.show_longoutput
+        self.show_perfdata = self.options.show_perfdata
+        self.show_debug = self.options.show_debug
+        self.verbose = self.options.verbose
+        self.show_status_in_summary = self.options.show_status_in_summary
+
+    def add_long_output(self, message):
+        """ Appends message to the end of Plugin long_output. Message does not need a \n suffix
+
+        Examples:
+          >>> add_long_output('Status of sensor 1')
+          >>> add_long_output('* Temperature: OK')
+          >>> add_long_output('* Humidity: OK')
+          >>> get_long_output()
+          '''Status of sensor 1\n*Temperature: OK\nHumidity: OK'''
+        """
+        self._long_output.append(message)
+
+    def get_long_output(self):
+        """ Returns all long_output that has been added via add_long_output """
+        return '\n'.join(self._long_output)
+
+    def add_summary(self, message):
+        """ Adds message to Plugin Summary """
+        self._summary.append(message.strip())
+
+    def get_summary(self):
+        return '. '.join(self._summary)
+
+    def get_status(self):
+        """ Returns the worst nagios status (integer 0,1,2,3) that has been put with add_status()
+
+        If status has never been added, returns 3 for UNKNOWN
+        """
+
+        # If no status has been set, return unknown
+        if self._nagios_status == -1:
+            return UNKNOWN
+        else:
+            return self._nagios_status
+
+    def status(self, new_status=None):
+        """ Same as get_status() if new_status=None, otherwise call add_status(new_status) """
+        if new_status is None:
+            return self.get_status()
+        return self.add_status(new_status)
+
+    def add_status(self, new_status=None):
+        """ Update exit status of the nagios plugin. This function will keep history of the worst status added
+
+        Examples:
+        >>> add_status(0) # ok
+        >>> add_status(2) # critical
+        >>> add_status(1) # warning
+        >>> get_status()  #
+        2
+        """
+
+        # If new status was entered as a human readable string (ok,warn,etc) lets convert it to int:
+        if type(new_status) == type('') and new_status.lower() in state:
+            new_status = state[new_status]
+
+        self._nagios_status = max(self._nagios_status, new_status)
+
+    def add_metric(self, label="",value="",warn="",crit="",min="",max="",uom=""):
+        """ Add numerical metric (will be outputted as nagios performanca data)
+
+        Examples:
+          >>> add_metric(label="load1", value="7")
+          >>> add_metric(label="load5", value="5")
+          >>> add_metric(label="load15",value="2")
+          >>> get_perfdata()
+          "'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
+        """
+        self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
+
+    def get_metric(self, label):
+        """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found. """
+        for i in self._perfdata.metrics:
+            if i.label == label:
+                return i
+        return None
+
+    def get_perfdata(self):
+        """ Get perfdatastring for all valid perfdatametrics collected via add_perfdata """
+        return str(self._perfdata   )
+
+    def get_plugin_output(self, exit_code=None,summary=None, long_output=None, perfdata=None):
+        """ Get all plugin output as it would be printed to screen with self.exit() """
+        if summary is None:
+            summary = self.get_summary()
+        if long_output is None:
+            long_output = self.get_long_output()
+        if perfdata is None:
+            perfdata = self.get_perfdata()
+        if exit_code is None:
+            exit_code = self.get_status()
+
+        return_buffer = ""
+        if self.show_status_in_summary == True:
+            return_buffer += "%s - " % state_text[exit_code]
+        if self.show_summary == True:
+            return_buffer += summary
+        if self.show_perfdata == True and len(perfdata) > 0:
+            return_buffer += " | %s\n" % perfdata
+
+        if not return_buffer.endswith('\n'):
+            return_buffer += '\n'
+        if self.show_longoutput == True and len(long_output) > 0:
+            return_buffer += long_output
+
+        return_buffer = return_buffer.strip()
+        return return_buffer
+
+    def exit(self, exit_code=None,summary=None, long_output=None, perfdata=None):
+        """ Print all collected output to screen and exit nagios style, no arguments are needed
+            except if you want to override default behavior.
+
+        Arguments:
+            summary     -- Is this text as the plugin summary instead of self.get_summary()
+            long_output -- Use this text as long_output instead of self.get_long_output()
+            perfdata    -- Use this text instead of self.get_perfdata()
+            exit_code   -- Use this exit code instead of self.status()
+        """
+        if exit_code is None:
+            exit_code = self.get_status()
+        if self.options.get_metrics == True:
+            summary = "Available metrics for this plugin:"
+            metrics = []
+
+            for i in self._perfdata.metrics:
+                if self.options.verbose == True:
+                    metrics.append( str(i) )
+                else:
+                    metrics.append( i.label )
+            long_output = '\n'.join(metrics)
+
+
+        plugin_output = self.get_plugin_output(exit_code=exit_code,summary=summary,long_output=long_output,perfdata=perfdata)
+
+        print plugin_output
+        sys.exit(exit_code)
+
+    def check_metric(self, metric_name, thresholds):
+        """ Check one specific metric against a list of thresholds. Updates self.status() and writes to summary or longout as appropriate.
+
+        Arguments:
+          metric_name -- A string representing the name of the metric (the label part of the performance data)
+          thresholds  -- a list in the form of [ (level,range) ] where range is a string in the format of "start..end"
+
+        Examples:
+        thresholds = [(warning,'2..5'),(critical,'5..inf')]
+        >>> check_metric('load15',thresholds)
+
+        Returns:
+          None
+        """
+        metric = self.get_metric(label=metric_name)
+
+        # If threshold was specified but metric not found in our data, set status unknown
+        if metric is None:
+            self.status(unknown)
+            self.add_summary("Metric %s not found" % (metric_name))
+            return
+
+        metric_status = OK # by default assume status is ok
+        for level,threshold_range in thresholds:
+            if metric.warn == '' and level == warning:
+                metric.warn = threshold_range
+            elif metric.crit == '' and level == critical:
+                metric.crit = threshold_range
+            if new_threshold_syntax.check_range(metric.value, threshold_range):
+                metric_status = max(metric_status, level)
+                self.debug('%s is within %s range "%s"' % (metric_name, state_text[level], threshold_range))
+            else:
+                self.debug('%s is outside %s range "%s"' % (metric_name, state_text[level],threshold_range))
+
+        # OK's go to long output, errors go directly to summary
+        self.add_status(metric_status)
+        message = '%s on %s' % (state_text[metric_status], metric_name)
+
+        # Errors are added to the summary:
+        if metric_status > 0:
+            self.add_summary(message)
+
+        if self.verbose == True:
+            self.add_long_output(message)
+
+
+    def check_all_metrics(self):
+        """ Checks all metrics (add_metric() against any thresholds set in self.options.thresholds or with --threshold from commandline)"""
+        checked_metrics = []
+        for threshold in self.thresholds:
+            parsed_threshold = new_threshold_syntax.parse_threshold(threshold)
+            metric_name = parsed_threshold['metric']
+            thresholds = parsed_threshold['thresholds']
+            self.check_metric(metric_name, thresholds)
+            checked_metrics.append( metric_name )
+
+        # Lets look at metrics that were not specified on the command-line but might have a default
+        # threshold specified with their metric data
+        for i in self._perfdata.metrics:
+            if i.label in checked_metrics:
+                continue
+            thresholds = []
+
+            if i.warn != '':
+                thresholds.append( (warning, i.warn))
+            if i.crit != '':
+                thresholds.append( (critical, i.crit))
+            self.check_metric(i.label, thresholds)
+
+    def run_function(self, function):
+        """ Executes "function" and exits nagios style if there are any exceptions."""
+        try:
+            function()
+        except Exception, e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            exit_code = unknown
+            #traceback.print_exc(file=sys.stdout)
+            summary = "Unhandled '%s' exception while running plugin (traceback below)" % exc_type
+            long_output =traceback.format_exc()
+            self.exit(exit_code=exit_code, summary=summary, long_output=long_output,perfdata='')
+
+    def debug(self, message):
+        if self.show_debug == True:
+            self.add_long_output("debug: %s" % message)
+
+
+    def __str__(self):
+        return self.get_plugin_output()
+
+    def __repr__(self):
+        return self.get_plugin_output(long_output='',perfdata='')
