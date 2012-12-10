@@ -36,7 +36,7 @@ if __name__ == "__main__":
             'pynag.Model',
             'pynag.Model.EventHandlers',
             'pynag.Plugins',
-            'pynag.Plugins.new_threshold_format',
+            'pynag.Plugins.new_threshold_syntax',
             'pynag.Parsers',
             'pynag.Control',
             'pynag.Utils',
