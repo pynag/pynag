@@ -1028,7 +1028,6 @@ class ObjectDefinition(object):
                 grandchildren += i.get_effective_children(recursive)
             children += grandchildren
         return children
-
     def get_effective_parents(self, recursive=False):
         """ Get all objects that this one inherits via "use" attribute
         
@@ -1244,6 +1243,44 @@ class Host(ObjectDefinition):
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
         list_of_shortnames = ObjectRelations.host_hostgroups[self.host_name]
         return map( get_object, list_of_shortnames )
+
+    def get_effective_network_parents(self, recursive=False):
+        """ Get all objects this one depends on via "parents" attribute
+
+        Arguments:
+            recursive - If true include grandparents in list to be returned
+        Returns:
+            a list of ObjectDefinition objects
+        """
+        if self['parents'] is None:
+            return []
+        results = []
+        parents = self['parents'].split(',')
+        for parent_name in parents:
+            results.append( self.objects.get_by_name(parent_name) )
+        if recursive is True:
+            grandparents = []
+            for i in results:
+                grandparents.append( i.get_effective_network_parents(recursive=True))
+            results += grandparents
+        return results
+
+    def get_effective_network_children(self, recursive=False):
+        """ Get all objects that depend on this one via "parents" attribute
+
+        Arguments:
+            recursive - If true include grandchildren in list to be returned
+        Returns:
+            a list of ObjectDefinition objects
+        """
+        if self.host_name is None:
+            return []
+        children = self.objects.filter(parents__has_field=self.host_name)
+        if recursive == True:
+            for child in children:
+                children += child.get_effective_network_children(recursive=True)
+        return children
+
 
     def delete(self, recursive=False ):
         """ Overwrites objectdefinition so that recursive=True will delete all services as well """
