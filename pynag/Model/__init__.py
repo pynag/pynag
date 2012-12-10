@@ -1347,9 +1347,12 @@ class Service(ObjectDefinition):
     objects = ObjectFetcher('service')
 
     def get_shortname(self):
-        if not self.host_name and not self.service_description:
-            return None
-        return "%s/%s" % (self['host_name'], self['service_description'])
+        if self.host_name and self.service_description:
+            return "%s/%s" % (self['host_name'], self['service_description'])
+        if self.service_description:
+            return "%s" (self['service_description'], )
+
+        return None
 
     def _get_host_macro(self, macroname, host_name=None):
         if not host_name:
