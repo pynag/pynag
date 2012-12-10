@@ -187,18 +187,22 @@ class PerfData(object):
     >>> for i in perf.metrics:
     >>>     print i.label, i.value
     """
-    metrics = []
-    invalid_metrics = []
     def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
+        self.metrics = []
+        self.invalid_metrics = []
         # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
         perfdatastring = perfdatastring.replace('\x00','')
-        perfdata = shlex.split(perfdatastring)
-        for metric in perfdata:
-            try:
-                self.add_perfdatametric( metric )
-            except Exception:
-                self.invalid_metrics.append( metric )
+        try:
+            perfdata = shlex.split(perfdatastring)
+            for metric in perfdata:
+                try:
+                    self.add_perfdatametric( metric )
+                except Exception:
+                    self.invalid_metrics.append( metric )
+        except ValueError:
+            return
+
     def is_valid(self):
         """ Returns True if the every metric in the string is valid """
         for i in self.metrics:
