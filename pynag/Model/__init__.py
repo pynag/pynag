@@ -645,7 +645,7 @@ class ObjectDefinition(object):
         Typical result value: str('/etc/nagios/pynag/templates/hosts.cfg')
         """
         object_type = self.object_type
-        shortname = self.get_shortname()
+        description = self.get_description()
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
         global pynag_directory
         if pynag_directory is None:
@@ -653,16 +653,17 @@ class ObjectDefinition(object):
             pynag_directory = dirname(config.cfg_file) + "/pynag"
         # templates go to the template directory
         if self['register'] == "0":
-            path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
-        # Services go to same file as their host
-        elif object_type == 'service' and self.host_name is not None:
-            try:
-                host = self.get_effective_hosts()[0]
-                path = host.get_filename()
-            except IndexError:
-                path = "%s/hosts/%s.cfg" % (pynag_directory, self.host_name)
+            path = "%s/templates/%ss/%s.cfg" % (pynag_directory, object_type,description)
         else:
-            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, shortname)
+            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
+
+            # Services go to same file as their host
+            if object_type == 'service' and self.host_name is not None:
+                try:
+                    host = self.get_effective_hosts()[0]
+                    path = host.get_filename()
+                except Exception:
+                    pass
         return path
 
     def save(self):
@@ -1350,7 +1351,7 @@ class Service(ObjectDefinition):
         if self.host_name and self.service_description:
             return "%s/%s" % (self['host_name'], self['service_description'])
         if self.service_description:
-            return "%s" (self['service_description'], )
+            return "%s" % (self['service_description'], )
 
         return None
 
