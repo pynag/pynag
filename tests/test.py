@@ -27,7 +27,14 @@ import tempfile
 import shutil
 import os
 
-class testSave(unittest.TestCase):
+
+current_dir = os.path.dirname( os.path.realpath(__file__) )
+if current_dir == '':
+    current_dir = '.'
+os.chdir(current_dir)
+print "current dir changed to: ", current_dir
+
+class testModel(unittest.TestCase):
     """
     Basic Unit Tests that relate to saving objects
     """
@@ -67,11 +74,8 @@ class testSave(unittest.TestCase):
         """ Parse every testdata*/nagios/nagios.cfg
         Output will be compared with testdata*/expectedoutput.txt
         """
-        current_dir =  os.path.dirname(__file__)
-        if current_dir == '':
-            current_dir = '.'
         test_dirs = []
-        for i in os.listdir(current_dir):
+        for i in os.listdir('.'):
             if i.startswith('testdata') and os.path.isdir(i) and os.path.isfile(i + "/nagios/nagios.cfg"):
                 test_dirs.append(i)
 
@@ -90,10 +94,26 @@ class testSave(unittest.TestCase):
             print diff_output
             self.assertEqual('', diff_output)
 
+class testsFromCommandLine(unittest.TestCase):
+    """ Tommi made some command line tests for Plugin command line arguments. Lets include them.
+    """
+    def testCommandPluginTest(self):
+        expected_output = (0,'','') # Expect exit code 0 and no output
+        actual_output = pynag.Utils.runCommand(current_dir + '/../scripts/plugintest')
+        self.assertEqual(expected_output,actual_output)
+
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(testSave))
+
+    # Include tests of Model
+    suite.addTest(unittest.makeSuite(testModel))
+
+    # Include commandline tests like the one in ../scripts/plugintest
+    suite.addTest(unittest.makeSuite(testsFromCommandLine))
+
+    # Include doctests in the Plugins Module
     suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
+
     return suite
 
 
