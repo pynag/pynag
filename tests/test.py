@@ -21,6 +21,8 @@ import unittest
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
+import pynag.Plugins
+import doctest
 import tempfile
 import shutil
 import os
@@ -35,7 +37,6 @@ class testSave(unittest.TestCase):
         self.tmp_dir = tempfile.mkdtemp() # Will be deleted after test runs
         #os.mkdir(self.tmp_dir)
         pynag.Model.pynag_directory = self.tmp_dir
-        pynag.Model.ObjectDefinition.objects.all # Make sure configuration is parsed
     def tearDown(self):
         """ Clean up after test suite has finished
         """
@@ -92,7 +93,9 @@ class testSave(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(testSave))
+    suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
     return suite
 
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner().run( suite() )

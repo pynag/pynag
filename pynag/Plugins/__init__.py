@@ -392,11 +392,11 @@ def check_threshold(value, warning=None, critical=None):
         critical -- critical range
 
     # Example Usage:
-    >>> check_threshold(88, warning="90:", critical="95:")
+    >>> check_threshold(88, warning="0:90", critical="0:95")
     0
-    >>> check_threshold(92, warning="90:", critical="95:")
+    >>> check_threshold(92, warning=":90", critical=":95")
     1
-    >>> check_threshold(96, warning="90:", critical="95:")
+    >>> check_threshold(96, warning=":90", critical=":95")
     2
     """
     if critical and not check_range(value, critical):
@@ -561,11 +561,12 @@ class PluginHelper:
         """ Appends message to the end of Plugin long_output. Message does not need a \n suffix
 
         Examples:
-          >>> add_long_output('Status of sensor 1')
-          >>> add_long_output('* Temperature: OK')
-          >>> add_long_output('* Humidity: OK')
-          >>> get_long_output()
-          '''Status of sensor 1\n*Temperature: OK\nHumidity: OK'''
+          >>> p = PluginHelper()
+          >>> p.add_long_output('Status of sensor 1')
+          >>> p.add_long_output('* Temperature: OK')
+          >>> p.add_long_output('* Humidity: OK')
+          >>> p.get_long_output()
+          'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
         """
         self._long_output.append(message)
 
@@ -602,10 +603,11 @@ class PluginHelper:
         """ Update exit status of the nagios plugin. This function will keep history of the worst status added
 
         Examples:
-        >>> add_status(0) # ok
-        >>> add_status(2) # critical
-        >>> add_status(1) # warning
-        >>> get_status()  #
+        >>> p = PluginHelper()
+        >>> p.add_status(0) # ok
+        >>> p.add_status(2) # critical
+        >>> p.add_status(1) # warning
+        >>> p.get_status()  #
         2
         """
 
@@ -619,10 +621,11 @@ class PluginHelper:
         """ Add numerical metric (will be outputted as nagios performanca data)
 
         Examples:
-          >>> add_metric(label="load1", value="7")
-          >>> add_metric(label="load5", value="5")
-          >>> add_metric(label="load15",value="2")
-          >>> get_perfdata()
+          >>> p = PluginHelper()
+          >>> p.add_metric(label="load1", value="7")
+          >>> p.add_metric(label="load5", value="5")
+          >>> p.add_metric(label="load15",value="2")
+          >>> p.get_perfdata()
           "'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
         """
         if not perfdatastring is None:
@@ -705,8 +708,9 @@ class PluginHelper:
           thresholds  -- a list in the form of [ (level,range) ] where range is a string in the format of "start..end"
 
         Examples:
-        thresholds = [(warning,'2..5'),(critical,'5..inf')]
-        >>> check_metric('load15',thresholds)
+        >>> thresholds = [(warning,'2..5'),(critical,'5..inf')]
+        >>> p = PluginHelper()
+        >>> p.check_metric('load15',thresholds)
 
         Returns:
           None
