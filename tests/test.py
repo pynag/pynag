@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # pynag - Python Nagios plug-in and configuration environment
@@ -26,6 +27,7 @@ import doctest
 import tempfile
 import shutil
 import os
+import sys
 
 
 current_dir = os.path.dirname( os.path.realpath(__file__) )
@@ -98,7 +100,7 @@ class testsFromCommandLine(unittest.TestCase):
     """ Tommi made some command line tests for Plugin command line arguments. Lets include them.
     """
     def testCommandPluginTest(self):
-        expected_output = (0,'','') # Expect exit code 0 and no output
+        expected_output = (1,'','') # Expect exit code 0 and no output
         actual_output = pynag.Utils.runCommand(current_dir + '/../scripts/plugintest')
         self.assertEqual(expected_output,actual_output)
 
@@ -118,4 +120,7 @@ def suite():
 
 
 if __name__ == '__main__':
-    unittest.TextTestRunner().run( suite() )
+    state = unittest.TextTestRunner().run( suite() )
+    if state.failures or state.errors:
+        sys.exit(1)
+    sys.exit(0) 
