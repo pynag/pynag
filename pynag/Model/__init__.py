@@ -1011,6 +1011,7 @@ class ObjectDefinition(object):
             return self[ attr ]
         return ''
 
+
     def get_effective_children(self, recursive=False):
         """ Get a list of all objects that inherit this object via "use" attribute
         
@@ -1101,7 +1102,10 @@ class ObjectDefinition(object):
             }
            """
         aList = AttributeList( self[attribute_name] )
-        
+
+        # If list was empty before, add a + to it so we are appending to parent
+        if len(aList.fields) == 0:
+            aList.operator = '+'
         if value not in aList.fields:
             aList.fields.append( value )
             self[attribute_name] = str(aList)
@@ -1341,7 +1345,18 @@ class Host(ObjectDefinition):
         if self.check_command:
             command_name = self.check_command.split('!')[0]
             ObjectRelations.command_service[ self.host_name ].add( command_name )
-
+    def add_to_hostgroup(self, hostgroup_name):
+        """ Add host to a hostgroup """
+        hostgroup = Hostgroup.objects.get_by_shortname(hostgroup_name)
+        return _add_object_to_group(self, hostgroup)
+    def remove_from_hostgroup(self, hostgroup_name):
+        """ Removes host from specified hostgroup """
+        hostgroup = Hostgroup.objects.get_by_shortname(hostgroup_name)
+        return _remove_object_from_group(self, hostgroup)
+    def add_to_contactgroup(self, contactgroup):
+        return _add_to_contactgroup(self, contactgroup)
+    def remove_from_contactgroup(self, contactgroup):
+        return _remove_from_contactgroup(self, contactgroup)
 
 class Service(ObjectDefinition):
     object_type = 'service'
@@ -1451,6 +1466,21 @@ class Service(ObjectDefinition):
         """ Returns a Status object, reflecting this object status (i.e. status.dat)
         """
         return Status(self.host_name, self.service_description)
+    def add_to_servicegroup(self, servicegroup_name):
+        """ Add this service to a specific servicegroup
+        """
+        sg = Servicegroup.objects.get_by_shortname(servicegroup_name)
+        return _add_object_to_group(self, sg)
+    def remove_from_servicegroup(self, servicegroup_name):
+        """ remove this service from a specific servicegroup
+        """
+        sg = Servicegroup.objects.get_by_shortname(servicegroup_name)
+        return _remove_object_from_group(self, sg)
+    def add_to_contactgroup(self, contactgroup):
+        return _add_to_contactgroup(self, contactgroup)
+    def remove_from_contactgroup(self, contactgroup):
+        return _remove_from_contactgroup(self, contactgroup)
+
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
@@ -1498,7 +1528,10 @@ class Contact(ObjectDefinition):
         for i in groups.fields:
             ObjectRelations.contact_contactgroups[self.contact_name].add( i )
             ObjectRelations.contactgroup_contacts[i].add( self.contact_name )
-
+    def add_to_contactgroup(self, contactgroup):
+        return _add_to_contactgroup(self, contactgroup)
+    def remove_from_contactgroup(self, contactgroup):
+        return _remove_from_contactgroup(contactgroup)
 
 class ServiceDependency(ObjectDefinition):
     object_type = 'servicedependency'
@@ -1550,8 +1583,16 @@ class Contactgroup(ObjectDefinition):
         groups = AttributeList( self.contactgroup_members )
         for i in groups.fields:
             ObjectRelations.contactgroup_contactgroups[self.contactgroup_name].add( i )
+    def add_contact(self, contact_name):
+        """ Adds one specific contact to this contactgroup. """
+        contact = Contact.objects.get_by_shortname(contact_name)
+        return _add_to_contactgroup(contact, self)
+    def remove_contact(self, contact_name):
+        """ Remove one specific contact from this contactgroup """
+        contact = Contact.objects.get_by_shortname(contact_name)
+        return _remove_from_contactgroup(contact, self)
 
-   
+
 class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
     objects = ObjectFetcher('hostgroup')
@@ -1583,18 +1624,34 @@ class Hostgroup(ObjectDefinition):
         groups = AttributeList( self.hostgroup_members )
         for i in groups.fields:
             ObjectRelations.hostgroup_hostgroups[self.hostgroup_name].add( i )
+    def add_host(self, host_name):
+        """ Adds host to this group. Behaves like Hostgroup._add_member_to_group """
+        host = Host.objects.get_by_shortname(host_name)
+        return _add_object_to_group(host, self)
+    def remove_host(self, host_name):
+        """ Remove host from this group. Behaves like Hostgroup._remove_member_from_group """
+        host = Host.objects.get_by_shortname(host_name)
+        return _remove_object_from_group(host, self)
+
+
 
 
 class Servicegroup(ObjectDefinition):
     object_type = 'servicegroup'
     objects = ObjectFetcher('servicegroup')
-
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Servicegroup """
         list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
-
+    def add_service(self, shortname):
+        """ Adds service to this group. Behaves like _add_object_to_group(object, group)"""
+        service = Service.objects.get_by_shortname(shortname)
+        return _add_object_to_group(service, self)
+    def remove_service(self, shortname):
+        """ remove service from this group. Behaves like _remove_object_from_group(object, group)"""
+        service = Service.objects.get_by_shortname(shortname)
+        return _remove_object_from_group(service, self)
 
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
@@ -1625,6 +1682,112 @@ class Status(object):
         self.long_plugin_output = self.status['long_plugin_output']
         self.current_state = self.status['current_state']
         self.perfdatalist = pynag.Utils.PerfData(self.perfdata)
+
+def _add_object_to_group(my_object, my_group):
+    """ Add one specific object to a specified objectgroup
+
+    Examples:
+    c = Contact()
+    g = Contactgroup()
+
+    _add_to_group(c, g )
+    """
+    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
+    object_type = my_object.object_type     # contact,host,service, etc
+
+    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
+    group_type = my_group.object_type          # contactgroup,hostgroup,servicegroup
+    group_name = my_group.get_shortname()      # admins
+    object_name = my_object.get_shortname() # root
+
+    group_field = 'members'     # i.e. Contactgroup.members
+    object_field = group_type + 's' # i.e. Host.hostgroups
+
+    groups = my_object[object_field] or '' # f.e. value of Contact.contactgroups
+    list_of_groups = groups.split(',')
+
+    members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
+    list_of_members = members.split(',')
+
+    if group_name in list_of_groups:
+        return False # Group says it already has object as a member
+
+    if object_name in list_of_members:
+        return False # Member says it is already part of group
+
+    my_object.attribute_appendfield(object_field, group_name)
+    my_object.save()
+    return True
+def _remove_object_from_group(my_object, my_group):
+    """ Remove one specific object to a specified objectgroup
+
+    Examples:
+    c = Contact()
+    g = Contactgroup()
+
+    _remove_object_from_group(c, g )
+    """
+    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
+    group_type = my_group.object_type          # contactgroup,hostgroup,servicegroup
+    group_name = my_group.get_shortname()      # admins
+    object_name = my_object.get_shortname() # root
+
+    group_field = 'members'     # i.e. Contactgroup.members
+    object_field = group_type + 's' # i.e. Host.hostgroups
+
+    groups = my_object[object_field] or '' # f.e. value of Contact.contactgroups
+    list_of_groups = groups.split(',')
+
+    members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
+    list_of_members = members.split(',')
+
+    if group_name in list_of_groups:
+        # Remove object from the group
+        my_group.attribute_removefield(group_field, object_name)
+        my_group.save()
+
+    if object_name in list_of_members:
+        # Remove group from the object
+        my_object.attribute_removefield(object_field, group_name)
+        my_object.save()
+
+def _add_to_contactgroup(my_object, contactgroup):
+    """ add Host or Service to a contactgroup
+    """
+    if type(contactgroup) == type(str):
+        contactgroup = Contactgroup.get_by_shortname(contactgroup)
+
+    contactgroup_name = contactgroup.contactgroup_name
+
+    if my_object.object_type == "contact":
+        return _add_object_to_group(my_object, contactgroup)
+
+    current_contactgroups = AttributeList(my_object.contact_groups)
+    if contactgroup_name not in current_contactgroups.fields:
+        my_object.attribute_appendfield('contact_groups',contactgroup_name)
+        my_object.save()
+        return True
+    else:
+        return False
+
+def _remove_from_contactgroup(my_object, contactgroup):
+    """ remove Host or Service from  a contactgroup
+    """
+    if type(contactgroup) == type(str):
+        contactgroup = Contactgroup.get_by_shortname(contactgroup)
+
+    contactgroup_name = contactgroup.contactgroup_name
+    if my_object.object_type == "contact":
+        return _remove_object_from_group(my_object, contactgroup)
+
+    current_contactgroups = AttributeList(my_object.contact_groups)
+    if contactgroup_name in current_contactgroups.fields:
+        my_object.attribute_removefield('contact_groups',contactgroup_name)
+        my_object.save()
+        return True
+    else:
+        return False
+
 
 class HostStatus(Status):
     """ Contains Status info (i.e. status.dat) for one specific Host """
