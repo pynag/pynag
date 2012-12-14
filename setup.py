@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ## setup.py ###
-from distutils.core import setup
+from distutils.core import setup, Command
 from pynag import __version__
 
 NAME = "pynag"
@@ -10,6 +10,18 @@ LONG_DESC = """
 Contains python modules for pragmatically handling configuration
 file maintenance and plugin development.
 """
+
+class PynagTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    #def parse_command
+    def run(self):
+        import sys,subprocess
+        errno = subprocess.call([sys.executable, 'tests/test.py'])
+        raise SystemExit(errno)
 
 if __name__ == "__main__":
     manpath        = "share/man/man1/"
@@ -46,4 +58,5 @@ if __name__ == "__main__":
         'docs/pynag.1.gz',
         ]),
         ],
+        cmdclass = {'test': PynagTest},
     )
