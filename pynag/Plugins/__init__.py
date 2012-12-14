@@ -48,7 +48,13 @@ state['crit'] = 2
 state['c'] = 2
 state['unknown'] = 3
 state['u'] = 3
-
+state['UP'] = 0
+state['DOWN'] = 2
+state['UNREACHABLE'] = 2
+state['OK'] = 0
+state['WARNING'] = 1
+state['CRITICAL'] = 2
+state['UNKNOWN'] = 3
 
 state_text = {}
 state_text[ok] = 'OK'
