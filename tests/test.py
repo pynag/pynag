@@ -32,7 +32,7 @@ current_dir = os.path.dirname( os.path.realpath(__file__) )
 if current_dir == '':
     current_dir = '.'
 os.chdir(current_dir)
-print "current dir changed to: ", current_dir
+
 
 class testModel(unittest.TestCase):
     """
