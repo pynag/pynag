@@ -1412,7 +1412,7 @@ class mk_livestatus:
         if not os.path.exists(self.livestatus_socket_path):
             raise ParserError("Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
-            test = self.query("GET hosts")
+            self.query("GET hosts")
         except KeyError, e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
