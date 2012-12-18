@@ -973,7 +973,7 @@ class config:
             result.append( (key, value) )
         return result
 
-    def _edit_static_file(self, attribute, new_value, filename=None,old_value=None,append=False):
+    def _edit_static_file(self, attribute, new_value, filename=None, old_value=None, append=False):
         """ Modify a general config file (like nagios.cfg) that has a key=value config file format.
 
         Arguments:
@@ -990,11 +990,11 @@ class config:
             filename = self.cfg_file
 
         # For some specific attributes, append should be implied
-        if attribute in ('cfg_file','cfg_dir','broker_module'):
+        if attribute in ('cfg_file', 'cfg_dir', 'broker_module'):
             append = True
 
         # If/when we make a change, new_line is what will be written
-        new_line = '%s=%s\n' % (attribute,new_value)
+        new_line = '%s=%s\n' % (attribute, new_value)
 
         # new_value=None means line should be removed
         if new_value is None:
@@ -1306,7 +1306,7 @@ class config:
             
             ## Add cfg_file objects to cfg file list
             if config_object == "cfg_file" and os.path.isfile(config_value):
-                    cfg_files.append(config_value)
+                cfg_files.append(config_value)
 
             ## Parse all files in a cfg directory
             if config_object == "cfg_dir":
