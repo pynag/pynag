@@ -128,8 +128,10 @@ class GitEventHandler(BaseEventHandler):
         #self._run_command('git status --short')
 
         self._update_author()
+
     def debug(self, object_definition, message):
         pass
+
     def _update_author(self):
         """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
 
@@ -137,6 +139,7 @@ class GitEventHandler(BaseEventHandler):
         """
         environ['GIT_AUTHOR_NAME'] = self.modified_by
         environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
+
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         cwd = self.gitdir
@@ -148,9 +151,11 @@ class GitEventHandler(BaseEventHandler):
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
             raise EventHandlerError( errorstring, errorcode=returncode, errorstring=stderr )
         return stdout
+
     def is_commited(self):
         """ Returns True if all files in git repo are fully commited """
         return self.get_uncommited_files() == 0
+
     def get_uncommited_files(self):
         """ Returns a list of files that are have unstaged changes """
         output = self._run_command("git status --porcelain")
@@ -161,6 +166,7 @@ class GitEventHandler(BaseEventHandler):
                 continue
             result.append( {'status':line[0], 'filename': " ".join(line[1:])} )
         return result
+
     def _git_init(self, directory=None):
         """ Initilizes a new git repo in directory. If directory is none, use self.gitdir """
         self._update_author()
@@ -175,6 +181,7 @@ class GitEventHandler(BaseEventHandler):
         directory = dirname(filename)
         command= "git add '%s'" % filename
         return self._run_command(command)
+
     def _git_commit(self, filename, message, filelist=[]):
         """ Wrapper around git commit command """
         self._update_author()
@@ -184,6 +191,7 @@ class GitEventHandler(BaseEventHandler):
             filename = "' '".join(filelist)
         command = "git commit '%s' -m '%s'" % (filename, message)
         return self._run_command(command=command)
+
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
         filename = object_definition.get_filename()
@@ -192,6 +200,7 @@ class GitEventHandler(BaseEventHandler):
             self._git_commit(filename,
                 message="External changes commited in %s '%s'" %
                         (object_definition.object_type, object_definition.get_shortname()))
+
     def save(self, object_definition, message):
         filename = object_definition.get_filename()
         if len(self.messages) > 0:
@@ -201,25 +210,26 @@ class GitEventHandler(BaseEventHandler):
         if self._is_dirty(filename):
             self._git_commit(filename, message)
         self.messages = []
+
     def _is_dirty(self,filename):
         """ Returns True if filename needs to be committed to git """
         command = "git status --porcelain '%s'" % filename
         output = self._run_command(command)
         # Return True if there is any output
         return len(output) > 0
+
     def write(self, object_definition, message):
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
         self.messages.append( " * %s" % message )
 
 
-
-
 class EventHandlerError(Exception):
-    pass
+
     def __init__(self, message, errorcode=None, errorstring=None):
         self.message = message
         self.errorcode = errorcode
         self.errorstring = errorstring
+
     def __str__(self):
         return self.errorstring
