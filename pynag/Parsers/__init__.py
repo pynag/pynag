@@ -1482,8 +1482,11 @@ class status:
     Example usage:
     >>> s = status() # filename autodetected
     >>> s.parse()
-    >>> print s.data.keys()
-    ['info', 'servicestatus', 'contactstatus', 'hoststatus', 'programstatus']
+    >>> keys = s.data.keys()
+    >>> 'info' in keys
+    True
+    >>> 'programstatus' in keys
+    True
     >>> for service in s.data.get('servicestatus',[]):
     ...     host_name=service.get('host_name', None)
     ...     description=service.get('service_description',None)

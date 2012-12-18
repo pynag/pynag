@@ -19,15 +19,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import unittest
-import pynag.Model
-import pynag.Parsers
-import pynag.Utils
-import pynag.Plugins
 import doctest
 import tempfile
 import shutil
 import os
 import sys
+
+import pynag.Model
+import pynag.Parsers
+import pynag.Utils
+import pynag.Plugins
 
 
 current_dir = os.path.dirname( os.path.realpath(__file__) )
@@ -66,6 +67,7 @@ class testParsers(unittest.TestCase):
         o = pynag.Parsers.object_cache()
         o.parse()
         self.assertGreater(len(o.data.keys()), 0, 'Object cache seems to be empty')
+
 class testModel(unittest.TestCase):
     """
     Basic Unit Tests that relate to saving objects
@@ -197,7 +199,16 @@ def suite():
     suite.addTest(unittest.makeSuite(testsFromCommandLine))
 
     # Include doctests in the Plugins Module
-    suite.addTests( plugin_doctests )
+    suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
+
+    # Include doctests in the Parsers Module
+    suite.addTests( doctest.DocTestSuite(pynag.Parsers) )
+
+    # Include doctests in the Model Module
+    suite.addTests( doctest.DocTestSuite(pynag.Model) )
+
+    # Include doctests in the Utils Module
+    suite.addTests( doctest.DocTestSuite(pynag.Utils) )
 
     return suite
 
