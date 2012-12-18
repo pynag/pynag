@@ -29,7 +29,6 @@ import re
 import pynag.Plugins
 import shlex
 
-from pynag.Model.EventHandlers import EventHandlerError
 
 class PynagError(Exception):
     """ The default pynag exception.
@@ -38,6 +37,8 @@ class PynagError(Exception):
     to inherit this one.
 
     """
+    def __init__(self):
+        pass
 
 
 
@@ -381,3 +382,5 @@ class PerfDataMetric(object):
         if len(tmp) == 0:
             return '',''
         return tmp[0]
+
+from pynag.Model.EventHandlers import EventHandlerError
