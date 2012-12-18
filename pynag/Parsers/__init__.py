@@ -1476,6 +1476,7 @@ class mk_livestatus:
         return self.query('GET contacts')
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
+
 class status:
     """ Easy way to parse status.dat file from nagios
 
