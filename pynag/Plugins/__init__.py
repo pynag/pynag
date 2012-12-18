@@ -730,7 +730,7 @@ class PluginHelper:
             return
 
         metric_status = OK # by default assume status is ok
-        for level,threshold_range in thresholds:
+        for level, threshold_range in thresholds:
             if metric.warn == '' and level == warning:
                 metric.warn = threshold_range
             elif metric.crit == '' and level == critical:
@@ -785,7 +785,7 @@ class PluginHelper:
             exit_code = unknown
             #traceback.print_exc(file=sys.stdout)
             summary = "Unhandled '%s' exception while running plugin (traceback below)" % exc_type
-            long_output =traceback.format_exc()
+            long_output = traceback.format_exc()
             self.exit(exit_code=exit_code, summary=summary, long_output=long_output,perfdata='')
 
     def debug(self, message):
