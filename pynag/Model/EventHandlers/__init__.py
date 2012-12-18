@@ -34,7 +34,6 @@ import subprocess
 import shlex
 from os import environ
 from getpass import getuser
-from os.path import dirname
 
 class BaseEventHandler:
     def __init__(self, debug=False):
