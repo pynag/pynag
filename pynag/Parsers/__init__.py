@@ -1477,7 +1477,7 @@ class mk_livestatus:
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
-class status:
+class Status:
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
