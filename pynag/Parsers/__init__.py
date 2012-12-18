@@ -1508,7 +1508,7 @@ class status:
             c = config(cfg_file=cfg_file)
             for key,value in c._load_static_file():
                 if key == "status_file":
-                    filename=value
+                    filename = value
 
         self.filename = filename
         self.data = None
