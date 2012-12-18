@@ -178,7 +178,6 @@ class GitEventHandler(BaseEventHandler):
     def _git_add(self, filename):
         """ Wrapper around git add command """
         self._update_author()
-        directory = dirname(filename)
         command= "git add '%s'" % filename
         return self._run_command(command)
 
