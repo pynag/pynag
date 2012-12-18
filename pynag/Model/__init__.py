@@ -596,6 +596,8 @@ class ObjectDefinition(object):
             return self.get_description()
         if key == 'shortname':
             return self.get_shortname()
+        if key == 'effective_command_line':
+            return self.get_effective_command_line()
         if key == 'register' and not self._defined_attributes.has_key('register'):
             return "1"
         if key == 'meta':

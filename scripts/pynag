@@ -21,7 +21,7 @@
 
 import sys
 import traceback
-from optparse import OptionParser
+from optparse import OptionParser,OptionGroup
 
 import pynag.Model
 import pynag.Parsers
@@ -51,12 +51,25 @@ For help on specific sub-command type:
 """
 
 parser = OptionParser(usage=usage)
-parser.add_option('--examples', dest="examples",
-    default=False, action="store_true", help="Show example usage")
-parser.add_option('--debug', dest="debug",
-    default=False, action="store_true", help="Print debug information to screen")
-parser.add_option('--cfg_file', dest="cfg_file",
+display_options = OptionGroup(parser, 'Display Options')
+
+parser.add_option('--cfg_file', dest="cfg_file", metavar='filename',
     default=None, help="Path to your nagios.cfg file")
+
+display_options.add_option('--examples', dest="examples",
+    default=False, action="store_true", help="Show example usage")
+display_options.add_option('--debug', dest="debug",
+    default=False, action="store_true", help="Print debug information to screen")
+display_options.add_option("--verbose", dest="verbose", action="store_true",
+    default=False,help="Be extra verbose in output")
+display_options.add_option("--quiet", dest="quiet", action="store_true",
+    default=False,help="Be less verbose in output")
+display_options.add_option("--width", dest="width",
+    default=20, help="Column width in output (default 20)")
+display_options.add_option("--seperator", dest="seperator", metavar='sep',
+    default=None,help="Seperator between columns in output. If none is specified, then fixed with columns are used instead of seperators.")
+
+parser.add_option_group(display_options)
 
 def parse_arguments():
     """ Parse command line arguments and run command specified commands """
@@ -114,7 +127,8 @@ def execute_check_command():
             else:
                 raise pynag.Utils.PynagError("Host %s does not seem to have any service named '%s'" % (host_name,service_description))
 
-        print "# %s" %(obj.get_effective_command_line(host_name=host_name))
+        if opts.quiet == False:
+            print "# %s" %(obj.get_effective_command_line(host_name=host_name))
         exit_code,stdout,stderr = obj.run_check_command(host_name=host_name)
         print stdout,
         if stderr != '':
@@ -123,7 +137,8 @@ def execute_check_command():
             print stderr,
             print "--------------------"
         print ""
-        print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
+        if opts.quiet == False:
+            print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
     except KeyError, e:
         parser.error("Could not find host '%s'" % e)
 
@@ -137,7 +152,6 @@ def search_objects(search_statements):
     """
     conditions = {}
     objects = []
-    statements = search_statements
     for statement in search_statements:
         tmp = statement.split('=',1)
         if statement.lower() == 'and': continue
@@ -167,8 +181,6 @@ def main_config():
         default=None, help="Remove key=value in cfg file (example: cfg_file=/etc/nagios/myconfig.cfg)")
     parser.add_option("--get", dest="get",
         default=None, help="Print one specific value from your file")
-    parser.add_option("--verbose", dest="verbose", action="store_true",
-                      default=False,help="Increase verbosity")
     (opts,args) = parser.parse_args(sys.argv[1:])
     pynag.Model.cfg_file = opts.cfg_file
 
@@ -205,9 +217,11 @@ def main_config():
         for k,v in attributes.items():
             result = c._edit_static_file(attribute=k, new_value=v, old_value=opts.old_value, append=append)
             if result:
-                print "%s: set %s=%s" % (c.cfg_file, k, result)
+                if opts.quiet == False:
+                    print "%s: set %s=%s" % (c.cfg_file, k, result)
             else:
-                print "%s: No changed were needed" % c.cfg_file
+                if opts.quiet == False:
+                    print "%s: No changed were needed" % c.cfg_file
         return
 
 
@@ -219,9 +233,11 @@ def main_config():
         k,v = tmp
         result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=False)
         if result:
-            print "%s: set %s=%s" % (c.cfg_file, k, v)
+            if opts.quiet == False:
+                print "%s: set %s=%s" % (c.cfg_file, k, v)
         else:
-            print "%s: No changed were needed" % c.cfg_file
+            if opts.quiet == False:
+                print "%s: No changed were needed" % c.cfg_file
 
     # Handle a --append operation
     if opts.append is not None:
@@ -231,16 +247,20 @@ def main_config():
         k,v = tmp
         result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=True)
         if result:
-            print "%s: set %s=%s" % (c.cfg_file, k, v)
+            if opts.quiet == False:
+                print "%s: set %s=%s" % (c.cfg_file, k, v)
         else:
-            print "%s: No changed were needed" % c.cfg_file
+            if opts.quiet == False:
+                print "%s: No changed were needed" % c.cfg_file
     # Handle a remove operation
     if opts.remove is not None:
         result = c._edit_static_file(filename=c.cfg_file, attribute=opts.remove, new_value=None, old_value=opts.old_value, )
         if result:
-            print "%s: %s was removed" % (c.cfg_file, k)
+            if opts.quiet == False:
+                print "%s: %s was removed" % (c.cfg_file, k)
         else:
-            print "%s: No changed were needed" % c.cfg_file
+            if opts.quiet == False:
+                print "%s: No changed were needed" % c.cfg_file
     # Handle --get operation
     if opts.get is not None:
         found_some_attributes = False
@@ -250,7 +270,7 @@ def main_config():
             if k == opts.get:
                 found_some_attributes=True
                 print v
-        if not found_some_attributes:
+        if not found_some_attributes and opts.quiet == False:
             print "no '%s=*' found in '%s'" % (opts.get, c.cfg_file)
 
 def list_objects():
@@ -258,14 +278,11 @@ def list_objects():
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
-    parser.add_option("--width", dest="width", 
-                      default=20, help="Column width in output (default 20)")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
         return print_examples()
-    objects = None
-    attributes = []
+
 
     attributes,where_statement=split_where_and_set(args)
     objects = search_objects(search_statements=where_statement)
@@ -275,20 +292,17 @@ def list_objects():
         for i in objects:
             print i
     else:
-        pretty_print(objects=objects, attributes=attributes,width=opts.width)
+        pretty_print(objects=objects,attributes=attributes)
 
 def delete_object():
     """ Delete one specific nagios object """
     parser.usage = '''%prog delete <WHERE ...>'''
-    parser.add_option("--verbose", dest="verbose", action="store_true",
-                      default=False,help="Increase verbosity")
     parser.add_option("--force", dest="force", action="store_true",
                       default=False,help="Don't prompt for confirmation")
     parser.add_option("--recursive", dest="recursive", action="store_true",
                       default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
-    objects = None
 
     attributes,where_statement=split_where_and_set(args)
     objects = search_objects(search_statements=where_statement)
@@ -308,16 +322,16 @@ def delete_object():
             print i
         try:
             i.delete(recursive=opts.recursive)
-            print i.get_shortname(), "deleted."
+            if opts.quiet == False:
+                print i.get_shortname(), "deleted."
         except ValueError:
             print i.get_shortname(), "not found."
-    print len(objects), "objects deleted"
+    if opts.quiet == False:
+        print len(objects), "objects deleted"
 
 def add_object():
     parser.usage = ''' %prog add <object_type> <attr1=value1> [attr2=value2]'''
 
-    parser.add_option("--verbose", dest="verbose", action="store_true",
-                      default=False,help="Increase verbosity")
     parser.add_option("--filename", dest="filename",
                       help="Write to this specific file")
     (opts,args) = parser.parse_args(sys.argv[2:])
@@ -375,19 +389,19 @@ def acknowledge():
             objects.remove(i)
 
     # Here we actually ack the objects
-    pretty_print(objects)
+    if opts.quiet == False:
+        pretty_print(objects)
     answer = raw_input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
     if answer.lower() not in ('y', 'yes'):
         return
 
     for i in objects:
-        print "Acknowledge %s: %s" % (i.object_type,i.get_shortname())
+        if opts.quiet == False:
+            print "Acknowledge %s: %s" % (i.object_type,i.get_shortname())
         i.acknowledge(comment=opts.comment,author=opts.author,timestamp=opts.ts)
 
 def copy_object():
     parser.usage = ''' %prog copy <SET attr1=value1 [attr2=val2]> <WHERE ...> [--filename /path/to/file] '''
-    parser.add_option("--verbose", dest="verbose", action="store_true",
-        default=False,help="Increase verbosity")
     parser.add_option("--filename", dest="filename",
         help="Write to this specific file")
     parser.add_option("--recursive", dest="recursive", action="store_true",
@@ -417,18 +431,18 @@ def copy_object():
         return
     for obj in objects:
         new_obj = obj.copy(filename=opts.filename,recursive=opts.recursive,**set)
-        print "Object saved to", new_obj.get_filename()
+        if opts.quiet == False:
+            print "Object saved to", new_obj.get_filename()
         if opts.verbose:
             print "# This is what actual statement looks like"
             print new_obj
-    print "%s objects copied." % (len(objects))
+    if opts.quiet == False:
+        print "%s objects copied." % (len(objects))
 def livestatus():
     """ Make a custom query to MK Livestatus """
     parser.usage = '''%prog livestatus '<query>' [query2] [query3] [...] '''
     parser.add_option("--get", dest="get", metavar="table",
         default=None, help="GET a specific livestatus table (i.e. services, hosts, log)")
-    parser.add_option("--width", dest="width",
-        default=20, help="Column width in output (default 20)")
     parser.add_option("--filter", dest="filters", action="append",
         default=[], help="Add a Filter: to your query")
     parser.add_option("--columns", dest="columns", action="append",
@@ -439,8 +453,6 @@ def livestatus():
         default=None, help="List available columns in table you specify (i.e. services, hosts)")
     parser.add_option("--socket", dest="socket",
         default=None, help="Path to livestatus (by default detect it from nagios.cfg)")
-    parser.add_option("--verbose", dest="verbose", action='store_true',
-        default=False, help="Be extra verbose")
 
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
@@ -479,12 +491,10 @@ def livestatus():
     # We are done with the query, lets output the results
     if all_columns == []:
         all_columns = ["name"]
-    pretty_print(result, width=opts.width, attributes=all_columns)
+    pretty_print(result, attributes=all_columns)
 
 def update_objects():
     parser.usage = ''' %prog update [SET attr1=value1 [attr2=value2]] [WHERE ...]'''
-    parser.add_option("--verbose", dest="verbose", action='store_true',
-                      default=False, help="Print updated definition after changing")
     parser.add_option("--force", dest="force", action="store_true",
                       default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
@@ -514,34 +524,48 @@ def update_objects():
 
     if opts.verbose:
         for i in objects: print i
-    print "Updated %s objects" % (len(objects))
+    if opts.quiet == False:
+        print "Updated %s objects" % (len(objects))
 
-def pretty_print(objects,width=40, attributes=None):
+def pretty_print(objects, attributes=None):
     """ Takes in a list of objects and prints them in a pretty table format """
+
     # Set default attributes if none are specified
     if not attributes:
         attributes = ['object_type','shortname', 'filename']
-    
-    width = "%%-%ss" % width # by default should turn into "%-30s"    
+
+    # Set minimum width of columns. High values here effective turn output into fixed with
+    min_width = "%%-%ss" % parser.values.width # by default should turn this string into "%-20s"
+
+    # If no column seperator was specified, use emptystring
+    if parser.values.seperator is None:
+        parser.values.seperator = ''
+
     # Print header
-    for attr in attributes:
-        print width % attr,
-    print
-    print "-"*80
+    if parser.values.quiet == False:
+        # Apply fixed with to columns
+        transformed_attributes = map(lambda x: min_width % x, attributes)
+        row = parser.values.seperator.join(transformed_attributes)
+        print row
+        print "-"*80
     
     # Print one row for each object
     for i in objects:
-        for attr in attributes:
-            if attr == 'shortname': value = i.get_shortname()
-            elif attr == 'effective_command_line': value = i.get_effective_command_line()
-            elif attr == "id": value = i.get_id()
-            else: value = i.get(attr,"null")
-            print width % value,
-        print
-    message = "%s objects matches search condition" % ( len(objects) )
-    pre = "-"*10
-    post = "-"*(80-10-len(message))
-    print pre + message + post
+        # For every attribute we want to print, get the value for this row
+        columns = map(lambda x: i.get(x, "null"), attributes)
+
+        # Pad every column with spaces if width was specified
+        transformed_columns = map(lambda x: min_width % x, columns)
+
+        # Print the row
+        print parser.values.seperator.join(transformed_columns)
+
+    # Print Footer
+    if parser.values.quiet == False:
+        message = "%s objects matches search condition" % ( len(objects) )
+        pre = "-"*10
+        post = "-"*(80-10-len(message))
+        print pre + message + post
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once

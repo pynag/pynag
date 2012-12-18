@@ -147,7 +147,7 @@ Set check_period to 24x7 on all services that belong to host "myhost":
 	# pynag delete where object_type=service and host_name='mydeprecated_host'
 	# pynag delete where filename__startswith='/etc/nagios/myoldhosts'
 
-=execute examples
+=head2 execute examples
 
 	# pynag execute localhost
 	# pynag execute localhost "Disk Space"
