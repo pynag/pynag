@@ -52,7 +52,7 @@ def runCommand(command, raise_error_on_fail=False):
      """
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
     stdout, stderr = proc.communicate('through stdin to stdout')
-    result = proc.returncode,stdout,stderr
+    result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail==True:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
         error_string += "* Error was:\n%s\n" % (stderr.strip())
