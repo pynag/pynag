@@ -656,3 +656,4 @@ if __name__ == '__main__':
         print "%s: %s" % (e.__class__.__name__, e)
         if debug:
             traceback.print_exc(file=sys.stdout)
+        sys.exit(1)
