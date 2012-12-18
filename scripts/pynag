@@ -41,6 +41,7 @@ Available subcommands:
   execute       Execute a check command for host or service
   config        View or edit values in your nagios.cfg
   acknowledge   Acknowledge host/service problems
+  livestatus    Make queries to MK Livestatus
   version       Output version information and exit
 
 See "man pynag" for examples and clarification of "where" syntax.
@@ -75,6 +76,8 @@ def parse_arguments():
         delete_object()
     elif sys.argv[1] == 'acknowledge':
         acknowledge()
+    elif sys.argv[1] == 'livestatus':
+        livestatus()
     elif sys.argv[1] in ('config','config-set', 'config-append'):
         # TODO: Deprecate config-set and config-append in 0.5.x series
         main_config()
@@ -419,7 +422,64 @@ def copy_object():
             print "# This is what actual statement looks like"
             print new_obj
     print "%s objects copied." % (len(objects))
+def livestatus():
+    """ Make a custom query to MK Livestatus """
+    parser.usage = '''%prog livestatus '<query>' [query2] [query3] [...] '''
+    parser.add_option("--get", dest="get", metavar="table",
+        default=None, help="GET a specific livestatus table (i.e. services, hosts, log)")
+    parser.add_option("--width", dest="width",
+        default=20, help="Column width in output (default 20)")
+    parser.add_option("--filter", dest="filters", action="append",
+        default=[], help="Add a Filter: to your query")
+    parser.add_option("--columns", dest="columns", action="append",
+        default=[], help="Space seperated list of columns to display")
+    parser.add_option("--limit", dest="limit",
+        default=None, help="Limit results to LIMIT rows")
+    parser.add_option("--list-columns", dest="list_columns", metavar="table",
+        default=None, help="List available columns in table you specify (i.e. services, hosts)")
+    parser.add_option("--socket", dest="socket",
+        default=None, help="Path to livestatus (by default detect it from nagios.cfg)")
+    parser.add_option("--verbose", dest="verbose", action='store_true',
+        default=False, help="Be extra verbose")
 
+    (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
+    if opts.examples == True:
+        return print_examples()
+
+    # We will be working with args, here as the main source of queries.
+    # Any options added should be appended to args
+    if opts.get is not None:
+        args.append( "GET %s" % opts.get )
+    if opts.limit is not None:
+        args.append( 'Limit: %s' % opts.limit )
+    for i in opts.filters:
+        args.append( 'Filter: %s' % i )
+    all_columns = []
+    for i in opts.columns:
+        all_columns += i.split()
+    if all_columns != []:
+        args.append('Columns: %s' % ' '.join(all_columns))
+    if opts.list_columns is not None:
+        all_columns = ["name","type","description"]
+        args = ["GET columns","Columns: name type description","Filter: table = %s" % opts.list_columns]
+
+    if len(args) == 0:
+        parser.error('No arguments provided. Take a look at --examples or --help')
+
+    # Here we run the actual query
+    if opts.verbose == True:
+        print "--- this query will be sent ---"
+        for i in args:
+            print i
+        print "--- end of query --------------"
+    livestatus = pynag.Parsers.mk_livestatus(nagios_cfg_file=opts.cfg_file, livestatus_socket_path=opts.socket)
+    result = livestatus.query(*args)
+
+    # We are done with the query, lets output the results
+    if all_columns == []:
+        all_columns = ["name"]
+    pretty_print(result, width=opts.width, attributes=all_columns)
 
 def update_objects():
     parser.usage = ''' %prog update [SET attr1=value1 [attr2=value2]] [WHERE ...]'''
@@ -557,7 +617,11 @@ examples['execute'] = '''
 # %prog execute localhost
 # %prog execute localhost "Disk Space"
 '''
-
+examples['livestatus'] = '''
+# %prog livestatus --get hosts --columns "state address name"
+# %prog livestatus --get services --columns "state host_name description" --filter "host_name = localhost" --limit 10
+# %prog livestatus --list-columns hosts
+'''
 def print_examples():
     """ Print example usage and exit.
 
