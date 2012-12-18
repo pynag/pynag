@@ -1356,7 +1356,7 @@ class config:
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
-        return map(lambda x: re.sub("all_","", x), self.data.keys())
+        return map(lambda x: re.sub("all_", "", x), self.data.keys())
 
     def cleanup(self):
         """
