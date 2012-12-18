@@ -30,7 +30,6 @@ Example:
 """
 import pynag.Plugins
 from pynag.Utils import PynagError
-from pynag.Plugins import OK, CRITICAL, WARNING
 
 
 def check_threshold(value, ok=None, warning=None, critical=None):
@@ -61,13 +60,13 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     2
     """
     if ok and check_range(value, ok):
-        return OK
+        return pynag.Plugins.OK
     elif critical and check_range(value, critical):
-        return CRITICAL
+        return pynag.Plugins.CRITICAL
     elif warning and check_range(value, warning):
-        return WARNING
+        return pynag.Plugins.WARNING
     else:
-        return OK
+        return pynag.Plugins.OK
 
 
 def check_range(value, range):
