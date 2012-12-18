@@ -87,7 +87,7 @@ class FileLogger(BaseEventHandler):
         self._append_to_file( message )
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        message = "%s: %s" %( time.asctime(), message )
+        message = "%s: %s" % ( time.asctime(), message )
         self._append_to_file( message )
 
 
