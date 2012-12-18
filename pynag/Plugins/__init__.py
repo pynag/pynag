@@ -26,8 +26,8 @@ import os
 import re
 import traceback
 from platform import node
-from optparse import OptionParser,OptionGroup
-from pynag.Utils import PerfData,PerfDataMetric
+from optparse import OptionParser, OptionGroup
+from pynag.Utils import PerfData, PerfDataMetric
 import new_threshold_syntax
 
 # Map the return codes
