@@ -597,7 +597,7 @@ class config:
         file.close()
         return True        
             
-    def edit_object(self,item, field_name, new_value):
+    def edit_object(self, item, field_name, new_value):
         """
         Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
         
