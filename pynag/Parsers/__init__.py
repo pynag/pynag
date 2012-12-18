@@ -1406,6 +1406,7 @@ class mk_livestatus:
             raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
+
     def test(self):
         """ Raises ParserError if there are problems communicating with livestatus socket """
         if not os.path.exists(self.livestatus_socket_path):
