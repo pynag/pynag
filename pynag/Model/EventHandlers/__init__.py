@@ -105,7 +105,6 @@ class GitEventHandler(BaseEventHandler):
         auto_init = If True, run git init if no git repository is found.
         """
         BaseEventHandler.__init__(self)
-        import subprocess
 
         # Git base is the nagios config directory
         self.gitdir = gitdir
