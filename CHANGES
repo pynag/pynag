@@ -1,3 +1,15 @@
+Changes in 0.4.9 (unreleased)
+
+New Features:
+    - pynag cli now has livestatus subcommand
+    - pynag cli multiple changes to make it more friendly to bash scripts
+    - --quiet option
+    - --seperator option
+    - add_to_contactgroup() created for pynag.Model.Services, Hosts, and Contacts
+
+Bugfixes:
+    - Multiple doctest and unittest fixes and improvements to code quality
+
 Changes in 0.4.8 (Dec 10 2012)
 
 New Features:
