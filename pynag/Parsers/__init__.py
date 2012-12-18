@@ -679,7 +679,7 @@ class config:
         """
         Delete object from configuration files.
         """
-        object_key = self._get_key(object_type,user_key)
+        object_key = self._get_key(object_type, user_key)
 
         k = 'all_%s' % object_type
         if k not in self.data: return None
@@ -718,19 +718,19 @@ class config:
         """
         Delete a host
         """
-        return self.delete_object('host',object_name, user_key = user_key)
+        return self.delete_object('host', object_name, user_key = user_key)
 
     def delete_hostgroup(self, object_name, user_key = None):
         """
         Delete a hostgroup
         """
-        return self.delete_object('hostgroup',object_name, user_key = user_key)
+        return self.delete_object('hostgroup', object_name, user_key = user_key)
 
     def get_object(self, object_type, object_name, user_key = None):
         """
         Return a complete object dictionary
         """
-        object_key = self._get_key(object_type,user_key)
+        object_key = self._get_key(object_type, user_key)
 
         target_object = None
 
@@ -748,55 +748,55 @@ class config:
         """
         Return a host object
         """
-        return self.get_object('host',object_name, user_key = user_key)
+        return self.get_object('host', object_name, user_key = user_key)
 
     def get_servicegroup(self, object_name, user_key = None):
         """
         Return a Servicegroup object
         """
-        return self.get_object('servicegroup',object_name, user_key = user_key)
+        return self.get_object('servicegroup', object_name, user_key = user_key)
 
     def get_contact(self, object_name, user_key = None):
         """
         Return a Contact object
         """
-        return self.get_object('contact',object_name, user_key = user_key)
+        return self.get_object('contact', object_name, user_key = user_key)
 
     def get_contactgroup(self, object_name, user_key = None):
         """
         Return a Contactgroup object
         """
-        return self.get_object('contactgroup',object_name, user_key = user_key)
+        return self.get_object('contactgroup', object_name, user_key = user_key)
 
     def get_timeperiod(self, object_name, user_key = None):
         """
         Return a Timeperiod object
         """
-        return self.get_object('timeperiod',object_name, user_key = user_key)
+        return self.get_object('timeperiod', object_name, user_key = user_key)
 
     def get_command(self, object_name, user_key = None):
         """
         Return a Command object
         """
-        return self.get_object('command',object_name, user_key = user_key)
+        return self.get_object('command', object_name, user_key = user_key)
 
     def get_hostgroup(self, object_name, user_key = None):
         """
         Return a hostgroup object
         """
-        return self.get_object('hostgroup',object_name, user_key = user_key)
+        return self.get_object('hostgroup', object_name, user_key = user_key)
 
     def get_servicedependency(self, object_name, user_key = None):
         """
         Return a servicedependency object
         """
-        return self.get_object('servicedependency',object_name, user_key = user_key)
+        return self.get_object('servicedependency', object_name, user_key = user_key)
 
     def get_hostdependency(self, object_name, user_key = None):
         """
         Return a hostdependency object
         """
-        return self.get_object('hostdependency',object_name, user_key = user_key)
+        return self.get_object('hostdependency', object_name, user_key = user_key)
 
     def get_service(self, target_host, service_description):
         """
