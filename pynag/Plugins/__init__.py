@@ -466,7 +466,7 @@ def check_range(value, range_threshold=None):
 
     # if no range_threshold is provided, assume everything is ok
     if not range_threshold:
-        range_threshold='~:'
+        range_threshold = '~:'
     range_threshold = str(range_threshold)
     # If range starts with @, then we do the opposite
     if range_threshold[0] == '@':
@@ -474,7 +474,7 @@ def check_range(value, range_threshold=None):
 
     value = float(value)
     if range_threshold.find(':') > -1:
-        (start,end) = (range_threshold.split(':', 1))
+        (start, end) = (range_threshold.split(':', 1))
     # we get here if ":" was not provided in range_threshold
     else:
         start = ''
