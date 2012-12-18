@@ -476,9 +476,9 @@ class config:
                     object_definition[i] = change
                     break
             if not change:
-                    # Attribute was not found. Lets add it
-                    change = "\t%-30s%s\n" % (field_name, new_value)
-                    object_definition.insert(i,change)
+                # Attribute was not found. Lets add it
+                change = "\t%-30s%s\n" % (field_name, new_value)
+                object_definition.insert(i,change)
         # Lets put a banner in front of our item
         if make_comments:
             comment = '# Edited by PyNag on %s\n' % time.ctime()
