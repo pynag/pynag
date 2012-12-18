@@ -36,6 +36,36 @@ if current_dir == '':
 os.chdir(current_dir)
 
 
+class testParsers(unittest.TestCase):
+    """ Basic unit tests of Parsers module
+    """
+    def testLivestatus(self):
+        "Test mk_livestatus integration"
+        livestatus = pynag.Parsers.mk_livestatus()
+        requests = livestatus.query('GET status', 'Columns: requests')
+        self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
+    def testConfig(self):
+        "Test pynag.Parsers.config()"
+        c = pynag.Parsers.config()
+        c.parse()
+        self.assertGreater(len(c.data), 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+    def testStatus(self):
+        "Unit test for pynag.Parsers.status()"
+        s = pynag.Parsers.status()
+        s.parse()
+        # Get info part from status.dat file
+        info = s.data['info']
+
+        # It only has one object so..
+        info = info[0]
+
+        # Try to get current version of nagios
+        version = info['version']
+    def testObjectCache(self):
+        "Test pynag.Parsers.object_cache"
+        o = pynag.Parsers.object_cache()
+        o.parse()
+        self.assertGreater(len(o.data.keys()), 0, 'Object cache seems to be empty')
 class testModel(unittest.TestCase):
     """
     Basic Unit Tests that relate to saving objects
@@ -95,14 +125,64 @@ class testModel(unittest.TestCase):
             diff_output = pynag.Utils.runCommand("diff -uwB expected_output.txt '%s'" % (tmp_file))[1]
             print diff_output
             self.assertEqual('', diff_output)
+    def testChangeAttribute(self):
+        """ Change a single attribute in a pynag Model object
+        """
+
+        s = pynag.Model.Service()
+        service_description = "Test Service Description"
+        host_name = "testhost.example.com"
+        macro = "This is a test macro"
+        check_command = "my_check_command"
+
+        # Assign the regular way
+        s.service_description = service_description
+
+        # Assign with set_attribute
+        s.set_attribute('check_command',check_command)
+
+        # Assign hashmap style
+        s['host_name'] = host_name
+
+        # Assign a macro
+        s['__TEST_MACRO'] = macro
+
+        self.assertEqual(service_description, s['service_description'])
+        self.assertEqual(host_name, s.host_name)
+        self.assertEqual(macro, s['__TEST_MACRO'])
+        self.assertEqual(check_command, s.get_attribute('check_command'))
 
 class testsFromCommandLine(unittest.TestCase):
-    """ Tommi made some command line tests for Plugin command line arguments. Lets include them.
+    """ Various commandline scripts
     """
+    def setUp(self):
+        # Import pynag.Model so that at the end we can see if configuration changed at all
+        s = pynag.Model.ObjectDefinition.objects.all
+    def tearDown(self):
+        # Check if any configuration changed while we were running tests:
+        self.assertEqual(False, pynag.Model.config.needs_reparse(), "Seems like nagios configuration changed while running the unittests. Some of the tests might have made changes!")
     def testCommandPluginTest(self):
-        expected_output = (1,'','') # Expect exit code 0 and no output
+        """ Run Tommi's plugintest script to test pynag plugin threshold parameters
+        """
+        expected_output = (0,'','') # Expect exit code 0 and no output
         actual_output = pynag.Utils.runCommand(current_dir + '/../scripts/plugintest')
         self.assertEqual(expected_output,actual_output)
+    def testCommandPynag(self):
+        """ Various command line tests on the pynag command  """
+        pynag_script = current_dir + '/../scripts/pynag'
+        # ok commands, bunch of commandline commands that we execute just to see
+        # if an unhandled exception appears,
+        # Ideally none of these commands should modify any configuration
+        ok_commands = [
+            "%s list" % pynag_script,
+            "%s list where host_name=localhost and object_type=host" % pynag_script,
+            "%s update where nonexistantfield=test set nonexistentfield=pynag_unit_testing" % pynag_script,
+            "%s config --get cfg_dir" % pynag_script,
+        ]
+        for i in ok_commands:
+            exit_code,stdout,stderr = pynag.Utils.runCommand(i)
+            self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i,exit_code,stdout,stderr))
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -110,17 +190,19 @@ def suite():
     # Include tests of Model
     suite.addTest(unittest.makeSuite(testModel))
 
+    # Include tests of Parsers
+    suite.addTest(unittest.makeSuite(testParsers))
+
     # Include commandline tests like the one in ../scripts/plugintest
     suite.addTest(unittest.makeSuite(testsFromCommandLine))
 
     # Include doctests in the Plugins Module
-    suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
+    suite.addTests( plugin_doctests )
 
     return suite
-
 
 if __name__ == '__main__':
     state = unittest.TextTestRunner().run( suite() )
     if state.failures or state.errors:
         sys.exit(1)
-    sys.exit(0) 
+    sys.exit(0)
