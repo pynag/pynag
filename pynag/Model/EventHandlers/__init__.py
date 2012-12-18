@@ -170,7 +170,6 @@ class GitEventHandler(BaseEventHandler):
     def _git_init(self, directory=None):
         """ Initilizes a new git repo in directory. If directory is none, use self.gitdir """
         self._update_author()
-        command = "git init"
         self._run_command("git init")
         self._run_command("git add .")
         self._run_command("git commit -a -m 'Initial Commit'")
