@@ -237,9 +237,6 @@ class PerfData(object):
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
-    def __str__(self):
-        metrics = map(lambda x: x.__repr__(), self.metrics)
-        return ' '.join(metrics)
 
 class PerfDataMetric(object):
     """ Data structure for one single Nagios Perfdata Metric """
