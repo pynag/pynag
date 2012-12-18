@@ -30,6 +30,7 @@ Example:
 """
 import pynag.Plugins
 from pynag.Utils import PynagError
+from pynag.Plugins import OK, CRITICAL, WARNING
 
 
 def check_threshold(value, ok=None, warning=None, critical=None):
