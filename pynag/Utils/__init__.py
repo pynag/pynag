@@ -29,6 +29,8 @@ import re
 import pynag.Plugins
 import shlex
 
+from pynag.Model.EventHandlers import EventHandlerError
+
 class PynagError(Exception):
     """ The default pynag exception.
 
