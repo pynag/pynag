@@ -139,8 +139,6 @@ class GitEventHandler(BaseEventHandler):
         environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
-        import subprocess
-        import os
         cwd = self.gitdir
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
