@@ -28,6 +28,7 @@ import subprocess
 import re
 import pynag.Plugins
 import shlex
+from os import getenv
 
 
 class PynagError(Exception):
@@ -62,7 +63,7 @@ def runCommand(command, raise_error_on_fail=False):
         error_string += "* Command was:\n%s\n" % command
         error_string += "* Output was:\n%s\n" % (stdout.strip())
         if proc.returncode == 127: # File not found, lets print path
-            path=getenv("PATH")
+            path = getenv("PATH")
             error_string += "Check if y/our path is correct: %s" % path
         raise PynagError( error_string )
     else:
@@ -141,8 +142,7 @@ class GitRepo(object):
     def _git_add(self, filename):
         """ Wrapper around git add command """
         self._update_author()
-        directory = dirname(filename)
-        command= "git add '%s'" % filename
+        command = "git add '%s'" % filename
         return self._run_command(command)
     def _git_commit(self, filename, message, filelist=[]):
         """ Wrapper around git commit command """
