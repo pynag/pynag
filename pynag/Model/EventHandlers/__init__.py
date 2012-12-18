@@ -211,7 +211,7 @@ class GitEventHandler(BaseEventHandler):
             self._git_commit(filename, message)
         self.messages = []
 
-    def _is_dirty(self,filename):
+    def _is_dirty(self, filename):
         """ Returns True if filename needs to be committed to git """
         command = "git status --porcelain '%s'" % filename
         output = self._run_command(command)
