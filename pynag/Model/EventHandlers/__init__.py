@@ -38,14 +38,18 @@ from getpass import getuser
 class BaseEventHandler:
     def __init__(self, debug=False):
         self._debug = debug
+
     def debug(self, object_definition, message):
         """Used for any particual debug notifications"""
         raise NotImplementedError()
+
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
         raise NotImplementedError()
+
     def pre_save(self, object_definition, message):
         """ Called at the beginning of save() """
+
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
         raise NotImplementedError()
@@ -57,9 +61,11 @@ class PrintToScreenHandler(BaseEventHandler):
         """Used for any particual debug notifications"""
         if self._debug:
             print "%s: %s" % ( time.asctime(), message )
+
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
         print "%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message )
+
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
         print "%s: %s" % ( time.asctime(), message )
@@ -71,20 +77,24 @@ class FileLogger(BaseEventHandler):
         BaseEventHandler.__init__(self)
         self.file = logfile
         self._debug = debug
+
     def _append_to_file(self, message):
         f = open(self.file, 'a')
         if not message.endswith('\n'): message += '\n'
         f.write( message  )
         f.close()
+
     def debug(self, object_definition, message):
         """Used for any particular debug notifications"""
         if self.debug:
             message = "%s: %s" % ( time.asctime(), message )
             self._append_to_file( message )
+
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
         message = "%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message )
         self._append_to_file( message )
+
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
         message = "%s: %s" % ( time.asctime(), message )
