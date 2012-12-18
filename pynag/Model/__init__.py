@@ -953,8 +953,10 @@ class ObjectDefinition(object):
             string    -- Arbitary string that contains macros
             host_name -- Optionally supply host_name if this service does not define it
         Example:
-        >>> i._resolve_macros('$USER1$/check_ping -H $HOSTADDRESS$')
-        '/usr/lib64/nagios/plugins/check_ping -H 127.0.0.1'
+        >>> host = Host()
+        >>> host.address = "127.0.0.1"
+        >>> host._resolve_macros('check_ping -H $HOSTADDRESS$')
+        'check_ping -H 127.0.0.1'
         """
         if not string:
             return None
@@ -1089,17 +1091,11 @@ class ObjectDefinition(object):
         """Convenient way to append value to an attribute with a comma seperated value
 
         Example:
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins,localadmins
-            }
-           >>> myservice.attribute_addfield(attribute_name="contactgroups", value='webmasters')
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins,localadmins,webmasters
-            }
+           >>> myservice = Service()
+           >>> myservice.contact_groups = "+alladmins,localadmins"
+           >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
+           >>> print myservice.contact_groups
+           +alladmins,localadmins,webmasters
            """
         aList = AttributeList( self[attribute_name] )
 
@@ -1115,17 +1111,11 @@ class ObjectDefinition(object):
         """Convenient way to remove value to an attribute with a comma seperated value
 
         Example:
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins,localadmins
-            }
-           >>> myservice.attribute_removefield(attribute_name="contactgroups", value='localadmins')
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins
-            }
+           >>> myservice = Service()
+           >>> myservice.contact_groups = "+alladmins,localadmins"
+           >>> myservice.attribute_removefield(attribute_name="contact_groups", value='localadmins')
+           >>> print myservice.contact_groups
+           +alladmins
            """
         aList = AttributeList(self[attribute_name])
 
@@ -1138,17 +1128,11 @@ class ObjectDefinition(object):
         """Convenient way to replace field within an attribute with a comma seperated value
 
         Example:
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins,localadmins
-            }
-           >>> myservice.attribute_replacefield(attribute_name="contactgroups", old_value='localadmins', new_value=webmasters)
-           >>> print myservice
-           define service {
-                ...
-                contactgroups +alladmins,webmasters
-            }
+           >>> myservice = Service()
+           >>> myservice.contact_groups = "+alladmins,localadmins"
+           >>> myservice.attribute_replacefield(attribute_name="contact_groups", old_value='localadmins', new_value="webmasters")
+           >>> print myservice.contact_groups
+           +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
         
@@ -1860,8 +1844,8 @@ class AttributeList(object):
         >>> i = AttributeList('+group1,group2,group3')
         >>> print "Operator is:", i.operator
         Operator is: +
-        >>> print i.values
-        ['group1','group2','group3']
+        >>> print i.fields
+        ['group1', 'group2', 'group3']
     """
 
     def __init__(self, value=None):

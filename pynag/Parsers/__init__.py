@@ -1342,8 +1342,10 @@ class config:
           Returns:
             String of the first value found for
           Example:
-            >>> get_cfg_value('log_file')
-            "log_file=/var/log/nagios3/nagios.log"
+            >>> c = config()
+            >>> log_file = c.get_cfg_value('log_file')
+
+            # Should return something like "/var/log/nagios/nagios.log"
         """
         if self.maincfg_values == []:
             self.maincfg_values = self._load_static_file(self.cfg_file)

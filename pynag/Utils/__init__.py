@@ -184,8 +184,12 @@ class PerfData(object):
 
     Example string:
     >>> perf = PerfData("load1=10 load2=10 load3=20")
-    >>> for i in perf.metrics:
-    >>>     print i.label, i.value
+    >>> perf.metrics
+    ['load1'=10.0;;;;, 'load2'=10.0;;;;, 'load3'=20.0;;;;]
+    >>> for i in perf.metrics: print i.label, i.value
+    load1 10.0
+    load2 10.0
+    load3 20.0
     """
     def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
@@ -212,11 +216,22 @@ class PerfData(object):
         """ Add a new perfdatametric to existing list of metrics.
 
          Example:
+         >>> s = PerfData()
          >>> s.add_perfdatametric("a=1")
          >>> s.add_perfdatametric(label="utilization",value="10",uom="%")
         """
         metric=PerfDataMetric(perfdatastring=perfdatastring, label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
         self.metrics.append(  metric )
+    def get_perfdatametric(self, metric_name):
+        """ Get one specific perfdatametric
+        >>> s = PerfData("cpu=90% memory=50% disk_usage=20%")
+        >>> my_metric = s.get_perfdatametric('cpu')
+        >>> my_metric.label, my_metric.value
+        ('cpu', 90.0)
+        """
+        for i in self.metrics:
+            if i.label == metric_name:
+                return i
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
@@ -263,13 +278,14 @@ class PerfDataMetric(object):
 
     def __init__(self, perfdatastring="", label="",value="",warn="",crit="",min="",max="",uom=""):
         """
-        >>> p = PerfData(perfdatastring="size=10M;20M;;;"
-        >>> print p.label
+        >>> p = PerfData(perfdatastring="size=10M;20M;;;")
+        >>> metric = p.get_perfdatametric('size')
+        >>> print metric.label
         size
-        >>> print p.value
-        >>> 10
-        print p.value_unit
-        >>> M
+        >>> print metric.value
+        10
+        >>> print metric.uom
+        M
         """
         self.label = label
         self.value = value
@@ -340,27 +356,27 @@ class PerfDataMetric(object):
 
     def split_value_and_uom(self, value):
         """ get value="10M" and return (10,"M")
-
-        >>> split_value_and_uom( "10" )
-        (10, '')
-        >>> split_value_and_uom( "10c" )
-        (10, 'c')
-        >>> split_value_and_uom( "10B" )
-        (10, 'B')
-        >>> split_value_and_uom( "10MB" )
-        (10, 'MB')
-        >>> split_value_and_uom( "10KB" )
-        (10, 'KB')
-        >>> split_value_and_uom( "10TB" )
-        (10, 'TB')
-        >>> split_value_and_uom( "10%" )
-        (10, '%')
-        >>> split_value_and_uom( "10s" )
-        (10, 's')
-        >>> split_value_and_uom( "10us" )
-        (10, 'us')
-        >>> split_value_and_uom( "10ms" )
-        (10, 'ms')
+        >>> p = PerfDataMetric()
+        >>> p.split_value_and_uom( "10" )
+        ('10', '')
+        >>> p.split_value_and_uom( "10c" )
+        ('10', 'c')
+        >>> p.split_value_and_uom( "10B" )
+        ('10', 'B')
+        >>> p.split_value_and_uom( "10MB" )
+        ('10', 'MB')
+        >>> p.split_value_and_uom( "10KB" )
+        ('10', 'KB')
+        >>> p.split_value_and_uom( "10TB" )
+        ('10', 'TB')
+        >>> p.split_value_and_uom( "10%" )
+        ('10', '%')
+        >>> p.split_value_and_uom( "10s" )
+        ('10', 's')
+        >>> p.split_value_and_uom( "10us" )
+        ('10', 'us')
+        >>> p.split_value_and_uom( "10ms" )
+        ('10', 'ms')
         """
         tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
         if len(tmp) == 0:
