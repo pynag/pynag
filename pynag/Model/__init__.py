@@ -1652,7 +1652,7 @@ class Status(object):
     perfdatalist = []
     def __init__(self, host_name, service_description=None):
         self.host_name = host_name
-        s = Parsers.status()
+        s = Parsers.Status()
         s.parse()
         try:
             if not service_description:
@@ -1818,7 +1818,7 @@ class StatusFetcher(object):
         return True
     def reload_cache(self):
         """Reload status cache"""
-        status = Parsers.status()
+        status = Parsers.Status()
         status.parse()
 
         # Fetch all objects from Parsers.config

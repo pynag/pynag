@@ -26,8 +26,8 @@ import os
 import re
 import traceback
 from platform import node
-from optparse import OptionParser,OptionGroup
-from pynag.Utils import PerfData,PerfDataMetric
+from optparse import OptionParser, OptionGroup
+from pynag.Utils import PerfData, PerfDataMetric
 import new_threshold_syntax
 
 # Map the return codes
@@ -466,7 +466,7 @@ def check_range(value, range_threshold=None):
 
     # if no range_threshold is provided, assume everything is ok
     if not range_threshold:
-        range_threshold='~:'
+        range_threshold = '~:'
     range_threshold = str(range_threshold)
     # If range starts with @, then we do the opposite
     if range_threshold[0] == '@':
@@ -474,7 +474,7 @@ def check_range(value, range_threshold=None):
 
     value = float(value)
     if range_threshold.find(':') > -1:
-        (start,end) = (range_threshold.split(':', 1))
+        (start, end) = (range_threshold.split(':', 1))
     # we get here if ":" was not provided in range_threshold
     else:
         start = ''
@@ -730,7 +730,7 @@ class PluginHelper:
             return
 
         metric_status = OK # by default assume status is ok
-        for level,threshold_range in thresholds:
+        for level, threshold_range in thresholds:
             if metric.warn == '' and level == warning:
                 metric.warn = threshold_range
             elif metric.crit == '' and level == critical:
@@ -785,7 +785,7 @@ class PluginHelper:
             exit_code = unknown
             #traceback.print_exc(file=sys.stdout)
             summary = "Unhandled '%s' exception while running plugin (traceback below)" % exc_type
-            long_output =traceback.format_exc()
+            long_output = traceback.format_exc()
             self.exit(exit_code=exit_code, summary=summary, long_output=long_output,perfdata='')
 
     def debug(self, message):

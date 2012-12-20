@@ -28,6 +28,8 @@ import subprocess
 import re
 import pynag.Plugins
 import shlex
+from os import getenv
+
 
 class PynagError(Exception):
     """ The default pynag exception.
@@ -36,6 +38,8 @@ class PynagError(Exception):
     to inherit this one.
 
     """
+    def __init__(self):
+        pass
 
 
 
@@ -52,14 +56,14 @@ def runCommand(command, raise_error_on_fail=False):
      """
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
     stdout, stderr = proc.communicate('through stdin to stdout')
-    result = proc.returncode,stdout,stderr
+    result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail==True:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
         error_string += "* Error was:\n%s\n" % (stderr.strip())
         error_string += "* Command was:\n%s\n" % command
         error_string += "* Output was:\n%s\n" % (stdout.strip())
         if proc.returncode == 127: # File not found, lets print path
-            path=getenv("PATH")
+            path = getenv("PATH")
             error_string += "Check if y/our path is correct: %s" % path
         raise PynagError( error_string )
     else:
@@ -138,8 +142,7 @@ class GitRepo(object):
     def _git_add(self, filename):
         """ Wrapper around git add command """
         self._update_author()
-        directory = dirname(filename)
-        command= "git add '%s'" % filename
+        command = "git add '%s'" % filename
         return self._run_command(command)
     def _git_commit(self, filename, message, filelist=[]):
         """ Wrapper around git commit command """
@@ -234,9 +237,6 @@ class PerfData(object):
                 return i
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
-        return ' '.join(metrics)
-    def __str__(self):
-        metrics = map(lambda x: x.__repr__(), self.metrics)
         return ' '.join(metrics)
 
 class PerfDataMetric(object):
@@ -382,3 +382,5 @@ class PerfDataMetric(object):
         if len(tmp) == 0:
             return '',''
         return tmp[0]
+
+from pynag.Model.EventHandlers import EventHandlerError

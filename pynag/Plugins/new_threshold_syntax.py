@@ -60,13 +60,13 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     2
     """
     if ok and check_range(value, ok):
-        return OK
+        return pynag.Plugins.OK
     elif critical and check_range(value, critical):
-        return CRITICAL
+        return pynag.Plugins.CRITICAL
     elif warning and check_range(value, warning):
-        return WARNING
+        return pynag.Plugins.WARNING
     else:
-        return OK
+        return pynag.Plugins.OK
 
 
 def check_range(value, range):
@@ -95,7 +95,7 @@ def check_range(value, range):
     tmp = range.split('..')
     if len(tmp) != 2:
         raise PynagError('Invalid Format for threshold range: "%s"' % range)
-    start,end = tmp
+    start, end = tmp
 
     if not start in ('inf','-inf'):
         start = float(start)
@@ -117,13 +117,13 @@ def parse_threshold(threshold):
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []
-    metric_name=None
+    metric_name = None
     results = {}
     results['thresholds'] = parsed_thresholds
     for i in tmp:
         if i.find('=') < 1:
             raise PynagError("Invalid input: '%s' is not of the format key=value" % i)
-        key,value = i.split('=',1)
+        key, value = i.split('=', 1)
         if key in pynag.Plugins.state.keys():
             parsed_thresholds.append( (pynag.Plugins.state[key], value) )
         else:
