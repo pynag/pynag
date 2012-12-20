@@ -1622,6 +1622,7 @@ class object_cache(config):
             if k == 'object_cache_file': return [ v ]
 
 
+
 class ParserError(Exception):
     """ ParserError is used for errors that the Parser has when parsing config.
 
