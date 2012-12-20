@@ -356,7 +356,7 @@ class config:
                 keyword = tmp[0]
                 rest = ''
             else:
-                keyword,rest = tmp[0],tmp[1]
+                keyword, rest = tmp[0], tmp[1]
             keyword = keyword.strip()
             # If we reach a define statement, we log every line to a special buffer
             # When define closes, we parse the object and see if it is the object we
