@@ -25,17 +25,21 @@ import shutil
 import os
 import sys
 
+tests_dir = os.path.dirname( os.path.realpath(__file__) )
+if tests_dir == '':
+    tests_dir = '.'
+pynagbase = os.path.realpath("%s/%s" % (tests_dir, os.path.pardir))
+
+# sys.path[0] Must be set before importing any pynag modules
+sys.path[0] = pynagbase
+
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
 import pynag.Plugins
 
-
-current_dir = os.path.dirname( os.path.realpath(__file__) )
-if current_dir == '':
-    current_dir = '.'
-os.chdir(current_dir)
-
+# Must run within test dir for relative paths to tests
+os.chdir(tests_dir)
 
 class testParsers(unittest.TestCase):
     """ Basic unit tests of Parsers module
@@ -167,11 +171,11 @@ class testsFromCommandLine(unittest.TestCase):
         """ Run Tommi's plugintest script to test pynag plugin threshold parameters
         """
         expected_output = (0,'','') # Expect exit code 0 and no output
-        actual_output = pynag.Utils.runCommand(current_dir + '/../scripts/plugintest')
+        actual_output = pynag.Utils.runCommand(pynagbase + '/scripts/plugintest')
         self.assertEqual(expected_output,actual_output)
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
-        pynag_script = current_dir + '/../scripts/pynag'
+        pynag_script = pynagbase + '/scripts/pynag'
         # ok commands, bunch of commandline commands that we execute just to see
         # if an unhandled exception appears,
         # Ideally none of these commands should modify any configuration
