@@ -283,7 +283,7 @@ class PerfDataMetric(object):
         >>> print metric.label
         size
         >>> print metric.value
-        10
+        10.0
         >>> print metric.uom
         M
         """

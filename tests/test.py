@@ -50,7 +50,7 @@ class testParsers(unittest.TestCase):
             livestatus = pynag.Parsers.mk_livestatus()
 	# Throws parser error if livestatus not running
 	except pynag.Parsers.ParserError:
-	    return True
+	    self.skipTest("Parsererror, livestatus probably not running")
         requests = livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
     def testConfig(self):
@@ -61,7 +61,10 @@ class testParsers(unittest.TestCase):
     def testStatus(self):
         "Unit test for pynag.Parsers.status()"
         s = pynag.Parsers.status()
-        s.parse()
+        try:
+            s.parse()
+        except IOError:
+            self.skipTest("IOError, probably no nagios running")
         # Get info part from status.dat file
         info = s.data['info']
 
