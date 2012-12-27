@@ -1477,12 +1477,12 @@ class mk_livestatus:
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
-class Status:
+class status:
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
     Example usage:
-    >>> s = status() # filename autodetected
+    >>> s = status(filename="status.dat")
     >>> s.parse()
     >>> keys = s.data.keys()
     >>> 'info' in keys
@@ -1567,7 +1567,7 @@ class Status:
             dict
         Raises:
             ValueError if object is not found
-        >>> s = status()
+        >>> s = status(filename="status.dat")
         >>> s.get_contactstatus(contact_name='invalid_contact')
         ValueError('invalid_contact',)
         >>> first_contact = s.data['contactstatus'][0]['contact_name']
@@ -1622,6 +1622,7 @@ class object_cache(config):
     def get_cfg_files(self):
         for k,v in self.maincfg_values:
             if k == 'object_cache_file': return [ v ]
+
 
 
 class ParserError(Exception):
