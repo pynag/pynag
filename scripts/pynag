@@ -539,7 +539,7 @@ def pretty_print(objects, attributes=None):
 
     # If no column seperator was specified, use emptystring
     if parser.values.seperator is None:
-        parser.values.seperator = ''
+        parser.values.seperator = ' '
 
     # Print header
     if parser.values.quiet == False:
