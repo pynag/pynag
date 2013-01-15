@@ -356,7 +356,7 @@ class config:
                 keyword = tmp[0]
                 rest = ''
             else:
-                keyword,rest = tmp[0],tmp[1]
+                keyword, rest = tmp[0], tmp[1]
             keyword = keyword.strip()
             # If we reach a define statement, we log every line to a special buffer
             # When define closes, we parse the object and see if it is the object we
@@ -476,9 +476,9 @@ class config:
                     object_definition[i] = change
                     break
             if not change:
-                    # Attribute was not found. Lets add it
-                    change = "\t%-30s%s\n" % (field_name, new_value)
-                    object_definition.insert(i,change)
+                # Attribute was not found. Lets add it
+                change = "\t%-30s%s\n" % (field_name, new_value)
+                object_definition.insert(i,change)
         # Lets put a banner in front of our item
         if make_comments:
             comment = '# Edited by PyNag on %s\n' % time.ctime()
@@ -597,7 +597,7 @@ class config:
         file.close()
         return True        
             
-    def edit_object(self,item, field_name, new_value):
+    def edit_object(self, item, field_name, new_value):
         """
         Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
         
@@ -679,7 +679,7 @@ class config:
         """
         Delete object from configuration files.
         """
-        object_key = self._get_key(object_type,user_key)
+        object_key = self._get_key(object_type, user_key)
 
         k = 'all_%s' % object_type
         if k not in self.data: return None
@@ -718,19 +718,19 @@ class config:
         """
         Delete a host
         """
-        return self.delete_object('host',object_name, user_key = user_key)
+        return self.delete_object('host', object_name, user_key = user_key)
 
     def delete_hostgroup(self, object_name, user_key = None):
         """
         Delete a hostgroup
         """
-        return self.delete_object('hostgroup',object_name, user_key = user_key)
+        return self.delete_object('hostgroup', object_name, user_key = user_key)
 
     def get_object(self, object_type, object_name, user_key = None):
         """
         Return a complete object dictionary
         """
-        object_key = self._get_key(object_type,user_key)
+        object_key = self._get_key(object_type, user_key)
 
         target_object = None
 
@@ -748,55 +748,55 @@ class config:
         """
         Return a host object
         """
-        return self.get_object('host',object_name, user_key = user_key)
+        return self.get_object('host', object_name, user_key = user_key)
 
     def get_servicegroup(self, object_name, user_key = None):
         """
         Return a Servicegroup object
         """
-        return self.get_object('servicegroup',object_name, user_key = user_key)
+        return self.get_object('servicegroup', object_name, user_key = user_key)
 
     def get_contact(self, object_name, user_key = None):
         """
         Return a Contact object
         """
-        return self.get_object('contact',object_name, user_key = user_key)
+        return self.get_object('contact', object_name, user_key = user_key)
 
     def get_contactgroup(self, object_name, user_key = None):
         """
         Return a Contactgroup object
         """
-        return self.get_object('contactgroup',object_name, user_key = user_key)
+        return self.get_object('contactgroup', object_name, user_key = user_key)
 
     def get_timeperiod(self, object_name, user_key = None):
         """
         Return a Timeperiod object
         """
-        return self.get_object('timeperiod',object_name, user_key = user_key)
+        return self.get_object('timeperiod', object_name, user_key = user_key)
 
     def get_command(self, object_name, user_key = None):
         """
         Return a Command object
         """
-        return self.get_object('command',object_name, user_key = user_key)
+        return self.get_object('command', object_name, user_key = user_key)
 
     def get_hostgroup(self, object_name, user_key = None):
         """
         Return a hostgroup object
         """
-        return self.get_object('hostgroup',object_name, user_key = user_key)
+        return self.get_object('hostgroup', object_name, user_key = user_key)
 
     def get_servicedependency(self, object_name, user_key = None):
         """
         Return a servicedependency object
         """
-        return self.get_object('servicedependency',object_name, user_key = user_key)
+        return self.get_object('servicedependency', object_name, user_key = user_key)
 
     def get_hostdependency(self, object_name, user_key = None):
         """
         Return a hostdependency object
         """
-        return self.get_object('hostdependency',object_name, user_key = user_key)
+        return self.get_object('hostdependency', object_name, user_key = user_key)
 
     def get_service(self, target_host, service_description):
         """
@@ -973,7 +973,7 @@ class config:
             result.append( (key, value) )
         return result
 
-    def _edit_static_file(self, attribute, new_value, filename=None,old_value=None,append=False):
+    def _edit_static_file(self, attribute, new_value, filename=None, old_value=None, append=False):
         """ Modify a general config file (like nagios.cfg) that has a key=value config file format.
 
         Arguments:
@@ -990,11 +990,11 @@ class config:
             filename = self.cfg_file
 
         # For some specific attributes, append should be implied
-        if attribute in ('cfg_file','cfg_dir','broker_module'):
+        if attribute in ('cfg_file', 'cfg_dir', 'broker_module'):
             append = True
 
         # If/when we make a change, new_line is what will be written
-        new_line = '%s=%s\n' % (attribute,new_value)
+        new_line = '%s=%s\n' % (attribute, new_value)
 
         # new_value=None means line should be removed
         if new_value is None:
@@ -1306,7 +1306,7 @@ class config:
             
             ## Add cfg_file objects to cfg file list
             if config_object == "cfg_file" and os.path.isfile(config_value):
-                    cfg_files.append(config_value)
+                cfg_files.append(config_value)
 
             ## Parse all files in a cfg directory
             if config_object == "cfg_dir":
@@ -1356,7 +1356,7 @@ class config:
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
-        return map(lambda x: re.sub("all_","", x), self.data.keys())
+        return map(lambda x: re.sub("all_", "", x), self.data.keys())
 
     def cleanup(self):
         """
@@ -1406,12 +1406,13 @@ class mk_livestatus:
             raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
+
     def test(self):
         """ Raises ParserError if there are problems communicating with livestatus socket """
         if not os.path.exists(self.livestatus_socket_path):
             raise ParserError("Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
-            test = self.query("GET hosts")
+            self.query("GET hosts")
         except KeyError, e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
@@ -1475,12 +1476,13 @@ class mk_livestatus:
         return self.query('GET contacts')
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
+
 class status:
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
     Example usage:
-    >>> s = status() # filename autodetected
+    >>> s = status(filename="status.dat")
     >>> s.parse()
     >>> keys = s.data.keys()
     >>> 'info' in keys
@@ -1506,7 +1508,7 @@ class status:
             c = config(cfg_file=cfg_file)
             for key,value in c._load_static_file():
                 if key == "status_file":
-                    filename=value
+                    filename = value
 
         self.filename = filename
         self.data = None
@@ -1565,7 +1567,7 @@ class status:
             dict
         Raises:
             ValueError if object is not found
-        >>> s = status()
+        >>> s = status(filename="status.dat")
         >>> s.get_contactstatus(contact_name='invalid_contact')
         ValueError('invalid_contact',)
         >>> first_contact = s.data['contactstatus'][0]['contact_name']
