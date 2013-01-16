@@ -22,6 +22,7 @@ import re
 import time
 import socket # for mk_livestatus
 
+import pynag.Plugins
 def debug(text):
     debug = True
     if debug: print text
@@ -1436,8 +1437,20 @@ class mk_livestatus:
         self.last_query = query
 
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.connect(self.livestatus_socket_path)
-        s.send(query)
+        try:
+            s.connect(self.livestatus_socket_path)
+        except IOError:
+            raise ParserError(
+                "Could not connect to socket '%s'. Make sure nagios is running and mk_livestatus loaded."
+                % self.livestatus_socket_path
+            )
+        try:
+            s.send(query)
+        except IOError:
+            raise ParserError(
+                "Could not write to sockeet '%s'. Make sure you the right permissions"
+                % self.livestatus_socket_path
+            )
         s.shutdown(socket.SHUT_WR)
         tmp = s.makefile()
         response_header = tmp.readline()
@@ -1640,7 +1653,222 @@ class ParserError(Exception):
         return repr(self.message)
 
 
-if __name__ == '__main__':
-    c = config()
-    print c._edit_static_file('test','new_value')
 
+class LogFiles(object):
+    """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
+        python-friendly arrays of dicts. Output should be more or less compatible with
+        mk_livestatus log output
+    """
+    def __init__(self, maincfg=None):
+        self.config = config(maincfg)
+        self.log_file = self.config.get_cfg_value('log_file')
+        self.log_archive_path = self.config.get_cfg_value('log_archive_path')
+    def get_log_entries(self,start_time=None,end_time=None,strict=True,search=None,**kwargs):
+        """ Get Parsed log entries for given timeperiod.
+         Arguments:
+            start_time -- unix timestamp. if None, return all entries from today
+            end_time -- If specified, only fetch log entries older than this (unix timestamp)
+            strict   -- If True, only return entries between start_time and end_time, if False,
+                     -- then return entries that belong to same log files as given timeset
+            search   -- If provided, only return log entries that contain this string (case insensitive)
+            kwargs   -- All extra arguments are provided as filter on the log entries. f.e. host_name="localhost"
+         Returns:
+            List of dicts
+        """
+        now = time.time()
+        if end_time is None:
+            end_time = now
+        if start_time is None:
+            seconds_in_a_day = 60*60*24
+            seconds_today = end_time % seconds_in_a_day # midnight of today
+            start_time = end_time - seconds_today
+        start_time = int(start_time)
+        end_time = int(end_time)
+
+        # Create an array of all logfiles, newest logfiles go to front of array
+        logfiles = []
+        for filename in os.listdir(self.log_archive_path):
+            full_path = "%s/%s" % (self.log_archive_path, filename)
+            logfiles.append(full_path)
+        logfiles.append(self.log_file)
+        logfiles.reverse()
+
+        result = []
+        for log_file in logfiles:
+            entries = self._parse_log_file(filename=log_file)
+            if len(entries) == 0:
+                continue
+            first_entry = entries[0]
+            last_entry = entries[len(entries)-1]
+
+            if last_entry['time'] > end_time:
+                continue
+
+            # If strict, filter entries to only include the ones in the timespan
+            if strict == True:
+                entries = [x for x in entries if x['time'] >= start_time and x['time'] <= end_time]
+
+            # If search string provided, filter the string
+            if search is not None:
+                entries = [x for x in entries if x['message'].lower().find(search.lower()) > -1]
+            for k,v in kwargs.items():
+                entries = [x for x in entries if x.get(k) == v]
+            result += entries
+            if start_time is None or int(start_time) > int(first_entry.get('time')):
+                break
+        return result
+    def get_flap_alerts(self, **kwargs):
+        """ Same as self.get_log_entries, except return timeperiod transitions. Takes same parameters.
+        """
+        return self.get_log_entries(class_name="timeperiod transition",**kwargs)
+    def get_notifications(self, **kwargs):
+        """ Same as self.get_log_entries, except return only notifications. Takes same parameters.
+        """
+        return self.get_log_entries(class_name="notification",**kwargs)
+
+    def get_state_history(self,start_time=None,end_time=None,host_name=None,service_description=None):
+        """ Returns a list of dicts, with the state history of hosts and services. Parameters behaves similar to get_log_entries """
+
+        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
+        result = []
+        last_state = {} #
+        now = time.time()
+
+        for line in log_entries:
+            if 'state' not in line:
+                continue
+            line['duration'] = now - int(line.get('time'))
+            if host_name is not None and host_name != line.get('host_name'):
+                continue
+            if service_description is not None and service_description != line.get('service_description'):
+                continue
+            if start_time is None:
+                start_time = int(line.get('time'))
+
+            short_name = "%s/%s" % (line['host_name'],line['service_description'])
+            if short_name in last_state:
+                last = last_state[short_name]
+                last['end_time'] = line['time']
+                last['duration'] = last['end_time'] - last['time']
+            last_state[short_name] = line
+
+
+            if start_time is not None and int(start_time) > int(line.get('time')):
+                continue
+            if end_time is not None and int(end_time) < int(line.get('time')):
+                continue
+
+            result.append(line)
+        return result
+    def _parse_log_file(self,filename=None):
+        """ Parses one particular nagios logfile into arrays of dicts.
+
+            if filename is None, then log_file from nagios.cfg is used.
+        """
+        if filename is None:
+            filename = self.log_file
+        result = []
+        for line in open(filename).readlines():
+            parsed_entry = self._parse_log_line( line )
+            if parsed_entry !=  {}:
+                parsed_entry['filename'] = filename
+                result.append(parsed_entry)
+        return result
+    def _parse_log_line(self, line):
+        """ Parse one particular line in nagios logfile and return a dict. """
+        m = re.search('^\[(.*?)\] (.*?): (.*)', line)
+        if m is None:
+            return {}
+        line = line.strip()
+        timestamp, logtype, options = m.groups()
+
+        result = {}
+        try:
+            timestamp = int(timestamp)
+        except ValueError:
+            timestamp = 0
+        result['time'] = int(timestamp)
+        result['type'] = logtype
+        result['options'] = options
+        result['message'] = line
+        result['class'] = 0 # unknown
+        result['class_name'] = 'unclassified'
+        if logtype in ('CURRENT HOST STATE', 'CURRENT SERVICE STATE', 'SERVICE ALERT', 'HOST ALERT'):
+            result['class'] = 1
+            result['class_name'] = 'alerts'
+            if logtype.find('HOST') > -1:
+                # This matches host current state:
+                m = re.search('(.*?);(.*?);(.*);(.*?);(.*)', options)
+                host, state, hard, check_attempt, plugin_output = m.groups()
+                service_description=None
+            if logtype.find('SERVICE') > -1:
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                host,service_description,state,hard,check_attempt,plugin_output = m.groups()
+            result['host_name'] = host
+            result['service_description'] = service_description
+            result['state'] = int( pynag.Plugins.state[state] )
+            result['check_attempt'] = check_attempt
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif "NOTIFICATION" in logtype:
+            result['class'] = 3
+            result['class_name'] = 'notification'
+            if logtype == 'SERVICE NOTIFICATION':
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                contact,host,service_description,state,command,plugin_output = m.groups()
+            elif logtype == 'HOST NOTIFICATION':
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                contact,host,state,command,plugin_output = m.groups()
+                service_description = None
+            result['contact_name'] = contact
+            result['host_name'] = host
+            result['service_description'] = service_description
+            try:
+                result['state'] = int( pynag.Plugins.state[state] )
+            except Exception:
+                result['state'] = -1
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif logtype == "EXTERNAL COMMAND":
+            result['class'] = 5
+            result['class_name'] = 'command'
+            m = re.search('(.*?);(.*)', options)
+            command_name,text = m.groups()
+            result['command_name'] = command_name
+            result['text'] = text
+        elif logtype in ('PASSIVE SERVICE CHECK', 'PASSIVE HOST CHECK'):
+            result['class'] = 4
+            result['class_name'] = 'passive'
+            if logtype.find('HOST') > -1:
+                # This matches host current state:
+                m = re.search('(.*?);(.*?);(.*)', options)
+                host, state, plugin_output = m.groups()
+                service_description=None
+            if logtype.find('SERVICE') > -1:
+                m = re.search('(.*?);(.*?);(.*?);(.*)', options)
+                host,service_description,state,plugin_output = m.groups()
+            result['host_name'] = host
+            result['service_description'] = service_description
+            result['state'] = state
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif logtype in ('SERVICE FLAPPING ALERT', 'HOST FLAPPING ALERT'):
+            result['class_name'] = 'flapping'
+        elif logtype == 'TIMEPERIOD TRANSITION':
+            result['class_name'] = 'timeperiod_transition'
+        elif logtype == 'Warning':
+            result['class_name'] = 'warning'
+            result['text'] = options
+        if 'text' not in result:
+            result['text'] = result['options']
+        result['log_class'] = result['class'] # since class is a python keyword
+        return result
+
+if __name__ == '__main__':
+    l = LogFiles()
+    entries = l.get_log_entries(start_time=1358208000,end_time=1358243258,service_description=None,class_name='alerts')
+    for i in entries:
+            print i['message']
+    #import pprint
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint()

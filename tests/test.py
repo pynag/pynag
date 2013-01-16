@@ -59,7 +59,7 @@ class testParsers(unittest.TestCase):
         c.parse()
         self.assertGreater(len(c.data), 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
     def testStatus(self):
-        "Unit test for pynag.Parsers.status()"
+        """Unit test for pynag.Parsers.status()"""
         s = pynag.Parsers.status()
         try:
             s.parse()
