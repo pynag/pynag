@@ -26,9 +26,10 @@ that are used throughout the pynag library.
 """
 import subprocess
 import re
-import pynag.Plugins
 import shlex
 from os import getenv
+
+import pynag.Plugins
 
 
 class PynagError(Exception):
@@ -70,6 +71,7 @@ def runCommand(command, raise_error_on_fail=False):
         return result
 
 
+from pynag.Model.EventHandlers import EventHandlerError
 class GitRepo(object):
     def __init__(self, directory):
         """
@@ -259,22 +261,7 @@ class PerfDataMetric(object):
             self.max,
             )
     def __str__(self):
-        return """
-            label: %s
-            value: %s %s
-            warning: %s
-            critical: %s
-            min: %s
-            max: %s
-            """ % (
-            self.label,
-            self.value,
-            self.uom,
-            self.warn,
-            self.crit,
-            self.min,
-            self.max,
-            )
+        return self.__repr__()
 
     def __init__(self, perfdatastring="", label="",value="",warn="",crit="",min="",max="",uom=""):
         """
@@ -283,7 +270,7 @@ class PerfDataMetric(object):
         >>> print metric.label
         size
         >>> print metric.value
-        10.0
+        "10"
         >>> print metric.uom
         M
         """
@@ -382,5 +369,3 @@ class PerfDataMetric(object):
         if len(tmp) == 0:
             return '',''
         return tmp[0]
-
-from pynag.Model.EventHandlers import EventHandlerError
