@@ -729,8 +729,11 @@ class PluginHelper:
             self.add_summary("Metric %s not found" % (metric_name))
             return
 
-        metric_status = OK # by default assume status is ok
+        metric_status = -1 # by default assume nothing
+        metric_was_outside_ok_range = False # Will go to true only if ok range is specified
+        highest_level = ok # highest threshold range seen
         for level, threshold_range in thresholds:
+            highest_level = max(highest_level, level)
             if metric.warn == '' and level == warning:
                 metric.warn = threshold_range
             elif metric.crit == '' and level == critical:
@@ -740,7 +743,16 @@ class PluginHelper:
                 self.debug('%s is within %s range "%s"' % (metric_name, state_text[level], threshold_range))
             else:
                 self.debug('%s is outside %s range "%s"' % (metric_name, state_text[level],threshold_range))
+                metric_was_outside_ok_range = True
 
+        # If no thresholds were specified, lets put state to OK
+        metric_status = max(metric_status, OK)
+
+        # If an ok range was specified, and value was outside of it,
+        # we should return critical if warn or crit were specified:
+        if metric_was_outside_ok_range == True and highest_level == ok:
+            metric_status = max(metric_status, critical)
+        
         # OK's go to long output, errors go directly to summary
         self.add_status(metric_status)
         message = '%s on %s' % (state_text[metric_status], metric_name)

@@ -79,7 +79,7 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         self.assertEqual(warning, check_threshold(1, warning="0..10"))
 
         # 5 - If an ok level is specified, return CRITICAL
-        self.assertEqual(ok, check_threshold(1, warning="90..100",critical="95..100"))
+        self.assertEqual(critical, check_threshold(1, ok="10..20"))
 
         # 6 - Otherwise return OK
         pass
