@@ -41,16 +41,54 @@ import pynag.Plugins
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
 
+class testNewPluginThresholdSyntax(unittest.TestCase):
+    """ Unit tests for pynag.Plugins.new_threshold_syntax """
+    def test_check_threshold(self):
+        """ Test check_threshold() with different parameters
+
+        Returns (in order of appearance):
+        0 - Unknown on invalid input
+        1 - If no levels are specified, return OK
+        2 - If an ok level is specified and value is within range, return OK
+        3 - If a critical level is specified and value is within range, return CRITICAL
+        4 - If a warning level is specified and value is within range, return WARNING
+        5 - If an ok level is specified, return CRITICAL
+        6 - Otherwise return OK
+        """
+        from pynag.Plugins.new_threshold_syntax import check_threshold
+        from pynag.Plugins import ok,warning,critical,unknown
+
+
+        # 0 - return unknown on invalid input
+        self.assertEqual(unknown, check_threshold(1, warning='invalid input'))
+
+        # 1 - If no levels are specified, return OK
+        self.assertEqual(ok, check_threshold(1))
+
+
+
+        # 2 - If an ok level is specified and value is within range, return OK
+        self.assertEqual(ok, check_threshold(1, ok="0..10"))
+        self.assertEqual(ok, check_threshold(1, ok="0..10",warning="0..10"))
+        self.assertEqual(ok, check_threshold(1, ok="0..10",critical="0..10"))
+
+        # 3 - If a critical level is specified and value is within range, return CRITICAL
+        self.assertEqual(critical, check_threshold(1, critical="0..10"))
+
+        # 4 - If a warning level is specified and value is within range, return WARNING
+        self.assertEqual(warning, check_threshold(1, warning="0..10"))
+
+        # 5 - If an ok level is specified, return CRITICAL
+        self.assertEqual(ok, check_threshold(1, warning="90..100",critical="95..100"))
+
+        # 6 - Otherwise return OK
+        pass
+
+
 class testParsers(unittest.TestCase):
-    """ Basic unit tests of Parsers module
-    """
     def testLivestatus(self):
         "Test mk_livestatus integration"
-	try:
-            livestatus = pynag.Parsers.mk_livestatus()
-	# Throws parser error if livestatus not running
-	except pynag.Parsers.ParserError:
-	    self.skipTest("Parsererror, livestatus probably not running")
+        livestatus = pynag.Parsers.mk_livestatus()
         requests = livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
     def testConfig(self):
@@ -205,6 +243,9 @@ def suite():
 
     # Include tests of Parsers
     suite.addTest(unittest.makeSuite(testParsers))
+
+    # Include tests of Plugins
+    suite.addTest(unittest.makeSuite(testNewPluginThresholdSyntax))
 
     # Include commandline tests like the one in ../scripts/plugintest
     suite.addTest(unittest.makeSuite(testsFromCommandLine))
