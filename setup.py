@@ -20,7 +20,7 @@ class PynagTest(Command):
     #def parse_command
     def run(self):
         import sys,subprocess
-        errno = subprocess.call([sys.executable, 'tests/test.py'])
+        errno = subprocess.call([sys.executable, 'tests/build-test.py'])
         raise SystemExit(errno)
 
 if __name__ == "__main__":
