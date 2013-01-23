@@ -160,7 +160,7 @@ def search_objects(search_statements):
             conditions = {}
             continue
         if len(tmp) != 2:
-            raise BaseException('Invalid statement: %s' %statement)
+            raise pynag.Utils.PynagError('Invalid statement: "%s"' %statement)
         key,value = tmp
         conditions[key] = value
     objects += pynag.Model.ObjectDefinition.objects.filter(**conditions)
@@ -211,7 +211,7 @@ def main_config():
             arg = args.pop(0)
             tmp = arg.split('=',1)
             if len(tmp) != 2:
-                raise BaseException("attributes should be in the form of attribute=new_value for copy (got %s)" % arg )
+                raise pynag.Utils.PynagError("attributes should be in the form of attribute=new_value for copy (got %s)" % arg )
             attr,value = tmp
             attributes[ attr ] = value
         for k,v in attributes.items():
@@ -344,7 +344,7 @@ def add_object():
         arg = args.pop(0)
         tmp = arg.split('=',1)
         if len(tmp) != 2: 
-            raise BaseException("attributes should be in the form of attribute=new_value for update (got %s)" % arg )
+            raise pynag.Utils.PynagError("attributes should be in the form of attribute=new_value for update (got %s)" % arg )
         attr,value = tmp
         attributes[ attr ] = value
     
