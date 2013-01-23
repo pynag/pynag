@@ -818,8 +818,11 @@ class config:
         return None
 
     def _append_use(self, source_item, name):
-        """
-        Append any unused values from 'name' to the dict 'item'
+        """ Append attributes to source_item that are inherited via 'use' attribute'
+
+        Attributes:
+          source_item  -- item (dict) to apply the inheritance upon
+          name         -- obsolete (discovered automatically via source_item['use']. Here for compatibility.
         """
         ## Remove the 'use' key
         if source_item.has_key('use'):
