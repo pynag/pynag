@@ -68,7 +68,6 @@ def runCommand(command, raise_error_on_fail=False):
         return result
 
 
-from pynag.Model.EventHandlers import EventHandlerError
 class GitRepo(object):
     def __init__(self, directory):
         """
@@ -92,7 +91,7 @@ class GitRepo(object):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except EventHandlerError, e:
+            except PynagError, e:
                 if e.errorcode == 128:
                     self._git_init()
             #self._run_command('git status --short')
@@ -116,7 +115,7 @@ class GitRepo(object):
         if returncode > 0 and self.ignore_errors == False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
-            raise EventHandlerError( errorstring, errorcode=returncode, errorstring=stderr )
+            raise PynagError( errorstring, errorcode=returncode, errorstring=stderr )
         return stdout
     def is_commited(self):
         """ Returns True if all files in git repo are fully commited """
