@@ -178,7 +178,7 @@ def main_config():
     parser.add_option("--set", dest="set",
         default=None, help="Set key=value in cfg file (example: process_performance_data=1)")
     parser.add_option("--remove", dest="remove",
-        default=None, help="Remove key=value in cfg file (example: cfg_file=/etc/nagios/myconfig.cfg)")
+        default=None, help="Remove attribute in cfg file (example: --remove cfg_file). Use with --old_value in case of multiple attributes with same name")
     parser.add_option("--get", dest="get",
         default=None, help="Print one specific value from your file")
     (opts,args) = parser.parse_args(sys.argv[1:])
@@ -257,7 +257,7 @@ def main_config():
         result = c._edit_static_file(filename=c.cfg_file, attribute=opts.remove, new_value=None, old_value=opts.old_value, )
         if result:
             if opts.quiet == False:
-                print "%s: %s was removed" % (c.cfg_file, k)
+                print "%s: %s was removed" % (c.cfg_file, opts.remove)
         else:
             if opts.quiet == False:
                 print "%s: No changed were needed" % c.cfg_file

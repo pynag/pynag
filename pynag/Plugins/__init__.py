@@ -752,7 +752,7 @@ class PluginHelper:
         # we should return critical if warn or crit were specified:
         if metric_was_outside_ok_range == True and highest_level == ok:
             metric_status = max(metric_status, critical)
-        
+
         # OK's go to long output, errors go directly to summary
         self.add_status(metric_status)
         message = '%s on %s' % (state_text[metric_status], metric_name)

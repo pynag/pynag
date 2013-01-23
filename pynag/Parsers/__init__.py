@@ -1038,7 +1038,7 @@ class config:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-        if is_dirty == False:
+        if is_dirty == False and new_value is not None:
             # If we get here, it means we read the whole file,
             # and we have not yet made any changes, So we assume
             # We should append to the file

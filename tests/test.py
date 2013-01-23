@@ -116,6 +116,40 @@ class testParsers(unittest.TestCase):
         o = pynag.Parsers.object_cache()
         o.parse()
         self.assertGreater(len(o.data.keys()), 0, 'Object cache seems to be empty')
+    def testConfig_edit_static_file(self):
+        """ Test pynag.Parsers.config._edit_static_file() """
+        fd,filename = tempfile.mkstemp()
+        c  = pynag.Parsers.config(cfg_file=filename)
+
+        # Lets add some attributes to our new file
+        c._edit_static_file(attribute='first', new_value='first_test')
+        c._edit_static_file(attribute='appended', new_value='first_append', append=True)
+        c._edit_static_file(attribute='appended', new_value='second_append', append=True)
+        c._edit_static_file(attribute='appended', new_value='third_append', append=True)
+
+        c.parse_maincfg()
+
+        # Sanity check, are our newly added attributes in the file
+        self.assertEqual('first_test', c.get_cfg_value('first'))
+        self.assertEqual('first_append', c.get_cfg_value('appended'))
+        self.assertEqual(None, c.get_cfg_value('non_existant_value'))
+
+        # Make some changes, see if everything is still as it is supposed to
+        c._edit_static_file(attribute='first', new_value='first_test_changed')
+        c._edit_static_file(attribute='appended', old_value='second_append', new_value='second_append_changed')
+
+        c.parse_maincfg()
+        self.assertEqual('first_test_changed', c.get_cfg_value('first'))
+        self.assertEqual('first_append', c.get_cfg_value('appended'))
+
+        # Try a removal
+        c._edit_static_file(attribute='appended', old_value='first_append', new_value=None)
+        c.parse_maincfg()
+
+        # first append should be gone, and second one should be changed:
+        self.assertEqual('second_append_changed', c.get_cfg_value('appended'))
+
+        os.remove(filename)
 
 class testModel(unittest.TestCase):
     """
