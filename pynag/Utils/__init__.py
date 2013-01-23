@@ -31,7 +31,6 @@ from os import getenv
 
 import pynag.Plugins
 
-
 class PynagError(Exception):
     """ The default pynag exception.
 
@@ -39,8 +38,6 @@ class PynagError(Exception):
     to inherit this one.
 
     """
-    def __init__(self):
-        pass
 
 
 
