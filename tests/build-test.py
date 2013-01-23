@@ -24,7 +24,6 @@
 import test
 import unittest
 suite = unittest.TestSuite()
-suite.addTest(unittest.makeSuite(test.testsFromCommandLine))
 import sys
 
 if __name__ == '__main__':
