@@ -522,6 +522,7 @@ class PluginHelper:
     show_status_in_summary = False
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
+    timeout = 50            # Default timeout set to little less than nagios service check timeout
 
     thresholds = [] # List of strings in the nagios threshold format
     options = None          # OptionParser() options
@@ -533,11 +534,11 @@ class PluginHelper:
         self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
 
         display_group = OptionGroup(self.parser, "Display Options")
-        display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=False)
-        general.add_option("-d", "--debug", dest="show_debug", help="Print debug info", metavar="d", action="store_true", default=False)
-        display_group.add_option("--no-perfdata", dest="show_perfdata", help="Dont show any performance data", action="store_false", default=True)
-        display_group.add_option("--no-longoutput", dest="show_longoutput", help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=True)
-        display_group.add_option("--no-summary", dest="show_summary", help="Hide summary from plugin output", action="store_false", default=True)
+        display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
+        general.add_option("-d", "--debug", dest="show_debug", help="Print debug info", metavar="d", action="store_true", default=self.show_debug)
+        display_group.add_option("--no-perfdata", dest="show_perfdata", help="Dont show any performance data", action="store_false", default=self.show_perfdata)
+        display_group.add_option("--no-longoutput", dest="show_longoutput", help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=self.show_longoutput)
+        display_group.add_option("--no-summary", dest="show_summary", help="Hide summary from plugin output", action="store_false", default=self.show_summary)
         #display_group.add_option("--show-status-in-summary", dest="show_status_in_summary", help="Prefix the summary of the plugin with OK- or WARN- ", action="store_true", default=False)
         display_group.add_option("--get-metrics", dest="get_metrics", help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
 

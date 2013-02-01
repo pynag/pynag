@@ -1753,6 +1753,7 @@ class LogFiles(object):
                 last = last_state[short_name]
                 last['end_time'] = line['time']
                 last['duration'] = last['end_time'] - last['time']
+                line['previous_state'] = last['state']
             last_state[short_name] = line
 
 
@@ -1861,6 +1862,7 @@ class LogFiles(object):
             result['class_name'] = 'timeperiod_transition'
         elif logtype == 'Warning':
             result['class_name'] = 'warning'
+            result['state'] = "1"
             result['text'] = options
         if 'text' not in result:
             result['text'] = result['options']

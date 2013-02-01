@@ -236,6 +236,18 @@ class testModel(unittest.TestCase):
         self.assertEqual(host_name, s.host_name)
         self.assertEqual(macro, s['__TEST_MACRO'])
         self.assertEqual(check_command, s.get_attribute('check_command'))
+    def testServicegroupMembership(self):
+        """ Loads servicegroup definitions from testdata01 and checks if get_effective_services works as expected
+        """
+        os.chdir('testdata01')
+        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+        # service1 and service2 should both belong to group but they are defined differently
+        group = pynag.Model.Servicegroup.objects.get_by_shortname('group-2')
+        service1 = pynag.Model.Service.objects.get_by_shortname('node-1/cpu')
+        service2 = pynag.Model.Service.objects.get_by_shortname('node-1/cpu2')
+        self.assertEqual([group], service1.get_effective_servicegroups())
+        self.assertEqual([group], service2.get_effective_servicegroups())
+        self.assertEqual([service2,service1], group.get_effective_services())
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts

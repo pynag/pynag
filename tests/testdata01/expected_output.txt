@@ -1,3 +1,8 @@
+define host {
+  host_name                      node-1
+  register                       0
+}
+
 define command {
   command_line                   $USER1$/check_snmp_int.pl -H $HOSTADDRESS$ -C $ARG1$ -2 -r -g -fe -kqyBu -n $ARG2$ -w $ARG3$,$ARG4$,$ARG5$,$ARG6$,$ARG7$,$ARG8$ -c $ARG9$,$ARG10$,$ARG11$,$ARG12$,$ARG13$,$ARG14$ -d $ARG15$
   command_name                   check_snmp_int2
@@ -6,5 +11,24 @@ define command {
 define command {
   command_line                   $USER1$/check_snmp_int.pl -H $HOSTADDRESS$ -C $ARG1$ -2 -r -g -fe -kqyBu -n $ARG2$ -w $ARG3$,$ARG4$,$ARG5$,$ARG6$,$ARG7$,$ARG8$ -c $ARG9$,$ARG10$,$ARG11$,$ARG12$,$ARG13$,$ARG14$ -d $ARG15$
   command_name                   check_snmp_int
+}
+
+define servicegroup {
+  alias                          Group 2
+  members                        node-1,cpu
+  servicegroup_name              group-2
+}
+
+define service {
+  host_name                      node-1
+  service_description            cpu
+  check_command                  check_cpu
+}
+
+define service {
+  host_name                      node-1
+  service_description            cpu2
+  check_command                  check_cpu
+  servicegroups                  group-2
 }
 

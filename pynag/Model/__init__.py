@@ -204,6 +204,9 @@ class ObjectRelations(object):
     # c['servicegroup_name'] = ['service1.get_id()', ['service2.get_id()']
     servicegroup_services = defaultdict(set)
 
+    # c['servicegroup_name'] = ['servicegroup1','servicegroup2','servicegroup3']
+    servicegroup_servicegroups = defaultdict(set)
+
     # c[command_name] = '['service.get_id()','service.get_id()']
     command_service = defaultdict(set)
 
@@ -221,6 +224,11 @@ class ObjectRelations(object):
     # hostgroup_subgroups['hostgroup_name'] = ['group1_name','group2_name']
     hostgroup_subgroups = defaultdict(set)
 
+    # servicegroup_subgroups['servicegroup_name'] = ['servicegroup1_name','servicegroup2_name']
+    servicegroup_subgroups = defaultdict(set)
+
+    # servicegroup_members['servicegroup_name'] = ['service1_shortname','service2_shortname']
+    servicegroup_members = defaultdict(set)
 
     @staticmethod
     def reset():
@@ -284,6 +292,40 @@ class ObjectRelations(object):
                 ObjectRelations.hostgroup_hosts[group].update( ObjectRelations.hostgroup_hosts[subgroup] )
                 ObjectRelations.hostgroup_services[group].update( ObjectRelations.hostgroup_services[subgroup] )
 
+    @staticmethod
+    def resolve_servicegroups():
+        """ Update all servicegroup relations to take into account servicegroup.servicegroup_members """
+
+        # Before we do anything, resolve servicegroup.members into actual services
+        ObjectRelations._resolve_servicegroup_members()
+
+        groups = ObjectRelations.servicegroup_servicegroups.keys()
+        for group in groups:
+            subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.servicegroup_servicegroups)
+            ObjectRelations.servicegroup_subgroups[group] = subgroups
+
+            # Loop through every subgroup and apply its attributes to ours
+            for subgroup in subgroups:
+                for i in ObjectRelations.servicegroup_services[subgroup]:
+                    ObjectRelations.service_servicegroups[i].add( group )
+                ObjectRelations.servicegroup_services[group].update( ObjectRelations.servicegroup_services[subgroup] )
+
+    @staticmethod
+    def _resolve_servicegroup_members():
+        """ Iterates through all servicegroup.members, and updates servicegroup_services and service_servicegroups.
+
+            This happens post-parse (instead of inside Servicegroup._do_relations() because when parsing Servicegroup
+            you only know host_name/service_description of the service that belongs to the group.
+
+            However the relations we update work on Service.get_id() because not all services that belong to servicegroups
+            have a valid host_name/service_description pair (templates)
+        """
+        for servicegroup,members in ObjectRelations.servicegroup_members.items():
+            for shortname in members:
+                service = Service.objects.get_by_shortname(shortname)
+                service_id = service.get_id()
+                ObjectRelations.servicegroup_services[servicegroup].add(service_id)
+                ObjectRelations.service_servicegroups[service_id].add(servicegroup)
 
 class ObjectFetcher(object):
     """
@@ -350,6 +392,7 @@ class ObjectFetcher(object):
                 i._do_relations()
         ObjectRelations.resolve_contactgroups()
         ObjectRelations.resolve_hostgroups()
+        ObjectRelations.resolve_servicegroups()
         return True
 
     def needs_reload(self):
@@ -1630,6 +1673,11 @@ class Servicegroup(ObjectDefinition):
         list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
+    def get_effective_servicegroups(self):
+        """ Returns a list of every Servicegroup that is a member of this Servicegroup """
+        get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
+        list_of_shortnames = ObjectRelations.servicegroup_subgroups[self.servicegroup_name]
+        return map( get_object, list_of_shortnames )
     def add_service(self, shortname):
         """ Adds service to this group. Behaves like _add_object_to_group(object, group)"""
         service = Service.objects.get_by_shortname(shortname)
@@ -1638,6 +1686,20 @@ class Servicegroup(ObjectDefinition):
         """ remove service from this group. Behaves like _remove_object_from_group(object, group)"""
         service = Service.objects.get_by_shortname(shortname)
         return _remove_object_from_group(service, self)
+    def _do_relations(self):
+        super(self.__class__, self)._do_relations()
+
+        # Members directive for the servicegroup is members = host1,service1,host2,service2,...,hostn,servicen
+        members = AttributeList( self.members ).fields
+        while len(members) > 1:
+            host_name = members.pop(0)
+            service_description = members.pop(0)
+            shortname = '%s/%s' % (host_name,service_description)
+            ObjectRelations.servicegroup_members[self.servicegroup_name].add(shortname)
+        # Handle servicegroup_members
+        groups = AttributeList( self.servicegroup_members )
+        for i in groups.fields:
+            ObjectRelations.servicegroup_servicegroups[self.servicegroup_name].add( i )
 
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
