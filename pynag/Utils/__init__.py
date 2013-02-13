@@ -406,9 +406,7 @@ def grep(objects, **kwargs):
             expression = lambda x: str(v) != str(x.get(k))
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
-            fields = x.get(k)
-            attributes = AttributeList(x.get(k)).fields
-            expression = lambda x: v in attributes
+            expression = lambda x: v in AttributeList(x.get(k)).fields
         elif k == 'register' and v == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
@@ -440,6 +438,12 @@ class AttributeList(object):
 
         # this is easy to do if attribue_name is unset
         if not value or value == '':
+            return
+
+        # value in this case should usually be a comma seperated string, but sometimes
+        # (like when working with livestatus) we have the luxury of getting lists
+        if type(value) == type(list):
+            self.fields = value
             return
 
         possible_operators = '+-!'
