@@ -50,6 +50,7 @@ import pynag.Utils
 from macros import _standard_macros
 import all_attributes
 
+
 # Path To Nagios configuration file
 cfg_file = None  # '/etc/nagios/nagios.cfg'
 
@@ -1896,67 +1897,6 @@ class StatusFetcher(object):
                 StatusFetcher._cached_object_type[object_type].append(item)
                 StatusFetcher._cached_shortnames[object_type][item.get_shortname()] = item
         return True
-class AttributeList(object):
-    """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
-
-    This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
-
-    Typical comma-seperated format in nagios configuration files looks something like this:
-        contact_groups     +group1,group2,group3
-
-    Example:
-        >>> i = AttributeList('+group1,group2,group3')
-        >>> print "Operator is:", i.operator
-        Operator is: +
-        >>> print i.fields
-        ['group1', 'group2', 'group3']
-    """
-
-    def __init__(self, value=None):
-        self.operator = ''
-        self.fields = []
-        
-        # this is easy to do if attribue_name is unset
-        if not value or value == '':
-            return
-    
-        possible_operators = '+-!'
-        if value[0] in possible_operators:
-            self.operator = value[0]
-        else:
-            self.operator = ''
-        
-        self.fields = value.strip(possible_operators).split(',')
-
-    def __str__(self):
-        return self.operator + ','.join(self.fields)
-
-    def __repr__(self):
-        return self.__str__()
-
-    def insert(self, index, object):
-        return self.fields.insert(index,object) 
-
-    def append(self, object):
-        return self.fields.append(object)
-
-    def count(self, value):
-        return self.fields.count(value)
-
-    def extend(self, iterable):
-        return self.fields.extend(iterable)
-
-    def index(self, value, start, stop):
-        return self.fields.index(value, start, stop)
-
-    def reverse(self):
-        return self.fields.reverse()
-
-    def sort(self):
-        return self.fields.sort()
-
-    def remove(self, value):
-        return self.fields.remove(value)
 
 string_to_class = {}
 string_to_class['contact'] = Contact
@@ -1971,6 +1911,8 @@ string_to_class['servicedependency'] = ServiceDependency
 string_to_class['command'] = Command
 #string_to_class[None] = ObjectDefinition
 
+# Attributelist is put here for backwards compatibility
+AttributeList = pynag.Utils.AttributeList
 
 if __name__ == '__main__':
     o = Service.objects.all[17]

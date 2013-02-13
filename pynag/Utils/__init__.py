@@ -69,7 +69,7 @@ def runCommand(command, raise_error_on_fail=False):
 
 
 class GitRepo(object):
-    def __init__(self, directory):
+    def __init__(self, directory,auto_init=True):
         """
         Python Wrapper around Git command line.
 
@@ -365,3 +365,119 @@ class PerfDataMetric(object):
         if len(tmp) == 0:
             return '',''
         return tmp[0]
+
+
+def grep(objects, **kwargs):
+    """  Returns all the elements from array that match the keywords in **kwargs
+
+    TODO: Refactor pynag.Model.ObjectDefinition.objects.filter() and reuse it here.
+    Arguments:
+        array -- a list of dict that is to be searched
+        kwargs -- Any search argument provided will be checked against every dict
+    Examples:
+    array = [
+    {'host_name': 'examplehost', 'state':0},
+    {'host_name': 'example2', 'state':1},
+    ]
+    grep_dict(array, state=0)
+    # should return [{'host_name': 'examplehost', 'state':0},]
+
+    """
+    matching_objects = objects
+    for k,v in kwargs.items():
+        v = str(v)
+        if k.endswith('__contains'):
+            k = k[:-len('__contains')]
+            expression = lambda x: v in str(x.get(k))
+        elif k.endswith('__notcontains'):
+            k = k[:-len('__notcontains')]
+            expression = lambda x: not v in str(x.get(k))
+        elif k.endswith('__startswith'):
+            k = k[:-len('__startswith')]
+            expression = lambda x: str(x.get(k)).startswith(v)
+        elif k.endswith('__endswith'):
+            k = k[:-len('__endswith')]
+            expression = lambda x: str(x.get(k)).endswith(v)
+        elif k.endswith('__exists'):
+            k = k[:-len('__exists')]
+            expression = lambda x: str(x.has_key(k)) == v
+        elif k.endswith('__isnot'):
+            k = k[:-len('__isnot')]
+            expression = lambda x: str(v) != str(x.get(k))
+        elif k.endswith('__has_field'):
+            k = k[:-len('__has_field')]
+            fields = x.get(k)
+            attributes = AttributeList(x.get(k)).fields
+            expression = lambda x: v in attributes
+        elif k == 'register' and v == '1':
+            # in case of register attribute None is the same as "1"
+            expression = lambda x: x.get(k) in (v, None)
+        else:
+            # If all else fails, assume they are asking for exact match
+            expression = lambda x: str(x.get(k)) == v
+        matching_objects = filter(expression, matching_objects)
+    return matching_objects
+
+class AttributeList(object):
+    """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
+
+    This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
+
+    Typical comma-seperated format in nagios configuration files looks something like this:
+        contact_groups     +group1,group2,group3
+
+    Example:
+        >>> i = AttributeList('+group1,group2,group3')
+        >>> print "Operator is:", i.operator
+        Operator is: +
+        >>> print i.fields
+        ['group1', 'group2', 'group3']
+    """
+
+    def __init__(self, value=None):
+        self.operator = ''
+        self.fields = []
+
+        # this is easy to do if attribue_name is unset
+        if not value or value == '':
+            return
+
+        possible_operators = '+-!'
+        if value[0] in possible_operators:
+            self.operator = value[0]
+        else:
+            self.operator = ''
+
+        self.fields = value.strip(possible_operators).split(',')
+
+    def __str__(self):
+        return self.operator + ','.join(self.fields)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def insert(self, index, object):
+        return self.fields.insert(index,object)
+
+    def append(self, object):
+        return self.fields.append(object)
+
+    def count(self, value):
+        return self.fields.count(value)
+
+    def extend(self, iterable):
+        return self.fields.extend(iterable)
+
+    def index(self, value, start, stop):
+        return self.fields.index(value, start, stop)
+
+    def reverse(self):
+        return self.fields.reverse()
+
+    def sort(self):
+        return self.fields.sort()
+
+    def remove(self, value):
+        return self.fields.remove(value)
+
+
