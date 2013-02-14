@@ -383,8 +383,19 @@ def grep(objects, **kwargs):
     # should return [{'host_name': 'examplehost', 'state':0},]
 
     """
-    matching_objects = objects
+    # Input comes to us as a key/value dict.
+    # We will flatten this out into a tuble, because if value
+    # is a list, it means the calling function is doing multible search on
+    # the same key
+    search = []
     for k,v in kwargs.items():
+        if type(v) == type([]):
+            for i in v:
+                search.append((k,i))
+        else:
+            search.append((k,v))
+    matching_objects = objects
+    for k,v in search:
         v = str(v)
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
@@ -410,6 +421,8 @@ def grep(objects, **kwargs):
         elif k == 'register' and v == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
+        if k == 'search':
+            expression = lambda x: v in str(x)
         else:
             # If all else fails, assume they are asking for exact match
             expression = lambda x: str(x.get(k)) == v
