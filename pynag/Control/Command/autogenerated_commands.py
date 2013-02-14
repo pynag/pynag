@@ -87,9 +87,9 @@ def schedule_host_downtime(host_name,start_time,end_time,fixed,trigger_id,durati
     """ Schedules downtime for a specified host.  If the "fixed" argument is set to one (1), downtime will start and end at the times specified by the "start" and "end" arguments.  Otherwise, downtime will begin between the "start" and "end" times and last for "duration" seconds.  The "start" and "end" arguments are specified in time_t format (seconds since the UNIX epoch).  The specified host downtime can be triggered by another downtime entry if the "trigger_id" is set to the ID of another scheduled downtime entry.  Set the "trigger_id" argument to zero (0) if the downtime for the specified host should not be triggered by another downtime entry. """
     return send_command("SCHEDULE_HOST_DOWNTIME",command_file,timestamp, host_name,start_time,end_time,fixed,trigger_id,duration,author,comment)
 
-def schedule_svc_downtime(host_name,service_desriptionstart_time,end_time,fixed,trigger_id,duration,author,comment,command_file=None,timestamp=0):
+def schedule_svc_downtime(host_name,service_desription,start_time,end_time,fixed,trigger_id,duration,author,comment,command_file=None,timestamp=0):
     """ Schedules downtime for a specified service.  If the "fixed" argument is set to one (1), downtime will start and end at the times specified by the "start" and "end" arguments.  Otherwise, downtime will begin between the "start" and "end" times and last for "duration" seconds.  The "start" and "end" arguments are specified in time_t format (seconds since the UNIX epoch).  The specified service downtime can be triggered by another downtime entry if the "trigger_id" is set to the ID of another scheduled downtime entry.  Set the "trigger_id" argument to zero (0) if the downtime for the specified service should not be triggered by another downtime entry. """
-    return send_command("SCHEDULE_SVC_DOWNTIME",command_file,timestamp, host_name,service_desriptionstart_time,end_time,fixed,trigger_id,duration,author,comment)
+    return send_command("SCHEDULE_SVC_DOWNTIME",command_file,timestamp, host_name,service_desription,start_time,end_time,fixed,trigger_id,duration,author,comment)
 
 def disable_svc_notifications(host_name,service_description,command_file=None,timestamp=0):
     """ Disables notifications for a particular service. """

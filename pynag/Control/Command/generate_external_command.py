@@ -17,6 +17,10 @@ for filename in sys.argv[1:]:
 
     # command_format should look something like this:
     # u'ENABLE_SVC_EVENT_HANDLER;&lt;host_name&gt;;&lt;service_description&gt;'
+
+    # there is a bug in the documentation, where one semicolon is missing, lets adjust:
+    command_format = command_format.replace('><','>;<')
+
     command_format = command_format.replace('<', '',).replace('>','')
     command_format = command_format.split(';')
     func = command_format[0]
