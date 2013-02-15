@@ -416,7 +416,7 @@ class ObjectFetcher(object):
         """
         if self.needs_reload():
             self.reload_cache()
-        id = str(id)
+        id = str(id).strip()
         return ObjectFetcher._cached_ids[id]
 
     def get_by_shortname(self, shortname):
@@ -429,7 +429,7 @@ class ObjectFetcher(object):
         """
         if self.needs_reload():
             self.reload_cache()
-        shortname = str(shortname)
+        shortname = str(shortname).strip()
         return ObjectFetcher._cached_shortnames[self.object_type][shortname]
 
     def get_by_name(self, object_name):
@@ -442,6 +442,7 @@ class ObjectFetcher(object):
         """
         if self.needs_reload():
             self.reload_cache()
+        object_name = str(object_name).strip()
         return ObjectFetcher._cached_names[self.object_type][object_name]
 
     def get_object_types(self):
