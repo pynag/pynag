@@ -421,7 +421,7 @@ def grep(objects, **kwargs):
         elif k == 'register' and v == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
-        if k == 'search':
+        elif k == 'search':
             expression = lambda x: v in str(x)
         else:
             # If all else fails, assume they are asking for exact match
