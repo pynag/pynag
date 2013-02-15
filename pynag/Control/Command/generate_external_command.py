@@ -20,6 +20,8 @@ for filename in sys.argv[1:]:
 
     # there is a bug in the documentation, where one semicolon is missing, lets adjust:
     command_format = command_format.replace('><','>;<')
+    command_format = command_format.replace('service_desription','service_description')
+    
 
     command_format = command_format.replace('<', '',).replace('>','')
     command_format = command_format.split(';')
