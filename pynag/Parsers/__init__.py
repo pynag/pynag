@@ -1423,6 +1423,7 @@ class mk_livestatus:
     def query(self, query, *args):
 
         columns = None # Here we will keep a list of column names
+        doing_stats = False
         # We break query up into a list, of commands, then put it back into a line seperated
         # string before be talk to the socket
         query = query.split('\n')
@@ -1431,9 +1432,12 @@ class mk_livestatus:
         if query[0].startswith('GET'):
             query.append("ResponseHeader: fixed16")
             query.append("OutputFormat: python")
+            query.append("ColumnHeaders: on")
         for i in query:
             if i.startswith('Columns:'):
                 columns = i[len('Columns:'):].split()
+            if i.startswith('Stats'):
+                doing_stats = True
         if not self.authuser is None and not self.authuser == '':
             query.append("AuthUser: %s" % self.authuser)
         query = '\n'.join(query) + '\n'
@@ -1467,8 +1471,9 @@ class mk_livestatus:
             return []
         answer = eval(answer)
         s.close()
-        if columns is None:
-            columns = answer.pop(0)
+        if doing_stats == True and len(answer) == 1:
+            return answer[0]
+        columns = answer.pop(0)
         # Lets throw everything into a hashmap before we return
         result = []
         for line in answer:
@@ -1482,14 +1487,14 @@ class mk_livestatus:
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
     def get_service(self, host_name, service_description):
         return self.query('GET services', 'Filter: host_name = %s' % host_name, 'Filter: description = %s' % service_description)[0]
-    def get_hosts(self):
-        return self.query('GET hosts')
-    def get_services(self):
-        return self.query('GET services')
-    def get_hostgroups(self):
-        return self.query('GET hostgroups')
-    def get_contacts(self):
-        return self.query('GET contacts')
+    def get_hosts(self, *args):
+        return self.query('GET hosts', *args)
+    def get_services(self, *args):
+        return self.query('GET services', *args)
+    def get_hostgroups(self, *args):
+        return self.query('GET hostgroups', *args)
+    def get_contacts(self, *args):
+        return self.query('GET contacts', *args)
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 

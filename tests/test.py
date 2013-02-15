@@ -298,31 +298,22 @@ class testUtils(unittest.TestCase):
         # TODO: Currently  pynag.Model.Service.objects.filter() has some bugs, so some tests here fail.
         """
         result = self._compare_search_expressions(use='generic-service')
-        print result, "matches found"
 
         result = self._compare_search_expressions(register=1,use='generic-service')
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__exists=True)
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__exists=False)
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__notcontains='l')
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__notcontains='this value cannot possibly exist')
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__startswith='l')
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__endswith='m')
-        print result, "matches found"
 
         result = self._compare_search_expressions(host_name__isnot='examplehost for testing purposes')
-        print result, "matches found"
 
     def testGrep(self):
         """ Test cases based on gradecke's testing """
@@ -378,12 +369,12 @@ class testUtils(unittest.TestCase):
 
 
     def _compare_search_expressions(self, **expression):
-                print "Testing search expression %s" % expression
-                all_services = pynag.Model.Service.objects.all
-                result1 = pynag.Model.Service.objects.filter(**expression)
-                result2 = pynag.Utils.grep(all_services, **expression)
-                self.assertEqual(result1, result2,msg="Search output from pynag.Utils.grep() does not match pynag.Model.Service.objects.filter() when using parameters %s" % expression)
-                return len(result1)
+        #print "Testing search expression %s" % expression
+        all_services = pynag.Model.Service.objects.all
+        result1 = pynag.Model.Service.objects.filter(**expression)
+        result2 = pynag.Utils.grep(all_services, **expression)
+        self.assertEqual(result1, result2,msg="Search output from pynag.Utils.grep() does not match pynag.Model.Service.objects.filter() when using parameters %s" % expression)
+        return len(result1)
 
 def suite():
     suite = unittest.TestSuite()
