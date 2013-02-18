@@ -27,8 +27,10 @@ that are used throughout the pynag library.
 import subprocess
 import re
 import shlex
-from os import getenv
-
+from os import getenv, environ
+from platform import node
+from getpass import getuser
+import datetime
 import pynag.Plugins
 
 class PynagError(Exception):
@@ -38,6 +40,12 @@ class PynagError(Exception):
     to inherit this one.
 
     """
+    def __init__(self, message, errorcode=None, errorstring=None, *args, **kwargs):
+        self.errorcode = errorcode
+        self.message = message
+        self.errorstring = errorstring
+        super(self.__class__, self).__init__(message, *args,**kwargs)
+
 
 
 
@@ -69,25 +77,35 @@ def runCommand(command, raise_error_on_fail=False):
 
 
 class GitRepo(object):
-    def __init__(self, directory,auto_init=True):
+    def __init__(self, directory,auto_init=True,author_name="Pynag User", author_email=None):
         """
         Python Wrapper around Git command line.
 
+        Arguments:
+          Directory   -- Which directory does the git repo reside in (i.e. '/etc/nagios')
+          auto_init   -- If True and directory does not contain a git repo, create it automatically
+          author_name -- Full name of the author making changes
+          author_email -- Email used for commit messages, if None, then use username@hostname
 
         """
 
         self.directory = directory
 
         # Who made the change
-        self.modified_by = modified_by
+        if author_name is None:
+            author_name = "Pynag User"
+        if author_email is None:
+            author_email = "<%s@%s>" % (getuser(), node())
+        self.author_name = author_name
+        self.author_email = author_email
 
         # Which program did the change
-        self.source = source
+        #self.source = source
 
         # Every string in self.messages indicated a line in the eventual commit message
         self.messages = []
 
-        self.ignore_errors = ignore_errors
+        self.ignore_errors = False
         if auto_init:
             try:
                 self._run_command('git status --short')
@@ -102,13 +120,13 @@ class GitRepo(object):
 
         Returns: None
         """
-        environ['GIT_AUTHOR_NAME'] = self.modified_by
-        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (self.source, node())
+        environ['GIT_AUTHOR_NAME'] = self.author_name
+        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (getuser(), node())
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         import subprocess
         import os
-        cwd = self.gitdir
+        cwd = self.directory
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         returncode = proc.returncode
@@ -117,9 +135,9 @@ class GitRepo(object):
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
             raise PynagError( errorstring, errorcode=returncode, errorstring=stderr )
         return stdout
-    def is_commited(self):
+    def is_up_to_date(self):
         """ Returns True if all files in git repo are fully commited """
-        return self.get_uncommited_files() == 0
+        return len(self.get_uncommited_files()) == 0
     def get_uncommited_files(self):
         """ Returns a list of files that are have unstaged changes """
         output = self._run_command("git status --porcelain")
@@ -130,6 +148,39 @@ class GitRepo(object):
                 continue
             result.append( {'status':line[0], 'filename': line[1]} )
         return result
+    def log(self, **kwargs):
+        """ Returns a log of previous commits. Log is is a list of dict objects.
+
+        Any arguments provided will be passed directly to pynag.Utils.grep() to filter the results.
+
+        Examples:
+          self.log(author_name='nagiosadmin')
+          self.log(comment__contains='localhost')
+        """
+        raw_log =self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
+        result = []
+        for line in raw_log.splitlines():
+            hash,author, authoremail, authortime, comment = line.split("\t", 4)
+            result.append( {
+                "hash": hash,
+                "author_name": author,
+                "author_email": authoremail,
+                "author_time": datetime.datetime.fromtimestamp(float(authortime)),
+                "comment": comment,
+                })
+        return grep(result, **kwargs)
+    def diff(self, commit_id_or_filename=None):
+        """ Returns diff (as outputted by "git diff") for filename or commit id.
+
+        If commit_id_or_filename is not specified. show diff against all uncommited files.
+        """
+        if commit_id_or_filename in ('', None):
+            command = "git diff"
+        else:
+            commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
+            command = "git diff '%s'" % commit_id_or_filename
+        return self._run_command(command)
+
     def init(self):
         """ Initilizes a new git repo (i.e. run "git init") """
         self._update_author()
@@ -178,6 +229,59 @@ class GitRepo(object):
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
         self.messages.append( " * %s" % message )
+    def commit(self, message='commited by pynag',filelist=None, author=None):
+        """ Commit files with "git commit"
+
+        Arguments:
+          message      -- Message used for the git commit
+          filelist     -- List of filenames to commit (if None, then commit all files in the repo)
+          author       -- Author to use for git commit. If any is specified, overwrite self.author_name and self.author_email
+        Returns:
+          Commit ID of the new commit
+        """
+
+        # Lets escape all single quotes from the message
+        message = message.replace("'", r"\'")
+
+        if not author is None:
+            author = "%s %s" % (self.author_name, self.author_email)
+
+        if filelist is None:
+            # If no files provided, commit everything
+            self.add('.')
+            command = "git commit -a -m '%s'" % (message)
+            return self._run_command(command=command)
+        elif isinstance(filelist, str):
+            # in case filelist was provided as a string, consider to be only one file
+            filelist = [filelist]
+
+        # Run "git add" on every file. Just in case they are untracked
+        for i in filelist:
+            self.add(i)
+
+        # Change ['file1','file2'] into the string """ 'file1' 'file2' """
+        filestring = ''
+
+        # Escape all single quotes in filenames
+        filelist = map(lambda x: x.replace("'", r"\'"), filelist )
+
+        # Wrap filename inside single quotes:
+        filelist = map(lambda x: "'%s'" % x, filelist )
+
+        # Create a space seperated string with the filenames
+        filestring = ' '.join(filelist)
+        command = "git commit -m '%s' -- %s" % (message, filestring)
+        return self._run_command(command=command)
+
+    def add(self, filename):
+        """ Run git add on every filename """
+
+        # Escape all single quotes in filename:
+        filename = filename.replace("'", r"\'")
+
+        command = "git add -- '%s'" % filename
+        return self._run_command(command)
+
 
 
 class PerfData(object):
