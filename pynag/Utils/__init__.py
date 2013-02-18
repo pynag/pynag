@@ -166,6 +166,7 @@ class GitRepo(object):
                 "author_name": author,
                 "author_email": authoremail,
                 "author_time": datetime.datetime.fromtimestamp(float(authortime)),
+                "timestamp": float(authortime),
                 "comment": comment,
                 })
         return grep(result, **kwargs)
