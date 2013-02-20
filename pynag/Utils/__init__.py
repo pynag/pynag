@@ -570,7 +570,15 @@ class AttributeList(object):
         else:
             self.operator = ''
 
-        self.fields = value.strip(possible_operators).split(',')
+        # Strip any operators from the string
+        value = value.strip(possible_operators)
+
+        # Strip leading and trailing commas
+        value = value.strip(',')
+
+        # Split value into a comma seperated list
+        self.fields = value.split(',')
+
 
     def __str__(self):
         return self.operator + ','.join(self.fields)
