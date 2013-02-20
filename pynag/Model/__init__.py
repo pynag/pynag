@@ -796,12 +796,15 @@ class ObjectDefinition(object):
         self._event(level='save', message="Object definition was rewritten")
         return True
 
-    def delete(self, recursive=False ):
+    def delete(self, recursive=False, cleanup_related_items=True ):
         """ Deletes this object definition from its configuration files.
         
         Arguments:
             recursive: If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
+
+            cleanup_related_items: If True, look for related items and remove references to this one.
+            (for example, if you delete a host, remove its name from all hostgroup.members entries)
         """
         self._event(level="pre_save", message="%s '%s' will be deleted." %( self.object_type, self.get_shortname()))
         if recursive == True:
@@ -1318,12 +1321,19 @@ class Host(ObjectDefinition):
         return children
 
 
-    def delete(self, recursive=False ):
-        """ Overwrites objectdefinition so that recursive=True will delete all services as well """
+    def delete(self, recursive=False,cleanup_related_items=True ):
+        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well """
         # Find all services and delete them as well
-        if recursive == True:
-            for i in self.get_effective_services():
-                i.delete(recursive=recursive)
+        if self.host_name is not None:
+            if cleanup_related_items == True:
+                print "cleaning up..."
+                for i in Hostgroup.objects.filter(members__has_field=self.host_name):
+                    print i.hostgroup_name
+                    i.attribute_removefield('members',self.host_name)
+                    i.save()
+            if recursive == True:
+                for i in Service.objects.filter(host_name__has_field=self.host_name):
+                    i.delete(recursive=recursive)
         # Call parent to get delete myself
         super(self.__class__, self).delete(recursive=recursive)
 
