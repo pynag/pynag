@@ -22,7 +22,7 @@
 import sys
 import traceback
 from optparse import OptionParser,OptionGroup
-
+import pprint
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
@@ -41,6 +41,7 @@ Available subcommands:
   execute       Execute a check command for host or service
   config        View or edit values in your nagios.cfg
   acknowledge   Acknowledge host/service problems
+  downtime      Schedule downtime for objects
   livestatus    Make queries to MK Livestatus
   version       Output version information and exit
 
@@ -89,6 +90,8 @@ def parse_arguments():
         delete_object()
     elif sys.argv[1] == 'acknowledge':
         acknowledge()
+    elif sys.argv[1] == 'downtime':
+        downtime()
     elif sys.argv[1] == 'livestatus':
         livestatus()
     elif sys.argv[1] in ('config','config-set', 'config-append'):
@@ -165,6 +168,19 @@ def search_objects(search_statements):
         conditions[key] = value
     objects += pynag.Model.ObjectDefinition.objects.filter(**conditions)
     return sorted( set(objects) )
+
+def search_object_list(object_list,search_statements):
+    """ Same as search_objects() but searches object_list instead of pynag.Model.ObjectDefinition.objects.all.
+    """
+    conditions = {}
+    for statement in search_statements:
+        tmp = statement.split('=',1)
+        if statement.lower() == 'and': continue
+        if len(tmp) != 2:
+            raise pynag.Utils.PynagError('Invalid statement: "%s"' %statement)
+        key,value = tmp
+        conditions[key] = value
+    return pynag.Utils.grep(object_list,**conditions)
 
 def main_config():
     """ Get or change a value in main configuration file """
@@ -400,6 +416,101 @@ def acknowledge():
             print "Acknowledge %s: %s" % (i.object_type,i.get_shortname())
         i.acknowledge(comment=opts.comment,author=opts.author,timestamp=opts.ts)
 
+def downtime():
+    parser.usage = ''' %prog downtime < --list | --remove | HOST [SERVICE] | WHERE ... > '''
+    parser.add_option("--comment", dest="comment",
+        default="Downtime Scheduled from pynag",help="Comment to put on the downtime")
+    parser.add_option("--author", dest="author",
+        default="pynag",help="Author to put on the downtime")
+    parser.add_option("--start_time", dest="st",
+        default=None,help="When downtime should start (default: now)")
+    parser.add_option("--end_time", dest="et",
+        default=None,help="When downtime should end (default: now+2 hours)")
+    parser.add_option("--duration", dest="dur",
+        default=7200,help="Alternative to end_time, how long should downtime last (in seconds)")
+    parser.add_option("--print", dest="print_definition", action='store_true',
+        default=False, help="When using --list, print full hash map instead of attribute table")
+    parser.add_option("--list", dest="list",
+        default=False, action="store_true",help="list downtimes that match search filters")
+    parser.add_option("--remove", dest="remove",
+        default=False, action="store_true",help="Remove downtimes that match search filters")
+    parser.add_option("--recursive", dest="recursive",
+        default=False, action="store_true",help="schedule downtime for hosts and all its services")
+    (opts,args) = parser.parse_args(sys.argv[2:])
+    pynag.Model.cfg_file = opts.cfg_file
+    objects =[]
+    if opts.examples == True:
+        return print_examples()
+    elif opts.list == True or opts.remove == True:
+        # Where are not scheduling anything just listing
+        attributes,where_statement=split_where_and_set(args)
+        if attributes == []:
+            attributes = ['id','host_name','service_description','comment']
+        downtimes = _get_all_downtimes()
+        downtimes = search_object_list(downtimes, where_statement)
+        if opts.print_definition == True:
+            pp = pprint.PrettyPrinter(indent=4)
+            pp.pprint(downtimes)
+        else:
+            pretty_print(downtimes, attributes=attributes)
+        if opts.remove == True:
+            answer = raw_input('Remove these %s downtimes? (y/N) ' % (len(downtimes)))
+            if answer.lower() not in ('y', 'yes'):
+                return
+
+            for i in downtimes:
+                if opts.quiet == False:
+                    print "Removing downtime %s: " % (i.get('id'))
+                if i.get('service_description', None) in (None, ''):
+                    pynag.Control.Command.del_host_downtime(i.get('id'))
+                else:
+                    pynag.Control.Command.del_svc_downtime(i.get('id'))
+        return
+    elif len(args) == 0:
+        parser.error('No hosts or services specified.')
+    elif 'where' in str(args).lower():
+        attributes,where_statement=split_where_and_set(args)
+        objects = search_objects(search_statements=where_statement)
+    elif len(args) == 1:
+        objects = pynag.Model.ObjectDefinition.objects.filter(host_name=args[0])
+    elif len(args) == 2:
+        objects = pynag.Model.ObjectDefinition.objects.filter(host_name=args[0],service_description=args[1])
+    else:
+        parser.error('Invalid number of attributes specified')
+
+    # If we reach all the way down here, we are scheduling downtimes
+
+    # Filter everything from objects that does not have a downtime() method or is not registered
+    filter_function = lambda x: x.register != '0' and 'downtime' in dir(x)
+    objects = filter(filter_function, objects)
+
+    # Here we actually talk to the the objects
+    if opts.quiet == False:
+        pretty_print(objects)
+    answer = raw_input('Schedule downtime for these %s objects ? (y/N) ' % (len(objects)))
+    if answer.lower() not in ('y', 'yes'):
+        return
+
+    for i in objects:
+        if opts.quiet == False:
+            print "Downtime %s: %s" % (i.object_type,i.get_shortname())
+        i.downtime(comment=opts.comment,author=opts.author,start_time=opts.st, end_time=opts.et, duration=opts.dur, recursive=opts.recursive)
+
+def _get_all_downtimes():
+    """ Returns a list of dict, describing all current downtimes """
+    # Try first via livestatus, if that does not work, parse status.dat
+    try:
+        l = pynag.Parsers.mk_livestatus(nagios_cfg_file=pynag.Model.cfg_file)
+        return l.query('GET downtimes')
+    except Exception:
+        s = pynag.Parsers.status(cfg_file=pynag.Model.cfg_file)
+        s.parse()
+        result = []
+        result += s.data.get('servicedowntime', [])
+        result += s.data.get('hostdowntime', [])
+        for i in result:
+            i['id'] = i.get('comment_id', None)
+        return result
 def copy_object():
     parser.usage = ''' %prog copy <SET attr1=value1 [attr2=val2]> <WHERE ...> [--filename /path/to/file] '''
     parser.add_option("--filename", dest="filename",
@@ -630,6 +741,10 @@ examples['delete'] = '''
 examples['acknowledge'] = '''
   # %prog acknowledge localhost "Disk Usage" --comment "Freeing up some space" --author "admin" '
   # %prog acknowledge where service_description__contains=vmware --comment "Bulk ack on all vmware checks" '
+'''
+examples['downtime'] = '''
+  # %prog downtime localhost --comment "Downtime for localhost and all its services" --recursive'
+  # %prog downtime where service_description__contains=vmware --comment "Downtime on all vmware checks" '
 '''
 examples['config'] = '''
   # %prog config --set process_perfdata=1

@@ -42,6 +42,8 @@ for i in canadian_hosts:
 import os
 import re
 import subprocess
+import time
+import getpass
 
 from pynag import Parsers
 from pynag import Control
@@ -1245,7 +1247,7 @@ class ObjectDefinition(object):
 class Host(ObjectDefinition):
     object_type = 'host'
     objects = ObjectFetcher('host')
-    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',timestamp=0):
+    def acknowledge(self, sticky=1, notify=1,persistent=0,author='pynag',comment='acknowledged by pynag',recursive=False):
         pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
             sticky=sticky,
             notify=notify,
@@ -1255,6 +1257,52 @@ class Host(ObjectDefinition):
             timestamp=0,
             command_file=config.get_cfg_value('command_file')
         )
+    def downtime(self,start_time=None,end_time=None,trigger_id=0,duration=7200,author=None,comment='Downtime scheduled by pynag',recursive=False):
+        """ Put this object in a schedule downtime.
+
+        Arguments:
+          start_time -- When downtime should start. If None, use time.time() (now)
+          end_time   -- When scheduled downtime should end. If None use start_time + duration
+          duration   -- Alternative to end_time, downtime lasts for duration seconds. Default 7200 seconds.
+          trigger_id -- trigger_id>0 means that this downtime should trigger another downtime with trigger_id.
+          author     -- name of the contact scheduling downtime. If None, use current system user
+          comment    -- Comment that will be put in with the downtime
+          recursive -- Also schedule same downtime for all service of this host.
+
+        Returns:
+          None because commands sent to nagios have no return values
+
+        Raises:
+          PynagError if this does not look an active object.
+        """
+        if self.register == '0':
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+        if not self.host_name:
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for host with no host_name')
+        if start_time is None:
+            start_time = time.time()
+        if duration is None:
+            duration = 7200
+        duration = int(duration)
+        if end_time is None:
+            end_time = start_time + duration
+        if author is None:
+            author = getpass.getuser()
+        arguments = {
+            'host_name':self.host_name,
+            'start_time':start_time,
+            'end_time':end_time,
+            'fixed':'1',
+            'trigger_id':trigger_id,
+            'duration':duration,
+            'author':author,
+            'comment':comment,
+        }
+        if recursive == True:
+            pynag.Control.Command.schedule_host_svc_downtime(**arguments)
+        else:
+            pynag.Control.Command.schedule_host_downtime(**arguments)
+
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
@@ -1459,6 +1507,50 @@ class Service(ObjectDefinition):
             comment=comment,
             timestamp=0,
             command_file=config.get_cfg_value('command_file')
+        )
+    def downtime(self,start_time=None,end_time=None,trigger_id=0,duration=7200,author=None,comment='Downtime scheduled by pynag',recursive=False):
+        """ Put this object in a schedule downtime.
+
+        Arguments:
+          start_time -- When downtime should start. If None, use time.time() (now)
+          end_time   -- When scheduled downtime should end. If None use start_time + duration
+          duration   -- Alternative to end_time, downtime lasts for duration seconds. Default 7200 seconds.
+          trigger_id -- trigger_id>0 means that this downtime should trigger another downtime with trigger_id.
+          author     -- name of the contact scheduling downtime. If None, use current system user
+          comment    -- Comment that will be put in with the downtime
+          recursive  --  Here for compatibility. Has no effect on a service.
+
+        Returns:
+          None because commands sent to nagios have no return values
+
+        Raises:
+          PynagError if this does not look an active object.
+        """
+        if self.register == '0':
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+        if not self.host_name:
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with no host_name')
+        if not self.service_description:
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with service_description')
+        if start_time is None:
+            start_time = time.time()
+        if duration is None:
+            duration = 7200
+        duration = int(duration)
+        if end_time is None:
+            end_time = start_time + duration
+        if author is None:
+            author = getpass.getuser()
+        pynag.Control.Command.schedule_svc_downtime(
+            host_name=self.host_name,
+            service_description=self.service_description,
+            start_time=start_time,
+            end_time=end_time,
+            fixed='1',
+            trigger_id=trigger_id,
+            duration=duration,
+            author=author,
+            comment=comment,
         )
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this Service """
@@ -1673,9 +1765,49 @@ class Hostgroup(ObjectDefinition):
         """ Remove host from this group. Behaves like Hostgroup._remove_member_from_group """
         host = Host.objects.get_by_shortname(host_name)
         return _remove_object_from_group(host, self)
+    def downtime(self,start_time=None,end_time=None,trigger_id=0,duration=7200,author=None,comment='Downtime scheduled by pynag',recursive=False):
+        """ Put every host and service in this hostgroup in a schedule downtime.
 
+        Arguments:
+          start_time -- When downtime should start. If None, use time.time() (now)
+          end_time   -- When scheduled downtime should end. If None use start_time + duration
+          duration   -- Alternative to end_time, downtime lasts for duration seconds. Default 7200 seconds.
+          trigger_id -- trigger_id>0 means that this downtime should trigger another downtime with trigger_id.
+          author     -- name of the contact scheduling downtime. If None, use current system user
+          comment    -- Comment that will be put in with the downtime
+          recursive  -- For compatibility with other downtime commands, recursive is always assumed to be true
 
+        Returns:
+          None because commands sent to nagios have no return values
 
+        Raises:
+          PynagError if this does not look an active object.
+        """
+        if self.register == '0':
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+        if not self.hostgroup_name:
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for hostgroup with no hostgroup_name')
+        if start_time is None:
+            start_time = time.time()
+        if duration is None:
+            duration = 7200
+        duration = int(duration)
+        if end_time is None:
+            end_time = start_time + duration
+        if author is None:
+            author = getpass.getuser()
+        arguments = {
+            'hostgroup_name':self.hostgroup_name,
+            'start_time':start_time,
+            'end_time':end_time,
+            'fixed':'1',
+            'trigger_id':trigger_id,
+            'duration':duration,
+            'author':author,
+            'comment':comment,
+            }
+        pynag.Control.Command.schedule_hostgroup_host_downtime(**arguments)
+        pynag.Control.Command.schedule_hostgroup_svc_downtime(**arguments)
 
 class Servicegroup(ObjectDefinition):
     object_type = 'servicegroup'
@@ -1712,6 +1844,49 @@ class Servicegroup(ObjectDefinition):
         groups = AttributeList( self.servicegroup_members )
         for i in groups.fields:
             ObjectRelations.servicegroup_servicegroups[self.servicegroup_name].add( i )
+    def downtime(self,start_time=None,end_time=None,trigger_id=0,duration=7200,author=None,comment='Downtime scheduled by pynag',recursive=False):
+        """ Put every host and service in this servicegroup in a schedule downtime.
+
+        Arguments:
+          start_time -- When downtime should start. If None, use time.time() (now)
+          end_time   -- When scheduled downtime should end. If None use start_time + duration
+          duration   -- Alternative to end_time, downtime lasts for duration seconds. Default 7200 seconds.
+          trigger_id -- trigger_id>0 means that this downtime should trigger another downtime with trigger_id.
+          author     -- name of the contact scheduling downtime. If None, use current system user
+          comment    -- Comment that will be put in with the downtime
+          recursive  -- For compatibility with other downtime commands, recursive is always assumed to be true
+
+        Returns:
+          None because commands sent to nagios have no return values
+
+        Raises:
+          PynagError if this does not look an active object.
+        """
+        if self.register == '0':
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+        if not self.servicegroup_name:
+            raise pynag.Utils.PynagError('Cannot schedule a downtime for servicegroup with no servicegroup_name')
+        if start_time is None:
+            start_time = time.time()
+        if duration is None:
+            duration = 7200
+        duration = int(duration)
+        if end_time is None:
+            end_time = start_time + duration
+        if author is None:
+            author = getpass.getuser()
+        arguments = {
+            'servicegroup_name':self.servicegroup_name,
+            'start_time':start_time,
+            'end_time':end_time,
+            'fixed':'1',
+            'trigger_id':trigger_id,
+            'duration':duration,
+            'author':author,
+            'comment':comment,
+            }
+        pynag.Control.Command.schedule_servicegroup_host_downtime(**arguments)
+        pynag.Control.Command.schedule_servicegroup_svc_downtime(**arguments)
 
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'

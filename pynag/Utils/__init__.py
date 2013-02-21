@@ -560,8 +560,9 @@ class AttributeList(object):
 
         # value in this case should usually be a comma seperated string, but sometimes
         # (like when working with livestatus) we have the luxury of getting lists
-        if type(value) == type(list):
-            self.fields = value
+        if isinstance(value, list):
+            # Remove empty fields
+            self.fields = filter(lambda x: len(x) > 0, value)
             return
 
         possible_operators = '+-!'
