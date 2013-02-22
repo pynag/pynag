@@ -114,6 +114,8 @@ class GitRepo(object):
                     self._git_init()
             #self._run_command('git status --short')
 
+        self._is_dirty = self.is_dirty # Backwards compatibility
+
         self._update_author()
     def _update_author(self):
         """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
@@ -206,7 +208,7 @@ class GitRepo(object):
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
         filename = object_definition.get_filename()
-        if self._is_dirty(filename):
+        if self.is_dirty(filename):
             self._git_add(filename)
             self._git_commit(filename,
                 message="External changes commited in %s '%s'" %
@@ -217,10 +219,10 @@ class GitRepo(object):
             message = [message, '\n'] + self.messages
             message = '\n'.join(message)
         self._git_add(filename)
-        if self._is_dirty(filename):
+        if self.is_dirty(filename):
             self._git_commit(filename, message)
         self.messages = []
-    def _is_dirty(self,filename):
+    def is_dirty(self,filename):
         """ Returns True if filename needs to be committed to git """
         command = "git status --porcelain '%s'" % filename
         output = self._run_command(command)
@@ -230,6 +232,11 @@ class GitRepo(object):
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
         self.messages.append( " * %s" % message )
+    def revert(self, commit):
+        """ Revert some existing commits works like "git revert" """
+        commit = commit.replace(r"'", r"\'")
+        command = "git revert --no-edit -- '%s'" % commit
+        return self._run_command(command)
     def commit(self, message='commited by pynag',filelist=None, author=None):
         """ Commit files with "git commit"
 
@@ -256,6 +263,9 @@ class GitRepo(object):
             # in case filelist was provided as a string, consider to be only one file
             filelist = [filelist]
 
+        # Remove from commit list files that have not changed:
+        filelist = filter(lambda x: self.is_dirty(x), filelist)
+
         # Run "git add" on every file. Just in case they are untracked
         for i in filelist:
             self.add(i)
@@ -269,6 +279,9 @@ class GitRepo(object):
         # Wrap filename inside single quotes:
         filelist = map(lambda x: "'%s'" % x, filelist )
 
+        # If filelist is empty, we have nothing to commit and we will return as opposed to throwing error
+        if not filelist:
+            return
         # Create a space seperated string with the filenames
         filestring = ' '.join(filelist)
         command = "git commit -m '%s' -- %s" % (message, filestring)
@@ -282,7 +295,6 @@ class GitRepo(object):
 
         command = "git add -- '%s'" % filename
         return self._run_command(command)
-
 
 
 class PerfData(object):
