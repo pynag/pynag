@@ -291,11 +291,11 @@ class PerfData(object):
     Example string:
     >>> perf = PerfData("load1=10 load2=10 load3=20")
     >>> perf.metrics
-    ['load1'=10.0;;;;, 'load2'=10.0;;;;, 'load3'=20.0;;;;]
+    ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;]
     >>> for i in perf.metrics: print i.label, i.value
-    load1 10.0
-    load2 10.0
-    load3 20.0
+    load1 10
+    load2 10
+    load3 20
     """
     def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
@@ -333,7 +333,7 @@ class PerfData(object):
         >>> s = PerfData("cpu=90% memory=50% disk_usage=20%")
         >>> my_metric = s.get_perfdatametric('cpu')
         >>> my_metric.label, my_metric.value
-        ('cpu', 90.0)
+        ('cpu', '90')
         """
         for i in self.metrics:
             if i.label == metric_name:
@@ -371,7 +371,7 @@ class PerfDataMetric(object):
         >>> print metric.label
         size
         >>> print metric.value
-        "10"
+        10
         >>> print metric.uom
         M
         """
@@ -414,7 +414,6 @@ class PerfDataMetric(object):
             self.min = tmp.pop(0)
         if len(tmp) > 0:
             self.max = tmp.pop(0)
-        self.value = float(self.value)
     def get_status(self):
         """ Return nagios-style exit code (int 0-3) by comparing
 
