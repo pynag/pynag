@@ -48,9 +48,9 @@ def send_command(command_id, command_file=None, timestamp=0, *args):
     command_arguments = ";".join(command_arguments)
     command_string = "[%s] %s;%s" % (timestamp, command_id, command_arguments)
     try:
-        _write_to_livestatus(command_string)
-    except Exception:
         _write_to_command_file(command_file, command_string)
+    except Exception:
+        _write_to_livestatus(command_string)
 def _write_to_livestatus(command_string):
     """ Send a specific command to mk-livestatus
 
