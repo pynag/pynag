@@ -250,6 +250,36 @@ class testModel(unittest.TestCase):
         self.assertEqual([group], service2.get_effective_servicegroups())
         self.assertEqual([service2,service1], group.get_effective_services())
 
+    def testMacroResolving(self):
+        """ Test the get_macro and get_all_macros commands of services """
+        os.chdir(tests_dir)
+        os.chdir('testdata01')
+        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        macros = service1.get_all_macros()
+        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$']
+        self.assertEqual(sorted(expected_macrokeys),  sorted(macros.keys()))
+
+        self.assertEqual('/path/to/user1',macros['$USER1$'])
+        self.assertEqual('/path/to/user1',macros['$ARG2$'])
+        self.assertEqual('hostaddress',macros['$HOSTADDRESS$'])
+
+        self.assertEqual('macro1',macros['$_SERVICE_macro1$'])
+        self.assertEqual('macro1',macros['$ARG1$'])
+        self.assertEqual('macro1',macros['$_HOST_macro1$'])
+
+        self.assertEqual(None,macros['$_HOST_nonexistant$'])
+        self.assertEqual(None,macros['$_SERVICE_nonexistant$'])
+
+        self.assertEqual('',macros['$_SERVICE_empty$'])
+        self.assertEqual('',macros['$_HOST_empty$'])
+
+        expected_command_line= "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
+        actual_command_line = service1.get_effective_command_line()
+
+        self.assertEqual(expected_command_line, actual_command_line)
+
+
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """
