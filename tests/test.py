@@ -41,6 +41,44 @@ import pynag.Plugins
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
 
+
+class testDatasetParsing(unittest.TestCase):
+    """ Parse any dataset in the tests directory starting with "testdata" """
+    def setUp(self):
+        """ Basic setup before test suite starts
+        """
+        os.chdir(tests_dir)
+        self.tmp_dir = tempfile.mkdtemp() # Will be deleted after test runs
+        #os.mkdir(self.tmp_dir)
+        pynag.Model.pynag_directory = self.tmp_dir
+    def tearDown(self):
+        """ Clean up after test suite has finished
+        """
+        shutil.rmtree(self.tmp_dir,ignore_errors=True)
+    def testParseDatasets(self):
+        """ Parse every testdata*/nagios/nagios.cfg
+        Output will be compared with testdata*/expectedoutput.txt
+        """
+        test_dirs = []
+        for i in os.listdir('.'):
+            if i.startswith('testdata') and os.path.isdir(i) and os.path.isfile(i + "/nagios/nagios.cfg"):
+                test_dirs.append(i)
+
+        for dir in test_dirs:
+            os.chdir(dir)
+            pynag.Model.cfg_file = "./nagios/nagios.cfg"
+            pynag.Model.config = None
+            actualOutput = ''
+            expectedOutput = open("expected_output.txt").read()
+            for i in pynag.Model.ObjectDefinition.objects.all:
+                actualOutput += str(i)
+                # Write our parsed data to tmpfile so we have an easy diff later:
+            tmp_file = self.tmp_dir + "/" + os.path.basename(dir) + "_actual_output.txt"
+            open(tmp_file,'w').write(actualOutput)
+            diff_output = pynag.Utils.runCommand("diff -uwB expected_output.txt '%s'" % (tmp_file))[1]
+            print diff_output
+            self.assertEqual('', diff_output)
+
 class testNewPluginThresholdSyntax(unittest.TestCase):
     """ Unit tests for pynag.Plugins.new_threshold_syntax """
     def test_check_threshold(self):
@@ -159,7 +197,11 @@ class testModel(unittest.TestCase):
         """ Basic setup before test suite starts
         """
         self.tmp_dir = tempfile.mkdtemp() # Will be deleted after test runs
-        #os.mkdir(self.tmp_dir)
+
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+        pynag.Model.config = None
         pynag.Model.pynag_directory = self.tmp_dir
     def tearDown(self):
         """ Clean up after test suite has finished
@@ -187,29 +229,6 @@ class testModel(unittest.TestCase):
         self.assertEqual(s2_expected, s2.get_suggested_filename() )
         self.assertEqual(s3_expected, s3.get_suggested_filename() )
 
-    def testParseDatasets(self):
-        """ Parse every testdata*/nagios/nagios.cfg
-        Output will be compared with testdata*/expectedoutput.txt
-        """
-        test_dirs = []
-        for i in os.listdir('.'):
-            if i.startswith('testdata') and os.path.isdir(i) and os.path.isfile(i + "/nagios/nagios.cfg"):
-                test_dirs.append(i)
-
-        for dir in test_dirs:
-            os.chdir(dir)
-            pynag.Model.cfg_file = "./nagios/nagios.cfg"
-            pynag.Model.config = None
-            actualOutput = ''
-            expectedOutput = open("expected_output.txt").read()
-            for i in pynag.Model.ObjectDefinition.objects.all:
-                actualOutput += str(i)
-            # Write our parsed data to tmpfile so we have an easy diff later:
-            tmp_file = self.tmp_dir + "/" + os.path.basename(dir) + "_actual_output.txt"
-            open(tmp_file,'w').write(actualOutput)
-            diff_output = pynag.Utils.runCommand("diff -uwB expected_output.txt '%s'" % (tmp_file))[1]
-            print diff_output
-            self.assertEqual('', diff_output)
     def testChangeAttribute(self):
         """ Change a single attribute in a pynag Model object
         """
@@ -239,9 +258,7 @@ class testModel(unittest.TestCase):
     def testServicegroupMembership(self):
         """ Loads servicegroup definitions from testdata01 and checks if get_effective_services works as expected
         """
-        os.chdir(tests_dir)
-        os.chdir('testdata01')
-        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+
         # service1 and service2 should both belong to group but they are defined differently
         group = pynag.Model.Servicegroup.objects.get_by_shortname('group-2')
         service1 = pynag.Model.Service.objects.get_by_shortname('node-1/cpu')
@@ -252,12 +269,10 @@ class testModel(unittest.TestCase):
 
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
-        os.chdir(tests_dir)
-        os.chdir('testdata01')
-        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+
         service1 = pynag.Model.Service.objects.get_by_name('macroservice')
         macros = service1.get_all_macros()
-        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$']
+        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$']
         self.assertEqual(sorted(expected_macrokeys),  sorted(macros.keys()))
 
         self.assertEqual('/path/to/user1',macros['$USER1$'])
@@ -267,6 +282,7 @@ class testModel(unittest.TestCase):
         self.assertEqual('macro1',macros['$_SERVICE_macro1$'])
         self.assertEqual('macro1',macros['$ARG1$'])
         self.assertEqual('macro1',macros['$_HOST_macro1$'])
+        self.assertEqual('this.macro.is.not.used',macros['$_SERVICE_not_used$'])
 
         self.assertEqual(None,macros['$_HOST_nonexistant$'])
         self.assertEqual(None,macros['$_SERVICE_nonexistant$'])
@@ -279,6 +295,26 @@ class testModel(unittest.TestCase):
 
         self.assertEqual(expected_command_line, actual_command_line)
 
+    def testParenting(self):
+        """ Test the use of get_effective_parents and get_effective_children
+        """
+
+        # Get host named child, check its parents
+        h = pynag.Model.Host.objects.get_by_name('child')
+        expected_result = ['parent01', 'parent02', 'parent-of-all']
+        hosts = h.get_effective_parents(recursive=True)
+        host_names = map(lambda x: x.name, hosts)
+        self.assertEqual(expected_result, host_names)
+
+        # Get host named parent-of-all, get its children
+        h = pynag.Model.Host.objects.get_by_name('parent-of-all')
+        expected_result = ['parent01', 'parent02', 'parent03', 'child']
+        hosts = h.get_effective_children(recursive=True)
+        host_names = map(lambda x: x.name, hosts)
+        self.assertEqual(expected_result, host_names)
+
+    def test_rewrite(self):
+        """ Test usage on ObjectDefinition.rewrite() """
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
@@ -318,7 +354,7 @@ class testUtils(unittest.TestCase):
     def setUp(self):
         # Utils should work fine with just about any data, but lets use testdata01
         os.chdir(tests_dir)
-        os.chdir('testdata01')
+        os.chdir('dataset01')
         pynag.Model.config = None
         pynag.Model.cfg_file = './nagios/nagios.cfg'
         s = pynag.Model.ObjectDefinition.objects.all
@@ -420,6 +456,9 @@ def suite():
 
     # Include tests of Utils
     suite.addTest(unittest.makeSuite(testUtils))
+
+    # Include tests of Dataset parsing
+    suite.addTest(unittest.makeSuite(testDatasetParsing))
 
     # Include commandline tests like the one in ../scripts/plugintest
     suite.addTest(unittest.makeSuite(testsFromCommandLine))
