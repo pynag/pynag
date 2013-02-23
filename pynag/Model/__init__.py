@@ -587,7 +587,6 @@ class ObjectDefinition(object):
     def set_attribute(self, attribute_name, attribute_value):
         """Set (but does not save) one attribute in our object"""
         self[attribute_name] = attribute_value
-        self._event(level="debug", message="attribute changed: %s = %s" % (attribute_name, attribute_value))
 
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
@@ -602,6 +601,7 @@ class ObjectDefinition(object):
 
     def __setitem__(self, key, item):
         self._changes[key] = item
+        self._event(level="debug", message="attribute changed: %s = %s" % (attribute_name, attribute_value))
 
     def __getitem__(self, key):
         if key == 'id':
@@ -851,7 +851,7 @@ class ObjectDefinition(object):
         return return_buffer
 
     def __repr__(self):
-        return "%s: %s" % (self['object_type'], self.get_shortname())
+        return "%s: %s" % (self['object_type'], self.get_description())
 
     def get(self, value, default=None):
         """ self.get(x) == self[x] """
@@ -897,7 +897,7 @@ class ObjectDefinition(object):
         return os.path.normpath( self._meta['filename'] )
 
     def set_filename(self, filename):
-        """ set name of the config file which defines this object"""
+        """ set name of the config file which this object will be written to on next save. """
         if filename is None:
             self._meta['filename'] = filename
         else:
@@ -931,7 +931,6 @@ class ObjectDefinition(object):
 
     def get_all_macros(self):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
-        # TODO: This function is incomplete and untested
         if self['check_command'] is None: return {}
         c = self['check_command']
         c = c.split('!')
@@ -955,7 +954,6 @@ class ObjectDefinition(object):
 
     def get_effective_command_line(self, host_name=None):
         """Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"""
-        # TODO: This function is incomplete and untested
         if self['check_command'] is None: return None
         c = self['check_command']
         c = c.split('!')
@@ -995,7 +993,6 @@ class ObjectDefinition(object):
 
     def _get_command_macro(self, macroname):
         """Resolve any command argument ($ARG1$) macros from check_command"""
-        # TODO: This function is incomplete and untested
         a = {}
         if a == {}:
             c = self['check_command'].split('!')
@@ -1011,7 +1008,6 @@ class ObjectDefinition(object):
         return result
 
     def _get_service_macro(self,macroname):
-        # TODO: This function is incomplete and untested
         if macroname.startswith('$_SERVICE'):
             # If this is a custom macro
             name = macroname[9:-1]
@@ -1022,7 +1018,6 @@ class ObjectDefinition(object):
         return ''
 
     def _get_host_macro(self, macroname, host_name=None):
-        # TODO: This function is incomplete and untested
         if macroname.startswith('$_HOST'):
             # if this is a custom macro
             name = macroname[6:-1]
@@ -1041,15 +1036,16 @@ class ObjectDefinition(object):
         Returns:
             A list of ObjectDefinition objects
         """
-        if not self.has_key('name'):
+        if not self.name:
             return []
-        name = self['name']
+        name = self.name
         children = self.objects.filter(use__has_field=name)
         if recursive == True:
-            grandchildren = []
             for i in children:
-                grandchildren += i.get_effective_children(recursive)
-            children += grandchildren
+                grandchildren =  i.get_effective_children(recursive)
+                for grandchild in grandchildren:
+                    if grandchild not in children:
+                        children.append( grandchild )
         return children
     def get_effective_parents(self, recursive=False):
         """ Get all objects that this one inherits via "use" attribute
@@ -1059,18 +1055,20 @@ class ObjectDefinition(object):
         Returns:
             a list of ObjectDefinition objects
         """
-        # TODO: This function is incomplete and untested
-        if self['use'] is None:
+        if not self.use:
             return []
         results = []
-        use = self['use'].split(',')
+        use = pynag.Utils.AttributeList( self.use )
         for parent_name in use:
-            results.append( self.objects.get_by_name(parent_name) )
+            parent = self.objects.get_by_name(parent_name)
+            if parent not in results:
+                results.append( parent )
         if recursive is True:
-            grandparents = []
             for i in results:
-                grandparents.append( i.get_effective_parents(recursive=True))
-            results += grandparents
+                grandparents = i.get_effective_parents(recursive=True)
+                for gp in grandparents:
+                    if gp not in results:
+                        results.append(gp)
         return results
 
     def get_attribute_tuple(self):
@@ -1089,14 +1087,8 @@ class ObjectDefinition(object):
         return result
 
     def get_parents(self):
-        """Returns an ObjectDefinition list of all parents (via use attribute)"""
-        result = []
-        if not self['use']: return result
-        for parent_name in self['use'].split(','):
-            search = self.objects.filter(name=parent_name)
-            if len(search) < 1: continue
-            result.append(search[0])
-        return result
+        """ Out-dated, use get_effective_parents instead. Kept here for backwards compatibility """
+        return self.get_effective_parents()
 
     def unregister(self, recursive=True):
         """ Short for self['register'] = 0 ; self.save() """
@@ -1631,7 +1623,7 @@ class Contact(ObjectDefinition):
     def add_to_contactgroup(self, contactgroup):
         return _add_to_contactgroup(self, contactgroup)
     def remove_from_contactgroup(self, contactgroup):
-        return _remove_from_contactgroup(contactgroup)
+        return _remove_from_contactgroup(self,contactgroup)
 
 class ServiceDependency(ObjectDefinition):
     object_type = 'servicedependency'
@@ -1906,10 +1898,11 @@ def _add_object_to_group(my_object, my_group):
     object_field = group_type + 's' # i.e. Host.hostgroups
 
     groups = my_object[object_field] or '' # f.e. value of Contact.contactgroups
-    list_of_groups = groups.split(',')
+    list_of_groups = pynag.Utils.AttributeList(groups)
+
 
     members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
-    list_of_members = members.split(',')
+    list_of_members = pynag.Utils.AttributeList(members)
 
     if group_name in list_of_groups:
         return False # Group says it already has object as a member
@@ -1938,10 +1931,10 @@ def _remove_object_from_group(my_object, my_group):
     object_field = group_type + 's' # i.e. Host.hostgroups
 
     groups = my_object[object_field] or '' # f.e. value of Contact.contactgroups
-    list_of_groups = groups.split(',')
+    list_of_groups = pynag.Utils.AttributeList(groups)
 
     members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
-    list_of_members = members.split(',')
+    list_of_members = pynag.Utils.AttributeList(members)
 
     if group_name in list_of_groups:
         # Remove object from the group
