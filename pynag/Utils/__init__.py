@@ -621,7 +621,10 @@ class AttributeList(object):
 
     def remove(self, value):
         return self.fields.remove(value)
-
+    def __iter__(self):
+        return self.fields.__iter__()
+    def next(self):
+        return self.fields.next()
 
 class defaultdict(dict):
     """ This is an alternative implementation of collections.defaultdict.

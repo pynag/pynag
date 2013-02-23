@@ -601,7 +601,7 @@ class ObjectDefinition(object):
 
     def __setitem__(self, key, item):
         self._changes[key] = item
-        self._event(level="debug", message="attribute changed: %s = %s" % (attribute_name, attribute_value))
+        self._event(level="debug", message="attribute changed: %s = %s" % (key, item))
 
     def __getitem__(self, key):
         if key == 'id':
