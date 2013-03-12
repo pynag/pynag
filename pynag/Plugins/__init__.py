@@ -240,10 +240,10 @@ class simple:
 
         # Service check
         if service:
-            print >>p.tochild, "%s    %s    %s    %s %s" % (hostname, service, code, message, self.perfdata_string())
+            print >>p.tochild, "%s	%s	%s	%s %s" % (hostname, service, code, message, self.perfdata_string())
         # Host check, omit service_description
         else:
-            print >>p.tochild, "%s    %s    %s %s" % (hostname, code, message, self.perfdata_string())
+            print >>p.tochild, "%s	%s	%s %s" % (hostname, code, message, self.perfdata_string())
 
         # Send eof
         # TODO, support multiple statuses ?
