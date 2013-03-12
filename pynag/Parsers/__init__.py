@@ -476,7 +476,7 @@ class config:
                         change = "\t%s\n" % (new_field_name)
                     object_definition[i] = change
                     break
-            if not change:
+            if not change and new_value is not None:
                 # Attribute was not found. Lets add it
                 change = "\t%-30s%s\n" % (field_name, new_value)
                 object_definition.insert(i,change)
@@ -939,6 +939,9 @@ class config:
         output += "\n"
         output += "define %s {\n" % item['meta']['object_type']
         for k, v in item.iteritems():
+            if v is None:
+                # Skip entries with No value
+                continue
             if k != 'meta':
                 if k not in item['meta']['template_fields']:
                     output += "\t %-30s %-30s\n" % (k,v)
