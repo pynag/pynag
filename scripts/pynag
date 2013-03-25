@@ -540,15 +540,21 @@ def copy_object():
     answer = raw_input('Update these %s objects ? (y/N) ' % (len(objects)))
     if answer.lower() not in ('y', 'yes'):
         return
+    number_of_copies = 0
     for obj in objects:
-        new_obj = obj.copy(filename=opts.filename,recursive=opts.recursive,**set)
-        if opts.quiet == False:
-            print "Object saved to", new_obj.get_filename()
-        if opts.verbose:
-            print "# This is what actual statement looks like"
-            print new_obj
+        copied_objects = obj.copy(filename=opts.filename,recursive=opts.recursive,**set)
+        # obj.copy() in most cases should return a list. If not, lets convert it
+        if not isinstance(copied_objects, list):
+            copied_objects = [copied_objects]
+        number_of_copies += len(copied_objects)
+        for new_obj in copied_objects:
+            if opts.quiet == False:
+                print "Object saved to", new_obj.get_filename()
+            if opts.verbose:
+                print "# This is what actual statement looks like"
+                print new_obj
     if opts.quiet == False:
-        print "%s objects copied." % (len(objects))
+        print "%s objects copied." % (number_of_copies)
 def livestatus():
     """ Make a custom query to MK Livestatus """
     parser.usage = '''%prog livestatus '<query>' [query2] [query3] [...] '''
