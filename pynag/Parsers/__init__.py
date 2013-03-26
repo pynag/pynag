@@ -216,7 +216,8 @@ class config:
         in_definition = {}
         tmp_buffer = []
 
-        for line_num, line in enumerate( open(filename, 'rb').readlines() ):
+        for sequence_no, line in enumerate( open(filename, 'rb').readlines() ):
+            line_num = sequence_no + 1
 
             ## Cleanup and line skips
             line = line.strip()
@@ -262,7 +263,7 @@ class config:
                 current['meta']['line_start'] = line_num
 
                 if in_definition:
-                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
+                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (filename,line_num))
 
                 ## Start off an object
                 in_definition = True
@@ -1546,8 +1547,8 @@ class retention:
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
         lines = open(self.filename, 'rb').readlines()
-        for line_num,line in enumerate( lines ):
-
+        for sequence_no,line in enumerate( lines ):
+            line_num = sequence_no + 1
             ## Cleanup and line skips
             line = line.strip()
             if line == "":
