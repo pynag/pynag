@@ -32,9 +32,16 @@ class config:
     """
     Parse and write nagios config files
     """
-    def __init__(self, cfg_file=None):
+    def __init__(self, cfg_file=None,strict=False):
+        """
+
+        Arguments:
+          cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
+          strict   -- if True, use stricter parsing which is more prone to raising exceptions
+        """
 
         self.cfg_file = cfg_file  # Main configuration file
+        self.strict = strict # Use strict parsing or not
 
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
@@ -259,6 +266,8 @@ class config:
             if m:
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
+                if self.strict and object_type not in self.object_type_keys.keys():
+                    raise ParserError("Don't know any object definition of type '%s'. it is not in a list of known object definitions." % object_type)
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
