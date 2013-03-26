@@ -261,7 +261,7 @@ class config:
                 continue
 
             # beginning of object definition
-            boo_re = re.compile("define\s+(\w+)\s*\{?(.*)$")
+            boo_re = re.compile("^\s*define\s+(\w+)\s*\{?(.*)$")
             m = boo_re.search(line)
             if m:
                 tmp_buffer = [line]
