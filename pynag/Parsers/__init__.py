@@ -32,9 +32,16 @@ class config:
     """
     Parse and write nagios config files
     """
-    def __init__(self, cfg_file=None):
+    def __init__(self, cfg_file=None,strict=False):
+        """
+
+        Arguments:
+          cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
+          strict   -- if True, use stricter parsing which is more prone to raising exceptions
+        """
 
         self.cfg_file = cfg_file  # Main configuration file
+        self.strict = strict # Use strict parsing or not
 
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
@@ -216,7 +223,8 @@ class config:
         in_definition = {}
         tmp_buffer = []
 
-        for line_num, line in enumerate( open(filename, 'rb').readlines() ):
+        for sequence_no, line in enumerate( open(filename, 'rb').readlines() ):
+            line_num = sequence_no + 1
 
             ## Cleanup and line skips
             line = line.strip()
@@ -253,16 +261,18 @@ class config:
                 continue
 
             # beginning of object definition
-            boo_re = re.compile("define\s+(\w+)\s*\{?(.*)$")
+            boo_re = re.compile("^\s*define\s+(\w+)\s*\{?(.*)$")
             m = boo_re.search(line)
             if m:
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
+                if self.strict and object_type not in self.object_type_keys.keys():
+                    raise ParserError("Don't know any object definition of type '%s'. it is not in a list of known object definitions." % object_type)
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
                 if in_definition:
-                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
+                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (filename,line_num))
 
                 ## Start off an object
                 in_definition = True
@@ -476,7 +486,7 @@ class config:
                         change = "\t%s\n" % (new_field_name)
                     object_definition[i] = change
                     break
-            if not change:
+            if not change and new_value is not None:
                 # Attribute was not found. Lets add it
                 change = "\t%-30s%s\n" % (field_name, new_value)
                 object_definition.insert(i,change)
@@ -939,6 +949,9 @@ class config:
         output += "\n"
         output += "define %s {\n" % item['meta']['object_type']
         for k, v in item.iteritems():
+            if v is None:
+                # Skip entries with No value
+                continue
             if k != 'meta':
                 if k not in item['meta']['template_fields']:
                     output += "\t %-30s %-30s\n" % (k,v)
@@ -1498,7 +1511,100 @@ class mk_livestatus:
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
-class status:
+
+class retention:
+    """ Easy way to parse the content of retention.dat
+
+    After calling parse() contents of retention.dat are kept in self.data
+
+    Example Usage:
+    >>> #r = retention()
+    >>> #r.parse()
+    >>> #print r
+    >>> #print r.data['info']
+    """
+    def __init__(self, filename=None, cfg_file=None ):
+        """ Initilize a new instance of retention.dat
+
+        Arguments (you only need to provide one of these):
+            filename -- path to your retention.dat file
+            cfg_file -- path to your nagios.cfg file, path to retention.dat
+              will be looked up in this file
+        """
+        # If filename is not provided, lets try to discover it from
+        # nagios.cfg
+        if filename is None:
+            c = config(cfg_file=cfg_file)
+            for key,value in c._load_static_file():
+                if key == "state_retention_file":
+                    filename = value
+
+        self.filename = filename
+        self.data = None
+    def parse(self):
+        """ Parses your status.dat file and stores in a dictionary under self.data
+
+        Returns:
+            None
+        Raises:
+            ParserError -- if problem arises while reading status.dat
+            ParserError -- if status.dat is not found
+            IOError -- if status.dat cannot be read
+        """
+        self.data = {}
+        status = {} # Holds all attributes of a single item
+        key = None # if within definition, store everything before =
+        value = None # if within definition, store everything after =
+        lines = open(self.filename, 'rb').readlines()
+        for sequence_no,line in enumerate( lines ):
+            line_num = sequence_no + 1
+            ## Cleanup and line skips
+            line = line.strip()
+            if line == "":
+                pass
+            elif line[0] == "#" or line[0] == ';':
+                pass
+            elif line.find("{") != -1:
+                status = {}
+                status['meta'] = {}
+                status['meta']['type'] = line.split("{")[0].strip()
+            elif line.find("}") != -1:
+                # Status definition has finished, lets add it to
+                # self.data
+                if status['meta']['type'] not in self.data:
+                    self.data[status['meta']['type']] = []
+                self.data[status['meta']['type']].append(status)
+            else:
+                tmp = line.split("=", 1)
+                if len(tmp) == 2:
+                    (key, value) = line.split("=", 1)
+                    status[key] = value
+                elif key == "long_plugin_output":
+                    # special hack for long_output support. We get here if:
+                    # * line does not contain {
+                    # * line does not contain }
+                    # * line does not contain =
+                    # * last line parsed started with long_plugin_output=
+                    status[key] += "\n" + line
+                else:
+                    raise ParserError("Error on %s:%s: Could not parse line: %s" % (self.filename,line_num,line))
+    def __setitem__(self, key, item):
+        self.data[key] = item
+
+    def __getitem__(self, key):
+        return self.data[key]
+    def __str__(self):
+        if not self.data:
+            self.parse()
+        buffer = "# Generated by pynag"
+        for datatype,datalist in self.data.items():
+            for item in datalist:
+                buffer += "%s {\n" % datatype
+                for attr,value in item.items():
+                    buffer += "%s=%s\n" % (attr,value)
+                buffer += "}\n"
+        return buffer
+class status(retention):
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
@@ -1534,53 +1640,6 @@ class status:
         self.filename = filename
         self.data = None
 
-    def parse(self):
-        """ Parses your status.dat file and stores in a dictionary under self.data
-
-        Returns:
-            None
-        Raises:
-            ParserError -- if problem arises while reading status.dat
-            ParserError -- if status.dat is not found
-            IOError -- if status.dat cannot be read
-        """
-        self.data = {}
-        status = {} # Holds all attributes of a single item
-        key = None # if within definition, store everything before =
-        value = None # if within definition, store everything after =
-        lines = open(self.filename, 'rb').readlines()
-        for line_num,line in enumerate( lines ):
-
-            ## Cleanup and line skips
-            line = line.strip()
-            if line == "":
-                pass
-            elif line[0] == "#" or line[0] == ';':
-                pass
-            elif line.find("{") != -1:
-                status = {}
-                status['meta'] = {}
-                status['meta']['type'] = line.split("{")[0].strip()
-            elif line.find("}") != -1:
-                # Status definition has finished, lets add it to
-                # self.data
-                if status['meta']['type'] not in self.data:
-                    self.data[status['meta']['type']] = []
-                self.data[status['meta']['type']].append(status)
-            else:
-                tmp = line.split("=", 1)
-                if len(tmp) == 2:
-                    (key, value) = line.split("=", 1)
-                    status[key] = value
-                elif key == "long_plugin_output":
-                    # special hack for long_output support. We get here if:
-                    # * line does not contain {
-                    # * line does not contain }
-                    # * line does not contain =
-                    # * last line parsed started with long_plugin_output=
-                    status[key] += "\n" + line
-                else:
-                    raise ParserError("Error on %s:%s: Could not parse line: %s" % (self.filename,line_num,line))
     def get_contactstatus(self, contact_name):
         """ Returns a dictionary derived from status.dat for one particular contact
 
@@ -1631,11 +1690,6 @@ class status:
         raise ValueError(host_name, service_description)
 
 
-    def __setitem__(self, key, item):
-        self.data[key] = item
-
-    def __getitem__(self, key):
-        return self.data[key]
 
 
 class object_cache(config):
@@ -1808,10 +1862,14 @@ class LogFiles(object):
             if logtype.find('HOST') > -1:
                 # This matches host current state:
                 m = re.search('(.*?);(.*?);(.*);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 host, state, hard, check_attempt, plugin_output = m.groups()
                 service_description=None
             if logtype.find('SERVICE') > -1:
                 m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 host,service_description,state,hard,check_attempt,plugin_output = m.groups()
             result['host_name'] = host
             result['service_description'] = service_description
@@ -1824,9 +1882,13 @@ class LogFiles(object):
             result['class_name'] = 'notification'
             if logtype == 'SERVICE NOTIFICATION':
                 m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 contact,host,service_description,state,command,plugin_output = m.groups()
             elif logtype == 'HOST NOTIFICATION':
                 m = re.search('(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 contact,host,state,command,plugin_output = m.groups()
                 service_description = None
             result['contact_name'] = contact
@@ -1842,6 +1904,8 @@ class LogFiles(object):
             result['class'] = 5
             result['class_name'] = 'command'
             m = re.search('(.*?);(.*)', options)
+            if m is None:
+                return result
             command_name,text = m.groups()
             result['command_name'] = command_name
             result['text'] = text
@@ -1851,10 +1915,14 @@ class LogFiles(object):
             if logtype.find('HOST') > -1:
                 # This matches host current state:
                 m = re.search('(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 host, state, plugin_output = m.groups()
                 service_description=None
             if logtype.find('SERVICE') > -1:
                 m = re.search('(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
                 host,service_description,state,plugin_output = m.groups()
             result['host_name'] = host
             result['service_description'] = service_description
