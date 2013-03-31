@@ -1468,7 +1468,7 @@ class mk_livestatus:
             s.send(query)
         except IOError:
             raise ParserError(
-                "Could not write to sockeet '%s'. Make sure you the right permissions"
+                "Could not write to socket '%s'. Make sure you the right permissions"
                 % self.livestatus_socket_path
             )
         s.shutdown(socket.SHUT_WR)
