@@ -531,19 +531,49 @@ def grep(objects, **kwargs):
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
             expression = lambda x: str(v) != str(x.get(k))
+        elif k.endswith('__regex'):
+            k = k[:-len('__regex')]
+            regex = re.compile(v)
+            expression = lambda x: regex.search( str(x.get(k)) )
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
             expression = lambda x: v in AttributeList(x.get(k)).fields
         elif k == 'register' and v == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
-        elif k == 'search':
+        elif k in ('search','q'):
             expression = lambda x: v in str(x)
         else:
             # If all else fails, assume they are asking for exact match
-            expression = lambda x: str(x.get(k)) == v
+            expression = lambda x: str(x.get(k)) == v or ( isinstance(x.get(k), list) and isinstance(v,str) and v in x.get(k) )
         matching_objects = filter(expression, matching_objects)
     return matching_objects
+
+def grep_to_livestatus(*args,**kwargs):
+    """ Converts from pynag style grep syntax to livestatus filter syntax.
+
+    Example:
+        >>> grep_to_livestatus(host_name='test')
+        ['Filter: host_name = test']
+
+        >>> grep_to_livestatus(service_description__contains='serv')
+        ['Filter: service_description ~ serv']
+    """
+    result = list(args) # Args go unchanged back into results
+    for k,v in kwargs.items():
+        if k.endswith('__contains'):
+            k = k[:-len('__contains')]
+            my_string = "Filter: %s ~ %s" % (k,v)
+        elif k.endswith('__has_field'):
+            k = k[:-len('__has_field')]
+            my_string = "Filter: %s >= %s" % (k,v)
+        elif k.endswith('__isnot'):
+            k = k[:-len('__isnot')]
+            my_string = "Filter: %s != %s" % (k,v)
+        else:
+            my_string = "Filter: %s = %s" % (k,v)
+        result.append(my_string)
+    return result
 
 class AttributeList(object):
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
@@ -579,11 +609,9 @@ class AttributeList(object):
         possible_operators = '+-!'
         if value[0] in possible_operators:
             self.operator = value[0]
+            value = value[1:]
         else:
             self.operator = ''
-
-        # Strip any operators from the string
-        value = value.strip(possible_operators)
 
         # Strip leading and trailing commas
         value = value.strip(',')
@@ -671,3 +699,8 @@ class defaultdict(dict):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
 
+
+if __name__ == '__main__':
+    import pynag.Model
+    hosts = pynag.Model.Host.objects.all
+    print grep(hosts, host_name__regex='^l.*$')
