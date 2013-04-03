@@ -1347,7 +1347,7 @@ class config:
                             raw_file_list.append( item )
                 for raw_file in raw_file_list:
                     if raw_file.endswith('.cfg'):
-                        if os.path.exists(raw_file):
+                        if os.path.exists(raw_file) and not os.path.isdir(raw_file):
                             # Nagios doesnt care if cfg_file exists or not, so we will not throws errors
                             cfg_files.append(raw_file)
 
