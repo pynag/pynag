@@ -1724,6 +1724,44 @@ class Hostgroup(ObjectDefinition):
         """ Remove host from this group. Behaves like Hostgroup._remove_member_from_group """
         host = Host.objects.get_by_shortname(host_name)
         return _remove_object_from_group(host, self)
+    def delete(self, recursive=False,cleanup_related_items=True ):
+        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well
+            cleanup_related_items=True will also remove references in hostgroups,hosts + dependencies and escalations"""
+        if self.hostgroup_name is not None:
+            if cleanup_related_items == True:
+                hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
+                hosts = Host.objects.filter(hostgroups__has_field=self.hostgroup_name)
+                dependenciesAndEscalations = ObjectDefinition.objects.filter(hostgroup_name__has_field=self.hostgroup_name,object_type__isnot='hostgroup')
+                dependencies = ObjectDefinition.objects.filter(dependent_hostgroup_name__has_field=self.hostgroup_name)
+                for i in hostgroups:
+                    # remove hostgroup from other hostgroups
+                    i.attribute_removefield('hostgroup_members',self.hostgroup_name)
+                    hgm = i.get_attribute('hostgroup_members')
+                    # Remove the + character if it's the only thing remaining after removing a field from the hostgroup_members attribute
+                    # Workaround for https://dev.icinga.org/issues/3900
+                    if len(hgm) == 1 and hgm[0] == "+":
+                        i.set_attribute('hostgroup_members',None)
+                    i.save()
+                for i in hosts:
+                    # remove hostgroup from hosts
+                    i.attribute_removefield('hostgroups',self.hostgroup_name)
+                    i.save()
+                for i in dependenciesAndEscalations:
+                    # remove from host/service escalations/dependencies
+                    i.attribute_removefield('hostgroup_name',self.hostgroup_name)
+                    i.save()
+                for i in dependencies:
+                    # remove from host/service escalations/dependencies
+                    i.attribute_removefield('dependent_hostgroup_name',self.hostgroup_name)
+                    i.save()
+            if recursive == True:
+                for i in Service.objects.filter(hostgroup_name=self.hostgroup_name):
+                    #remove only if self.hostgroup_name is the only hostgroup
+                    i.delete(recursive=recursive)
+        # Call parent to get delete myself
+        super(self.__class__, self).delete(recursive=recursive)
+
+
     def downtime(self,start_time=None,end_time=None,trigger_id=0,duration=7200,author=None,comment='Downtime scheduled by pynag',recursive=False):
         """ Put every host and service in this hostgroup in a schedule downtime.
 
