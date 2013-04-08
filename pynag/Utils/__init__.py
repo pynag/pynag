@@ -561,6 +561,8 @@ def grep_to_livestatus(*args,**kwargs):
     """
     result = list(args) # Args go unchanged back into results
     for k,v in kwargs.items():
+        if isinstance(v,list) and len(v) > 0:
+            v = v[0]
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
             my_string = "Filter: %s ~ %s" % (k,v)
