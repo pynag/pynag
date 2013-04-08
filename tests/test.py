@@ -265,7 +265,7 @@ class testModel(unittest.TestCase):
         service2 = pynag.Model.Service.objects.get_by_shortname('node-1/cpu2')
         self.assertEqual([group], service1.get_effective_servicegroups())
         self.assertEqual([group], service2.get_effective_servicegroups())
-        self.assertEqual([service2,service1], group.get_effective_services())
+        self.assertEqual([service1,service2], group.get_effective_services())
 
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
