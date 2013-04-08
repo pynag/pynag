@@ -599,6 +599,13 @@ class ObjectDefinition(object):
         if self['register'] is "1": return True
         return False
 
+    def __cmp__(a,b):
+        return cmp(a.get_description(),b.get_description())
+    def __lt__(a,b):
+        return a.get_description() < b.get_description()
+    def __gt__(a,b):
+        return a.get_description() > b.get_description()
+
     def __setitem__(self, key, item):
         self._changes[key] = item
         self._event(level="debug", message="attribute changed: %s = %s" % (key, item))
@@ -1265,7 +1272,7 @@ class Host(ObjectDefinition):
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x)
-        list_of_shortnames = ObjectRelations.host_services[self.host_name]
+        list_of_shortnames = sorted( ObjectRelations.host_services[self.host_name] )
         services = map( get_object, list_of_shortnames )
         # Look for services that define hostgroup_name that we belong to
         for hg in self.get_effective_hostgroups():
@@ -1275,19 +1282,19 @@ class Host(ObjectDefinition):
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Host """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.host_contacts[self.host_name]
+        list_of_shortnames = sorted( ObjectRelations.host_contacts[self.host_name] )
         return map( get_object, list_of_shortnames )
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Host """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.host_contact_groups[self.host_name]
+        list_of_shortnames = sorted( ObjectRelations.host_contact_groups[self.host_name] )
         return map( get_object, list_of_shortnames )
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Host """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.host_hostgroups[self.host_name]
+        list_of_shortnames = sorted(ObjectRelations.host_hostgroups[self.host_name])
         return map( get_object, list_of_shortnames )
 
     def get_effective_network_parents(self, recursive=False):
@@ -1514,7 +1521,7 @@ class Service(ObjectDefinition):
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.service_hosts[ self.get_id() ]
+        list_of_shortnames = sorted(ObjectRelations.service_hosts[ self.get_id() ])
         hosts = map( get_object, list_of_shortnames )
         for hg in self.get_effective_hostgroups():
             hosts += hg.get_effective_hosts()
@@ -1523,25 +1530,25 @@ class Service(ObjectDefinition):
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Service """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.service_contacts[self.get_id()]
+        list_of_shortnames = sorted(ObjectRelations.service_contacts[self.get_id()])
         return map( get_object, list_of_shortnames )
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Service """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.service_contact_groups[self.get_id()]
+        list_of_shortnames = sorted(ObjectRelations.service_contact_groups[self.get_id()])
         return map( get_object, list_of_shortnames )
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Service """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.service_hostgroups[self.get_id()]
+        list_of_shortnames = sorted(ObjectRelations.service_hostgroups[self.get_id()])
         return map( get_object, list_of_shortnames )
 
     def get_effective_servicegroups(self):
         """ Returns a list of all Servicegroup that belong to this Service """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.service_servicegroups[self.get_id()]
+        list_of_shortnames = sorted(ObjectRelations.service_servicegroups[self.get_id()])
         return map( get_object, list_of_shortnames )
 
     def get_effective_check_command(self):
@@ -1589,7 +1596,7 @@ class Contact(ObjectDefinition):
     def get_effective_contactgroups(self):
         """ Get a list of all Contactgroup that are hooked to this contact """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contact_contactgroups[self.contact_name]
+        list_of_shortnames = sorted(ObjectRelations.contact_contactgroups[self.contact_name])
         return map( get_object, list_of_shortnames )
 
     def get_effective_hosts(self):
@@ -1597,7 +1604,7 @@ class Contact(ObjectDefinition):
         result = set()
         # First add all hosts that name this contact specifically
         get_object = lambda x: Host.objects.get_by_id(x)
-        list_of_shortnames = ObjectRelations.contact_hosts[self.contact_name]
+        list_of_shortnames = sorted(ObjectRelations.contact_hosts[self.contact_name])
         result.update( map( get_object, list_of_shortnames ) )
 
         # Next do the same for all contactgroups this contact belongs in
@@ -1610,7 +1617,7 @@ class Contact(ObjectDefinition):
         result = set()
         # First add all services that name this contact specifically
         get_object = lambda x: Service.objects.get_by_id(x)
-        list_of_shortnames = ObjectRelations.contact_services[self.contact_name]
+        list_of_shortnames = sorted(ObjectRelations.contact_services[self.contact_name])
         result.update( map( get_object, list_of_shortnames ) )
         return result
 
@@ -1642,18 +1649,18 @@ class Contactgroup(ObjectDefinition):
     def get_effective_contactgroups(self):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_subgroups[self.contactgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.contactgroup_subgroups[self.contactgroup_name])
         return map( get_object, list_of_shortnames )
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.contactgroup_contacts[self.contactgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.contactgroup_contacts[self.contactgroup_name])
         return map( get_object, list_of_shortnames )
 
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
-        list_of_shortnames = ObjectRelations.contactgroup_hosts[self.contactgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.contactgroup_hosts[self.contactgroup_name])
         get_object = lambda x: Host.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
 
@@ -1662,7 +1669,7 @@ class Contactgroup(ObjectDefinition):
         services = {}
         for i in Service.objects.all:
             services[i.get_id()] = i
-        list_of_shortnames = ObjectRelations.contactgroup_services[self.contactgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.contactgroup_services[self.contactgroup_name])
         get_object = lambda x: services[x]
         return map( get_object, list_of_shortnames )
 
@@ -1691,20 +1698,20 @@ class Hostgroup(ObjectDefinition):
 
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this hostgroup """
-        list_of_shortnames = ObjectRelations.hostgroup_services[self.hostgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.hostgroup_services[self.hostgroup_name])
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
 
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this hostgroup """
-        list_of_shortnames = ObjectRelations.hostgroup_hosts[self.hostgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.hostgroup_hosts[self.hostgroup_name])
         get_object = lambda x: Host.objects.get_by_shortname(x)
         return map( get_object, list_of_shortnames )
 
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.hostgroup_subgroups[self.hostgroup_name]
+        list_of_shortnames = sorted(ObjectRelations.hostgroup_subgroups[self.hostgroup_name])
         return map( get_object, list_of_shortnames )
 
     def _do_relations(self):
@@ -1773,13 +1780,13 @@ class Servicegroup(ObjectDefinition):
     objects = ObjectFetcher('servicegroup')
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Servicegroup """
-        list_of_shortnames = ObjectRelations.servicegroup_services[self.servicegroup_name]
+        list_of_shortnames = sorted(ObjectRelations.servicegroup_services[self.servicegroup_name])
         get_object = lambda x: Service.objects.get_by_id(x)
         return map( get_object, list_of_shortnames )
     def get_effective_servicegroups(self):
         """ Returns a list of every Servicegroup that is a member of this Servicegroup """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
-        list_of_shortnames = ObjectRelations.servicegroup_subgroups[self.servicegroup_name]
+        list_of_shortnames = sorted(ObjectRelations.servicegroup_subgroups[self.servicegroup_name])
         return map( get_object, list_of_shortnames )
     def add_service(self, shortname):
         """ Adds service to this group. Behaves like _add_object_to_group(object, group)"""
