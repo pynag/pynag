@@ -204,7 +204,7 @@ class ObjectRelations(object):
     def reset():
         """ Runs clear() on every member attribute in ObjectRelations """
         for k,v in ObjectRelations.__dict__.items():
-            if type(v) == type(defaultdict):
+            if isinstance(v, defaultdict):
                 v.clear()
     @staticmethod
     def _get_subgroups(group_name, dictname):
