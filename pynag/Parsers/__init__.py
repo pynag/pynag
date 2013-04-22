@@ -1741,9 +1741,12 @@ class LogFiles(object):
         if end_time is None:
             end_time = now
         if start_time is None:
-            seconds_in_a_day = 60*60*24
-            seconds_today = end_time % seconds_in_a_day # midnight of today
-            start_time = end_time - seconds_today
+            if 'filename' in kwargs:
+                start_time = 1
+            else:
+                seconds_in_a_day = 60*60*24
+                seconds_today = end_time % seconds_in_a_day # midnight of today
+                start_time = end_time - seconds_today
         start_time = int(start_time)
         end_time = int(end_time)
 
@@ -1756,6 +1759,8 @@ class LogFiles(object):
         logfiles.reverse()
 
         result = []
+        if 'filename' in kwargs:
+            logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
         for log_file in logfiles:
             entries = self._parse_log_file(filename=log_file)
             if len(entries) == 0:
