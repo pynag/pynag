@@ -1763,13 +1763,12 @@ class LogFiles(object):
             first_entry = entries[0]
             last_entry = entries[len(entries)-1]
 
-            if last_entry['time'] > end_time:
+            if first_entry['time'] > end_time:
                 continue
 
             # If strict, filter entries to only include the ones in the timespan
             if strict == True:
                 entries = [x for x in entries if x['time'] >= start_time and x['time'] <= end_time]
-
             # If search string provided, filter the string
             if search is not None:
                 entries = [x for x in entries if x['message'].lower().find(search.lower()) > -1]
