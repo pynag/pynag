@@ -1433,7 +1433,7 @@ class mk_livestatus:
         except KeyError, e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
-    def query(self, query, *args):
+    def query(self, query, *args, **kwargs):
 
         columns = None # Here we will keep a list of column names
         doing_stats = False
@@ -1487,6 +1487,11 @@ class mk_livestatus:
         if doing_stats == True and len(answer) == 1:
             return answer[0]
         columns = answer.pop(0)
+
+        # If magic words "columns=False" is provided, we return an array of arrays instead of array of dicts
+        if kwargs.get('columns') == False:
+            return answer
+
         # Lets throw everything into a hashmap before we return
         result = []
         for line in answer:
