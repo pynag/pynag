@@ -811,7 +811,7 @@ class ObjectDefinition(object):
           * A copy of the new ObjectDefinition
           * A list of all copies objects if recursive == True
         """
-        if args == {}:
+        if args == {} and filename is None:
                 raise ValueError('To copy an object definition you need at least one new attribute')
         
         new_object = string_to_class[self.object_type]( filename=filename )

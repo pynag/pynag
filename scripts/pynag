@@ -523,7 +523,7 @@ def copy_object():
     attributes,where_statement=split_where_and_set(args)
     if len(where_statement) == 0:
         parser.error("Refusing to copy every object. Please trim down the selection with a WHERE statement")
-    if len(attributes) == 0:
+    if len(attributes) == 0 and opts.filename is None:
         parser.error("No changes specified. Please specify what to update with a SET statement")
     objects = search_objects(search_statements=where_statement)
 
