@@ -5,10 +5,21 @@ New Features:
     - pynag cli multiple changes to make it more friendly to bash scripts
     - --quiet option
     - --seperator option
+    - pynag cli has acknowledge and downtime subcommands
+    - pynag.Model.*.delete() now are more context aware and remove references from other objects
+    - More features in pynag.Utils.GitRepo
+    - Parser for retention.dat created
+    - pynag.utils.grep_to_livestatus() to convert from pynag style filters to livestatus style filters
     - add_to_contactgroup() created for pynag.Model.Services, Hosts, and Contacts
-
+    - New functions pynag.Utils.grep(). Model filter() will use this in the future.
+    - pynag.Model - object definitions now implement sort()
+    
 Bugfixes:
     - Multiple doctest and unittest fixes and improvements to code quality
+    - send_nsca - revert back to tabs instead of spaces
+    - Fix unhandled traceback with pynag copy
+    - Fix bug where directories with ending .cfg were parsed as files
+
 
 Changes in 0.4.8 (Dec 10 2012)
 
