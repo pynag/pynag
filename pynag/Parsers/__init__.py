@@ -1484,13 +1484,15 @@ class mk_livestatus:
             return []
         answer = eval(answer)
         s.close()
+        # Workaround for livestatus bug, where column headers are not provided even if we asked for them
         if doing_stats == True and len(answer) == 1:
             return answer[0]
+
         columns = answer.pop(0)
 
         # If magic words "columns=False" is provided, we return an array of arrays instead of array of dicts
-        if kwargs.get('columns') == False:
-            return answer
+        if kwargs.get('columns') == False and len(answer) == 1:
+            return answer.pop(0)
 
         # Lets throw everything into a hashmap before we return
         result = []
