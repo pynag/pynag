@@ -1435,27 +1435,45 @@ class mk_livestatus:
         return True
     def query(self, query, *args, **kwargs):
 
-        columns = None # Here we will keep a list of column names
-        doing_stats = False
-        # We break query up into a list, of commands, then put it back into a line seperated
-        # string before be talk to the socket
+        # We break query up into a list, of commands, then before sending command to the socket
+        # We will write it one line per item in the array
         query = query.split('\n')
         for i in args:
             query.append(i)
-        if query[0].startswith('GET'):
+
+        # If no response header was specified, we add fixed16
+        response_header = None
+        if not filter(lambda x: x.startswith('ResponseHeader:'), query ):
             query.append("ResponseHeader: fixed16")
+            response_header = "fixed16"
+
+        # If no specific outputformat is requested, we will return in python format
+        python_format = False
+        if not filter(lambda x: x.startswith('OutputFormat:'), query ):
             query.append("OutputFormat: python")
+            python_format = True
+
+        # There is a bug in livestatus where if requesting Stats, then no column headers are sent from livestatus
+        # In later version, the headers are sent, but the output is corrupted.
+        #
+        # We maintain consistency by clinging on to the old bug, and if there are Stats in the output
+        # we will not ask for column headers
+        doing_stats = len( filter(lambda x: x.startswith('Stats:'), query ) ) > 0
+        if not filter(lambda x: x.startswith('Stats:'), query ) and not filter(lambda x: x.startswith('ColumnHeaders: on'), query):
             query.append("ColumnHeaders: on")
-        for i in query:
-            if i.startswith('Columns:'):
-                columns = i[len('Columns:'):].split()
-            if i.startswith('Stats'):
-                doing_stats = True
-        if not self.authuser is None and not self.authuser == '':
+
+        # Check if we need to add authuser to the query
+        if not filter(lambda x: x.startswith('AuthUser:'), query ) and self.authuser not in (None,''):
             query.append("AuthUser: %s" % self.authuser)
+
+        # When we reach here, we are done adding options to the query, so we convert to the string that will
+        # be sent to the livestatus socket
         query = '\n'.join(query) + '\n'
         self.last_query = query
 
+        #
+        # Lets create a socket and see if we can write to it
+        #
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
             s.connect(self.livestatus_socket_path)
@@ -1473,32 +1491,40 @@ class mk_livestatus:
             )
         s.shutdown(socket.SHUT_WR)
         tmp = s.makefile()
-        response_header = tmp.readline()
-        if len(response_header) == 0:
-            return []
-        return_code = response_header.split()[0]
+
+        # Read the response header from livestatus
+        if response_header == "fixed16":
+            response_data = tmp.readline()
+            if len(response_data) == 0:
+                return []
+            return_code = response_data.split()[0]
+            if not return_code.startswith('2'):
+                raise ParserError("Header from livestatus socket does not start with 2: '%s'" % response_data)
+
         answer = tmp.read()
-        if not return_code.startswith('2'):
-            raise ParserError("Error '%s' from livestatus socket\n%s" % (return_code,answer))
+        # We are done with the livestatus socket. lets close it
+        s.close()
+
         if answer == '':
             return []
 
-        # Turn livestatus response into a python object
+
+
+        # If something other than python format was requested, we return the answer as is
+        if python_format == False:
+            return answer
+
+        # If we reach down here, it means we are supposed to parse the output before returning it
         try:
             answer = eval(answer)
         except Exception, e:
             raise ParserError("Error, could not parse response from livestatus.\n%s" % (answer))
 
-        s.close()
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
         if doing_stats == True and len(answer) == 1:
             return answer[0]
 
         columns = answer.pop(0)
-
-        # If magic words "columns=False" is provided, we return an array of arrays instead of array of dicts
-        if kwargs.get('columns') == False and len(answer) == 1:
-            return answer.pop(0)
 
         # Lets throw everything into a hashmap before we return
         result = []
