@@ -1482,7 +1482,13 @@ class mk_livestatus:
             raise ParserError("Error '%s' from livestatus socket\n%s" % (return_code,answer))
         if answer == '':
             return []
-        answer = eval(answer)
+
+        # Turn livestatus response into a python object
+        try:
+            answer = eval(answer)
+        except Exception, e:
+            raise ParserError("Error, could not parse response from livestatus.\n%s" % (answer))
+
         s.close()
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
         if doing_stats == True and len(answer) == 1:
@@ -1777,7 +1783,6 @@ class LogFiles(object):
 
             if first_entry['time'] > end_time:
                 continue
-
             # If strict, filter entries to only include the ones in the timespan
             if strict == True:
                 entries = [x for x in entries if x['time'] >= start_time and x['time'] <= end_time]
@@ -1787,7 +1792,8 @@ class LogFiles(object):
             for k,v in kwargs.items():
                 entries = [x for x in entries if x.get(k) == v]
             result += entries
-            if start_time is None or int(start_time) > int(first_entry.get('time')):
+
+            if start_time is None or int(start_time) >= int(first_entry.get('time')):
                 break
         return result
     def get_flap_alerts(self, **kwargs):
