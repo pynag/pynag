@@ -739,28 +739,36 @@ class PluginHelper:
             return
 
         metric_status = -1 # by default assume nothing
-        metric_was_outside_ok_range = False # Will go to true only if ok range is specified
+        default_state = 0 # By default if no treshold matches, we assume OK
         highest_level = ok # highest threshold range seen
+        # Iterate through all thresholds, and log down warn and crit for perfdata purposes
         for level, threshold_range in thresholds:
-            highest_level = max(highest_level, level)
             if metric.warn == '' and level == warning:
                 metric.warn = threshold_range
             elif metric.crit == '' and level == critical:
                 metric.crit = threshold_range
+            if level == ok:
+                default_state = 2
+
+        # Iterate all threshold and determine states
+        for level, threshold_range in thresholds:
+            highest_level = max(highest_level, level)
+            # If ok threshold was specified, default state is critical according to spec
+            # If value matches our threshold, we increment the status
             if new_threshold_syntax.check_range(metric.value, threshold_range):
                 metric_status = max(metric_status, level)
                 self.debug('%s is within %s range "%s"' % (metric_name, state_text[level], threshold_range))
+                if level == ok:
+                    self.debug("OK threshold matches, not checking any more thresholds")
+                    metric_status = ok
+                    break
             else:
                 self.debug('%s is outside %s range "%s"' % (metric_name, state_text[level],threshold_range))
-                metric_was_outside_ok_range = True
 
-        # If no thresholds were specified, lets put state to OK
-        metric_status = max(metric_status, OK)
+        # If no thresholds matched, set a default return code
+        if metric_status < 0:
+            metric_status = default_state
 
-        # If an ok range was specified, and value was outside of it,
-        # we should return critical if warn or crit were specified:
-        if metric_was_outside_ok_range == True and highest_level == ok:
-            metric_status = max(metric_status, critical)
 
         # OK's go to long output, errors go directly to summary
         self.add_status(metric_status)
