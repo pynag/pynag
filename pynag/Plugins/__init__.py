@@ -23,11 +23,10 @@ Python Nagios extensions
 
 import sys
 import os
-import re
 import traceback
 from platform import node
 from optparse import OptionParser, OptionGroup
-from pynag.Utils import PerfData, PerfDataMetric
+from pynag.Utils import PerfData
 import new_threshold_syntax
 
 # Map the return codes
@@ -625,8 +624,11 @@ class PluginHelper:
         """
 
         # If new status was entered as a human readable string (ok,warn,etc) lets convert it to int:
-        if type(new_status) == type('') and new_status.lower() in state:
-            new_status = state[new_status]
+        if type(new_status) == type(''):
+            if new_status.lower() in state:
+                new_status = state[new_status]
+            else:
+                raise Exception("Invalid status supplied \"%s\"" % (new_status))
 
         self._nagios_status = max(self._nagios_status, new_status)
 
