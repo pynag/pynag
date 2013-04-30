@@ -1340,9 +1340,7 @@ class Host(ObjectDefinition):
         # Find all services and delete them as well
         if self.host_name is not None:
             if cleanup_related_items == True:
-                print "cleaning up..."
                 for i in Hostgroup.objects.filter(members__has_field=self.host_name):
-                    print i.hostgroup_name
                     i.attribute_removefield('members',self.host_name)
                     i.save()
             if recursive == True:
@@ -1378,7 +1376,6 @@ class Host(ObjectDefinition):
         copies.append( ObjectDefinition.copy(self, recursive=recursive,filename=filename, **args) )
         if recursive == True and 'host_name' in args:
             for i in self.get_effective_services():
-                print i.get_shortname()
                 copies.append( i.copy(filename=filename, host_name=args.get('host_name')) )
         return copies
 
@@ -2079,7 +2076,6 @@ class StatusFetcher(object):
         # Fetch all objects from Parsers.config
         for object_type, objects in status.data.items():
             for i in objects:
-                print object_type
                 if object_type == 'hoststatus':
                     item = HostStatus(data=i)
                 else:
@@ -2108,7 +2104,4 @@ AttributeList = pynag.Utils.AttributeList
 
 if __name__ == '__main__':
     o = Service.objects.all[17]
-    print o['__EXTRAOPTS']
-    print o.get_effective_command_line()
     o['__EXTRAOPTS'] = "new value"
-    print o.get_effective_command_line()
