@@ -164,7 +164,7 @@ runexpect 2 "${pluginhelper} -F 23 ${case}"
 inittest 'PH: Critical if "stuff" is over 20, else warn if "stuff" is
 		below 10 (will be critical if "stuff" is less than 0)'
 case="--th=metric=fakedata,warn=0..10,crit=20..inf"
-runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 0 "${pluginhelper} -F -23 ${case}"
 runexpect 1 "${pluginhelper} -F 3   ${case}"
 runexpect 0 "${pluginhelper} -F 13  ${case}"
 runexpect 2 "${pluginhelper} -F 23  ${case}"
