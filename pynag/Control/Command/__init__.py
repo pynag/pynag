@@ -65,8 +65,6 @@ def _write_to_command_file(command_file, command_string=""):
 
     See http://nagios.sourceforge.net/docs/nagioscore/3/en/extcommands.html for details
     """
-    #print "writing to command pipe:", command_string
-    #print "command_file:", command_file
     f = open(command_file, 'a')
     f.write(command_string + '\n')
     f.close()
