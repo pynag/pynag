@@ -64,6 +64,9 @@ plug=${scriptsdir}/fakeplugin.py
 # Plugin without mandatory warning and critical
 plugnothres=${scriptsdir}/fakepluginnothres.py
 
+# PluginHelper plugin
+pluginhelper=${scriptsdir}/fakepluginhelper.py
+
 
 # Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
 inittest 'Critical if "stuff" is over 20, else warn if 
@@ -136,6 +139,71 @@ runexpect 0 "${plugnothres} -F 0   ${case}"
 runexpect 0 "${plugnothres} -F 2   ${case}"
 runexpect 0 "${plugnothres} -F 10   ${case}"
 runexpect 0 "${plugnothres} -F 15   ${case}"
+
+
+#### PluginHelper
+
+# Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
+inittest 'PH: Critical if "stuff" is over 20, else warn if
+		over 10 (will be critical if "stuff" is less than 0)'
+case="--th=metric=fakedata,ok=0..10,warn=10..20"
+runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 0 "${pluginhelper} -F 3   ${case}"
+runexpect 1 "${pluginhelper} -F 13  ${case}"
+runexpect 2 "${pluginhelper} -F 23  ${case}"
+
+# Same as above. Negative "stuff" is OK
+inittest 'PH: Same as above. Negative "stuff" is OK'
+case="--th=metric=fakedata,ok=inf..10,warn=10..20"
+runexpect 0 "${pluginhelper} -F -23 ${case}"
+runexpect 0 "${pluginhelper} -F 3 ${case}"
+runexpect 1 "${pluginhelper} -F 13 ${case}"
+runexpect 2 "${pluginhelper} -F 23 ${case}"
+
+# Critical if "stuff" is over 20, else warn if "stuff" is below 10 (will be critical if "stuff" is less than 0)
+inittest 'PH: Critical if "stuff" is over 20, else warn if "stuff" is
+		below 10 (will be critical if "stuff" is less than 0)'
+case="--th=metric=fakedata,warn=0..10,crit=20..inf"
+runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 1 "${pluginhelper} -F 3   ${case}"
+runexpect 0 "${pluginhelper} -F 13  ${case}"
+runexpect 2 "${pluginhelper} -F 23  ${case}"
+
+# Critical if "stuff" is less than 1
+inittest 'PH: Critical if "stuff" is less than 1'
+case="--th=metric=fakedata,ok=1..inf"
+runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 2 "${pluginhelper} -F 0   ${case}"
+runexpect 0 "${pluginhelper} -F 13  ${case}"
+runexpect 0 "${pluginhelper} -F 23  ${case}"
+
+inittest 'PH: 1-9 is warning, negative or above 10 is critical'
+case="--th=metric=fakedata,warn=1..9,crit=^0..10"
+runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 0 "${pluginhelper} -F 0   ${case}"
+runexpect 1 "${pluginhelper} -F 7   ${case}"
+runexpect 2 "${pluginhelper} -F 23  ${case}"
+
+# The only noncritical range is 5:6
+inittest 'PH: The only noncritical range is 5:6'
+case="--th=metric=fakedata,ok=5..6"
+runexpect 2 "${pluginhelper} -F -23 ${case}"
+runexpect 2 "${pluginhelper} -F 0   ${case}"
+runexpect 2 "${pluginhelper} -F 2   ${case}"
+runexpect 0 "${pluginhelper} -F 5   ${case}"
+runexpect 0 "${pluginhelper} -F 6   ${case}"
+
+
+# Critical if "stuff" is 10 to 20
+inittest 'PH: Critical if "stuff" is 10 to 20'
+case="--th=metric=fakedata,ok=^10..20"
+runexpect 0 "${pluginhelper} -F -23 ${case}"
+runexpect 0 "${pluginhelper} -F 0   ${case}"
+runexpect 0 "${pluginhelper} -F 2   ${case}"
+runexpect 2 "${pluginhelper} -F 10   ${case}"
+runexpect 2 "${pluginhelper} -F 15   ${case}"
+runexpect 2 "${pluginhelper} -F 20   ${case}"
+runexpect 0 "${pluginhelper} -F 23  ${case}"
 
 
 if [ ${verbose} != 0 ]; then
