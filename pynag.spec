@@ -5,7 +5,7 @@
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.4.8
+Version: 0.4.9
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -13,12 +13,13 @@ Group: System Environment/Libraries
 BuildRequires: python-devel
 BuildRequires: python-setuptools
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-Url: http://code.google.com/p/pynag/
+Url: http://pynag.org/
 BuildArch: noarch
 
 %description
-Contains python modules and utilities for pragmatically handling Nagios
-configuration file maintenance and plug-in development.
+Python modules and utilities for pragmatically handling Nagios configuration
+file maintenance, status information, log file parsing and plug-in
+development.
 
 %package examples
 Group: System Environment/Libraries
@@ -70,6 +71,9 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Tue Apr 30 2013 Tomas Edwardsson <tommi@tommi.org> 0.4.9-1
+- New upstream version
+
 * Wed Dec 12 2012 Pall Sigurdsson <palli@opensource.is> 0.4.8-1
 - New upstream version
 

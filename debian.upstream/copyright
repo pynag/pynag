@@ -1,7 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pynag
 Upstream-Contact: Pall Sigurdsson: <palli@opensource.is>
-Source: http://code.google.com/p/pynag/source/checkout
+Source: https://github.com/pynag/pynag/
 
 Files: *
 Copyright: 2008-2010 Drew Stinnett

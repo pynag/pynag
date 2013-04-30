@@ -1,3 +1,9 @@
+pynag (0.4.9-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Tomas Edwardsson <tommi@tommi.org>  Tue, 30 Apr 2013 15:01:21 +0000
+
 pynag (0.4.8-1) unstable; urgency=low
 
   * New upstream version

@@ -4,13 +4,12 @@ Section: python
 Priority: optional
 Build-Depends: python (>= 2.6.6-3~), debhelper (>= 7.4.3)
 Standards-Version: 3.9.3
-Homepage: http://code.google.com/p/pynag
+Homepage: http://pynag.org/
 
 X-Python-Version: >= 2.4
 Package: pynag
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Description: Python Modules for Nagios plugins and configuration
- pynag contains modules for pragmatically parsing and modifying
- nagios configuration objects as well as modules to simplify
- plugin development and communicate with the nagios process.
+Description: Python modules and utilities for pragmatically handling Nagios
+ configuration file maintenance, status information, log file parsing and
+ plug-in development.
