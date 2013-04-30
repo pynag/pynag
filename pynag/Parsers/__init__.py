@@ -1988,8 +1988,6 @@ class LogFiles(object):
 if __name__ == '__main__':
     l = LogFiles()
     entries = l.get_log_entries(start_time=1358208000,end_time=1358243258,service_description=None,class_name='alerts')
-    for i in entries:
-            print i['message']
     #import pprint
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint()
