@@ -191,18 +191,13 @@ class simple:
         # Append perfdata (assume multiple)
         self.data['perfdata'].append({ 'label' : label, 'value' : value, 'uom' : uom, 
             'warn' : warn, 'crit' : crit, 'min' : minimum, 'max' : maximum})
-        if crit and value > crit:
-            self.add_message(CRITICAL, "%s is bigger than %d" % (label, crit))
-        elif warn and value > warn:
-            self.add_message(WARNING, "%s is bigger than %d" % (label, warn))
-
 
     def check_perfdata_as_metric(self):
         for perfdata in self.data['perfdata']:
             self._add_message_from_range_check(
                 perfdata['value'],
-                perfdata['warning'],
-                perfdata['critical'],
+                perfdata['warn'],
+                perfdata['crit'],
                 perfdata['label']
             )
 
