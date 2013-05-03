@@ -1433,6 +1433,32 @@ class mk_livestatus:
         except KeyError, e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
+    def _get_socket(self):
+        """ Return a socket.socket() instance which we can use to communicate with livestatus
+
+         Socket might be either unix filesocket or a tcp socket depenging in the content of
+         self.livestatus_socket_path
+
+
+        """
+        try:
+            # If livestatus_socket_path contains a colon, then we assume that it is tcp socket instead of a local filesocket
+            if self.livestatus_socket_path.find(':') > 0:
+                address,tcp_port = self.livestatus_socket_path.split(':', 1)
+                print socket.getaddrinfo(address, tcp_port)
+                tcp_port = int(tcp_port)
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((address,tcp_port))
+            else:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(self.livestatus_socket_path)
+            return s
+        except IOError:
+            raise ParserError(
+                "Could not connect to socket '%s'. Make sure nagios is running and mk_livestatus loaded."
+                % self.livestatus_socket_path
+            )
+
     def query(self, query, *args, **kwargs):
 
         # We break query up into a list, of commands, then before sending command to the socket
@@ -1474,14 +1500,7 @@ class mk_livestatus:
         #
         # Lets create a socket and see if we can write to it
         #
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            s.connect(self.livestatus_socket_path)
-        except IOError:
-            raise ParserError(
-                "Could not connect to socket '%s'. Make sure nagios is running and mk_livestatus loaded."
-                % self.livestatus_socket_path
-            )
+        s = self._get_socket()
         try:
             s.send(query)
         except IOError:
