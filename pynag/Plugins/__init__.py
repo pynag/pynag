@@ -191,6 +191,41 @@ class simple:
         # Append perfdata (assume multiple)
         self.data['perfdata'].append({ 'label' : label, 'value' : value, 'uom' : uom, 
             'warn' : warn, 'crit' : crit, 'min' : minimum, 'max' : maximum})
+        if crit and value > crit:
+            self.add_message(CRITICAL, "%s is bigger than %d" % (label, crit))
+        elif warn and value > warn:
+            self.add_message(WARNING, "%s is bigger than %d" % (label, warn))
+
+
+    def check_perfdata_as_metric(self):
+        for perfdata in self.data['perfdata']:
+            self._add_message_from_range_check(
+                perfdata['value'],
+                perfdata['warning'],
+                perfdata['critical'],
+                perfdata['label']
+            )
+
+        self._check_messages_and_exit()
+
+    def _add_message_from_range_check(self, value, warning = None, critical = None, label = 'data'):
+        if not (critical or warning):
+            critical = self.data['critical']
+            warning = self.data['warning']
+
+        if critical and not self._range_checker(value, critical):
+            self.add_message(CRITICAL,"%s %s is outside critical range: %s" % (label, value, critical))
+        elif warning and not self._range_checker(value, warning):
+            self.add_message(WARNING,"%s %s is outside warning range: %s" % (label, value, warning))
+        else:
+            self.add_message(OK,"%s %s is inside warning=%s and critical=%s" % (label, value, warning, critical))
+
+    def _check_messages_and_exit(self):
+        # Get all messages appended and exit code
+        (code, message) = self.check_messages()
+
+        # Exit with appropriate exit status and message
+        self.nagios_exit(code, message)
 
     def check_range(self, value):
         """
@@ -206,22 +241,11 @@ class simple:
         10:20    < 10 or > 20, (outside the range of {10 .. 20})
         @10:20    # 10 and # 20, (inside the range of {10 .. 20})
         """
-        critical = self.data['critical']
-        warning = self.data['warning']
         self.hr_range = ""
 
-        if critical and not self._range_checker(value, critical):
-            self.add_message(CRITICAL,"%s is outside critical range: %s" % (value, critical))
-        elif warning and not self._range_checker(value, warning):
-            self.add_message(WARNING,"%s is outside warning range: %s" % (value, warning))
-        else:
-            self.add_message(OK,"%s is inside warning=%s and critical=%s" % (value, warning, critical))
+        self._add_message_about_range_check(value)
+        self._check_messages_and_exit()
 
-        # Get all messages appended and exit code
-        (code, message) = self.check_messages()
-
-        # Exit with appropriate exit status and message
-        self.nagios_exit(code, message)
 
     def _range_checker(self, value, range_threshold):
         """ deprecated. Use pynag.Plugins.check_range() """
