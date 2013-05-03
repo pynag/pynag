@@ -525,6 +525,7 @@ class PluginHelper:
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
     show_status_in_summary = False
+    show_legacy = False     # If True, print perfdata in legacy form
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
     timeout = 50            # Default timeout set to little less than nagios service check timeout
@@ -546,7 +547,7 @@ class PluginHelper:
         display_group.add_option("--no-summary", dest="show_summary", help="Hide summary from plugin output", action="store_false", default=self.show_summary)
         #display_group.add_option("--show-status-in-summary", dest="show_status_in_summary", help="Prefix the summary of the plugin with OK- or WARN- ", action="store_true", default=False)
         display_group.add_option("--get-metrics", dest="get_metrics", help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
-
+        display_group.add_option("--legacy", dest="show_legacy", help="Output perfdata in legacy format", action="store_true", default=self.show_legacy)
         self.parser.add_option_group(display_group)
 
     def parse_arguments(self, argument_list=None):
@@ -565,6 +566,7 @@ class PluginHelper:
         self.thresholds = self.options.thresholds
         self.show_longoutput = self.options.show_longoutput
         self.show_perfdata = self.options.show_perfdata
+        self.show_legacy = self.options.show_legacy
         self.show_debug = self.options.show_debug
         self.verbose = self.options.verbose
         #self.show_status_in_summary = self.options.show_status_in_summary
@@ -655,8 +657,26 @@ class PluginHelper:
                 return i
         return None
 
+    def convert_perfdata(self, perfdata):
+        """ Converts new threshold range format to old one. Returns None.
+
+        Examples:
+            x..y -> x:y
+            inf..y -> :y
+            -inf..y -> :y
+            x..inf -> x:
+            -inf..inf -> :        
+        """
+        for metric in perfdata:
+            metric.warn = metric.warn.replace("..",":").replace("-inf","").replace("inf","")
+            metric.crit = metric.crit.replace("..",":").replace("-inf","").replace("inf","")
+        return None
+
+
     def get_perfdata(self):
         """ Get perfdatastring for all valid perfdatametrics collected via add_perfdata """
+        if self.show_legacy == True:
+            self.convert_perfdata(self._perfdata.metrics)
         return str(self._perfdata   )
 
     def get_plugin_output(self, exit_code=None,summary=None, long_output=None, perfdata=None):
