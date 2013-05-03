@@ -238,7 +238,7 @@ class simple:
         """
         self.hr_range = ""
 
-        self._add_message_about_range_check(value)
+        self._add_message_from_range_check(value)
         self._check_messages_and_exit()
 
 
