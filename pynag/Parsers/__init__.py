@@ -1445,7 +1445,11 @@ class mk_livestatus:
             # If livestatus_socket_path contains a colon, then we assume that it is tcp socket instead of a local filesocket
             if self.livestatus_socket_path.find(':') > 0:
                 address,tcp_port = self.livestatus_socket_path.split(':', 1)
-                print socket.getaddrinfo(address, tcp_port)
+                if not tcp_port.isdigit():
+                    raise ParserError(
+                        'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
+                        % (self.livestatus_socket_path, tcp_port)
+                    )
                 tcp_port = int(tcp_port)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((address,tcp_port))
@@ -1453,10 +1457,10 @@ class mk_livestatus:
                 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 s.connect(self.livestatus_socket_path)
             return s
-        except IOError:
+        except IOError, e:
             raise ParserError(
-                "Could not connect to socket '%s'. Make sure nagios is running and mk_livestatus loaded."
-                % self.livestatus_socket_path
+                "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
+                % (e, self.livestatus_socket_path)
             )
 
     def query(self, query, *args, **kwargs):
