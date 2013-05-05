@@ -1420,7 +1420,8 @@ class mk_livestatus:
                         livestatus_socket_path = tmp[1]
         # If we get here then livestatus_socket_path should be resolved for us
         if livestatus_socket_path is None:
-            raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
+            msg = "No Livestatus socket define. Make sure livestatus broker module is loaded."
+            raise ParserError(msg)
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
 
@@ -1446,10 +1447,8 @@ class mk_livestatus:
             if self.livestatus_socket_path.find(':') > 0:
                 address,tcp_port = self.livestatus_socket_path.split(':', 1)
                 if not tcp_port.isdigit():
-                    raise ParserError(
-                        'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
-                        % (self.livestatus_socket_path, tcp_port)
-                    )
+                    msg = 'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
+                    raise ParserError( msg % (self.livestatus_socket_path, tcp_port) )
                 tcp_port = int(tcp_port)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((address,tcp_port))
@@ -1458,10 +1457,8 @@ class mk_livestatus:
                 s.connect(self.livestatus_socket_path)
             return s
         except IOError, e:
-            raise ParserError(
-                "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
-                % (e, self.livestatus_socket_path)
-            )
+            msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
+            raise ParserError(msg % (e, self.livestatus_socket_path) )
 
     def query(self, query, *args, **kwargs):
 
@@ -1508,10 +1505,8 @@ class mk_livestatus:
         try:
             s.send(query)
         except IOError:
-            raise ParserError(
-                "Could not write to socket '%s'. Make sure you the right permissions"
-                % self.livestatus_socket_path
-            )
+            msg = "Could not write to socket '%s'. Make sure you have the right permissions"
+            raise ParserError( msg % self.livestatus_socket_path )
         s.shutdown(socket.SHUT_WR)
         tmp = s.makefile()
 
