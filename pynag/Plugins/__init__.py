@@ -518,8 +518,9 @@ class PluginHelper:
     p.exit()
     """
     _nagios_status = -1     # exit status of the plugin
-    _long_output = []       # Long output of the plugin
-    _summary = []           # Summary of the plugin
+    _long_output = None       # Long output of the plugin
+    _summary = None           # Summary of the plugin
+    _perfdata = None  # Performance and Threshold Metrics are stored here
     show_longoutput = True  # If True, print longoutput
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
@@ -529,12 +530,15 @@ class PluginHelper:
     show_debug = False      # Extra debugging
     timeout = 50            # Default timeout set to little less than nagios service check timeout
 
-    thresholds = [] # List of strings in the nagios threshold format
+    thresholds = None # List of strings in the nagios threshold format
     options = None          # OptionParser() options
     arguments = None        # OptionParser() arguments
-
     def __init__(self):
+        self._long_output = []
+        self._summary = []
+        self.thresholds = []
         self._perfdata = PerfData()  # Performance and Threshold Metrics are stored here
+
         self.parser = OptionParser()
         general = OptionGroup(self.parser, "Generic Options")
         self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
