@@ -520,7 +520,6 @@ class PluginHelper:
     _nagios_status = -1     # exit status of the plugin
     _long_output = []       # Long output of the plugin
     _summary = []           # Summary of the plugin
-    _perfdata = PerfData()  # Performance and Threshold Metrics are stored here
     show_longoutput = True  # If True, print longoutput
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
@@ -535,6 +534,7 @@ class PluginHelper:
     arguments = None        # OptionParser() arguments
 
     def __init__(self):
+        self._perfdata = PerfData()  # Performance and Threshold Metrics are stored here
         self.parser = OptionParser()
         general = OptionGroup(self.parser, "Generic Options")
         self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
