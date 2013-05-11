@@ -219,6 +219,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         self.testauthor = 'user@example.com'
         self.test_svc_desc = 'Test Service'
         self.test_svc_group = 'TestSVCGroup'
+        self.test_host_group = 'TestHostGroup'
         self.test_check_command = 'test_check_command'
         self.test_event_handler_command = 'test_event_handler'
         self.check_interval = 50
@@ -245,3 +246,276 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = '[%s] PROCESS_HOST_CHECK_RESULT;%s;%s;%s' % (self.timestamp, self.testhost, status_code, plugin_output)
         command._write_to_livestatus.assert_called_once_with(expected)
         
+    def testRemoveHostAcknowledgement(self):
+        command = self.getMockCommand()
+        command.remove_host_acknowledgement(
+                host_name = self.testhost,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] REMOVE_HOST_ACKNOWLEDGEMENT;%s' % (self.timestamp, self.testhost)
+        command._write_to_livestatus.assert_called_once_with(expected)
+        
+    def testRemoveSvcAcknowledgement(self):
+        command = self.getMockCommand()
+        command.remove_svc_acknowledgement(
+                host_name = self.testhost,
+                service_description = self.test_svc_desc,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] REMOVE_SVC_ACKNOWLEDGEMENT;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleHostDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_host_downtime(
+                host_name = self.testhost,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+                
+    def testScheduleSvcDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_svc_downtime(
+                host_name = self.testhost,
+                service_description = self.test_svc_desc,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+                self.test_svc_desc, start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+                
+    def testDisableSvcNotifications(self):
+        command = self.getMockCommand()
+        command.disable_svc_notifications(
+                host_name = self.testhost,
+                service_description = self.test_svc_desc,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] DISABLE_SVC_NOTIFICATIONS;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+        
+    def testScheduleServicegroupSvcDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_servicegroup_svc_downtime(
+                servicegroup_name = self.test_svc_group,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleServicegroupHostDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_servicegroup_host_downtime(
+                servicegroup_name = self.test_svc_group,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleHostSvcDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_host_svc_downtime(
+                host_name = self.testhost,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_HOST_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleHostgroupHostDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_hostgroup_host_downtime(
+                hostgroup_name = self.test_host_group,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_HOSTGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleHostgroupSvcDowntime(self):
+        command = self.getMockCommand()
+        start_time = self.timestamp + 1000
+        end_time = self.timestamp + 2000
+        fixed = 0
+        trigger_id = 0
+        duration = 0
+        comment = 'Downtime!'
+        command.schedule_hostgroup_svc_downtime(
+                hostgroup_name = self.test_host_group,
+                start_time = start_time,
+                end_time = end_time,
+                fixed = fixed,
+                trigger_id = trigger_id,
+                duration = duration,
+                author = self.testauthor,
+                comment = comment,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_HOSTGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
+                start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testDelHostDowntime(self):
+        command = self.getMockCommand()
+        downtime_id = 100
+        command.del_host_downtime(
+                downtime_id = downtime_id,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] DEL_HOST_DOWNTIME;%s' % (self.timestamp, downtime_id)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testDelSvcDowntime(self):
+        command = self.getMockCommand()
+        downtime_id = 100
+        command.del_svc_downtime(
+                downtime_id = downtime_id,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] DEL_SVC_DOWNTIME;%s' % (self.timestamp, downtime_id)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleHostCheck(self):
+        command = self.getMockCommand()
+        command.schedule_host_check(
+                host_name = self.testhost,
+                check_time = self.timestamp,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleForcedHostCheck(self):
+        command = self.getMockCommand()
+        command.schedule_forced_host_check(
+                host_name = self.testhost,
+                check_time = self.timestamp,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_FORCED_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleForcedSvcCheck(self):
+        command = self.getMockCommand()
+        command.schedule_forced_svc_check(
+                host_name = self.testhost,
+                service_description = self.test_svc_desc,
+                check_time = self.timestamp,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_FORCED_SVC_CHECK;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.timestamp)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testDelAllHostComments(self):
+        command = self.getMockCommand()
+        command.del_all_host_comments(
+                host_name = self.testhost,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] DEL_ALL_HOST_COMMENTS;%s' % (self.timestamp, self.testhost)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testScheduleForcedHostSvcChecks(self):
+        command = self.getMockCommand()
+        command.schedule_forced_host_svc_checks(
+                host_name = self.testhost,
+                check_time = self.timestamp,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] SCHEDULE_FORCED_HOST_SVC_CHECKS;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        command._write_to_livestatus.assert_called_once_with(expected)
+
+    def testProcessFile(self):
+        command = self.getMockCommand()
+        file_name = '/tmp/testfile'
+        delete = 1
+        command.process_file(
+                file_name = file_name,
+                delete = delete,
+                command_file = self.command_file, timestamp = self.timestamp
+            )
+        expected = '[%s] PROCESS_FILE;%s;%s' % (self.timestamp, file_name, delete)
+        command._write_to_livestatus.assert_called_once_with(expected)
