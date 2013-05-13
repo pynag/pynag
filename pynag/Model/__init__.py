@@ -292,10 +292,15 @@ class ObjectRelations(object):
         """
         for servicegroup,members in ObjectRelations.servicegroup_members.items():
             for shortname in members:
-                service = Service.objects.get_by_shortname(shortname)
-                service_id = service.get_id()
-                ObjectRelations.servicegroup_services[servicegroup].add(service_id)
-                ObjectRelations.service_servicegroups[service_id].add(servicegroup)
+                try:
+                    service = Service.objects.get_by_shortname(shortname)
+                    service_id = service.get_id()
+                    ObjectRelations.servicegroup_services[servicegroup].add(service_id)
+                    ObjectRelations.service_servicegroups[service_id].add(servicegroup)
+                except:
+                    # If there is an error looking up any service, we ignore it and
+                    # don't display it in a list of related services
+                    pass
 
 class ObjectFetcher(object):
     """
@@ -360,9 +365,13 @@ class ObjectFetcher(object):
                 if i.name is not None:
                     ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
-        ObjectRelations.resolve_contactgroups()
-        ObjectRelations.resolve_hostgroups()
-        ObjectRelations.resolve_servicegroups()
+        # TODO: Log instead of ignore if there is an exception in resolve of any groups
+        try: ObjectRelations.resolve_contactgroups()
+        except Exception: pass
+        try: ObjectRelations.resolve_hostgroups()
+        except Exception: pass
+        try: ObjectRelations.resolve_servicegroups()
+        except Exception: pass
         return True
 
     def needs_reload(self):
