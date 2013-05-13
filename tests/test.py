@@ -486,6 +486,9 @@ def suite():
     suite.addTest(unittest.makeSuite(testCommandsToCommandFile))
     suite.addTest(unittest.makeSuite(testCommandsToLivestatus))
 
+    from tests.controltest import testControl
+    suite.addTest(unittest.makeSuite(testControl))
+
     return suite
 
 if __name__ == '__main__':
