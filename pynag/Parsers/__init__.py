@@ -143,7 +143,10 @@ class config:
                 if not self.item_cache.has_key(tmp_item_type):
                     self.item_cache[tmp_item_type] = {}
                 self.item_cache[tmp_item_type][name] = item
-        return self.item_cache[item_type].get(item_name, None)
+        my_cache = self.item_cache.get(item_type, None)
+        if not my_cache:
+            return None
+        return my_cache.get(item_name, None)
 
     def _apply_template(self, original_item):
         """
