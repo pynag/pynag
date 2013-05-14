@@ -37,7 +37,8 @@ class testCommandsToCommandFile(unittest.TestCase):
 
         # Setup patching for open()
         self.command_open_mock = mock_open()
-        self.patcher1 = patch('pynag.Control.Command.open', self.command_open_mock, create=True)
+        self.patcher1 = patch('pynag.Control.Command.open',
+            self.command_open_mock, create=True)
         self.patcher1.start()
 
     def tearDown(self):
@@ -53,20 +54,13 @@ class testCommandsToCommandFile(unittest.TestCase):
                 comment=comment,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected_nagios_command = '[%s] ADD_HOST_COMMENT;%s;%s;%s;%s' % (self.timestamp, self.testhost, persistent, self.testauthor, comment)
+        expected_nagios_command = '[%s] ADD_HOST_COMMENT;%s;%s;%s;%s' % (
+                self.timestamp, self.testhost, persistent,
+                self.testauthor, comment
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected_nagios_command+'\n')
-
-    """
-    def test_shutdown_program(self):
-        command = self.get_mock_command()
-        command.shutdown_program(
-                command_file=self.command_file, timestamp=self.timestamp
-            )
-        expected_nagios_command = '[%s] SHUTDOWN_PROGRAM;' % self.timestamp
-        command._write_to_command_file.assert_called_once_with(self.command_file, expected_nagios_command)
-    """
 
     def test_shutdown_program(self):
         self.command.shutdown_program(
@@ -82,7 +76,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 servicegroup_name=self.test_svc_group,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] DISABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS;%s' % (self.timestamp, self.test_svc_group)
+        expected = '[%s] DISABLE_SERVICEGROUP_PASSIVE_SVC_CHECKS;%s' % (
+                self.timestamp, self.test_svc_group
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -92,7 +88,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 servicegroup_name=self.test_svc_group,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] ENABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS;%s' % (self.timestamp, self.test_svc_group)
+        expected = '[%s] ENABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS;%s' % (
+                self.timestamp, self.test_svc_group
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -102,7 +100,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 servicegroup_name=self.test_svc_group,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] DISABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS;%s' % (self.timestamp, self.test_svc_group)
+        expected = '[%s] DISABLE_SERVICEGROUP_PASSIVE_HOST_CHECKS;%s' % (
+                self.timestamp, self.test_svc_group
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -112,7 +112,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 event_handler_command=self.test_event_handler_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_GLOBAL_HOST_EVENT_HANDLER;%s' % (self.timestamp, self.test_event_handler_command)
+        expected = '[%s] CHANGE_GLOBAL_HOST_EVENT_HANDLER;%s' % (
+                self.timestamp, self.test_event_handler_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -122,7 +124,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 event_handler_command=self.test_event_handler_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_GLOBAL_SVC_EVENT_HANDLER;%s' % (self.timestamp, self.test_event_handler_command)
+        expected = '[%s] CHANGE_GLOBAL_SVC_EVENT_HANDLER;%s' % (
+                self.timestamp, self.test_event_handler_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -133,7 +137,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 event_handler_command=self.test_event_handler_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_HOST_EVENT_HANDLER;%s;%s' % (self.timestamp, self.testhost, self.test_event_handler_command)
+        expected = '[%s] CHANGE_HOST_EVENT_HANDLER;%s;%s' % (
+                self.timestamp, self.testhost, self.test_event_handler_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -145,7 +151,10 @@ class testCommandsToCommandFile(unittest.TestCase):
                 event_handler_command= self.test_event_handler_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_SVC_EVENT_HANDLER;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.test_event_handler_command)
+        expected = '[%s] CHANGE_SVC_EVENT_HANDLER;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc,
+                self.test_event_handler_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -156,7 +165,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_command=self.test_check_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_HOST_CHECK_COMMAND;%s;%s' % (self.timestamp, self.testhost, self.test_check_command)
+        expected = '[%s] CHANGE_HOST_CHECK_COMMAND;%s;%s' % (
+                self.timestamp, self.testhost, self.test_check_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -168,7 +179,10 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_command=self.test_check_command,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_SVC_CHECK_COMMAND;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.test_check_command)
+        expected = '[%s] CHANGE_SVC_CHECK_COMMAND;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc,
+                self.test_check_command
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -179,7 +193,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_interval=self.check_interval,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_NORMAL_HOST_CHECK_INTERVAL;%s;%s' % (self.timestamp, self.testhost, self.check_interval)
+        expected = '[%s] CHANGE_NORMAL_HOST_CHECK_INTERVAL;%s;%s' % (
+                self.timestamp, self.testhost, self.check_interval
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -190,7 +206,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 service_description=self.test_svc_desc,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] ENABLE_SVC_NOTIFICATIONS;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
+        expected = '[%s] ENABLE_SVC_NOTIFICATIONS;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -202,7 +220,10 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_interval=self.check_interval,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_NORMAL_SVC_CHECK_INTERVAL;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.check_interval)
+        expected = '[%s] CHANGE_NORMAL_SVC_CHECK_INTERVAL;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc,
+                self.check_interval
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -214,7 +235,10 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_interval=self.check_interval,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_RETRY_SVC_CHECK_INTERVAL;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.check_interval)
+        expected = '[%s] CHANGE_RETRY_SVC_CHECK_INTERVAL;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc,
+                self.check_interval
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -226,7 +250,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_attempts=max_attempts,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_MAX_HOST_CHECK_ATTEMPTS;%s;%s' % (self.timestamp, self.testhost, max_attempts)
+        expected = '[%s] CHANGE_MAX_HOST_CHECK_ATTEMPTS;%s;%s' % (
+                self.timestamp, self.testhost, max_attempts
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -239,7 +265,9 @@ class testCommandsToCommandFile(unittest.TestCase):
                 check_attempts=max_attempts,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] CHANGE_MAX_SVC_CHECK_ATTEMPTS;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, max_attempts)
+        expected = '[%s] CHANGE_MAX_SVC_CHECK_ATTEMPTS;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc, max_attempts
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -254,7 +282,10 @@ class testCommandsToCommandFile(unittest.TestCase):
                 plugin_output=plugin_output,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, return_code, plugin_output)
+        expected = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%s;%s' % (
+                self.timestamp, self.testhost, self.test_svc_desc,
+                return_code, plugin_output
+            )
         self.command_open_mock.assert_called_with(self.command_file, 'a')
         handle = self.command_open_mock()
         handle.write.assert_called_once_with(expected + '\n')
@@ -278,7 +309,9 @@ class testCommandsToLivestatus(unittest.TestCase):
     def get_mock_command(self):
         command = Command
         # Make writing to command file throw exception so we send to livestatus
-        command._write_to_command_file = MagicMock(side_effect=Exception('Want to go to Livestatus'))
+        command._write_to_command_file = MagicMock(
+                side_effect=Exception('Want to go to Livestatus')
+            )
         command._write_to_livestatus = MagicMock()
         return command
 
