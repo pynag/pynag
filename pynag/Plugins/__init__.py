@@ -615,6 +615,8 @@ class PluginHelper:
         """ Same as get_status() if new_status=None, otherwise call add_status(new_status) """
         if new_status is None:
             return self.get_status()
+        if new_status not in state_text:
+            new_status = unknown
         return self.add_status(new_status)
 
     def add_status(self, new_status=None):
