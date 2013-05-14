@@ -475,6 +475,10 @@ def suite():
     # Include doctests in the Utils Module
     suite.addTests( doctest.DocTestSuite(pynag.Utils) )
 
+    from tests.commandtest import testCommandsToCommandFile, testCommandsToLivestatus
+    suite.addTest(unittest.makeSuite(testCommandsToCommandFile))
+    suite.addTest(unittest.makeSuite(testCommandsToLivestatus))
+
     return suite
 
 if __name__ == '__main__':
