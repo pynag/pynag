@@ -140,6 +140,11 @@ class GitRepo(object):
     def is_up_to_date(self):
         """ Returns True if all files in git repo are fully commited """
         return len(self.get_uncommited_files()) == 0
+    def get_valid_commits(self):
+        """ Returns a list of all commit ids from git log
+        """
+        return map(lambda x: x.get('hash'), self.log())
+
     def get_uncommited_files(self):
         """ Returns a list of files that are have unstaged changes """
         output = self._run_command("git status --porcelain")
@@ -177,11 +182,20 @@ class GitRepo(object):
 
         If commit_id_or_filename is not specified. show diff against all uncommited files.
         """
+        if commit_id_or_filename not in self.get_valid_commits():
+            raise  PynagError("%s is not a valid commit id" % commit_id)
         if commit_id_or_filename in ('', None):
             command = "git diff"
         else:
             commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
             command = "git diff '%s'" % commit_id_or_filename
+        return self._run_command(command)
+    def show(self, commit_id,):
+        """ Returns output from "git show" for a specified commit_id
+        """
+        if commit_id not in self.get_valid_commits():
+            raise  PynagError("%s is not a valid commit id" % commit_id)
+        command = "git show %s" % commit_id
         return self._run_command(command)
 
     def init(self):
