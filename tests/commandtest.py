@@ -1,3 +1,5 @@
+import os
+
 import unittest
 from mock import MagicMock, patch
 
@@ -20,6 +22,11 @@ except ImportError:
         return mock
 
 from pynag.Control import Command
+
+tests_dir = os.path.dirname( os.path.realpath(__file__) )
+if tests_dir == '':
+    tests_dir = '.'
+
 
 class testCommandsToCommandFile(unittest.TestCase):
     def setUp(self):
@@ -303,9 +310,27 @@ class testCommandsToLivestatus(unittest.TestCase):
         self.test_check_command = 'test_check_command'
         self.test_event_handler_command = 'test_event_handler'
         self.check_interval = 50
-    def tearDown(self):
-        pass
+        self.livestatus_command_suffix = '\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
 
+        self.command = Command
+
+        # Setup patching for command file exception
+        self.patcher1 = patch('pynag.Control.Command._write_to_command_file', side_effect=Exception('Want to go to Livestatus'))
+        self.comm_write_to_comm_file = self.patcher1.start()
+
+        # Mock socket.connect
+        self.patcher2 = patch('pynag.Parsers.socket.socket', spec=True)
+        self.livestatus_socket = self.patcher2.start()
+
+        # Change to mock config directory
+        os.chdir(tests_dir)
+        os.chdir('mocklivestatuscfg')
+
+    def tearDown(self):
+        self.patcher1.stop()
+        self.patcher2.stop()
+
+    """
     def get_mock_command(self):
         command = Command
         # Make writing to command file throw exception so we send to livestatus
@@ -314,48 +339,48 @@ class testCommandsToLivestatus(unittest.TestCase):
             )
         command._write_to_livestatus = MagicMock()
         return command
+    """
 
     def test_process_host_check_result(self):
-        command = self.get_mock_command()
         status_code = 2
         plugin_output = 'output'
-        command.process_host_check_result(
+        self.command.process_host_check_result(
                 host_name=self.testhost,
                 status_code=2,
                 plugin_output=plugin_output,
                 command_file=self.command_file, timestamp=self.timestamp
             )
-        expected = '[%s] PROCESS_HOST_CHECK_RESULT;%s;%s;%s' % (self.timestamp, self.testhost, status_code, plugin_output)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] PROCESS_HOST_CHECK_RESULT;%s;%s;%s' % (self.timestamp, self.testhost, status_code, plugin_output)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
         
     def test_remove_host_acknowledgement(self):
-        command = self.get_mock_command()
-        command.remove_host_acknowledgement(
+        self.command.remove_host_acknowledgement(
                 host_name = self.testhost,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] REMOVE_HOST_ACKNOWLEDGEMENT;%s' % (self.timestamp, self.testhost)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] REMOVE_HOST_ACKNOWLEDGEMENT;%s' % (self.timestamp, self.testhost)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
         
     def test_remove_svc_acknowledgement(self):
-        command = self.get_mock_command()
-        command.remove_svc_acknowledgement(
+        self.command.remove_svc_acknowledgement(
                 host_name = self.testhost,
                 service_description = self.test_svc_desc,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] REMOVE_SVC_ACKNOWLEDGEMENT;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] REMOVE_SVC_ACKNOWLEDGEMENT;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_host_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_host_downtime(
+        self.command.schedule_host_downtime(
                 host_name = self.testhost,
                 start_time = start_time,
                 end_time = end_time,
@@ -366,19 +391,19 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+        expected = 'COMMAND [%s] SCHEDULE_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
                 
     def test_schedule_svc_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_svc_downtime(
+        self.command.schedule_svc_downtime(
                 host_name = self.testhost,
                 service_description = self.test_svc_desc,
                 start_time = start_time,
@@ -390,30 +415,29 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+        expected = 'COMMAND [%s] SCHEDULE_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                 self.test_svc_desc, start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
                 
     def test_disable_svc_notifications(self):
-        command = self.get_mock_command()
-        command.disable_svc_notifications(
+        self.command.disable_svc_notifications(
                 host_name = self.testhost,
                 service_description = self.test_svc_desc,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] DISABLE_SVC_NOTIFICATIONS;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
-        command._write_to_livestatus.assert_called_once_with(expected)
-
+        expected = 'COMMAND [%s] DISABLE_SVC_NOTIFICATIONS;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
         
     def test_schedule_servicegroup_svc_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_servicegroup_svc_downtime(
+        self.command.schedule_servicegroup_svc_downtime(
                 servicegroup_name = self.test_svc_group,
                 start_time = start_time,
                 end_time = end_time,
@@ -424,19 +448,19 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
+        expected = 'COMMAND [%s] SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_servicegroup_host_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_servicegroup_host_downtime(
+        self.command.schedule_servicegroup_host_downtime(
                 servicegroup_name = self.test_svc_group,
                 start_time = start_time,
                 end_time = end_time,
@@ -447,19 +471,19 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
+        expected = 'COMMAND [%s] SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_host_svc_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_host_svc_downtime(
+        self.command.schedule_host_svc_downtime(
                 host_name = self.testhost,
                 start_time = start_time,
                 end_time = end_time,
@@ -470,19 +494,19 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_HOST_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
+        expected = 'COMMAND [%s] SCHEDULE_HOST_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_hostgroup_host_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_hostgroup_host_downtime(
+        self.command.schedule_hostgroup_host_downtime(
                 hostgroup_name = self.test_host_group,
                 start_time = start_time,
                 end_time = end_time,
@@ -493,19 +517,19 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_HOSTGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
+        expected = 'COMMAND [%s] SCHEDULE_HOSTGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_hostgroup_svc_downtime(self):
-        command = self.get_mock_command()
         start_time = self.timestamp + 1000
         end_time = self.timestamp + 2000
         fixed = 0
         trigger_id = 0
         duration = 0
         comment = 'Downtime!'
-        command.schedule_hostgroup_svc_downtime(
+        self.command.schedule_hostgroup_svc_downtime(
                 hostgroup_name = self.test_host_group,
                 start_time = start_time,
                 end_time = end_time,
@@ -516,88 +540,89 @@ class testCommandsToLivestatus(unittest.TestCase):
                 comment = comment,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_HOSTGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
+        expected = 'COMMAND [%s] SCHEDULE_HOSTGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_del_host_downtime(self):
-        command = self.get_mock_command()
         downtime_id = 100
-        command.del_host_downtime(
+        self.command.del_host_downtime(
                 downtime_id = downtime_id,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] DEL_HOST_DOWNTIME;%s' % (self.timestamp, downtime_id)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] DEL_HOST_DOWNTIME;%s' % (self.timestamp, downtime_id)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_del_svc_downtime(self):
-        command = self.get_mock_command()
         downtime_id = 100
-        command.del_svc_downtime(
+        self.command.del_svc_downtime(
                 downtime_id = downtime_id,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] DEL_SVC_DOWNTIME;%s' % (self.timestamp, downtime_id)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] DEL_SVC_DOWNTIME;%s' % (self.timestamp, downtime_id)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_host_check(self):
-        command = self.get_mock_command()
-        command.schedule_host_check(
+        self.command.schedule_host_check(
                 host_name = self.testhost,
                 check_time = self.timestamp,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] SCHEDULE_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_forced_host_check(self):
-        command = self.get_mock_command()
-        command.schedule_forced_host_check(
+        self.command.schedule_forced_host_check(
                 host_name = self.testhost,
                 check_time = self.timestamp,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_FORCED_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] SCHEDULE_FORCED_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_forced_svc_check(self):
-        command = self.get_mock_command()
-        command.schedule_forced_svc_check(
+        self.command.schedule_forced_svc_check(
                 host_name = self.testhost,
                 service_description = self.test_svc_desc,
                 check_time = self.timestamp,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_FORCED_SVC_CHECK;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.timestamp)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] SCHEDULE_FORCED_SVC_CHECK;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.timestamp)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_del_all_host_comments(self):
-        command = self.get_mock_command()
-        command.del_all_host_comments(
+        self.command.del_all_host_comments(
                 host_name = self.testhost,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] DEL_ALL_HOST_COMMENTS;%s' % (self.timestamp, self.testhost)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] DEL_ALL_HOST_COMMENTS;%s' % (self.timestamp, self.testhost)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_schedule_forced_host_svc_checks(self):
-        command = self.get_mock_command()
-        command.schedule_forced_host_svc_checks(
+        self.command.schedule_forced_host_svc_checks(
                 host_name = self.testhost,
                 check_time = self.timestamp,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] SCHEDULE_FORCED_HOST_SVC_CHECKS;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] SCHEDULE_FORCED_HOST_SVC_CHECKS;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
 
     def test_process_file(self):
-        command = self.get_mock_command()
         file_name = '/tmp/testfile'
         delete = 1
-        command.process_file(
+        self.command.process_file(
                 file_name = file_name,
                 delete = delete,
                 command_file = self.command_file, timestamp = self.timestamp
             )
-        expected = '[%s] PROCESS_FILE;%s;%s' % (self.timestamp, file_name, delete)
-        command._write_to_livestatus.assert_called_once_with(expected)
+        expected = 'COMMAND [%s] PROCESS_FILE;%s;%s' % (self.timestamp, file_name, delete)
+        sock = self.livestatus_socket()
+        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
