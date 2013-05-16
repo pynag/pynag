@@ -51,15 +51,6 @@ except ImportError:
         return decorator
     unittest.skipIf = skipIf
 
-# AssertGreater workaround for python < 2.7
-try:
-    unittest.TestCase.__dict__['assertGreater']
-except KeyError:
-    def assertGreater(self, a, b, msg=None):
-        if not a > b:
-            self.fail('%s not less than or equal to %s' % (str(a), str(b)))
-    unittest.TestCase.__dict__['assertGreater'] = assertGreater
-
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
     def setUp(self):
@@ -151,7 +142,7 @@ class testParsers(unittest.TestCase):
         "Test pynag.Parsers.config()"
         c = pynag.Parsers.config()
         c.parse()
-        self.assertGreater(len(c.data), 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+        self.assertTrue(len(c.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
@@ -173,7 +164,7 @@ class testParsers(unittest.TestCase):
         "Test pynag.Parsers.object_cache"
         o = pynag.Parsers.object_cache()
         o.parse()
-        self.assertGreater(len(o.data.keys()), 0, 'Object cache seems to be empty')
+        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
     def testConfig_edit_static_file(self):
         """ Test pynag.Parsers.config._edit_static_file() """
         fd,filename = tempfile.mkstemp()
