@@ -51,6 +51,15 @@ except ImportError:
         return decorator
     unittest.skipIf = skipIf
 
+# AssertGreater workaround for python < 2.7
+try:
+    unittest.TestCase.__dict__['assertGreater']
+except KeyError:
+    def assertGreater(self, a, b, msg=None):
+        if not a > b:
+            self.fail('%s not less than or equal to %s' % (str(a), str(b)))
+    unittest.TestCase.__dict__['assertGreater'] = assertGreater
+
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
     def setUp(self):
