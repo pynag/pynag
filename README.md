@@ -1,4 +1,4 @@
-ABOUT
+About
 =====
 Pynag a tool and a library for managing nagios configuration and provides a
 framework to write plugins.
@@ -17,7 +17,7 @@ Pynag also has the following modules:
   - Control - Control of Nagios daemon
 
 
-INSTALL
+Install
 =======
 Using fedora/redhat:
 
@@ -25,7 +25,11 @@ Using fedora/redhat:
 
 Using debian/ubuntu:
 
-    apt-get install python-pynag
+    apt-get install python-pynag pynag
+
+Using pip:
+
+    pip install pynag
 
 Install latest git repository from source:
 
@@ -65,7 +69,17 @@ Create a new ssh service check for every host in the unix hostgroup:
         new_service.set_filename( host.get_filename() )
         new_service.save()
 
-PYNAG COMMAND-LINE TOOL
+Further Documentation
+=====================
+
+We blatantly admit that documentation is scarce in pynag. Most of the documentation
+is in-line in pydoc strings in the respective python modules.
+
+Any help with improving the documentation is much appreciated. For more documentation see
+* The pynag/examples directory
+* Our github wiki: https://github.com/pynag/pynag/wiki
+
+Pynag Command Line Tool
 =======================
 Pynag also comes with a command-line tool that gives good examples what is
 possible with the library. Some example commands:
@@ -84,7 +98,7 @@ Copy a host, give it a new hostname and ip address:
     # Same for all its services:
     pynag copy set host_name=newhost where object_type=service and host_name=oldhost
 
-KNOWN ISSUES
+Known Issues
 ============
 Model module's get_effective_* functions are not complete if your configuration is using regular expressions. For example, pynag.Model.Service.get_effective_hosts will fail on the following service definition:
 
@@ -102,3 +116,32 @@ Same applies for exemptions like this one:
         hostgroup_name webservers
         host_name !dmzhost1,dmzhost2
     }
+
+
+Who uses pynag
+==============
+
+There are a few open source projects out there that use pynag. The ones we
+know of are:
+
+* Adagios: Impressive web configuration and status interface
+* Okconfig: Monitoring pack generator for Nagios
+* RESTlos: generic RESTful api for nagios-like monitoring systems
+
+Pynag is also used by lots of plugins around the world including:
+
+* check_eva.py
+* check_hpacucly.py
+* check_ipa/check_ipa_replication
+
+
+Know of more projects using pynag ? Contact us and we'll add them here.
+
+Contact us
+==========
+
+If you need any help, want to contribute or just want to talk about pynag you can find us on one of the following:
+
+* Bug reports, feature requests: https://github.com/pynag/pynag/issues
+* Mailing list: https://groups.google.com/forum/?fromgroups#!forum/pynag-discuss
+* Irc chat: #pynag on freenode
