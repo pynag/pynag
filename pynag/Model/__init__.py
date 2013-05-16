@@ -226,6 +226,86 @@ class ObjectRelations(object):
         return checked_groups
 
     @staticmethod
+    def resolve_regex():
+        """ If any object relations are a regular expression, then expand them into a full list """
+        self = ObjectRelations
+        expand = self._expand_regex
+        shortnames = ObjectFetcher._cached_shortnames
+
+        host_names = shortnames['host'].keys()
+        hostgroup_names = shortnames['hostgroup'].keys()
+        servicegroup_names = shortnames['servicegroup'].keys()
+        contact_names = shortnames['contact'].keys()
+        contactgroup_names = shortnames['contactgroup'].keys()
+        service_names = shortnames['service'].keys() # Will be a host/service_description string
+
+        expand(self.hostgroup_hosts, host_names)
+        expand(self.host_hostgroups, hostgroup_names)
+        expand(self.service_hostgroups, hostgroup_names)
+        expand(self.service_hosts, host_names)
+        expand(self.service_hosts, host_names)
+    @staticmethod
+    def _expand_regex(dictionary, full_list):
+        """ Replaces any regex found in dictionary.values() or dictionary.keys() **INPLACE** with its respective matches found in full_list
+
+        Example with ObjectRelations.hostgroup_hosts
+        >>> hostnames = set(['localhost','remotehost', 'not_included'])
+        >>> hostgroup_hosts = {'hostgroup1': set([ '.*host' ]), 'hostgroup2' : set(['localhost','remotehost']), }
+        >>> ObjectRelations._expand_regex(dictionary=hostgroup_hosts, full_list=hostnames)
+        >>> hostgroup_hosts['hostgroup1'] == hostgroup_hosts['hostgroup2']
+        True
+        >>> hostgroup_hosts['hostgroup1'] == set(['localhost','remotehost'])
+        True
+        """
+        if config.get_cfg_value('use_true_regexp_matching') == "1":
+            always_use_regex = True
+        else:
+            always_use_regex = False
+        is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '+' in x or '\.' in x)
+
+        # Strip None entries from full_list
+        full_list = filter(lambda x: x is not None, full_list)
+
+        # Strip None entries from dictionary
+
+        # If any keys in the dictionary are regex, expand it, i.e.:
+        # if dictionary = { '.*':[1], 'localhost':[],'remotehost':[] }
+        # then do:
+        # dictionary['localhost'].update( [1] )
+        # dictionary['remotehost'].update( [1] )
+        # del dictionary['.*']
+        regex_keys = filter(is_regex, dictionary.keys())
+        for key in regex_keys:
+            regex = re.compile(key)
+            expanded_list = filter(regex.search, regex_keys)
+            for i in expanded_list:
+                if i == key: # No need to react if regex resolved to itself
+                    continue
+                dictionary[i].update( dictionary[key] )
+            if key not in expanded_list:
+                # Only remove the regex if it did not resolve to itself.
+                del dictionary[key]
+        # If dictionary.values() has any regex, expand it like so:
+        # full_list = [1,2,3]
+        # if dictionary = {'localhost':[ '.*' ]}
+        # then change it so that:
+        # dictionary = { 'localhost':[1,2,3] }
+        for key,value in dictionary.items():
+            regex_members = filter(is_regex, value)
+            if len(regex_members) == 0: continue # no changes need to be made
+            if isinstance(value, list):
+                value = set(value)
+            #new_value = value.copy()
+            for i in regex_members:
+                regex = re.compile(i)
+                expanded_list = filter(regex.search, full_list)
+                value.remove(i)
+                value.update(expanded_list)
+            #dictionary[key] = new_value
+
+
+
+    @staticmethod
     def resolve_contactgroups():
         """ Update all contactgroup relations to take into account contactgroup.contactgroup_members """
         groups = ObjectRelations.contactgroup_contactgroups.keys()
@@ -365,13 +445,10 @@ class ObjectFetcher(object):
                 if i.name is not None:
                     ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
-        # TODO: Log instead of ignore if there is an exception in resolve of any groups
-        try: ObjectRelations.resolve_contactgroups()
-        except Exception: pass
-        try: ObjectRelations.resolve_hostgroups()
-        except Exception: pass
-        try: ObjectRelations.resolve_servicegroups()
-        except Exception: pass
+        ObjectRelations.resolve_contactgroups()
+        ObjectRelations.resolve_hostgroups()
+        ObjectRelations.resolve_servicegroups()
+        ObjectRelations.resolve_regex()
         return True
 
     def needs_reload(self):
@@ -534,7 +611,7 @@ class ObjectDefinition(object):
     object_type = None
     objects = ObjectFetcher(None)
 
-    def __init__(self, item=None, filename=None):
+    def __init__(self, item=None, filename=None, **kwargs):
         # Check if we have parsed the configuration yet
         if config is None:
             self.objects.reload_cache()
@@ -550,6 +627,7 @@ class ObjectDefinition(object):
         
         # self.objects is a convenient way to access more objects of the same type
         self.objects = ObjectFetcher(self.object_type)
+
         # self.data -- This dict stores all effective attributes of this objects
         self._original_attributes = item
         
@@ -570,6 +648,10 @@ class ObjectDefinition(object):
         
         #: __argument_macros - A dict object that resolves $ARG* macros
         self.__argument_macros = {}
+
+        # Any kwargs provided will be added to changes:
+        for k,v in kwargs.items():
+            self[k] = v
 
         # Lets find common attributes that every object definition should have:
         self._add_property('register')
@@ -718,8 +800,9 @@ class ObjectDefinition(object):
                 # discover a new filename
                 self.set_filename( self.get_suggested_filename() )
             for k,v in self._changes.items():
-                self._defined_attributes[k] = v
-                self._original_attributes[k] = v
+                if v is not None: # Dont save anything if attribute is None
+                    self._defined_attributes[k] = v
+                    self._original_attributes[k] = v
                 del self._changes[k]
             config.item_add(self._original_attributes, self.get_filename())
         else:
@@ -923,7 +1006,7 @@ class ObjectDefinition(object):
         else:
             self._meta['filename'] = os.path.normpath( filename )
 
-    def get_macro(self, macroname, host_name=None ):
+    def get_macro(self, macroname, host_name=None, contact_name=None ):
         """ Take macroname (e.g. $USER1$) and return its actual value
 
         Arguments:
@@ -944,6 +1027,8 @@ class ObjectDefinition(object):
             return self._get_host_macro(macroname, host_name=host_name)
         if macroname.startswith('$SERVICE') or macroname.startswith('$_SERVICE'):
             return self._get_service_macro(macroname)
+        if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
+            return self._get_contact_macro(macroname, contact_name=contact_name)
         if _standard_macros.has_key( macroname ):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
@@ -983,6 +1068,34 @@ class ObjectDefinition(object):
         except ValueError:
             return None
         return self._resolve_macros(command.command_line, host_name=host_name)
+
+    def get_effective_notification_command_line(self, host_name=None, contact_name=None):
+        """Return a string of this objects notifications with all macros (i.e. $HOSTADDR$) resolved
+
+        Arguments:
+            host_name    -- Simulate notification using this host. If None: Use first valid host (used for services)
+            contact_name -- Simulate notification for this contact. If None: use first valid contact for the service
+        """
+        if contact_name is None:
+            contacts = self.get_effective_contacts()
+            if len(contacts) == 0:
+                raise pynag.Utils.PynagError('Cannot calculate notification command for object with no contacts')
+            else:
+                contact = contacts[0]
+        else:
+            contact = Contact.objects.get_by_shortname(contact_name)
+
+        notification_command = contact.service_notification_commands
+        if not notification_command:
+            return None
+
+        command_name = notification_command.split('!').pop(0)
+        try:
+            command = Command.objects.get_by_shortname(command_name)
+        except ValueError:
+            return None
+        return self._resolve_macros(command.command_line, host_name=host_name)
+
     def _resolve_macros(self, string, host_name=None):
         """ Returns string with every $NAGIOSMACRO$ resolved to actual value.
 
@@ -1032,9 +1145,12 @@ class ObjectDefinition(object):
             # If this is a custom macro
             name = macroname[9:-1]
             return self["_%s" % name]
-        if _standard_macros.has_key( macroname ):
+        elif _standard_macros.has_key( macroname ):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
+        elif macroname.startswith('$SERVICE'):
+            name = macroname[8:-1].lower()
+            return self.get(name) or ''
         return ''
 
     def _get_host_macro(self, macroname, host_name=None):
@@ -1042,10 +1158,23 @@ class ObjectDefinition(object):
             # if this is a custom macro
             name = macroname[6:-1]
             return self["_%s" % name]
-        if _standard_macros.has_key( macroname ):
+        elif _standard_macros.has_key( macroname ):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
+        elif macroname.startswith('$HOST'):
+            name = macroname[5:-1].lower()
+            return self.get(name)
         return ''
+    def _get_contact_macro(self, macroname, contact_name=None):
+        # If contact_name is not specified, get first effective contact and resolve macro for that contact
+        if not contact_name:
+            contacts = self.get_effective_contacts()
+            if len(contacts) == 0:
+                return None
+            contact = contacts[0]
+        else:
+            contact = Contact.objects.get_by_shortname(contact_name)
+        return contact._get_contact_macro(macroname)
 
 
     def get_effective_children(self, recursive=False):
@@ -1631,6 +1760,22 @@ class Contact(ObjectDefinition):
         list_of_shortnames = sorted(ObjectRelations.contact_services[self.contact_name])
         result.update( map( get_object, list_of_shortnames ) )
         return result
+    def _get_contact_macro(self, macroname):
+        attribute_name = None
+        if macroname in _standard_macros:
+            attribute_name = _standard_macros.get(macroname)
+        elif macroname.startswith('$_CONTACT'):
+            # if this is a custom macro
+            name = macroname[len('$_CONTACT'):-1]
+            attribute_name = "_%s" % name
+        elif macroname.startswith('$CONTACT'):
+            # Lets guess an attribute for this macro
+            # So convert $CONTACTEMAIL$ to email
+            name = macroname[len('$CONTACT'):-1]
+            attribute_name = name.lower()
+        else:
+            return ''
+        return self.get(attribute_name) or ''
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2117,4 +2262,7 @@ AttributeList = pynag.Utils.AttributeList
 
 if __name__ == '__main__':
     o = Service.objects.all[17]
+    print o['__EXTRAOPTS']
+    print o.get_effective_command_line()
     o['__EXTRAOPTS'] = "new value"
+    print o.get_effective_command_line()

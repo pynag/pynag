@@ -30,4 +30,5 @@ _standard_macros = {
                    '$HOSTADDRESS$':'address',
                    '$HOSTNAME$':'host_name',
                    '$SERVICEDESC$':'service_description',
+                   '$CONTACTEMAIL$':'email',
                    }
