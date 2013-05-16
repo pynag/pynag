@@ -471,6 +471,7 @@ class ObjectFetcher(object):
         kwargs = tmp
         for i in self.all:
             object_matches = True
+            negative_filter = False
             for k, v in kwargs.items():
                 if k.endswith('__exists'):
                     k = k[:-len('__exists')]
@@ -495,6 +496,7 @@ class ObjectFetcher(object):
                 elif k.endswith('__notcontains'):
                     k = k[:-13]
                     match_function = not_contains
+                    negative_filter = True
                 else:
                     match_function = str.__eq__
                 if object_matches == False:
@@ -510,8 +512,10 @@ class ObjectFetcher(object):
                     break
                 if not i.has_key(k):
                     if v is None: continue # if None was the search attribute
-                    object_matches = False
-                    break
+                    # Handle negated filter
+                    if not negative_filter:
+                        object_matches = False
+                        break
                 if not match_function(i[k], v):
                     object_matches = False
                     break
