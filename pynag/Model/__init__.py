@@ -1126,16 +1126,13 @@ class ObjectDefinition(object):
 
     def _get_command_macro(self, macroname):
         """Resolve any command argument ($ARG1$) macros from check_command"""
-        a = {}
-        if a == {}:
-            c = self['check_command'].split('!')
-            c.pop(0) # First item is the command, we dont need it
-            for i, v in enumerate( c ):
-                tmp = i+1
-                if v.startswith('$') and v.endswith('$') and not v.startswith('$ARG'):
-                    v = self.get_macro(v)
-                a['$ARG%s$' % tmp] = v
-        result = a.get(macroname, '')
+        all_args = {}
+        c = self['check_command'].split('!')
+        c.pop(0) # First item is the command, we dont need it
+        for i, v in enumerate( c ):
+            name = '$ARG%s$' % str(i+1)
+            all_args[name] = v
+        result = all_args.get(macroname, '')
         # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
         result = self._resolve_macros(result)
         return result
