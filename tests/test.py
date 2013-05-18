@@ -313,27 +313,28 @@ class testModel(unittest.TestCase):
         host_names = map(lambda x: x.name, hosts)
         self.assertEqual(expected_result, host_names)
 
-def test_hostgroup_with_regex_members(self):
-    """ Test parsing a hostgroup with regex members. """
-    prod_servers = pynag.Model.Hostgroup.objects.get_by_shortname('prod-servers')
-    # prod_server.members = "prod-[a-zA-Z0-9]+"
+    def test_hostgroup_with_regex_members(self):
+        """ Test parsing a hostgroup with regex members. """
+        prod_servers = pynag.Model.Hostgroup.objects.get_by_shortname('prod-servers')
+        # prod_server.members = "prod-[a-zA-Z0-9]+"
 
-    prod_api1 = pynag.Model.Host.objects.get_by_shortname('prod-api-1')
-    prod_api2 = pynag.Model.Host.objects.get_by_shortname('prod-api-2')
-    dev_api2 = pynag.Model.Host.objects.get_by_shortname('dev-api-1')
+        prod_api1 = pynag.Model.Host.objects.get_by_shortname('prod-api-1')
+        prod_api2 = pynag.Model.Host.objects.get_by_shortname('prod-api-2')
+        dev_api2 = pynag.Model.Host.objects.get_by_shortname('dev-api-1')
 
-    service = pynag.Model.Service.objects.get_by_name('short-term-load')
-    hosts = service.get_effective_hosts()
+        service = pynag.Model.Service.objects.get_by_name('short-term-load')
+        hosts = service.get_effective_hosts()
 
-    self.assertTrue(prod_api1 in hosts) # prod-api-1 matches the regex
-    self.assertTrue(prod_api2 in hosts) # prod-api-2 matches the regex
-    self.assertFalse(dev_api2 in hosts) # dev-api-1 does not match
+        self.assertTrue(prod_api1 in hosts) # prod-api-1 matches the regex
+        self.assertTrue(prod_api2 in hosts) # prod-api-2 matches the regex
+        self.assertFalse(dev_api2 in hosts) # dev-api-1 does not match
 
-    # Hostgroup.get_effective_hosts() should match the same regex:
-    self.assertEqual(hosts, prod_servers.get_effective_hosts())
+        # Hostgroup.get_effective_hosts() should match the same regex:
+        self.assertEqual(hosts, prod_servers.get_effective_hosts())
 
     def test_rewrite(self):
         """ Test usage on ObjectDefinition.rewrite() """
+        pass
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
