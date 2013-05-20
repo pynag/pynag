@@ -143,9 +143,9 @@ class simple:
 
         ## Set verbosity level
         if int(options.verbose) in (0, 1, 2, 3):
-            self.data['verbosity'] = options.verbose
+            self.data['verbosity'] = int(options.verbose)
         else:
-            self.data['verbosity'] = 0
+            self.data['verbosity'] = verbose
 
         ## Ensure the hostname is set
         if options.host:

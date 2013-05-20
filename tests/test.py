@@ -474,11 +474,12 @@ def suite():
     suite.addTest(unittest.makeSuite(testParsers))
 
     # Include tests of Plugins
-    from tests.plugintest import testPlugin, testPluginNoThreshold, testPluginHelper
+    from tests.plugintest import testPlugin, testPluginNoThreshold, testPluginHelper, testPluginParams
     suite.addTest(unittest.makeSuite(testPlugin))
     suite.addTest(unittest.makeSuite(testPluginNoThreshold))
     suite.addTest(unittest.makeSuite(testPluginHelper))
     suite.addTest(unittest.makeSuite(testNewPluginThresholdSyntax))
+    suite.addTest(unittest.makeSuite(testPluginParams))
 
     # Include tests of Utils
     suite.addTest(unittest.makeSuite(testUtils))

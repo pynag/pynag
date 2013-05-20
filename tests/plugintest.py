@@ -4,6 +4,47 @@ import sys
 import pynag.Utils
 import pynag.Plugins
 
+class testPluginParams(unittest.TestCase):
+    def setUp(self):
+        self.argv_store = sys.argv
+        from pynag.Plugins import simple as Plugin
+        self.np = Plugin(must_threshold=False)
+    def tearDown(self):
+        sys.argv = self.argv_store
+
+    def createParams(self, *args):
+        sys.argv.extend(args)
+
+    def testDefaultVerbose(self):
+        #sys.argv = [sys.argv[0]] + ['-v', '10']
+        self.createParams('-v', '10')
+        self.np.activate()
+        self.assertEquals(self.np.data['verbosity'], 0)
+
+    def testVerbose(self):
+        self.createParams('-v', '3')
+        self.np.activate()
+        self.assertEquals(self.np.data['verbosity'], 3)
+
+    def testSetHostname(self):
+        self.createParams('-H', 'testhost.example.com')
+        self.np.activate()
+        self.assertEquals(self.np.data['host'], 'testhost.example.com')
+
+    def testSetTimeout(self):
+        self.createParams('-t', '100')
+        self.np.activate()
+        self.assertEquals(self.np.data['timeout'], '100')
+
+    def testDefaultTimeout(self):
+        self.np.activate()
+        self.assertEquals(self.np.data['timeout'], None)
+
+    def testShortname(self):
+        from pynag.Plugins import simple as Plugin
+        np = Plugin(shortname='testcase')
+        self.assertEquals(np.data['shortname'], 'testcase')
+
 class testPluginNoThreshold(unittest.TestCase):
     def setUp(self):
         self.argv_store = sys.argv
@@ -207,11 +248,20 @@ class testPlugin(unittest.TestCase):
         sys.argv = [sys.argv[0]] + case.split()
         self.np.activate()
         try:
+            self.np.add_perfdata('fake', value, uom='fakes', warn=10, crit=20, minimum=-100, maximum=100)
+            perfdata_string = self.np.perfdata_string()
+            print perfdata_string
+            self.assertEquals(perfdata_string, "| '%s'=%s%s;%s;%s;%s;%s" % (
+                    'fake', value, 'fakes', 10, 20, -100, 100))
+            self.np.add_message('OK', 'Some message')
+            self.assertEquals(self.np.data['messages'][0], ['Some message'])
             self.np.check_range(value)
         except SystemExit, e:
             self.assertEquals(type(e), type(SystemExit()))
             self.assertEquals(e.code, expected_exit)
         except Exception, e:
+            import traceback
+            print traceback.format_exc()
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
@@ -232,6 +282,19 @@ class testPlugin(unittest.TestCase):
         self.np.add_arg('F', 'fakedata', 'fake data to test thresholds', required=False)
         sys.argv = [sys.argv[0]] + '-w 1 -c 2'.split()
         self.np.activate()
+
+    def testCodestringToInt(self):
+        code = self.np.code_string2int('OK')
+        self.assertEquals(code, 0, "OK did not map to 0")
+
+        code = self.np.code_string2int('WARNING')
+        self.assertEquals(code, 1, "WARNING did not map to 1")
+        
+        code = self.np.code_string2int('CRITICAL')
+        self.assertEquals(code, 2, "CRITICAL did not map to 2")
+
+        code = self.np.code_string2int('UNKNOWN')
+        self.assertEquals(code, 3, "UNKNOWN did not map to 3")
 
     """
     Critical if "stuff" is over 20, else warn if over 10 (will be critical if "stuff" is less than 0)
