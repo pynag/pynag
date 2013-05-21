@@ -122,6 +122,20 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         # 6 - Otherwise return OK
         pass
 
+    def test_invalid_range(self):
+        from pynag.Plugins.new_threshold_syntax import check_range
+        from pynag.Utils import PynagError
+
+        self.assertRaises(PynagError, check_range, 1, '')
+        self.assertRaises(PynagError, check_range, 1, None)
+
+    def test_invalid_threshold(self):
+        from pynag.Plugins.new_threshold_syntax import parse_threshold
+        from pynag.Utils import PynagError
+
+        self.assertRaises(PynagError, parse_threshold, '')
+        self.assertRaises(AttributeError, parse_threshold, None)
+        self.assertRaises(PynagError, parse_threshold, 'string')
 
 class testParsers(unittest.TestCase):
     def testLivestatus(self):
