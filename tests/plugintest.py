@@ -12,35 +12,35 @@ class testPluginParams(unittest.TestCase):
     def tearDown(self):
         sys.argv = self.argv_store
 
-    def createParams(self, *args):
+    def create_params(self, *args):
         sys.argv.extend(args)
 
-    def testDefaultVerbose(self):
+    def test_default_verbose(self):
         #sys.argv = [sys.argv[0]] + ['-v', '10']
-        self.createParams('-v', '10')
+        self.create_params('-v', '10')
         self.np.activate()
         self.assertEquals(self.np.data['verbosity'], 0)
 
-    def testVerbose(self):
-        self.createParams('-v', '3')
+    def test_verbose(self):
+        self.create_params('-v', '3')
         self.np.activate()
         self.assertEquals(self.np.data['verbosity'], 3)
 
-    def testSetHostname(self):
-        self.createParams('-H', 'testhost.example.com')
+    def test_set_hostname(self):
+        self.create_params('-H', 'testhost.example.com')
         self.np.activate()
         self.assertEquals(self.np.data['host'], 'testhost.example.com')
 
-    def testSetTimeout(self):
-        self.createParams('-t', '100')
+    def test_set_timeout(self):
+        self.create_params('-t', '100')
         self.np.activate()
         self.assertEquals(self.np.data['timeout'], '100')
 
-    def testDefaultTimeout(self):
+    def test_default_timeout(self):
         self.np.activate()
         self.assertEquals(self.np.data['timeout'], None)
 
-    def testShortname(self):
+    def test_shortname(self):
         from pynag.Plugins import simple as Plugin
         np = Plugin(shortname='testcase')
         self.assertEquals(np.data['shortname'], 'testcase')
@@ -52,7 +52,7 @@ class testPluginNoThreshold(unittest.TestCase):
         self.np = Plugin(must_threshold=False)
     def tearDown(self):
         sys.argv = self.argv_store
-    def runExpect(self, case, expected_exit, value):
+    def run_expect(self, case, expected_exit, value):
         sys.argv = [sys.argv[0]] + case.split()
         self.np.activate()
         try:
@@ -70,19 +70,19 @@ class testPluginNoThreshold(unittest.TestCase):
     """
     def test_number_1(self):
         case = ''
-        self.runExpect(case, 0, -23)
+        self.run_expect(case, 0, -23)
     def test_number_2(self):
         case = ''
-        self.runExpect(case, 0, 0)
+        self.run_expect(case, 0, 0)
     def test_number_3(self):
         case = ''
-        self.runExpect(case, 0, 2)
+        self.run_expect(case, 0, 2)
     def test_number_4(self):
         case = ''
-        self.runExpect(case, 0, 10)
+        self.run_expect(case, 0, 10)
     def test_number_5(self):
         case = ''
-        self.runExpect(case, 0, 15)
+        self.run_expect(case, 0, 15)
     
 class testPluginHelper(unittest.TestCase):
     def setUp(self):
@@ -92,7 +92,7 @@ class testPluginHelper(unittest.TestCase):
         self.my_plugin.parser.add_option('-F', dest='fakedata', help='fake data to test thresholds')
     def tearDown(self):
         sys.argv = self.argv_store
-    def runExpect(self, case, value, expected_exit):
+    def run_expect(self, case, value, expected_exit):
         sys.argv = [sys.argv[0]] + case.split() + ('-F %s' % value).split()
         self.my_plugin.parse_arguments()
         self.my_plugin.add_status(pynag.Plugins.ok)
@@ -114,127 +114,127 @@ class testPluginHelper(unittest.TestCase):
     """
     def test_number_1(self):
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
-        self.runExpect(case, -23, 2)
+        self.run_expect(case, -23, 2)
     def test_number_2(self):
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
-        self.runExpect(case, 3, 0)
+        self.run_expect(case, 3, 0)
     def test_number_3(self):
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
-        self.runExpect(case, 13, 1)
+        self.run_expect(case, 13, 1)
     def test_number_4(self):
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
-        self.runExpect(case, 23, 2)
+        self.run_expect(case, 23, 2)
 
     """
     Same as above. Negative "stuff" is OK
     """
     def test_number_5(self):
         case='--th=metric=fakedata,ok=inf..10,warn=10..20'
-        self.runExpect(case, '-23', 0)
+        self.run_expect(case, '-23', 0)
     def test_number_6(self):
         case='--th=metric=fakedata,ok=inf..10,warn=10..20'
-        self.runExpect(case, '3', 0)
+        self.run_expect(case, '3', 0)
     def test_number_7(self):
         case='--th=metric=fakedata,ok=inf..10,warn=10..20'
-        self.runExpect(case, '13', 1)
+        self.run_expect(case, '13', 1)
     def test_number_8(self):
         case='--th=metric=fakedata,ok=inf..10,warn=10..20'
-        self.runExpect(case, '23', 2)
+        self.run_expect(case, '23', 2)
 
     """
     Critical if "stuff" is over 20, else warn if "stuff" is below 10 (will be critical if "stuff" is less than 0)
     """
     def test_number_9(self):
         case='--th=metric=fakedata,warn=0..10,crit=20..inf'
-        self.runExpect(case, '-23', 0)
+        self.run_expect(case, '-23', 0)
     def test_number_10(self):
         case='--th=metric=fakedata,warn=0..10,crit=20..inf'
-        self.runExpect(case, '3', 1)
+        self.run_expect(case, '3', 1)
     def test_number_11(self):
         case='--th=metric=fakedata,warn=0..10,crit=20..inf'
-        self.runExpect(case, '13', 0)
+        self.run_expect(case, '13', 0)
     def test_number_12(self):
         case='--th=metric=fakedata,warn=0..10,crit=20..inf'
-        self.runExpect(case, '23', 2)
+        self.run_expect(case, '23', 2)
 
     """
     Critical if "stuff" is less than 1
     """
     def test_number_13(self):
         case='--th=metric=fakedata,ok=1..inf'
-        self.runExpect(case, '-23', 2)
+        self.run_expect(case, '-23', 2)
     def test_number_14(self):
         case='--th=metric=fakedata,ok=1..inf'
-        self.runExpect(case, '0', 2)
+        self.run_expect(case, '0', 2)
     def test_number_15(self):
         case='--th=metric=fakedata,ok=1..inf'
-        self.runExpect(case, '13', 0)
+        self.run_expect(case, '13', 0)
     def test_number_16(self):
         case='--th=metric=fakedata,ok=1..inf'
-        self.runExpect(case, '23', 0)
+        self.run_expect(case, '23', 0)
 
     """
     1-9 is warning, negative or above 10 is critical
     """
     def test_number_17(self):
         case='--th=metric=fakedata,warn=1..9,crit=^0..10'
-        self.runExpect(case, '-23', 2)
+        self.run_expect(case, '-23', 2)
     def test_number_18(self):
         case='--th=metric=fakedata,warn=1..9,crit=^0..10'
-        self.runExpect(case, '0', 0)
+        self.run_expect(case, '0', 0)
     def test_number_19(self):
         case='--th=metric=fakedata,warn=1..9,crit=^0..10'
-        self.runExpect(case, '7', 1)
+        self.run_expect(case, '7', 1)
     def test_number_20(self):
         case='--th=metric=fakedata,warn=1..9,crit=^0..10'
-        self.runExpect(case, '23', 2)
+        self.run_expect(case, '23', 2)
 
     """
     The only noncritical range is 5:6
     """
     def test_number_21(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '-23', 2)
+        self.run_expect(case, '-23', 2)
     def test_number_22(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '0', 2)
+        self.run_expect(case, '0', 2)
     def test_number_23(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '2', 2)
+        self.run_expect(case, '2', 2)
     def test_number_24(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '5', 0)
+        self.run_expect(case, '5', 0)
     def test_number_25(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '6', 0)
+        self.run_expect(case, '6', 0)
     def test_number_26(self):
         case='--th=metric=fakedata,ok=5..6'
-        self.runExpect(case, '7', 2)
+        self.run_expect(case, '7', 2)
 
     """
     Critical if "stuff" is 10 to 20
     """
     def test_number_27(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '-23', 0)
+        self.run_expect(case, '-23', 0)
     def test_number_28(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '0', 0)
+        self.run_expect(case, '0', 0)
     def test_number_29(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '2', 0)
+        self.run_expect(case, '2', 0)
     def test_number_30(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '10', 2)
+        self.run_expect(case, '10', 2)
     def test_number_31(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '15', 2)
+        self.run_expect(case, '15', 2)
     def test_number_32(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '20', 2)
+        self.run_expect(case, '20', 2)
     def test_number_33(self):
         case='--th=metric=fakedata,ok=^10..20'
-        self.runExpect(case, '23', 0)
+        self.run_expect(case, '23', 0)
     
 
 class testPlugin(unittest.TestCase):
@@ -244,7 +244,7 @@ class testPlugin(unittest.TestCase):
         self.np = Plugin()
     def tearDown(self):
         sys.argv = self.argv_store
-    def runExpect(self, case, expected_exit, value):
+    def run_expect(self, case, expected_exit, value):
         sys.argv = [sys.argv[0]] + case.split()
         self.np.activate()
         try:
@@ -269,21 +269,21 @@ class testPlugin(unittest.TestCase):
     """
     Throws SystemExit, required parameter not set when activating
     """
-    def testAddArgReqMissing(self):
+    def test_add_arg_req_missing(self):
         self.np.add_arg('F', 'fakedata', 'fake data to test thresholds', required=True)
         self.assertRaises(SystemExit, self.np.activate)
 
-    def testAddArgReq(self):
+    def test_add_arg_req(self):
         self.np.add_arg('F', 'fakedata', 'fake data to test thresholds', required=True)
         sys.argv = [sys.argv[0]] + '-F 100 -w 1 -c 2'.split()
         self.np.activate()
 
-    def testAddArg(self):
+    def test_add_arg(self):
         self.np.add_arg('F', 'fakedata', 'fake data to test thresholds', required=False)
         sys.argv = [sys.argv[0]] + '-w 1 -c 2'.split()
         self.np.activate()
 
-    def testCodestringToInt(self):
+    def test_codestring_to_int(self):
         code = self.np.code_string2int('OK')
         self.assertEquals(code, 0, "OK did not map to 0")
 
@@ -301,121 +301,121 @@ class testPlugin(unittest.TestCase):
     """
     def test_number_1(self):
         case = '-w 10 -c 20'
-        self.runExpect(case, 2, -23)
+        self.run_expect(case, 2, -23)
     def test_number_2(self):
         case = '-w 10 -c 20'
-        self.runExpect(case, 0, 3)
+        self.run_expect(case, 0, 3)
     def test_number_3(self):
         case = '-w 10 -c 20'
-        self.runExpect(case, 1, 13)
+        self.run_expect(case, 1, 13)
     def test_number_4(self):
         case = '-w 10 -c 20'
-        self.runExpect(case, 2, 23)
+        self.run_expect(case, 2, 23)
 
     """
     Same as above. Negative "stuff" is OK
     """    
     def test_number_5(self):
         case = '-w ~:10 -c ~:20'
-        self.runExpect(case, 0, -23)
+        self.run_expect(case, 0, -23)
     def test_number_6(self):
         case = '-w ~:10 -c ~:20'
-        self.runExpect(case, 0, 3)
+        self.run_expect(case, 0, 3)
     def test_number_7(self):
         case = '-w ~:10 -c ~:20'
-        self.runExpect(case, 1, 13)
+        self.run_expect(case, 1, 13)
     def test_number_8(self):
         case = '-w ~:10 -c ~:20'
-        self.runExpect(case, 2, 23)
+        self.run_expect(case, 2, 23)
 
     """
     Critical if "stuff" is over 20, else warn if "stuff" is below 10 (will be critical if "stuff" is less than 0)
     """
     def test_number_9(self):
         case = '-w 10: -c 20'
-        self.runExpect(case, 2, -23)
+        self.run_expect(case, 2, -23)
     def test_number_10(self):
         case = '-w 10: -c 20'
-        self.runExpect(case, 1, 3)
+        self.run_expect(case, 1, 3)
     def test_number_11(self):
         case = '-w 10: -c 20'
-        self.runExpect(case, 0, 13)
+        self.run_expect(case, 0, 13)
     def test_number_12(self):
         case = '-w 10: -c 20'
-        self.runExpect(case, 2, 23)
+        self.run_expect(case, 2, 23)
 
     """
     Critical if "stuff" is less than 1
     """
     def test_number_13(self):
         case = '-c 1:'
-        self.runExpect(case, 2, -23)
+        self.run_expect(case, 2, -23)
     def test_number_14(self):
         case = '-c 1:'
-        self.runExpect(case, 2, 0)
+        self.run_expect(case, 2, 0)
     def test_number_15(self):
         case = '-c 1:'
-        self.runExpect(case, 0, 13)
+        self.run_expect(case, 0, 13)
     def test_number_16(self):
         case = '-c 1:'
-        self.runExpect(case, 0, 23)
+        self.run_expect(case, 0, 23)
 
     """
     1-9 is warning, negative or above 10 is critical
     """
     def test_number_17(self):
         case = '-w ~:0 -c 10'
-        self.runExpect(case, 2, -23)
+        self.run_expect(case, 2, -23)
     def test_number_18(self):
         case = '-w ~:0 -c 10'
-        self.runExpect(case, 0, 0)
+        self.run_expect(case, 0, 0)
     def test_number_19(self):
         case = '-w ~:0 -c 10'
-        self.runExpect(case, 1, 7)
+        self.run_expect(case, 1, 7)
     def test_number_20(self):
         case = '-w ~:0 -c 10'
-        self.runExpect(case, 2, 23)
+        self.run_expect(case, 2, 23)
 
     """
     The only noncritical range is 5:6
     """
     def test_number_21(self):
         case = '-c 5:6'
-        self.runExpect(case, 2, -23)
+        self.run_expect(case, 2, -23)
     def test_number_22(self):
         case = '-c 5:6'
-        self.runExpect(case, 2, 0)
+        self.run_expect(case, 2, 0)
     def test_number_23(self):
         case = '-c 5:6'
-        self.runExpect(case, 2, 2)
+        self.run_expect(case, 2, 2)
     def test_number_24(self):
         case = '-c 5:6'
-        self.runExpect(case, 0, 5)
+        self.run_expect(case, 0, 5)
     def test_number_25(self):
         case = '-c 5:6'
-        self.runExpect(case, 0, 6)
+        self.run_expect(case, 0, 6)
 
     """
     Critical if "stuff" is 10 to 20
     """
     def test_number_26(self):
         case = '-c @10:20'
-        self.runExpect(case, 0, -23)
+        self.run_expect(case, 0, -23)
     def test_number_27(self):
         case = '-c @10:20'
-        self.runExpect(case, 0, 0)
+        self.run_expect(case, 0, 0)
     def test_number_28(self):
         case = '-c @10:20'
-        self.runExpect(case, 0, 2)
+        self.run_expect(case, 0, 2)
     def test_number_29(self):
         case = '-c @10:20'
-        self.runExpect(case, 2, 10)
+        self.run_expect(case, 2, 10)
     def test_number_30(self):
         case = '-c @10:20'
-        self.runExpect(case, 2, 15)
+        self.run_expect(case, 2, 15)
     def test_number_31(self):
         case = '-c @10:20'
-        self.runExpect(case, 2, 20)
+        self.run_expect(case, 2, 20)
     def test_number_32(self):
         case = '-c @10:20'
-        self.runExpect(case, 0, 23)
+        self.run_expect(case, 0, 23)
