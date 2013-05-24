@@ -424,6 +424,7 @@ def check_range(value, range_threshold=None):
     Returns:
         True  -- If value is inside the range
         False -- If value is outside the range (alert if this happens)
+        False -- if invalid value is specified
 
     Summary from plugin developer guidelines:
     ---------------------------------------------------------
@@ -463,7 +464,15 @@ def check_range(value, range_threshold=None):
     True
     >>> check_range(None) # Return False if value is not a number
     False
+    >>> check_range("10000000 PX") # What happens on invalid input
+    False
     """
+
+    # Return false if value is not a number
+    try:
+        float(value)
+    except Exception:
+        return False
 
     # if no range_threshold is provided, assume everything is ok
     if not range_threshold:
