@@ -41,6 +41,15 @@ import pynag.Plugins
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
 
+# skipIf workaround for python < 2.7
+try:
+    from unittest import skipIf
+except ImportError:
+    def skipIf(condition, message):
+        def decorator(f):
+            return None if condition else f
+        return decorator
+    unittest.skipIf = skipIf
 
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
@@ -122,8 +131,23 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         # 6 - Otherwise return OK
         pass
 
+    def test_invalid_range(self):
+        from pynag.Plugins.new_threshold_syntax import check_range
+        from pynag.Utils import PynagError
+
+        self.assertRaises(PynagError, check_range, 1, '')
+        self.assertRaises(PynagError, check_range, 1, None)
+
+    def test_invalid_threshold(self):
+        from pynag.Plugins.new_threshold_syntax import parse_threshold
+        from pynag.Utils import PynagError
+
+        self.assertRaises(PynagError, parse_threshold, '')
+        self.assertRaises(AttributeError, parse_threshold, None)
+        self.assertRaises(PynagError, parse_threshold, 'string')
 
 class testParsers(unittest.TestCase):
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testLivestatus(self):
         "Test mk_livestatus integration"
         livestatus = pynag.Parsers.mk_livestatus()
@@ -133,7 +157,8 @@ class testParsers(unittest.TestCase):
         "Test pynag.Parsers.config()"
         c = pynag.Parsers.config()
         c.parse()
-        self.assertGreater(len(c.data), 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+        self.assertTrue(len(c.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
         s = pynag.Parsers.status()
@@ -149,11 +174,12 @@ class testParsers(unittest.TestCase):
 
         # Try to get current version of nagios
         version = info['version']
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testObjectCache(self):
         "Test pynag.Parsers.object_cache"
         o = pynag.Parsers.object_cache()
         o.parse()
-        self.assertGreater(len(o.data.keys()), 0, 'Object cache seems to be empty')
+        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
     def testConfig_edit_static_file(self):
         """ Test pynag.Parsers.config._edit_static_file() """
         fd,filename = tempfile.mkstemp()
@@ -475,11 +501,12 @@ def suite():
     suite.addTest(unittest.makeSuite(testParsers))
 
     # Include tests of Plugins
-    from tests.plugintest import testPlugin, testPluginNoThreshold, testPluginHelper
+    from tests.plugintest import testPlugin, testPluginNoThreshold, testPluginHelper, testPluginParams
     suite.addTest(unittest.makeSuite(testPlugin))
     suite.addTest(unittest.makeSuite(testPluginNoThreshold))
     suite.addTest(unittest.makeSuite(testPluginHelper))
     suite.addTest(unittest.makeSuite(testNewPluginThresholdSyntax))
+    suite.addTest(unittest.makeSuite(testPluginParams))
 
     # Include tests of Utils
     suite.addTest(unittest.makeSuite(testUtils))
@@ -505,6 +532,9 @@ def suite():
     from tests.commandtest import testCommandsToCommandFile, testCommandsToLivestatus
     suite.addTest(unittest.makeSuite(testCommandsToCommandFile))
     suite.addTest(unittest.makeSuite(testCommandsToLivestatus))
+
+    from tests.controltest import testControl
+    suite.addTest(unittest.makeSuite(testControl))
 
     return suite
 
