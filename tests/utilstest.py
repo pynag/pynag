@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import pynag.Utils as utils
 import pynag.Model
+from pynag.Utils import PynagError
 from tests.test import tests_dir
 
 class testUtils(unittest.TestCase):
@@ -116,8 +117,19 @@ class testUtils(unittest.TestCase):
         expected_msg += '\* Command was:\n%s\n' % command
         expected_msg += '\* Output was:\n\n'
         expected_msg += 'Check if y/our path is correct: %s' % os.getenv('PATH')
+        # TODO change to unittest2 so assertRaisesRegexp works for python 2.6
+        """
         with self.assertRaisesRegexp(utils.PynagError, expected_msg):
             utils.runCommand(command, raise_error_on_fail=True)
+        """
+        import re
+        try:
+            utils.runCommand(command, raise_error_on_fail=True)
+        except PynagError, message:
+            match = re.match(expected_msg, message.args[0])
+            self.assertNotEqual(match, None)
+        else:
+            self.fail("PynagError not raised.")
 
     def test_gitrepo_init(self):
         from getpass import getuser
