@@ -27,7 +27,7 @@ that are used throughout the pynag library.
 import subprocess
 import re
 import shlex
-from os import getenv, environ
+from os import getenv, environ, listdir
 from platform import node
 from getpass import getuser
 import datetime
@@ -203,8 +203,10 @@ class GitRepo(object):
         self._update_author()
         command = "git init"
         self._run_command("git init")
-        self._run_command("git add .")
-        self._run_command("git commit -a -m 'Initial Commit'")
+        # Only do initial commit if there are files in the directory
+        if not listdir(self.directory) == ['.git']:
+            self._run_command("git add .")
+            self._run_command("git commit -a -m 'Initial Commit'")
     def _git_add(self, filename):
         """ Wrapper around git add command """
         self._update_author()
