@@ -112,7 +112,7 @@ class testUtils(unittest.TestCase):
     def test_run_command_file_not_found(self):
         command = '/bin/doesnotexist'
         expected_msg = '\* Could not run command \(return code= %s\)\n' % 127
-        expected_msg += '\* Error was:\n.+: %s: No such file or directory\n' % command
+        expected_msg += '\* Error was:\n.*: %s: No such file or directory\n' % command
         expected_msg += '\* Command was:\n%s\n' % command
         expected_msg += '\* Output was:\n\n'
         expected_msg += 'Check if y/our path is correct: %s' % os.getenv('PATH')
