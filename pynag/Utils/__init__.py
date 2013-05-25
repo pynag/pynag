@@ -111,7 +111,7 @@ class GitRepo(object):
                 self._run_command('git status --short')
             except PynagError, e:
                 if e.errorcode == 128:
-                    self._git_init()
+                    self.init()
             #self._run_command('git status --short')
 
         self._is_dirty = self.is_dirty # Backwards compatibility
