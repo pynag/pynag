@@ -146,18 +146,21 @@ class testUtils(unittest.TestCase):
 
     def test_gitrepo_init_with_files(self):
         tmp_file = tempfile.mkstemp(dir=self.tmp_dir)
-        repo = utils.GitRepo(
-                directory = self.tmp_dir,
-                auto_init = True,
-                author_name = None,
-                author_email = None
-            )
-        # Check that there is an initial commit
+        # If pynag defaults will fail, correctly, adjust for test
+        author_email = None
         from getpass import getuser
         from platform import node
         nodename = node()
         if nodename.endswith('.(none)'):
             nodename[:-7]+'.example.com'
+            author_email = '%s@%s' % (getuser(), nodename)
+        repo = utils.GitRepo(
+                directory = self.tmp_dir,
+                auto_init = True,
+                author_name = None,
+                author_email = author_email
+            )
+        # Check that there is an initial commit
         expected_email = '%s@%s' % (getuser(), nodename)
         self.assertEquals(len(repo.log()), 1)
         self.assertEquals(repo.log()[0]['comment'], 'Initial Commit')
