@@ -155,7 +155,10 @@ class testUtils(unittest.TestCase):
         # Check that there is an initial commit
         from getpass import getuser
         from platform import node
-        expected_email = '%s@%s' % (getuser(), node())
+        nodename = node()
+        if nodename.endswith('.(none)'):
+            nodename[:-7]+'.example.com'
+        expected_email = '%s@%s' % (getuser(), nodename)
         self.assertEquals(len(repo.log()), 1)
         self.assertEquals(repo.log()[0]['comment'], 'Initial Commit')
         self.assertEquals(repo.log()[0]['author_name'], 'Pynag User')
