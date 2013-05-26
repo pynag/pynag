@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/pynag/pynag.png?branch=master)](https://travis-ci.org/pynag/pynag)
+[![Coverage Status](https://coveralls.io/repos/pynag/pynag/badge.png?branch=master)](https://coveralls.io/r/pynag/pynag?branch=master)
+
 About
 =====
 Pynag a tool and a library for managing nagios configuration and provides a
