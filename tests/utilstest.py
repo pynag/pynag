@@ -1,5 +1,5 @@
 import unittest
-from mock import MagicMock
+from mock import MagicMock, patch
 
 import os
 import shutil
@@ -131,7 +131,7 @@ class testUtils(unittest.TestCase):
         else:
             self.fail("PynagError not raised.")
 
-    def test_gitrepo_init(self):
+    def test_gitrepo_init_empty(self):
         from getpass import getuser
         from platform import node
         repo = utils.GitRepo(
@@ -143,3 +143,46 @@ class testUtils(unittest.TestCase):
         self.assertEquals(repo.author_name, 'Pynag User')
         expected_email = '<%s@%s>' % (getuser(), node())
         self.assertEquals(repo.author_email, expected_email)
+
+    def test_gitrepo_init_with_files(self):
+        tmp_file = tempfile.mkstemp(dir=self.tmp_dir)
+        repo = utils.GitRepo(
+                directory = self.tmp_dir,
+                auto_init = True,
+                author_name = None,
+                author_email = None
+            )
+        # Check that there is an initial commit
+        from getpass import getuser
+        from platform import node
+        expected_email = '%s@%s' % (getuser(), node())
+        self.assertEquals(len(repo.log()), 1)
+        self.assertEquals(repo.log()[0]['comment'], 'Initial Commit')
+        self.assertEquals(repo.log()[0]['author_name'], 'Pynag User')
+        self.assertEquals(repo.log()[0]['author_email'], expected_email)
+        # Test kwargs functionality
+        self.assertEquals(repo.log(author_email=expected_email)[0]['author_email'], expected_email)
+        self.assertEquals(repo.log(comment__contains='Initial')[0]['comment'], 'Initial Commit')
+        self.assertEquals(len(repo.log(comment__contains='nothing')), 0)
+        # Test show method
+        initial_hash = repo.log()[0]['hash']
+        initial_hash_valid_commits = repo.get_valid_commits()[0]
+        self.assertEquals(initial_hash, initial_hash_valid_commits)
+        with patch('pynag.Utils.GitRepo._run_command') as gitrunpatch:
+            with patch('pynag.Utils.GitRepo.get_valid_commits') as validcommitspatch:
+                validcommitspatch.return_value = [initial_hash]
+                repo.show(initial_hash)
+                gitrunpatch.assert_called_once_with('git show %s' % initial_hash)
+        invalid_hash = '123'
+        # TODO assertRaises, repo.show(invalid_hash) PynagError('123 not a valid commit id')
+        # Add file
+        tmp_file_2 = tempfile.mkstemp(dir=self.tmp_dir)
+        self.assertEquals(len(repo.get_uncommited_files()), 1)
+        self.assertEquals(repo.is_up_to_date(), False)
+        # Commit file
+        repo.commit(filelist=repo.get_uncommited_files()[0]['filename'])
+        self.assertEquals(repo.is_up_to_date(), True)
+        self.assertEquals(len(repo.get_uncommited_files()), 0)
+        self.assertEquals(len(repo.get_valid_commits()), 2)
+        log_entry = repo.log()[0]
+        self.assertEquals(log_entry['comment'], 'commited by pynag')
