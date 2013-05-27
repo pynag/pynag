@@ -240,3 +240,23 @@ class testUtils(unittest.TestCase):
         diff = git.diff()
         self.assertEquals(diff, '')
 
+        # Call a diff against first commit, see if we find our changes in the commit.
+        all_commits = git.get_valid_commits()
+        first_commit = all_commits.pop()
+        diff = git.diff(commit_id_or_filename=first_commit)
+        self.assertTrue(diff.find(extra_data) > 0)
+
+        # Revert latest change, and make sure diff is gone.
+        last_commit = all_commits.pop(0)
+        git.revert(last_commit)
+        diff = git.diff(commit_id_or_filename=first_commit)
+        self.assertTrue(diff.find(extra_data) == -1)
+
+        # At last try to diff against an invalid commit id
+        try:
+            git.diff('invalid commit id')
+            self.assertTrue(False, "we wanted exception when calling diff on invalid commit id")
+        except PynagError:
+            pass
+
+

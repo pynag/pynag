@@ -422,6 +422,11 @@ class PerfDataMetric(object):
         10
         >>> print metric.uom
         M
+        >>> p = PerfDataMetric(perfdatastring="'with spaces'=10")
+        >>> print p.label
+        with spaces
+        >>> print p.value
+        10
         """
         self.label = label
         self.value = value
@@ -475,6 +480,13 @@ class PerfDataMetric(object):
         """ Return nagios-style exit code (int 0-3) by comparing
 
           self.value with self.warn and self.crit
+
+          >>> PerfDataMetric("label1=10;20;30").get_status()
+          0
+          >>> PerfDataMetric("label2=25;20;30").get_status()
+          1
+          >>> PerfDataMetric("label3=35;20;30").get_status()
+          2
         """
         status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
         return status
@@ -487,6 +499,18 @@ class PerfDataMetric(object):
         >>> PerfDataMetric("load1=2").is_valid()
         True
         >>> PerfDataMetric("load1").is_valid()
+        False
+        >>> PerfDataMetric('').is_valid()
+        False
+        >>> PerfDataMetric('invalid_value=invalid').is_valid()
+        False
+        >>> PerfDataMetric('invalid_min=0;0;0;min;0').is_valid()
+        False
+        >>> PerfDataMetric('invalid_min=0;0;0;0;max').is_valid()
+        False
+        >>> PerfDataMetric('label with spaces=0').is_valid()
+        False
+        >>> PerfDataMetric("'label with spaces=0'").is_valid()
         False
         """
         if self.label in (None, ''):
