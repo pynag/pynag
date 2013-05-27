@@ -145,6 +145,7 @@ class testUtils(unittest.TestCase):
         self.assertEquals(repo.author_email, expected_email)
 
     def test_gitrepo_init_with_author(self):
+        tmp_file = tempfile.mkstemp(dir=self.tmp_dir)
         author_name = 'Git Owner'
         author_email = 'git@localhost.local'
         repo = utils.GitRepo(
@@ -154,7 +155,11 @@ class testUtils(unittest.TestCase):
                 author_email = author_email
             )
         self.assertEquals(repo.author_name, author_name)
-        self.assertEquals(repo.author_email, '<%s>' % author_email)
+        self.assertEquals(repo.author_email, author_email)
+        self.assertEquals(len(repo.log()), 1)
+        self.assertEquals(repo.log()[0]['author_name'], author_name)
+        self.assertEquals(repo.log()[0]['author_email'], author_email)
+        
 
     def test_gitrepo_init_with_files(self):
         tmp_file = tempfile.mkstemp(dir=self.tmp_dir)
