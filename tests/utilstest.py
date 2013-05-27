@@ -209,3 +209,33 @@ class testUtils(unittest.TestCase):
         self.assertEquals(len(repo.get_valid_commits()), 2)
         log_entry = repo.log()[0]
         self.assertEquals(log_entry['comment'], 'commited by pynag')
+
+    def test_gitrepo_diff(self):
+        """ Test git diff works as expected  """
+        # Create repo and write one test commit
+        git = utils.GitRepo( directory = self.tmp_dir, auto_init = True)
+        tmp_filename = "%s/%s" % (self.tmp_dir, 'testfile.txt')
+        open(tmp_filename,'w').write('test data\n')
+        git.commit()
+
+        # First try diff with no changes made:
+        diff = git.diff()
+        self.assertEquals(diff, '')
+
+        # Now append to our file and see the difference:
+        extra_data = 'extra data\n'
+        open(tmp_filename,'a').write(extra_data)
+
+        # Call diff with no params, check if extra_data is in the diff
+        diff = git.diff()
+        self.assertGreaterEqual(diff.find(extra_data), 0)
+
+        # Call diff with filename as parameter, check if extra_data is in the diff
+        diff = git.diff(commit_id_or_filename=tmp_filename)
+        self.assertGreaterEqual(diff.find(extra_data), 0)
+
+        # Call commit again and confirm there is no diff
+        git.commit()
+        diff = git.diff()
+        self.assertGreaterEqual(diff.find(extra_data), 0)
+
