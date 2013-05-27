@@ -237,5 +237,5 @@ class testUtils(unittest.TestCase):
         # Call commit again and confirm there is no diff
         git.commit()
         diff = git.diff()
-        self.assertGreaterEqual(diff.find(extra_data), 0)
+        self.assertEquals(diff, '')
 

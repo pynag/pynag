@@ -27,7 +27,7 @@ that are used throughout the pynag library.
 import subprocess
 import re
 import shlex
-from os import getenv, environ, listdir
+from os import getenv, environ, listdir, path
 from platform import node
 from getpass import getuser
 import datetime
@@ -182,13 +182,17 @@ class GitRepo(object):
 
         If commit_id_or_filename is not specified. show diff against all uncommited files.
         """
-        if commit_id_or_filename not in self.get_valid_commits():
-            raise  PynagError("%s is not a valid commit id" % commit_id)
         if commit_id_or_filename in ('', None):
             command = "git diff"
-        else:
+        elif path.exists(commit_id_or_filename):
             commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
             command = "git diff '%s'" % commit_id_or_filename
+        elif commit_id_or_filename in self.get_valid_commits():
+            commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
+            command = "git diff '%s'" % commit_id_or_filename
+        else:
+            raise  PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
+        # Clean single quotes from parameters:
         return self._run_command(command)
     def show(self, commit_id,):
         """ Returns output from "git show" for a specified commit_id
