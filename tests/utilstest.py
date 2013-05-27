@@ -228,11 +228,12 @@ class testUtils(unittest.TestCase):
 
         # Call diff with no params, check if extra_data is in the diff
         diff = git.diff()
-        self.assertGreaterEqual(diff.find(extra_data), 0)
+
+        self.assertTrue(diff.find(extra_data) > 0)
 
         # Call diff with filename as parameter, check if extra_data is in the diff
         diff = git.diff(commit_id_or_filename=tmp_filename)
-        self.assertGreaterEqual(diff.find(extra_data), 0)
+        self.assertTrue(diff.find(extra_data) > 0)
 
         # Call commit again and confirm there is no diff
         git.commit()
