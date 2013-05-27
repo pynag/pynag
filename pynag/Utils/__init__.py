@@ -318,13 +318,14 @@ class PerfData(object):
     """ Data Structure for a nagios perfdata string with multiple perfdata metric
 
     Example string:
-    >>> perf = PerfData("load1=10 load2=10 load3=20")
+    >>> perf = PerfData("load1=10 load2=10 load3=20 'label with spaces'=5")
     >>> perf.metrics
-    ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;]
+    ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;, 'label with spaces'=5;;;;]
     >>> for i in perf.metrics: print i.label, i.value
     load1 10
     load2 10
     load3 20
+    label with spaces 5
     """
     def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
@@ -343,10 +344,24 @@ class PerfData(object):
             return
 
     def is_valid(self):
-        """ Returns True if the every metric in the string is valid """
+        """ Returns True if the every metric in the string is valid
+
+        Example usage:
+        >>> PerfData("load1=10 load2=10 load3=20").is_valid()
+        True
+        >>> PerfData("10b").is_valid()
+        False
+        >>> PerfData("load1=").is_valid()
+        False
+        >>> PerfData("load1=10 10").is_valid()
+        False
+        """
         for i in self.metrics:
             if not i.is_valid():
                 return False
+
+        # If we get here, all tests passed
+        return True
     def add_perfdatametric(self, perfdatastring="", label="",value="",warn="",crit="",min="",max="",uom=""):
         """ Add a new perfdatametric to existing list of metrics.
 
@@ -427,7 +442,16 @@ class PerfDataMetric(object):
             tmp.pop(0)
             label = "'".join(tmp)
         else:
-            label, everything_but_label = perfdatastring.split('=', 1)
+            # Split into label=perfdata
+            tmp = perfdatastring.split('=', 1)
+            # If no = sign, then we just take in a label
+            if tmp:
+                label = tmp.pop(0)
+            if tmp:
+                everything_but_label = tmp.pop()
+            else:
+                everything_but_label = ''
+
         self.label = label
 
         # Next split string into value;warning;critical;min;max
@@ -453,21 +477,40 @@ class PerfDataMetric(object):
 
 
     def is_valid(self):
-        """ Returns True if all Performance data is valid. Otherwise False """
+        """ Returns True if all Performance data is valid. Otherwise False
+
+        Example Usage:
+        >>> PerfDataMetric("load1=2").is_valid()
+        True
+        >>> PerfDataMetric("load1").is_valid()
+        False
+        """
+        if self.label in (None, ''):
+            return False
+
+        if self.value in (None,''):
+            return False
+
         try:
-            self.value == '' or float(self.value)
+            float(self.value)
         except ValueError:
             return False
+
         try:
             self.min == '' or float(self.min)
         except ValueError:
             return False
+
         try:
             self.max == '' or float(self.max)
         except ValueError:
             return False
+
         if self.label.find(' ') > -1 and not self.label.startswith("'") and not self.label.endswith("'"):
             return False
+
+        # If we get here, we passed all tests
+        return True
 
 
     def split_value_and_uom(self, value):
@@ -724,8 +767,3 @@ class defaultdict(dict):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
 
-
-if __name__ == '__main__':
-    import pynag.Model
-    hosts = pynag.Model.Host.objects.all
-    print grep(hosts, host_name__regex='^l.*$')
