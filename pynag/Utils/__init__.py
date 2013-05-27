@@ -208,19 +208,13 @@ class GitRepo(object):
             self._run_command("git add .")
             self._run_command("git commit -a -m 'Initial Commit'")
     def _git_add(self, filename):
-        """ Wrapper around git add command """
-        self._update_author()
-        command = "git add '%s'" % filename
-        return self._run_command(command)
+        """ Deprecated, use self.add() instead. """
+        return self.add(filename)
     def _git_commit(self, filename, message, filelist=[]):
-        """ Wrapper around git commit command """
-        self._update_author()
-        # Lets strip out any single quotes from the message:
-        message = message.replace("'",'"')
-        if len(filelist) > 0:
-            filename = "' '".join(filelist)
-        command = "git commit '%s' -m '%s'" % (filename, message)
-        return self._run_command(command=command)
+        """ Deprecated. Use self.commit() instead."""
+        if not filename is None:
+            filelist.append(filename)
+        return self.commit(message=message, filelist=filelist )
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
         filename = object_definition.get_filename()
@@ -261,14 +255,17 @@ class GitRepo(object):
           filelist     -- List of filenames to commit (if None, then commit all files in the repo)
           author       -- Author to use for git commit. If any is specified, overwrite self.author_name and self.author_email
         Returns:
-          Commit ID of the new commit
+          Returns stdout from the "git commit" shell command.
         """
 
         # Lets escape all single quotes from the message
         message = message.replace("'", r"\'")
 
-        if not author is None:
-            author = "%s %s" % (self.author_name, self.author_email)
+        if author is None:
+            author = "%s <%s>" % (self.author_name, self.author_email)
+
+        # Escape all single quotes in author:
+        author = author.replace("'", r"\'")
 
         if filelist is None:
             # If no files provided, commit everything
@@ -300,11 +297,16 @@ class GitRepo(object):
             return
         # Create a space seperated string with the filenames
         filestring = ' '.join(filelist)
-        command = "git commit -m '%s' -- %s" % (message, filestring)
+        command = "git commit -m '%s' --author='%s' -- %s" % (message, author,filestring)
         return self._run_command(command=command)
-
     def add(self, filename):
-        """ Run git add on every filename """
+        """ Run git add on filename
+
+            Arguments:
+                filename -- name of one file to add,
+            Returns:
+                The stdout from "git add" shell command.
+        """
 
         # Escape all single quotes in filename:
         filename = filename.replace("'", r"\'")
