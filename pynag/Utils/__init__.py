@@ -205,8 +205,7 @@ class GitRepo(object):
         self._run_command("git init")
         # Only do initial commit if there are files in the directory
         if not listdir(self.directory) == ['.git']:
-            self._run_command("git add .")
-            self._run_command("git commit -a -m 'Initial Commit'")
+            self.commit(message='Initial Commit')
     def _git_add(self, filename):
         """ Deprecated, use self.add() instead. """
         return self.add(filename)
