@@ -106,6 +106,7 @@ class GitRepo(object):
         self.messages = []
 
         self.ignore_errors = False
+        self._update_author()
         if auto_init:
             try:
                 self._run_command('git status --short')
@@ -116,7 +117,6 @@ class GitRepo(object):
 
         self._is_dirty = self.is_dirty # Backwards compatibility
 
-        self._update_author()
     def _update_author(self):
         """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
 
