@@ -123,7 +123,7 @@ class GitRepo(object):
         Returns: None
         """
         environ['GIT_AUTHOR_NAME'] = self.author_name
-        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (getuser(), node())
+        environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         import subprocess
