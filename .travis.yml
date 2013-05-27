@@ -6,6 +6,9 @@ install:
   - pip install coveralls --use-mirrors
   - python setup.py build
   - python setup.py install
+before_script:
+  - git config --global user.email "noreply@travis-ci.org"
+  - git config --global user.name "Travis"
 script:
   - coverage run --source=pynag tests/test.py
 after_success:

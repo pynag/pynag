@@ -123,7 +123,7 @@ class GitRepo(object):
         Returns: None
         """
         environ['GIT_AUTHOR_NAME'] = self.author_name
-        environ['GIT_AUTHOR_EMAIL'] = "%s@%s" % (getuser(), node())
+        environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         import subprocess
@@ -205,8 +205,7 @@ class GitRepo(object):
         self._run_command("git init")
         # Only do initial commit if there are files in the directory
         if not listdir(self.directory) == ['.git']:
-            self._run_command("git add .")
-            self._run_command("git commit -a -m 'Initial Commit'")
+            self.commit(message='Initial Commit')
     def _git_add(self, filename):
         """ Deprecated, use self.add() instead. """
         return self.add(filename)
@@ -270,7 +269,7 @@ class GitRepo(object):
         if filelist is None:
             # If no files provided, commit everything
             self.add('.')
-            command = "git commit -a -m '%s'" % (message)
+            command = "git commit -a -m '%s' --author='%s'" % (message, author)
             return self._run_command(command=command)
         elif isinstance(filelist, str):
             # in case filelist was provided as a string, consider to be only one file
