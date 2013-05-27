@@ -269,7 +269,7 @@ class GitRepo(object):
         if filelist is None:
             # If no files provided, commit everything
             self.add('.')
-            command = "git commit -a -m '%s'" % (message)
+            command = "git commit -a -m '%s' --author='%s'" % (message, author)
             return self._run_command(command=command)
         elif isinstance(filelist, str):
             # in case filelist was provided as a string, consider to be only one file
