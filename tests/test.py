@@ -18,7 +18,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import doctest
 import tempfile
 import shutil
