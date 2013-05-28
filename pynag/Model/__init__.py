@@ -762,8 +762,11 @@ class ObjectDefinition(object):
 
         Typical result value: str('/etc/nagios/pynag/templates/hosts.cfg')
         """
-        object_type = self.object_type
-        description = self.get_description()
+        # Invalid characters that might potentially mess with our path
+        # | / ' " are all invalid. So is any whitespace
+        invalid_chars = '[/\s\'\"\|]'
+        object_type = re.sub(invalid_chars, '', self.object_type)
+        description = re.sub(invalid_chars, '',self.get_description())
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
         global pynag_directory
         if pynag_directory is None:
@@ -782,6 +785,10 @@ class ObjectDefinition(object):
                     path = host.get_filename()
                 except Exception:
                     pass
+                if self.host_name is not None:
+                    # If we get here, host_name was specified, but it is an invalid host
+                    host = re.sub(invalid_chars, '',self.host_name)
+                    path = "%s/hosts/%s.cfg" % (pynag_directory, host)
         return path
 
     def save(self):
