@@ -485,6 +485,8 @@ def check_range(value, range_threshold=None):
     False
     >>> check_range("10000000 PX") # What happens on invalid input
     False
+    >>> check_range("10000000", "invalid:invalid") # What happens on invalid range
+    True
     """
 
     # Return false if value is not a number
@@ -522,10 +524,13 @@ def check_range(value, range_threshold=None):
     if end == '':
         end = None
     # start is defined and value is lower than start
-    if start is not None and float(value) < float(start):
-        return False
-    if end is not None and float(value) > float(end):
-        return False
+    try:
+        if start is not None and float(value) < float(start):
+            return False
+        if end is not None and float(value) > float(end):
+            return False
+    except ValueError:
+        return True
     return True
 
 
