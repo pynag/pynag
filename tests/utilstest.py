@@ -200,7 +200,8 @@ class testUtils(unittest.TestCase):
                 repo.show(initial_hash)
                 gitrunpatch.assert_called_once_with('git show %s' % initial_hash)
         invalid_hash = '123'
-        # TODO assertRaises, repo.show(invalid_hash) PynagError('123 not a valid commit id')
+        with self.assertRaisesRegexp(PynagError, '123 is not a valid commit id'):
+            repo.show('123')
         # Add file
         tmp_file_2 = tempfile.mkstemp(dir=self.tmp_dir)
         self.assertEquals(len(repo.get_uncommited_files()), 1)
@@ -212,6 +213,25 @@ class testUtils(unittest.TestCase):
         self.assertEquals(len(repo.get_valid_commits()), 2)
         log_entry = repo.log()[0]
         self.assertEquals(log_entry['comment'], 'commited by pynag')
+
+    def test_gitrepo_deprecated_methods(self):
+        """
+        Delete this class as deprecated methods are removed.
+        """
+        repo = utils.GitRepo(directory = self.tmp_dir, auto_init = True)
+        testfilename = 'testfile.name.txt'
+        with patch('pynag.Utils.GitRepo.add') as add_method_mock:
+            repo._git_add(testfilename)
+            add_method_mock.assert_called_once_with(testfilename)
+        with patch('pynag.Utils.GitRepo.commit') as commit_method_mock:
+            repo._git_commit(filename=testfilename, message='test')
+            commit_method_mock.assert_called_once_with(message='test', filelist=[testfilename])
+            commit_method_mock.reset_mock()
+            repo._git_commit(filename=None, message='test', filelist=[testfilename])
+            commit_method_mock.assert_called_once_with(message='test', filelist=[testfilename])
+            commit_method_mock.reset_mock()
+            repo._git_commit(filename=testfilename, message='test', filelist=[testfilename])
+            commit_method_mock.assert_called_once_with(message='test', filelist=[testfilename, testfilename])
 
     def test_gitrepo_diff(self):
         """ Test git diff works as expected  """
