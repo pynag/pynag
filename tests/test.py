@@ -446,6 +446,10 @@ def suite():
     from tests.controltest import testControl
     suite.addTest(unittest.makeSuite(testControl))
 
+    # Test defaultdict clone, tests borrowed from Python 2.7 upstream
+    from tests.test_defaultdict import TestDefaultDict
+    suite.addTest(unittest.makeSuite(TestDefaultDict))
+
     return suite
 
 if __name__ == '__main__':
