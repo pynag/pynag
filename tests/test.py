@@ -132,7 +132,11 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         self.assertEqual(critical, check_threshold(1, ok="10..20"))
 
         # 6 - Otherwise return OK
-        pass
+        # ... we pass only warning, then only critical, then both, but value is always outside ranges
+        self.assertEqual(ok, check_threshold(1, warning="10..20"))
+        self.assertEqual(ok, check_threshold(1, critical="10..20"))
+        self.assertEqual(ok, check_threshold(1, warning="10..20", critical="20..30"))
+        
 
     def test_invalid_range(self):
         from pynag.Plugins.new_threshold_syntax import check_range
