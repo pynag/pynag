@@ -734,7 +734,9 @@ class AttributeList(object):
     def extend(self, iterable):
         return self.fields.extend(iterable)
 
-    def index(self, value, start, stop):
+    def index(self, value, start=0, stop=None):
+        if stop is None:
+            stop = len(self.fields)
         return self.fields.index(value, start, stop)
 
     def reverse(self):
