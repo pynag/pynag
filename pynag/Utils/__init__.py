@@ -685,6 +685,35 @@ class AttributeList(object):
         Operator is: +
         >>> print i.fields
         ['group1', 'group2', 'group3']
+
+    More doctests:
+        >>> i = AttributeList(['group1', 'group2', 'group3'])
+        >>> print i.fields
+        ['group1', 'group2', 'group3']
+        >>> i.insert(1, 'group4')
+        >>> print i.fields
+        ['group1', 'group4', 'group2', 'group3']
+        >>> i.append('group5')
+        >>> print i.fields
+        ['group1', 'group4', 'group2', 'group3', 'group5']
+        >>> i.count('group4')
+        1
+        >>> i.extend(['group6', 'group7'])
+        >>> print i.fields
+        ['group1', 'group4', 'group2', 'group3', 'group5', 'group6', 'group7']
+        >>> i.index('group2')
+        2
+        >>> i.index('group5', 2, 5)
+        4
+        >>> i.reverse()
+        >>> print i.fields
+        ['group7', 'group6', 'group5', 'group3', 'group2', 'group4', 'group1']
+        >>> i.sort()
+        >>> print i.fields
+        ['group1', 'group2', 'group3', 'group4', 'group5', 'group6', 'group7']
+        >>> i.remove('group7')
+        >>> print i.fields
+        ['group1', 'group2', 'group3', 'group4', 'group5', 'group6']
     """
 
     def __init__(self, value=None):
