@@ -748,7 +748,7 @@ class AttributeList(object):
     def __str__(self):
         return self.operator + ','.join(self.fields)
 
-    def __repr__(self): # pragma: no cover
+    def __repr__(self):
         return self.__str__()
 
     def insert(self, index, object):
