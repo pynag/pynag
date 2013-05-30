@@ -686,34 +686,11 @@ class AttributeList(object):
         >>> print i.fields
         ['group1', 'group2', 'group3']
 
-    More doctests:
+        if your data is already in a list format you can use it directly:
         >>> i = AttributeList(['group1', 'group2', 'group3'])
         >>> print i.fields
         ['group1', 'group2', 'group3']
-        >>> i.insert(1, 'group4')
-        >>> print i.fields
-        ['group1', 'group4', 'group2', 'group3']
-        >>> i.append('group5')
-        >>> print i.fields
-        ['group1', 'group4', 'group2', 'group3', 'group5']
-        >>> i.count('group4')
-        1
-        >>> i.extend(['group6', 'group7'])
-        >>> print i.fields
-        ['group1', 'group4', 'group2', 'group3', 'group5', 'group6', 'group7']
-        >>> i.index('group2')
-        2
-        >>> i.index('group5', 2, 5)
-        4
-        >>> i.reverse()
-        >>> print i.fields
-        ['group7', 'group6', 'group5', 'group3', 'group2', 'group4', 'group1']
-        >>> i.sort()
-        >>> print i.fields
-        ['group1', 'group2', 'group3', 'group4', 'group5', 'group6', 'group7']
-        >>> i.remove('group7')
-        >>> print i.fields
-        ['group1', 'group2', 'group3', 'group4', 'group5', 'group6']
+
     """
 
     def __init__(self, value=None):
@@ -752,31 +729,103 @@ class AttributeList(object):
         return self.__str__()
 
     def insert(self, index, object):
+        """ Same as list.insert()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.insert(1, 'group4')
+        >>> print i.fields
+        ['group1', 'group4', 'group2', 'group3']
+
+        """
         return self.fields.insert(index,object)
 
     def append(self, object):
+        """ Same as list.append()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.append('group5')
+        >>> print i.fields
+        ['group1', 'group2', 'group3', 'group5']
+
+        """
         return self.fields.append(object)
 
     def count(self, value):
+        """ Same as list.count()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.count('group3')
+        1
+        """
         return self.fields.count(value)
 
     def extend(self, iterable):
+        """ Same as list.extend()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.extend(['group4', 'group5'])
+        >>> print i.fields
+        ['group1', 'group2', 'group3', 'group4', 'group5']
+        """
         return self.fields.extend(iterable)
 
     def index(self, value, start=0, stop=None):
+        """ Same as list.index()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.index('group2')
+        1
+        >>> i.index('group3', 2, 5)
+        2
+
+        """
         if stop is None:
             stop = len(self.fields)
         return self.fields.index(value, start, stop)
 
     def reverse(self):
+        """ Same as list.reverse()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.reverse()
+        >>> print i.fields
+        ['group3', 'group2', 'group1']
+
+        """
+
         return self.fields.reverse()
 
     def sort(self):
+        """ Same as list.sort()
+
+        >>> i = AttributeList('group3,group1,group2')
+        >>> i.sort()
+        >>> print i.fields
+        ['group1', 'group2', 'group3']
+
+
+        """
         return self.fields.sort()
 
     def remove(self, value):
+        """ Same as list.remove()
+
+        >>> i = AttributeList('group1,group2,group3')
+        >>> i.remove('group3')
+        >>> print i.fields
+        ['group1', 'group2']
+
+        """
         return self.fields.remove(value)
     def __iter__(self):
+        """ Same as list.__iter__()
+
+        >>> mylist = AttributeList('group1,group2,group3')
+        >>> for i in mylist: print i
+        group1
+        group2
+        group3
+        """
         return self.fields.__iter__()
 
 class defaultdict(dict):
