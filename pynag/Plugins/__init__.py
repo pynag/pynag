@@ -486,7 +486,9 @@ def check_range(value, range_threshold=None):
     >>> check_range("10000000 PX") # What happens on invalid input
     False
     >>> check_range("10000000", "invalid:invalid") # What happens on invalid range
-    True
+    Traceback (most recent call last):
+    ...
+    PynagError: Invalid threshold format: invalid:invalid
     """
 
     # Return false if value is not a number
