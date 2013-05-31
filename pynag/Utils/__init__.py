@@ -487,8 +487,14 @@ class PerfDataMetric(object):
           1
           >>> PerfDataMetric("label3=35;20;30").get_status()
           2
+          # Invalid metrics always return unknown
+          >>> PerfDataMetric("label3=35;invalid_metric").get_status()
+          3
         """
-        status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
+        try:
+            status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
+        except PynagError:
+            status = 3
         return status
 
 
