@@ -36,17 +36,25 @@ for filename in sys.argv[1:]:
     
     # Let's PEP8 the description
     wrapper = textwrap.TextWrapper()
+    wrapper.initial_indent = '    '
     wrapper.subsequent_indent = '    '
     wrapper.width = 68
     description = '\n'.join(['\n'.join(wrapper.wrap(block)) for block in description.splitlines()])
 
 
     strFunction = """
-def %s(%s,command_file=None,timestamp=0):
+def %s(%s):
     \"\"\"
-    %s
+%s
     \"\"\"
-    return send_command("%s",command_file,timestamp, %s)"""
-    strFunction = strFunction % (func.lower(), ','.join(args), description, func, ','.join(args))
-    strFunction = strFunction.replace('(,','(')
+    return send_command("%s",
+                        command_file,
+                        timestamp,
+                        %s)"""
+    args.extend(['command_file=None', 'timestamp=0'])
+    defSpaces = ' ' * (5 + len(func))
+    returnSpaces = ' ' * 24
+    argSplitter = ', \n' + defSpaces
+    strFunction = strFunction % (func.lower(), argSplitter.join(args), description, func, ', \n                        '.join(args[0:-2]))
+    strFunction = strFunction.replace('(, ','(')
     print strFunction
