@@ -17,6 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+The Command module is capable of sending commands to Nagios via
+the configured communication path.
+"""
+
 import time
 
 from pynag.Parsers import config, mk_livestatus
