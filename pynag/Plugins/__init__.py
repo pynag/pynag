@@ -26,7 +26,7 @@ import os
 import traceback
 from platform import node
 from optparse import OptionParser, OptionGroup
-from pynag.Utils import PerfData
+from pynag.Utils import PerfData, PynagError
 import new_threshold_syntax
 
 # Map the return codes
@@ -523,14 +523,15 @@ def check_range(value, range_threshold=None):
     # assume infinity if end is not provided
     if end == '':
         end = None
-    # start is defined and value is lower than start
+
     try:
+        # start is defined and value is lower than start
         if start is not None and float(value) < float(start):
             return False
         if end is not None and float(value) > float(end):
             return False
     except ValueError:
-        return True
+        raise PynagError("Invalid threshold format: %s" % range_threshold)
     return True
 
 
