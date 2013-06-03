@@ -1566,10 +1566,20 @@ class mk_livestatus:
         return self.query('GET services', *args)
     def get_hostgroups(self, *args):
         return self.query('GET hostgroups', *args)
+    def get_servicegroups(self, *args):
+        return self.query('GET servicegroups', *args)
+    def get_contactgroups(self, *args):
+        return self.query('GET contactgroups', *args)
     def get_contacts(self, *args):
         return self.query('GET contacts', *args)
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
+    def get_servicegroup(self, name):
+        return self.query('GET servicegroups', 'Filter: name = %s' % name)[0]
+    def get_hostgroup(self, name):
+        return self.query('GET hostgroups', 'Filter: name = %s' % name)[0]
+    def get_contactgroup(self, name):
+        return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
 class retention:
