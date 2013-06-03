@@ -50,7 +50,10 @@ try:
 except ImportError:
     def skipIf(condition, message):
         def decorator(f):
-            return None if condition else f
+            if not condition:
+                return None
+            else:
+                return f
         return decorator
     unittest.skipIf = skipIf
 
