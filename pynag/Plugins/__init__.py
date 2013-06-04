@@ -560,7 +560,7 @@ class PluginHelper:
     show_longoutput = True  # If True, print longoutput
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
-    show_status_in_summary = False
+    show_status_in_summary = True
     show_legacy = False     # If True, print perfdata in legacy form
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
@@ -628,10 +628,31 @@ class PluginHelper:
         """ Returns all long_output that has been added via add_long_output """
         return '\n'.join(self._long_output)
 
+    def set_long_output(self, message):
+        """ Overwrite current long_output with message
+
+        Example:
+        >>> s = PluginHelper()
+        >>> s.add_long_output('first long output')
+        >>> s.set_long_output('Fatal error')
+        >>> s.get_long_output()
+        'Fatal error'
+        """
+        self._long_output = [message]
     def add_summary(self, message):
         """ Adds message to Plugin Summary """
         self._summary.append(message.strip())
+    def set_summary(self, message):
+        """ Overwrite current summary with message
 
+        Example:
+        >>> s = PluginHelper()
+        >>> s.add_summary('first summary')
+        >>> s.set_summary('Fatal error')
+        >>> s.get_summary()
+        'Fatal error'
+        """
+        self._summary = [message]
     def get_summary(self):
         return '. '.join(self._summary)
 
@@ -817,7 +838,19 @@ class PluginHelper:
             highest_level = max(highest_level, level)
             # If ok threshold was specified, default state is critical according to spec
             # If value matches our threshold, we increment the status
-            if new_threshold_syntax.check_range(metric.value, threshold_range):
+            try:
+                in_range = new_threshold_syntax.check_range(metric.value, threshold_range)
+            except PynagError:
+                self.set_summary(
+                    "Could not parse threshold %s=%s for metric %s" %
+                                 (state_text[level], threshold_range, metric_name)
+                )
+                self.set_long_output("Thresholds should be in the format metric=<metric_name>,ok=0..90,warning=90..95")
+                self.add_long_output("Example: ")
+                self.add_long_output("--th metric=load,ok=0..1,warning=1..5,critical=5..inf")
+                self.status(unknown)
+                self.exit()
+            if in_range:
                 metric_status = max(metric_status, level)
                 self.debug('%s is within %s range "%s"' % (metric_name, state_text[level], threshold_range))
                 if level == ok:
