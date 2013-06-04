@@ -8,6 +8,7 @@ install:
   - python setup.py build
   - python setup.py install
 before_script:
+  - env
   - git config --global user.email "noreply@travis-ci.org"
   - git config --global user.name "Travis"
 script:
