@@ -50,7 +50,7 @@ try:
 except ImportError:
     def skipIf(condition, message):
         def decorator(f):
-            if not condition:
+            if condition:
                 return None
             else:
                 return f
