@@ -702,8 +702,9 @@ class ObjectDefinition(object):
         return a.get_description() > b.get_description()
 
     def __setitem__(self, key, item):
-        self._changes[key] = item
-        self._event(level="debug", message="attribute changed: %s = %s" % (key, item))
+        if self[key] != item:
+            self._changes[key] = item
+            self._event(level="debug", message="attribute changed: %s = %s" % (key, item))
 
     def __getitem__(self, key):
         if key == 'id':
@@ -1040,6 +1041,51 @@ class ObjectDefinition(object):
             attr = _standard_macros[ macroname ]
             return self[ attr ]
         return ''
+    def set_macro(self, macroname, new_value):
+        """ Update a macro (custom variable) like $ARG1$ intelligently
+
+         Returns: None
+
+         Notes: You are responsible for calling .save() after modifying the object
+
+         Examples:
+            >>> s = Service()
+            >>> s.check_command = 'okc-execute!arg1!arg2'
+            >>> s.set_macro('$ARG1$', 'modified1')
+            >>> s.check_command
+            'okc-execute!modified1!arg2'
+            >>> s.set_macro('$ARG5$', 'modified5')
+            >>> s.check_command
+            'okc-execute!modified1!arg2!!!modified5'
+            >>> s.set_macro('$_SERVICE_TEST$', 'test')
+            >>> s['__TEST']
+            'test'
+        """
+        if not macroname.startswith('$') or not macroname.endswith('$'):
+            raise ValueError("Macros must be of the format $<macroname>$")
+        if macroname.startswith('$ARG'):
+            if self.check_command is None:
+                raise ValueError("cant save %s, when there is no check_command defined" % macroname)
+            # split check command into an array
+            # in general the following will apply:
+            # $ARG0$ = c[0]
+            # $ARG1$ = c[1]
+            # etc...
+            c = self.check_command.split('!')
+            arg_number = int( macroname[4:-1] )
+            # Special hack, if c array is to short for our value, we will make the array longer
+            while arg_number >= len(c):
+                c.append('')
+
+            # Lets save our attribute
+            c[arg_number] = new_value
+            self.check_command = '!'.join(c)
+
+        elif macroname.startswith('$_SERVICE'):
+            macroname = "_" + macroname[9:-1]
+            self[macroname] = new_value
+        else:
+            raise ValueError("No support for macro %s" % macroname)
 
     def get_all_macros(self):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
