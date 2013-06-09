@@ -702,7 +702,10 @@ class ObjectDefinition(object):
         return a.get_description() > b.get_description()
 
     def __setitem__(self, key, item):
-        if self[key] != item:
+        # Special handle for macros
+        if key.startswith('$') and key.endswith('$'):
+            self.set_macro(key, item)
+        elif self[key] != item:
             self._changes[key] = item
             self._event(level="debug", message="attribute changed: %s = %s" % (key, item))
 
@@ -1177,10 +1180,14 @@ class ObjectDefinition(object):
         stdout, stderr = proc.communicate('through stdin to stdout')
         return proc.returncode,stdout,stderr
 
-    def _get_command_macro(self, macroname):
+    def _get_command_macro(self, macroname, check_command=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
+        if check_command is None:
+            check_command = self.check_command
+        if check_command is None:
+            return ''
         all_args = {}
-        c = self['check_command'].split('!')
+        c = check_command.split('!')
         c.pop(0) # First item is the command, we dont need it
         for i, v in enumerate( c ):
             name = '$ARG%s$' % str(i+1)
