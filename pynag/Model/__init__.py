@@ -242,8 +242,8 @@ class ObjectRelations(object):
         expand(self.hostgroup_hosts, host_names)
         expand(self.host_hostgroups, hostgroup_names)
         expand(self.service_hostgroups, hostgroup_names)
-        expand(self.service_hosts, host_names)
-        expand(self.service_hosts, host_names)
+        #expand(self.service_hosts, host_names)
+        #expand(self.service_hosts, host_names)
     @staticmethod
     def _expand_regex(dictionary, full_list):
         """ Replaces any regex found in dictionary.values() or dictionary.keys() **INPLACE** with its respective matches found in full_list
@@ -653,27 +653,8 @@ class ObjectDefinition(object):
         for k,v in kwargs.items():
             self[k] = v
 
-        # Lets find common attributes that every object definition should have:
-        self._add_property('register')
-        self._add_property('name')
-        self._add_property('use')
-        
-        defs = all_attributes.object_definitions.get(self.object_type,{})
-        for k in defs.keys():
-            self._add_property(k)
+
     
-    def _add_property(self, name):
-        """ Creates dynamic properties for every attribute of out definition.
-
-        i.e. this makes sure host_name attribute is accessable as self.host_name
-
-        Returns: None
-        """
-        fget = lambda self: self.get_attribute(name)
-        fset = lambda self, value: self.set_attribute(name, value)
-        fdel = lambda self: self.set_attribute(name, None)
-        fdoc = "This is the %s attribute for object definition"
-        setattr( self.__class__, name, property(fget,fset,fdel,fdoc))
 
     def get_attribute(self, attribute_name):
         """Get one attribute from our object definition"""
@@ -712,17 +693,17 @@ class ObjectDefinition(object):
     def __getitem__(self, key):
         if key == 'id':
             return self.get_id()
-        if key == 'description':
+        elif key == 'description':
             return self.get_description()
-        if key == 'shortname':
+        elif key == 'shortname':
             return self.get_shortname()
-        if key == 'effective_command_line':
+        elif key == 'effective_command_line':
             return self.get_effective_command_line()
-        if key == 'register' and not self._defined_attributes.has_key('register'):
+        elif key == 'register' and not self._defined_attributes.has_key('register'):
             return "1"
-        if key == 'meta':
+        elif key == 'meta':
             return self._meta
-        if self._changes.has_key(key):
+        elif self._changes.has_key(key):
             return self._changes[key]
         elif self._defined_attributes.has_key(key):
             return self._defined_attributes[key]
@@ -754,12 +735,12 @@ class ObjectDefinition(object):
 
     def get_id(self):
         """ Return a unique ID for this object"""
-        object_type = self['object_type']
-        shortname = self.get_description()
-        object_name = self['name']
-        filename = self['filename']
-        object_id = "%s-%s-%s-%s" % ( object_type, shortname, object_name, filename)
-        return str(object_id.__hash__())
+        #object_type = self['object_type']
+        #shortname = self.get_description()
+        #object_name = self['name']
+        filename = self._original_attributes['meta']['filename']
+        object_id = (filename) + str(tuple(self._defined_attributes.items()))
+        return str(hash(object_id))
 
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in
@@ -2316,6 +2297,37 @@ string_to_class['command'] = Command
 
 # Attributelist is put here for backwards compatibility
 AttributeList = pynag.Utils.AttributeList
+
+
+def _add_property(ClassType, name):
+    """ Creates dynamic properties for every attribute of out definition.
+
+    i.e. this makes sure host_name attribute is accessable as self.host_name
+
+    Returns: None
+    """
+    fget = lambda self: self.get_attribute(name)
+    fset = lambda self, value: self.set_attribute(name, value)
+    fdel = lambda self: self.set_attribute(name, None)
+    fdoc = "This is the %s attribute for object definition"
+    setattr( ClassType, name, property(fget,fset,fdel,fdoc))
+
+
+for object_type, attributes in all_attributes.object_definitions.items():
+    # Lets find common attributes that every object definition should have:
+    if object_type == 'any':
+        continue
+    if object_type not in string_to_class:
+        continue
+    Object = string_to_class[object_type]
+
+    # Iterate through all documented attributes:
+    _add_property(Object,'register')
+    _add_property(Object,'name')
+    _add_property(Object,'use')
+    for attribute in attributes:
+        _add_property(Object, attribute)
+
 
 if __name__ == '__main__':
     o = Service.objects.all[17]
