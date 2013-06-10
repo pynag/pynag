@@ -32,6 +32,11 @@ class config:
     """
     Parse and write nagios config files
     """
+    # Regex for beginning of object definition
+    # We want everything that matches:
+    # define <object_type> {
+    __beginning_of_object = re.compile("^\s*define\s+(\w+)\s*\{?(.*)$")
+
     def __init__(self, cfg_file=None,strict=False):
         """
 
@@ -226,6 +231,7 @@ class config:
         in_definition = {}
         tmp_buffer = []
 
+
         for sequence_no, line in enumerate( open(filename, 'rb').readlines() ):
             line_num = sequence_no + 1
 
@@ -264,8 +270,7 @@ class config:
                 continue
 
             # beginning of object definition
-            boo_re = re.compile("^\s*define\s+(\w+)\s*\{?(.*)$")
-            m = boo_re.search(line)
+            m = self.__beginning_of_object.search(line)
             if m:
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
