@@ -2300,9 +2300,13 @@ AttributeList = pynag.Utils.AttributeList
 
 
 def _add_property(ClassType, name):
-    """ Creates dynamic properties for every attribute of out definition.
+    """ Create a dynamic property specific ClassType
 
-    i.e. this makes sure host_name attribute is accessable as self.host_name
+    object_definition = ClassType()
+    object_definition.name -> object_definition['name'
+
+    So in human speak, this reads info from all_attributes and makes sure that Host
+    has Host.host_name
 
     Returns: None
     """
@@ -2313,6 +2317,12 @@ def _add_property(ClassType, name):
     setattr( ClassType, name, property(fget,fset,fdel,fdoc))
 
 
+# Add register, name and use to all objects
+_add_property(ObjectDefinition,'register')
+_add_property(ObjectDefinition,'name')
+_add_property(ObjectDefinition,'use')
+
+# For other objects, create attributes dynamically based on all_attributes.keys()
 for object_type, attributes in all_attributes.object_definitions.items():
     # Lets find common attributes that every object definition should have:
     if object_type == 'any':
@@ -2321,12 +2331,9 @@ for object_type, attributes in all_attributes.object_definitions.items():
         continue
     Object = string_to_class[object_type]
 
-    # Iterate through all documented attributes:
-    _add_property(Object,'register')
-    _add_property(Object,'name')
-    _add_property(Object,'use')
     for attribute in attributes:
         _add_property(Object, attribute)
+
 
 
 if __name__ == '__main__':
