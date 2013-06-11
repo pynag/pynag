@@ -225,14 +225,54 @@ class config:
         return current
 
     def _load_file(self, filename):
-        ## Set globals (This is stolen from the perl module)
+        """ Parsers filename with self.parse_filename and append results in self._pre_object_list
+
+            This function is mostly here for backwards compatibility
+
+            Arguments:
+                filename -- the file to be parsed. This is supposed to a nagios object definition file
+
+            Returns:
+                None
+        """
+        for i in self.parse_file(filename):
+            self.pre_object_list.append(i)
+
+    def parse_file(self, filename):
+        """ Parses a nagios object configuration file and returns lists of dictionaries.
+
+         This is more or less a wrapper around config.parse_string, so reading documentation there
+         is useful.
+        """
+        raw_string = open(filename, 'rb').read()
+        return self.parse_string(raw_string, filename=filename)
+
+    def parse_string(self, string, filename='None'):
+        """ Parses a string, and returns all object definitions in that string
+
+        Arguments:
+          string              -- A string containing one or more object definitions
+          filename (optional) -- If filename is provided, it will be referenced when raising exceptions
+
+        Examples:
+          >>> test_string = "define host {\\nhost_name examplehost\\n}\\n"
+          >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
+          >>> c = config()
+          >>> result = c.parse_string(test_string)
+          >>> for i in result: print i.get('host_name'), i.get('service_description', None)
+          examplehost None
+          examplehost example service
+
+         Returns:
+          A list of dictionaries, that look like self.data
+        """
         append = ""
         current = None
         in_definition = {}
         tmp_buffer = []
+        result = []
 
-
-        for sequence_no, line in enumerate( open(filename, 'rb').readlines() ):
+        for sequence_no, line in enumerate( string.splitlines(False) ):
             line_num = sequence_no + 1
 
             ## Cleanup and line skips
@@ -243,7 +283,7 @@ class config:
                 continue
 
             # TODO: Find out why this code append lives here, are there really any cases
-            # Where a nagios attributes expands more than one line ? 
+            # Where a nagios attributes expands more than one line ?
             # append saved text to the current line
             if append:
                 append += ' '
@@ -257,13 +297,13 @@ class config:
                 current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
                 rest = line.split("}", 1)[1]
-                
+
                 tmp_buffer.append(  line )
                 try:
                     current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
                 except Exception:
                     raise ParserError("Encountered Unexpected end of object definition in file '%s'." % filename)
-                self.pre_object_list.append(current)
+                result.append(current)
 
                 ## Destroy the Nagios Object
                 current = None
@@ -284,7 +324,7 @@ class config:
 
                 ## Start off an object
                 in_definition = True
-                
+
                 # Looks to me like nagios ignores everything after the {, so why shouldn't we ?
                 rest = m.groups()[1]
                 continue
@@ -333,6 +373,8 @@ class config:
         ## Something is wrong in the config
         if in_definition:
             raise ParserError("Error: Unexpected EOF in file '%s'" % filename)
+
+        return result
 
     def _locate_item(self, item):
         """
