@@ -1827,6 +1827,7 @@ class ParserError(Exception):
         if item is None: return
         self.item = item
         self.filename = item['meta']['filename']
+        self.line_start = item['meta'].get('line_start')
 
     def __str__(self):
         return repr(self.message)
