@@ -732,7 +732,8 @@ class ObjectDefinition(object):
         #for k in self._meta.keys():
         #    if k not in all_keys: all_keys.append(k)
         return all_keys
-
+    def items(self):
+        return map(lambda x: (x, self[x]), self.keys())
     def get_id(self):
         """ Return a unique ID for this object"""
         #object_type = self['object_type']
