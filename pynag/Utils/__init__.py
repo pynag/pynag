@@ -153,7 +153,13 @@ class GitRepo(object):
             line = line.split(None,1)
             if len(line) < 2:
                 continue
-            result.append( {'status':line[0], 'filename': line[1]} )
+            status,filename  = line[0],line[1]
+            # If there are special characters in the name, git will double-quote the output
+            # We will remove those quotes, but we cannot use strip because it will damage:
+            # files like this: "\"filename with actual doublequotes\""
+            if filename.startswith('"') and filename.endswith('"'):
+                filename = filename[1:-1]
+            result.append( {'status':status, 'filename': filename} )
         return result
     def log(self, **kwargs):
         """ Returns a log of previous commits. Log is is a list of dict objects.
