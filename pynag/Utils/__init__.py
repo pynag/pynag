@@ -835,6 +835,55 @@ class AttributeList(object):
         """
         return self.fields.__iter__()
 
+class PluginOutput:
+    """ This class parses a typical stdout from a nagios plugin
+
+    It splits the output into the following fields:
+    * Summary
+    * Long Output
+    * Perfdata
+
+    Example UsagE:
+    >>> p = PluginOutput("Everything is ok | load1=15 load2=10")
+    >>> p.summary
+    'Everything is ok '
+    >>> p.long_output
+    ''
+    >>> p.perfdata
+    'load1=15 load2=10'
+    >>> p.parsed_perfdata.metrics
+    ['load1'=15;;;;, 'load2'=10;;;;]
+
+    """
+    summary = None
+    long_output = None
+    perfdata = None
+    def __init__(self, stdout):
+        if not stdout:
+            return
+        long_output = []
+        perfdata = []
+        summary = None
+
+        lines = stdout.splitlines()
+        for i in lines:
+            i = i.split('|',1)
+            if summary is None:
+                summary = i.pop(0)
+            else:
+                long_output.append(i.pop(0))
+            if i:
+                perfdata.append(i.pop())
+        perfdata = ' '.join(perfdata)
+
+        self.summary = summary
+        self.long_output = '\n'.join(long_output)
+        self.perfdata = perfdata.strip()
+        self.parsed_perfdata = PerfData(perfdatastring=perfdata)
+
+
+
+
 class defaultdict(dict):
     """ This is an alternative implementation of collections.defaultdict.
 
