@@ -150,7 +150,7 @@ class GitRepo(object):
         output = self._run_command("git status --porcelain")
         result = []
         for line in output.split('\n'):
-            line = line.split()
+            line = line.split(None,1)
             if len(line) < 2:
                 continue
             result.append( {'status':line[0], 'filename': line[1]} )
