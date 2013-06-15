@@ -180,15 +180,18 @@ class config:
             except RuntimeError, e:
                 self.errors.append( ParserError("Error while parsing item: %s (it might have circular use=)" % str(e), item=original_item) )
             parent_items.append( parent_item )
+
+        inherited_attributes = original_item['meta']['inherited_attributes']
+        template_fields = original_item['meta']['template_fields']
         for parent_item in parent_items:
             for k,v in parent_item.iteritems():
                 if k in ('use', 'register', 'meta', 'name'):
                     continue
-                if k not in original_item['meta']['inherited_attributes']:
-                    original_item['meta']['inherited_attributes'][k] = v
+                if k not in inherited_attributes:
+                    inherited_attributes[k] = v
                 if k not in original_item:
                     original_item[k] = v
-                    original_item['meta']['template_fields'].append(k)
+                    template_fields.append(k)
         if 'name' in original_item:
             self.item_apply_cache[object_type][ original_item['name'] ] = original_item
         return original_item
@@ -285,9 +288,7 @@ class config:
                 line = append + line
                 append = None
 
-            # end of object definition
-            if line.find("}") != -1:
-
+            if '}' in line:  # end of object definition
                 in_definition = None
                 current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
@@ -304,9 +305,10 @@ class config:
                 current = None
                 continue
 
-            # beginning of object definition
-            m = self.__beginning_of_object.search(line)
-            if m:
+            elif '{' in line:  # beginning of object definition
+
+                m = self.__beginning_of_object.search(line)
+
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
                 if self.strict and object_type not in self.object_type_keys.keys():
@@ -323,7 +325,7 @@ class config:
                 # Looks to me like nagios ignores everything after the {, so why shouldn't we ?
                 rest = m.groups()[1]
                 continue
-            else:
+            else:  # In the middle of an object definition
                 tmp_buffer.append( '    ' + line )
 
             ## save whatever's left in the buffer for the next iteration
