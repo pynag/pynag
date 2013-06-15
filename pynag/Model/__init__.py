@@ -740,7 +740,7 @@ class ObjectDefinition(object):
         #shortname = self.get_description()
         #object_name = self['name']
         filename = self._original_attributes['meta']['filename']
-        object_id = (filename) + str(sorted(self._defined_attributes.items()))
+        object_id = (filename,frozenset(self._defined_attributes.items()))
         return str(hash(object_id))
 
     def get_suggested_filename(self):
