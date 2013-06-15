@@ -157,12 +157,13 @@ class config:
         """
         Apply all attributes of item named parent_name to "original_item".
         """
+        # TODO: There is space for more performance tweaks here
         # If item does not inherit from anyone else, lets just return item as is.
-        if not original_item.has_key('use'):
+        if 'use' not in original_item:
             return original_item
         object_type = original_item['meta']['object_type']
         # Performance tweak, if item has been parsed. Lets not do it again
-        if original_item.has_key('name') and self.item_apply_cache[object_type].has_key(original_item['name']):
+        if 'name' in original_item and original_item['name'] in self.item_apply_cache[object_type]:
             return self.item_apply_cache[object_type][ original_item['name'] ]
         # End of performance tweak
         parent_names = original_item['use'].split(',')
@@ -181,20 +182,14 @@ class config:
             parent_items.append( parent_item )
         for parent_item in parent_items:
             for k,v in parent_item.iteritems():
-                if k == 'use':
+                if k in ('use', 'register', 'meta', 'name'):
                     continue
-                if k == 'register':
-                    continue
-                if k == 'meta':
-                    continue
-                if k == 'name':
-                    continue
-                if not original_item['meta']['inherited_attributes'].has_key(k):
+                if k not in original_item['meta']['inherited_attributes']:
                     original_item['meta']['inherited_attributes'][k] = v
-                if not original_item.has_key(k):
+                if k not in original_item:
                     original_item[k] = v
                     original_item['meta']['template_fields'].append(k)
-        if original_item.has_key('name'):
+        if 'name' in original_item:
             self.item_apply_cache[object_type][ original_item['name'] ] = original_item
         return original_item
 
