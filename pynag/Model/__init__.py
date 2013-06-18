@@ -1056,7 +1056,7 @@ class ObjectDefinition(object):
             # $ARG0$ = c[0]
             # $ARG1$ = c[1]
             # etc...
-            c = self.check_command.split('!')
+            c = self._split_check_command_and_arguments(self.check_command)
             arg_number = int( macroname[4:-1] )
             # Special hack, if c array is to short for our value, we will make the array longer
             while arg_number >= len(c):
@@ -1076,7 +1076,7 @@ class ObjectDefinition(object):
         """Returns {macroname:macrovalue} hash map of this object's macros"""
         if self['check_command'] is None: return {}
         c = self['check_command']
-        c = c.split('!')
+        c = self._split_check_command_and_arguments(c)
         command_name = c.pop(0)
         command = Command.objects.get_by_shortname(command_name)
         regex = re.compile("(\$\w+\$)")
@@ -1099,7 +1099,7 @@ class ObjectDefinition(object):
         """Return a string of this objects check_command with all macros (i.e. $HOSTADDR$) resolved"""
         if self['check_command'] is None: return None
         c = self['check_command']
-        c = c.split('!')
+        c = self._split_check_command_and_arguments(c)
         command_name = c.pop(0)
         try:
             command = Command.objects.get_by_shortname(command_name)
@@ -1161,6 +1161,24 @@ class ObjectDefinition(object):
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         return proc.returncode,stdout,stderr
+    def _split_check_command_and_arguments(self, check_command):
+        """ Split a nagios "check_command" string into a tuple
+
+         >>> check_command = "check_ping!warning!critical"
+         >>> o = ObjectDefinition()
+         >>> o._split_check_command_and_arguments(check_command)
+         ['check_ping', 'warning', 'critical']
+         >>> complex_check_command = "check_ping!warning with \! in it!critical"
+         >>> o._split_check_command_and_arguments(complex_check_command)
+         ['check_ping', 'warning with \\\\! in it', 'critical']
+        """
+        if check_command in (None, ''):
+            return []
+        if '\!' in check_command:
+            check_command = check_command.replace('\!', 'ESCAPE_EXCL_MARK')
+        tmp = check_command.split('!')
+        result = map(lambda x: x.replace('ESCAPE_EXCL_MARK', '\!'), tmp)
+        return result
 
     def _get_command_macro(self, macroname, check_command=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
@@ -1169,7 +1187,7 @@ class ObjectDefinition(object):
         if check_command is None:
             return ''
         all_args = {}
-        c = check_command.split('!')
+        c = self._split_check_command_and_arguments(check_command)
         c.pop(0) # First item is the command, we dont need it
         for i, v in enumerate( c ):
             name = '$ARG%s$' % str(i+1)
