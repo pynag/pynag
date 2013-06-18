@@ -210,17 +210,18 @@ class config:
 
     def get_new_item(self, object_type, filename):
         """ Returns an empty item with all necessary metadata """
-        current = {}
-        current['meta'] = {}
-        current['meta']['object_type'] = object_type
-        current['meta']['filename'] = filename
-        current['meta']['template_fields'] = []
-        current['meta']['needs_commit'] = None
-        current['meta']['delete_me'] = None
-        current['meta']['defined_attributes'] = {}
-        current['meta']['inherited_attributes'] = {}
-        current['meta']['raw_definition'] = "define %s {\n\n}" % object_type
-        return current
+
+        meta = {
+            'object_type': object_type,
+            'filename': filename,
+            'template_fields': [],
+            'needs_commit': None,
+            'delete_me': None,
+            'defined_attributes': {},
+            'inherited_attributes': {},
+            'raw_definition': "define %s {\n\n}" % object_type,
+            }
+        return {'meta':meta}
 
     def _load_file(self, filename):
         """ Parsers filename with self.parse_filename and append results in self._pre_object_list

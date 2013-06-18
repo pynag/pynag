@@ -722,7 +722,7 @@ class ObjectDefinition(object):
         return False
 
     def keys(self):
-        all_keys = ['meta']
+        all_keys = ['meta','id','shortname','effective_command_line']
         for k in self._changes.keys():
             if k not in all_keys: all_keys.append(k)
         for k in self._defined_attributes.keys():
@@ -2356,8 +2356,4 @@ for object_type, attributes in all_attributes.object_definitions.items():
 
 
 if __name__ == '__main__':
-    o = Service.objects.all[17]
-    print o['__EXTRAOPTS']
-    print o.get_effective_command_line()
-    o['__EXTRAOPTS'] = "new value"
-    print o.get_effective_command_line()
+    o = Hostgroup.objects.filter(shortname__contains='t')
