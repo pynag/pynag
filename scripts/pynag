@@ -531,6 +531,8 @@ def copy_object():
     for i in attributes:
         tmp = i.split('=', 1)
         if len(tmp) == 2:
+            if tmp[1] == 'None':
+                tmp[1] = None
             set[tmp[0]] = tmp[1]
         else:
             set[tmp[0]] = raw_input('Enter a value for %s: ' % tmp[0])
@@ -628,6 +630,8 @@ def update_objects():
     for i in attributes:
         tmp = i.split('=', 1)
         if len(tmp) == 2:
+            if tmp[1] == 'None':
+                tmp[1] = None
             set[tmp[0]] = tmp[1]
         else:
             set[tmp[0]] = raw_input('Enter a value for %s: ' % tmp[0])
@@ -700,7 +704,7 @@ def update_many(objects, **kwargs):
             print "%s (%s): changed %s to %s" % (i.get_filename(), i.get_shortname(),attr, value)
 
 
-def split_where_and_set(argument_list=[]):
+def split_where_and_set(argument_list):
     """ Takes a list of commandline arguments, and splits a "where" condition from other arguments.
 
     Returns:
@@ -710,14 +714,23 @@ def split_where_and_set(argument_list=[]):
     """
     attributes = []
     where_statement = []
-    currently_parsing = attributes
+    currently_parsing = "set statement"
     for i in argument_list:
         if i.lower() == 'where':
-            currently_parsing=where_statement
+            currently_parsing="where statement"
         elif i.lower() == 'set' or i.lower() == 'attributes':
-            currently_parsing=attributes
+            currently_parsing="set statement"
+        elif i.lower() == 'unset':
+            currently_parsing = "unset statement"
+        elif currently_parsing == 'where statement':
+            where_statement.append(i)
+        elif currently_parsing == "set statement":
+            attributes.append(i)
+        elif currently_parsing == "unset statement":
+            i = i + "=None"
+            attributes.append(i)
         else:
-            currently_parsing.append(i)
+            continue
     return attributes,where_statement
 def parse_configfile():
     """ Parse configuration file """
@@ -731,10 +744,13 @@ examples['list'] = '''
 examples['update'] = '''
   # %prog update SET host_name=newhostname WHERE host_name=oldhostname"
   # %prog update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
+
+  # %prog update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host"
 '''
 examples['copy'] = '''
   # %prog copy SET host_name=newhostname WHERE  host_name=oldhostname"
   # %prog copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
+  # %prog copy SET name=template-host register=0 UNSET address host_name WHERE host_name='examplehost.example.com' and object_type=host"
 '''
 examples['add'] = '''
   # %prog add host host_name=examplehost use=generic-host address=127.0.0.1"
@@ -784,7 +800,7 @@ def print_examples():
     if subcommand not in examples.keys():
         print "No examples found for subcommand '%s'" % subcommand
         sys.exit(1)
-    print "%s Examples:" % sys.argv[1]
+    print "Examples for the '%s' subcommand:" % sys.argv[1]
     print examples[sys.argv[1]].replace('%prog', sys.argv[0] )
     sys.exit()
 
