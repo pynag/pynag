@@ -1,3 +1,26 @@
+Changes in 0.5.0 (Jun 26 2013)
+New Features:
+    - pynag cli - new action "unset" to remove attributes when updating
+    - PluginHelper - New option --pnp-compatible-perfdata
+    - TCP Support for mk-livestatus
+    - ObjectDefinitions now have new method: set_macro()
+    - Vast improvements to unit testing
+    - Fix unhandled tracebacks if invalid templates are defined
+    - Utils.GitRepo has new method: show()
+    - Vast performance improvement in parsing
+    - ObjectDefinition now iterable
+    - New Utility Class pynag.Utils.PluginOutput
+    - ObjectDefinition: magic fields like shortname are now part of keys()
+    - mk_livestatus new utility methods: get_servicegroups,hostgroups,etc
+
+Noteworthy bug fixes:
+    - tracis-ci and coveralls.io support
+    - Macroresolving when ARG1 contains other macros
+    - get_suggested_filename() no longer returns filenames with invalid characters
+    - check_range(): Always return True on invalid range_format
+    - check_range(): raise exception on invalid input thresholds
+
+
 Changes in 0.4.9 (Apr 30 2013)
 
 New Features:
