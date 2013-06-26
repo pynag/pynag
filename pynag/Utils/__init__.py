@@ -704,6 +704,10 @@ class AttributeList(object):
         >>> print i.fields
         ['group1', 'group2', 'group3']
 
+        white spaces will be stripped from all fields
+        >>> i = AttributeList('+group1, group2')
+        >>> print i
+
     """
 
     def __init__(self, value=None):
@@ -733,6 +737,9 @@ class AttributeList(object):
 
         # Split value into a comma seperated list
         self.fields = value.split(',')
+
+        # Strip whitespaces from each field
+        self.fields = map(lambda x: x.strip(), self.fields)
 
 
     def __str__(self):
