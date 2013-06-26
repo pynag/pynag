@@ -243,8 +243,14 @@ class config:
          This is more or less a wrapper around config.parse_string, so reading documentation there
          is useful.
         """
-        raw_string = open(filename, 'rb').read()
-        return self.parse_string(raw_string, filename=filename)
+        try:
+            raw_string = open(filename, 'rb').read()
+            return self.parse_string(raw_string, filename=filename)
+        except IOError,e:
+            parser_error = ParserError(e.strerror)
+            parser_error.filename = e.filename
+            self.errors.append(parser_error)
+            return []
 
     def parse_string(self, string, filename='None'):
         """ Parses a string, and returns all object definitions in that string
@@ -290,6 +296,13 @@ class config:
                 append = None
 
             if '}' in line:  # end of object definition
+
+                if not in_definition:
+                    p = ParserError("Unexpected '}' found outside object definition")
+                    p.filename = filename
+                    p.line_start = line_num
+                    raise p
+
                 in_definition = None
                 current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
@@ -308,6 +321,9 @@ class config:
 
             elif '{' in line:  # beginning of object definition
 
+                if in_definition:
+                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (filename,line_num))
+
                 m = self.__beginning_of_object.search(line)
 
                 tmp_buffer = [line]
@@ -317,8 +333,6 @@ class config:
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
-                if in_definition:
-                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (filename,line_num))
 
                 ## Start off an object
                 in_definition = True
