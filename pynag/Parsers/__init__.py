@@ -54,6 +54,13 @@ class config:
         self.data = {}
         self.maincfg_values = []
 
+    def guess_nagios_directory(self):
+        """ Returns a path to the nagios configuration directory on your system
+
+        Use this function for determining the nagios config directory in your code
+        """
+        return os.path.dirname(self.guess_cfg_file())
+
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 
