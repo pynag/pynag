@@ -1783,7 +1783,7 @@ class status(retention):
 
     After calling parse() contents of status.dat are kept in status.data
     Example usage:
-    >>> s = status(filename="status.dat")
+    >>> s = status()
     >>> s.parse()
     >>> keys = s.data.keys()
     >>> 'info' in keys
@@ -1821,7 +1821,7 @@ class status(retention):
             dict
         Raises:
             ValueError if object is not found
-        >>> s = status(filename="status.dat")
+        >>> s = status()
         >>> s.get_contactstatus(contact_name='invalid_contact')
         ValueError('invalid_contact',)
         >>> first_contact = s.data['contactstatus'][0]['contact_name']

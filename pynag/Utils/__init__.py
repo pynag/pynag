@@ -500,7 +500,7 @@ class PerfDataMetric(object):
         """
         try:
             status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
-        except PynagError:
+        except pynag.Utils.PynagError:
             status = 3
         return status
 
@@ -707,6 +707,7 @@ class AttributeList(object):
         white spaces will be stripped from all fields
         >>> i = AttributeList('+group1, group2')
         >>> print i
+        +group1,group2
 
     """
 
