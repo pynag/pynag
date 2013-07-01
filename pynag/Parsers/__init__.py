@@ -1888,7 +1888,10 @@ class ParserError(Exception):
         self.line_start = item['meta'].get('line_start')
 
     def __str__(self):
-        return repr(self.message)
+        message = self.message
+        if self.filename and self.line_start:
+            message = '%s in %s, line %s' % (message, self.filename, self.line_start)
+        return repr(message)
 
 
 class LogFiles(object):
