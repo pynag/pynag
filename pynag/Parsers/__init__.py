@@ -1725,6 +1725,8 @@ class retention:
         status = {} # Holds all attributes of a single item
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
+        if not self.filename:
+            raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
         for sequence_no, line in enumerate(lines):
             line_num = sequence_no + 1
@@ -1888,7 +1890,10 @@ class ParserError(Exception):
         self.line_start = item['meta'].get('line_start')
 
     def __str__(self):
-        return repr(self.message)
+        message = self.message
+        if self.filename and self.line_start:
+            message = '%s in %s, line %s' % (message, self.filename, self.line_start)
+        return repr(message)
 
 
 class LogFiles(object):
