@@ -623,6 +623,9 @@ class PluginHelper:
           'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
         """
         self._long_output.append(message)
+    def add_option(self, *args, **kwargs):
+        """ Same as self.parser.add_option() """
+        return self.parser.add_option(*args,**kwargs)
 
     def get_long_output(self):
         """ Returns all long_output that has been added via add_long_output """
