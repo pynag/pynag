@@ -1725,6 +1725,8 @@ class retention:
         status = {} # Holds all attributes of a single item
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
+        if not self.filename:
+            raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
         for sequence_no, line in enumerate(lines):
             line_num = sequence_no + 1
