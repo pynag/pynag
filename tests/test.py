@@ -403,6 +403,11 @@ class testsFromCommandLine(unittest.TestCase):
             exit_code,stdout,stderr = pynag.Utils.runCommand(i)
             self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i,exit_code,stdout,stderr))
 
+def setUpParserDoctest(doctest):
+    # The parser needs a Nagios config environment
+    # we'll use dataset01 in the tests directory
+    os.chdir( os.path.join(tests_dir, 'dataset01') )
+
 def suite():
     suite = unittest.TestSuite()
 
@@ -434,7 +439,7 @@ def suite():
     suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
 
     # Include doctests in the Parsers Module
-    suite.addTests( doctest.DocTestSuite(pynag.Parsers) )
+    suite.addTests( doctest.DocTestSuite(pynag.Parsers, setUp=setUpParserDoctest) )
 
     # Include doctests in the Model Module
     suite.addTests( doctest.DocTestSuite(pynag.Model) )
