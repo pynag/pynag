@@ -373,7 +373,7 @@ class ObjectRelations(object):
         for servicegroup,members in ObjectRelations.servicegroup_members.items():
             for shortname in members:
                 try:
-                    service = Service.objects.get_by_shortname(shortname)
+                    service = Service.objects.get_by_shortname(shortname, cache_only=True)
                     service_id = service.get_id()
                     ObjectRelations.servicegroup_services[servicegroup].add(service_id)
                     ObjectRelations.service_servicegroups[service_id].add(servicegroup)
@@ -474,15 +474,19 @@ class ObjectFetcher(object):
         id = str(id).strip()
         return ObjectFetcher._cached_ids[id]
 
-    def get_by_shortname(self, shortname):
+    def get_by_shortname(self, shortname, cache_only=False):
         """ Get one specific object by its shortname (i.e. host_name for host, etc)
+
+        Arguments:
+          shortname - shortname of the object. i.e. host_name, command_name, etc.
+          cache_only -- If True, dont check if configuration files have changed since last parse
 
         Returns:
             ObjectDefinition
         Raises:
             ValueError if object is not found
         """
-        if self.needs_reload():
+        if not cache_only and self.needs_reload():
             self.reload_cache()
         shortname = str(shortname).strip()
         return ObjectFetcher._cached_shortnames[self.object_type][shortname]
