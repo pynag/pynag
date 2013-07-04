@@ -1414,7 +1414,7 @@ class config:
                 raw_file_list = []
                 directories.append(config_value)
                 # Walk through every subdirectory and add to our list
-                while len(directories) > 0:
+                while directories:
                     current_directory = directories.pop(0)
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
                     if not os.path.isdir(current_directory): continue
