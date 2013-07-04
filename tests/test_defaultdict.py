@@ -3,10 +3,7 @@
 import os
 import copy
 import tempfile
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest2 as unittest
 
 from pynag.Utils import defaultdict
 

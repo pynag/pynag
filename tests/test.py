@@ -18,10 +18,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest2 as unittest
 import doctest
 import tempfile
 import shutil
@@ -43,19 +40,6 @@ import pynag.Plugins
 
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
-
-# skipIf workaround for python < 2.7
-try:
-    from unittest import skipIf
-except ImportError:
-    def skipIf(condition, message):
-        def decorator(f):
-            if condition:
-                return None
-            else:
-                return f
-        return decorator
-    unittest.skipIf = skipIf
 
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
