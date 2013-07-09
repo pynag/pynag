@@ -723,12 +723,18 @@ class ObjectDefinition(object):
         else:
             return None
 
-    def has_key(self, key):
-        if key in self.keys():
+    def __contains__(self, item):
+        """ Returns true if item is in ObjectDefinition """
+        if item in self.keys():
             return True
-        if key in self._meta.keys():
+        if item in self._meta.keys():
             return True
         return False
+
+    def has_key(self, key):
+        """ Same as key in self
+        """
+        return key in self
 
     def keys(self):
         all_keys = ['meta', 'id', 'shortname', 'effective_command_line']
