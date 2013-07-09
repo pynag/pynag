@@ -24,7 +24,7 @@ class PynagTest(Command):
         raise SystemExit(errno)
 
 if __name__ == "__main__":
-    manpath        = "share/man/man1/"
+    manpath        = "share/man/man1"
     etcpath = "/etc/%s" % NAME
     etcmodpath    = "/etc/%s/modules" % NAME
     initpath    = "/etc/init.d/"
