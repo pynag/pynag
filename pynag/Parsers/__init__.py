@@ -1881,7 +1881,9 @@ class ParserError(Exception):
 
     Typical usecase when there is a critical error while trying to read configuration.
     """
-
+    filename = None
+    line_start = None
+    message = None
     def __init__(self, message, item=None):
         self.message = message
         if item is None: return
