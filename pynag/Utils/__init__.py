@@ -623,9 +623,15 @@ def grep(objects, **kwargs):
         elif k.endswith('__startswith'):
             k = k[:-len('__startswith')]
             expression = lambda x: str(x.get(k)).startswith(str(v))
+        elif k.endswith('__notstartswith'):
+            k = k[:-len('__notstartswith')]
+            expression = lambda x: not str(x.get(k)).startswith(str(v))
         elif k.endswith('__endswith'):
             k = k[:-len('__endswith')]
             expression = lambda x: str(x.get(k)).endswith(str(v))
+        elif k.endswith('__notendswith'):
+            k = k[:-len('__notendswith')]
+            expression = lambda x: not str(x.get(k)).endswith(str(v))
         elif k.endswith('__exists'):
             k = k[:-len('__exists')]
             expression = lambda x: str(x.has_key(k)) == str(v)
