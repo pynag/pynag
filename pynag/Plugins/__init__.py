@@ -784,7 +784,7 @@ class PluginHelper:
         """
         if exit_code is None:
             exit_code = self.get_status()
-        if self.options.get_metrics == True:
+        if self.options and self.options.get_metrics == True:
             summary = "Available metrics for this plugin:"
             metrics = []
 
