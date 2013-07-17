@@ -505,11 +505,6 @@ def check_range(value, range_threshold=None):
     if range_threshold[0] == '@':
         return not check_range(value, range_threshold[1:])
 
-    # Return False on invalid value input
-    try:
-        value = float(value)
-    except Exception:
-        return False
     if range_threshold.find(':') > -1:
         (start, end) = (range_threshold.split(':', 1))
     # we get here if ":" was not provided in range_threshold
