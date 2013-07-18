@@ -985,10 +985,12 @@ class PluginHelper:
                 thresholds.append( (critical, i.crit))
             self.check_metric(i.label, thresholds)
 
-    def run_function(self, function):
-        """ Executes "function" and exits nagios style if there are any exceptions."""
+    def run_function(self, function, *args, **kwargs):
+        """ Executes "function" and exits Nagios style with status "unkown"
+        if there are any exceptions. The stacktrace will be in long_output.
+        """
         try:
-            function()
+            function(*args, **kwargs)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exit_code = unknown
