@@ -734,7 +734,17 @@ class PluginHelper:
             self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
 
     def get_metric(self, label):
-        """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found. """
+        """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found.
+
+        Example:
+        >>> p = PluginHelper()
+        >>> p.add_metric(label="load1", value="7")
+        >>> p.add_metric(label="load15",value="2")
+        >>> p.get_metric("load1")
+        'load1'=7;;;;
+        >>> p.get_metric("unknown") # Returns None
+
+        """
         for i in self._perfdata.metrics:
             if i.label == label:
                 return i
@@ -881,14 +891,38 @@ class PluginHelper:
           thresholds  -- a list in the form of [ (level,range) ] where range is a string in the format of "start..end"
 
         Examples:
-        >>> thresholds = [(warning,'2..5'),(critical,'5..inf')]
         >>> p = PluginHelper()
-        >>> p.add_metric('load15', '1')
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.get_plugin_output()
+        'Unknown -'
+        >>> p.add_metric('load15', '3')
         >>> p.check_metric('load15',thresholds)
+        >>> p.get_plugin_output()
+        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;"
+
+        
+        >>> p = PluginHelper()
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.add_metric('load15', '3')
+        >>> p.verbose = True
+        >>> p.check_metric('load15',thresholds)
+        >>> p.get_plugin_output()
+        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;\\nWarning on load15"
 
         Invalid metric:
-        >>> thresholds = [(warning, 'invalid'),(critical,'5..inf')]
         >>> p = PluginHelper()
+        >>> p.add_status(ok)
+        >>> p.add_summary('Everythings fine!')
+        >>> p.get_plugin_output()
+        'OK - Everythings fine!'
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.check_metric('never_added_metric', thresholds)
+        >>> p.get_plugin_output()
+        'Unknown - Everythings fine!. Metric never_added_metric not found'
+
+        Invalid threshold:
+        >>> p = PluginHelper()
+        >>> thresholds = [(warning, 'invalid'), (critical,'5..inf')]
         >>> p.add_metric('load1', '10')
         >>> p.check_metric('load1', thresholds)
         Traceback (most recent call last):
@@ -988,6 +1022,23 @@ class PluginHelper:
     def run_function(self, function, *args, **kwargs):
         """ Executes "function" and exits Nagios style with status "unkown"
         if there are any exceptions. The stacktrace will be in long_output.
+        
+        Example:
+        >>> p = PluginHelper()
+        >>> p.add_status('ok')
+        >>> p.get_status()
+        0
+        >>> p.add_status('okay')
+        Traceback (most recent call last):
+        ...
+        Exception: Invalid status supplied "okay"
+        >>> p.run_function( p.add_status, 'warning' )
+        >>> p.get_status()
+        1
+        >>> p.run_function( p.add_status, 'okay' )
+        Traceback (most recent call last):
+        ...
+        SystemExit: 3
         """
         try:
             function(*args, **kwargs)
