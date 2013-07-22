@@ -149,17 +149,24 @@ class GitRepo(object):
         output = self._run_command("git status --porcelain")
         result = []
         for line in output.split('\n'):
-            line = line.split(None,1)
+            line = line.split(None, 1)
             if len(line) < 2:
                 continue
-            status,filename  = line[0],line[1]
+            status, filename = line[0], line[1]
+            # If file has been renamed, git status shows output in the form of:
+            # R nrpe.cfg -> nrpe.cfg~
+            # We want only the last part of the filename
+            if status == 'R':
+                filename = filename.split('->')[1].strip()
             # If there are special characters in the name, git will double-quote the output
             # We will remove those quotes, but we cannot use strip because it will damage:
             # files like this: "\"filename with actual doublequotes\""
             if filename.startswith('"') and filename.endswith('"'):
                 filename = filename[1:-1]
-            result.append( {'status':status, 'filename': filename} )
+
+            result.append({'status': status, 'filename': filename})
         return result
+
     def log(self, **kwargs):
         """ Returns a log of previous commits. Log is is a list of dict objects.
 
@@ -309,6 +316,7 @@ class GitRepo(object):
         filestring = ' '.join(filelist)
         command = "git commit -m '%s' --author='%s' -- %s" % (message, author,filestring)
         return self._run_command(command=command)
+
     def add(self, filename):
         """ Run git add on filename
 
@@ -322,7 +330,8 @@ class GitRepo(object):
         filename = filename.replace("'", r"\'")
 
         command = "git add -- '%s'" % filename
-        return self._run_command(command)
+        return_code, stdout, stderr = runCommand(command)
+        return stdout
 
 
 class PerfData(object):
