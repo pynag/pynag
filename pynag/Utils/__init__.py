@@ -33,6 +33,7 @@ from getpass import getuser
 import datetime
 import pynag.Plugins
 
+
 class PynagError(Exception):
     """ The default pynag exception.
 
@@ -45,8 +46,6 @@ class PynagError(Exception):
         self.message = message
         self.errorstring = errorstring
         super(self.__class__, self).__init__(message, *args,**kwargs)
-
-
 
 
 def runCommand(command, raise_error_on_fail=False):
@@ -219,8 +218,10 @@ class GitRepo(object):
     def _git_add(self, filename):
         """ Deprecated, use self.add() instead. """
         return self.add(filename)
-    def _git_commit(self, filename, message, filelist=[]):
+    def _git_commit(self, filename, message, filelist=None):
         """ Deprecated. Use self.commit() instead."""
+        if filename is None:
+            filelist = []
         if not filename is None:
             filelist.append(filename)
         return self.commit(message=message, filelist=filelist )
