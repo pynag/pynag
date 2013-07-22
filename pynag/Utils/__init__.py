@@ -227,7 +227,7 @@ class GitRepo(object):
         return self.add(filename)
     def _git_commit(self, filename, message, filelist=None):
         """ Deprecated. Use self.commit() instead."""
-        if filename is None:
+        if filelist is None:
             filelist = []
         if not filename is None:
             filelist.append(filename)
