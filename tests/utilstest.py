@@ -79,10 +79,16 @@ class testUtils(unittest.TestCase):
         result = pynag.Utils.grep(hosts, **{'_code__startswith': 'AB'})
         self.assertEqual(1, len(result))
 
+        result = pynag.Utils.grep(hosts, **{'_code__notstartswith': 'AB'})
+        self.assertEqual(1, len(result))
+        
         result = pynag.Utils.grep(hosts, **{'_code__endswith': 'ABC'})
         self.assertEqual(1, len(result))
 
         result = pynag.Utils.grep(hosts, **{'_code__endswith': 'BC'})
+        self.assertEqual(1, len(result))
+        
+        result = pynag.Utils.grep(hosts, **{'_code__notendswith': 'YZ'})
         self.assertEqual(1, len(result))
 
         result = pynag.Utils.grep(hosts, **{'_code__exists': True})
