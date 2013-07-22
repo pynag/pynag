@@ -684,6 +684,16 @@ class PluginHelper:
         >>> p.add_status(1) # warning
         >>> p.get_status()  #
         2
+
+        >>> p = PluginHelper()
+        >>> p.add_status('warning')
+        >>> p.add_status('ok')
+        >>> p.get_status()
+        1
+        >>> p.add_status('okay')
+        Traceback (most recent call last):
+        ...
+        Exception: Invalid status supplied "okay"
         """
 
         # If new status was entered as a human readable string (ok,warn,etc) lets convert it to int:
@@ -705,6 +715,13 @@ class PluginHelper:
           >>> p.add_metric(label="load15",value="2")
           >>> p.get_perfdata()
           "'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
+
+          >>> p = PluginHelper()
+          >>> p.add_metric(perfdatastring="load1=6;;;;")
+          >>> p.add_metric(perfdatastring="load5=4;;;;")
+          >>> p.add_metric(perfdatastring="load15=1;;;;")
+          >>> p.get_perfdata()
+          "'load1'=6;;;; 'load5'=4;;;; 'load15'=1;;;;"
         """
         if not perfdatastring is None:
             self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)
@@ -712,7 +729,17 @@ class PluginHelper:
             self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
 
     def get_metric(self, label):
-        """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found. """
+        """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found.
+
+        Example:
+        >>> p = PluginHelper()
+        >>> p.add_metric(label="load1", value="7")
+        >>> p.add_metric(label="load15",value="2")
+        >>> p.get_metric("load1")
+        'load1'=7;;;;
+        >>> p.get_metric("unknown") # Returns None
+
+        """
         for i in self._perfdata.metrics:
             if i.label == label:
                 return i
@@ -735,13 +762,68 @@ class PluginHelper:
 
 
     def get_perfdata(self):
-        """ Get perfdatastring for all valid perfdatametrics collected via add_perfdata """
+        """ Get perfdatastring for all valid perfdatametrics collected via add_perfdata
+
+        Examples:
+        >>> p = PluginHelper()
+        >>> p.add_metric(label="load1", value="7", warn="-inf..10", crit="10..inf")
+        >>> p.add_metric(label="load5", value="5", warn="-inf..7", crit="7..inf")
+        >>> p.add_metric(label="load15",value="2", warn="-inf..5", crit="5..inf")
+        >>> p.get_perfdata()
+        "'load1'=7;-inf..10;10..inf;; 'load5'=5;-inf..7;7..inf;; 'load15'=2;-inf..5;5..inf;;"
+
+        Example with legacy output (show_legacy should be set with a cmdline option):
+        >>> p.show_legacy = True
+        >>> p.get_perfdata()
+        "'load1'=7;:10;10:;; 'load5'=5;:7;7:;; 'load15'=2;:5;5:;;"
+
+        """
         if self.show_legacy == True:
             self.convert_perfdata(self._perfdata.metrics)
         return str(self._perfdata   )
 
     def get_plugin_output(self, exit_code=None,summary=None, long_output=None, perfdata=None):
-        """ Get all plugin output as it would be printed to screen with self.exit() """
+        """ Get all plugin output as it would be printed to screen with self.exit()
+
+        Examples of functionality:
+        >>> p = PluginHelper()
+        >>> p.get_plugin_output()
+        'Unknown -'
+
+        >>> p = PluginHelper()
+        >>> p.add_summary('Testing')
+        >>> p.add_long_output('Long testing output')
+        >>> p.add_long_output('More output')
+        >>> p.get_plugin_output(exit_code=0)
+        'OK - Testing\\nLong testing output\\nMore output'
+
+        >>> p = PluginHelper()
+        >>> p.add_summary('Testing')
+        >>> p.add_status(0)
+        >>> p.get_plugin_output()
+        'OK - Testing'
+
+        >>> p = PluginHelper()
+        >>> p.show_status_in_summary = False
+        >>> p.add_summary('Testing')
+        >>> p.add_metric(label="load1", value="7")
+        >>> p.add_metric(label="load5", value="5")
+        >>> p.add_metric(label="load15",value="2")
+        >>> p.get_plugin_output(exit_code=0)
+        "Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
+
+        >>> p = PluginHelper()
+        >>> p.show_status_in_summary = False
+        >>> p.add_summary('Testing')
+        >>> p.add_long_output('Long testing output')
+        >>> p.add_long_output('More output')
+        >>> p.add_metric(label="load1", value="7")
+        >>> p.add_metric(label="load5", value="5")
+        >>> p.add_metric(label="load15",value="2")
+        >>> p.get_plugin_output(exit_code=0)
+        "Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;\\nLong testing output\\nMore output"
+
+        """
         if summary is None:
             summary = self.get_summary()
         if long_output is None:
@@ -779,7 +861,7 @@ class PluginHelper:
         """
         if exit_code is None:
             exit_code = self.get_status()
-        if self.options.get_metrics == True:
+        if self.options and self.options.get_metrics == True:
             summary = "Available metrics for this plugin:"
             metrics = []
 
@@ -804,9 +886,43 @@ class PluginHelper:
           thresholds  -- a list in the form of [ (level,range) ] where range is a string in the format of "start..end"
 
         Examples:
-        >>> thresholds = [(warning,'2..5'),(critical,'5..inf')]
         >>> p = PluginHelper()
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.get_plugin_output()
+        'Unknown -'
+        >>> p.add_metric('load15', '3')
         >>> p.check_metric('load15',thresholds)
+        >>> p.get_plugin_output()
+        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;"
+
+        
+        >>> p = PluginHelper()
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.add_metric('load15', '3')
+        >>> p.verbose = True
+        >>> p.check_metric('load15',thresholds)
+        >>> p.get_plugin_output()
+        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;\\nWarning on load15"
+
+        Invalid metric:
+        >>> p = PluginHelper()
+        >>> p.add_status(ok)
+        >>> p.add_summary('Everythings fine!')
+        >>> p.get_plugin_output()
+        'OK - Everythings fine!'
+        >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
+        >>> p.check_metric('never_added_metric', thresholds)
+        >>> p.get_plugin_output()
+        'Unknown - Everythings fine!. Metric never_added_metric not found'
+
+        Invalid threshold:
+        >>> p = PluginHelper()
+        >>> thresholds = [(warning, 'invalid'), (critical,'5..inf')]
+        >>> p.add_metric('load1', '10')
+        >>> p.check_metric('load1', thresholds)
+        Traceback (most recent call last):
+        ...
+        SystemExit: 3
 
         Returns:
           None
@@ -898,10 +1014,29 @@ class PluginHelper:
                 thresholds.append( (critical, i.crit))
             self.check_metric(i.label, thresholds)
 
-    def run_function(self, function):
-        """ Executes "function" and exits nagios style if there are any exceptions."""
+    def run_function(self, function, *args, **kwargs):
+        """ Executes "function" and exits Nagios style with status "unkown"
+        if there are any exceptions. The stacktrace will be in long_output.
+        
+        Example:
+        >>> p = PluginHelper()
+        >>> p.add_status('ok')
+        >>> p.get_status()
+        0
+        >>> p.add_status('okay')
+        Traceback (most recent call last):
+        ...
+        Exception: Invalid status supplied "okay"
+        >>> p.run_function( p.add_status, 'warning' )
+        >>> p.get_status()
+        1
+        >>> p.run_function( p.add_status, 'okay' )
+        Traceback (most recent call last):
+        ...
+        SystemExit: 3
+        """
         try:
-            function()
+            function(*args, **kwargs)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exit_code = unknown
@@ -910,12 +1045,19 @@ class PluginHelper:
             long_output = traceback.format_exc()
             self.exit(exit_code=exit_code, summary=summary, long_output=long_output,perfdata='')
 
-    def debug(self, message):
+    def debug(self, message): # pragma: no cover
         if self.show_debug == True:
             self.add_long_output("debug: %s" % message)
 
 
     def __str__(self):
+        """
+        >>> p = PluginHelper()
+        >>> p.add_status(ok)
+        >>> p.add_summary('Test')
+        >>> print p
+        OK - Test
+        """
         return self.get_plugin_output()
 
     def __repr__(self):

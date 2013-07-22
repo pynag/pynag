@@ -236,6 +236,28 @@ class testPluginHelper(unittest.TestCase):
         case='--th=metric=fakedata,ok=^10..20'
         self.run_expect(case, '23', 0)
     
+    """
+    Cmdline thresholds pass but we insert a "hardcoded" metric with thresholds
+    which will also be evaluated
+    """
+    def test_number_34(self):
+        # Extra case with hardcoded thresholds
+        self.my_plugin.add_metric('fakedata2', value='15', warn='0..10', crit='10..inf')
+        case='--th=metric=fakedata,ok=0..10,warn=10..20'
+        self.run_expect(case, 3, 2)
+
+    def test_number_35(self):
+        # Extra case with hardcoded thresholds
+        self.my_plugin.add_metric('fakedata2', value='9', warn='0..10', crit='10..inf')
+        case='--th=metric=fakedata,ok=0..10,warn=10..20'
+        self.run_expect(case, 3, 1)
+
+    def test_number_35(self):
+        # Extra case with hardcoded thresholds
+        self.my_plugin.add_metric('fakedata2', value='-4', warn='0..10', crit='10..inf')
+        case='--th=metric=fakedata,ok=0..10,warn=10..20'
+        self.run_expect(case, 3, 0)
+
 
 class testPlugin(unittest.TestCase):
     def setUp(self):
