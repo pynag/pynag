@@ -297,8 +297,10 @@ class GitRepo(object):
         filelist = filter(lambda x: self.is_dirty(x), filelist)
 
         # Run "git add" on every file. Just in case they are untracked
+        self.ignore_errors = True
         for i in filelist:
             self.add(i)
+        self.ignore_errors = True
 
         # Change ['file1','file2'] into the string """ 'file1' 'file2' """
         filestring = ''
@@ -330,8 +332,7 @@ class GitRepo(object):
         filename = filename.replace("'", r"\'")
 
         command = "git add -- '%s'" % filename
-        return_code, stdout, stderr = runCommand(command)
-        return stdout
+        return self._run_command(command)
 
 
 class PerfData(object):
