@@ -601,6 +601,12 @@ class ObjectFetcher(object):
                     if not negative_filter:
                         object_matches = False
                         break
+                # Special case, if asking for a shortname and  there is an object with no shortname
+                # we work around it so filter does not crash. However be aware that the config is invalid
+                # if you have this
+                if k == 'shortname' and not i[k]:
+                    object_matches = False
+                    break
                 if not match_function(i[k], v):
                     object_matches = False
                     break
