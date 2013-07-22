@@ -1605,7 +1605,8 @@ class mk_livestatus:
                 return []
             return_code = response_data.split()[0]
             if not return_code.startswith('2'):
-                raise ParserError("Header from livestatus socket does not start with 2: '%s'" % response_data)
+                error_message = tmp.readline().strip()
+                raise ParserError("Error '%s' from livestatus: %s" % (return_code, error_message))
 
         answer = tmp.read()
         # We are done with the livestatus socket. lets close it
