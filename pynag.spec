@@ -11,7 +11,8 @@ Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
 BuildRequires: python-devel
-BuildRequires: python-setuptools python-unittest2
+BuildRequires: python-setuptools
+BuildRequires: python-unittest2
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch
@@ -23,7 +24,7 @@ development.
 
 %package examples
 Group: System Environment/Libraries
-Summary: Example scripts which manipulate Nagios configuration
+Summary: Example scripts which manipulate Nagios configuration1
 Requires: pynag
 
 %description examples
