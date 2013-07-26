@@ -24,7 +24,7 @@ development.
 
 %package examples
 Group: System Environment/Libraries
-Summary: Example scripts which manipulate Nagios configuration1
+Summary: Example scripts which manipulate Nagios configuration
 Requires: pynag
 
 %description examples
