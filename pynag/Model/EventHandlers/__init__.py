@@ -190,8 +190,10 @@ class GitEventHandler(BaseEventHandler):
         command = "git add '%s'" % filename
         return self._run_command(command)
 
-    def _git_commit(self, filename, message, filelist=[]):
+    def _git_commit(self, filename, message, filelist=None):
         """ Wrapper around git commit command """
+        if filelist is None:
+            filelist = []
         self._update_author()
         # Lets strip out any single quotes from the message:
         message = message.replace("'",'"')

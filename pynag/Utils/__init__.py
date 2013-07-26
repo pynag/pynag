@@ -33,6 +33,7 @@ from getpass import getuser
 import datetime
 import pynag.Plugins
 
+
 class PynagError(Exception):
     """ The default pynag exception.
 
@@ -45,8 +46,6 @@ class PynagError(Exception):
         self.message = message
         self.errorstring = errorstring
         super(self.__class__, self).__init__(message, *args,**kwargs)
-
-
 
 
 def runCommand(command, raise_error_on_fail=False):
@@ -150,17 +149,24 @@ class GitRepo(object):
         output = self._run_command("git status --porcelain")
         result = []
         for line in output.split('\n'):
-            line = line.split(None,1)
+            line = line.split(None, 1)
             if len(line) < 2:
                 continue
-            status,filename  = line[0],line[1]
+            status, filename = line[0], line[1]
+            # If file has been renamed, git status shows output in the form of:
+            # R nrpe.cfg -> nrpe.cfg~
+            # We want only the last part of the filename
+            if status == 'R':
+                filename = filename.split('->')[1].strip()
             # If there are special characters in the name, git will double-quote the output
             # We will remove those quotes, but we cannot use strip because it will damage:
             # files like this: "\"filename with actual doublequotes\""
             if filename.startswith('"') and filename.endswith('"'):
                 filename = filename[1:-1]
-            result.append( {'status':status, 'filename': filename} )
+
+            result.append({'status': status, 'filename': filename})
         return result
+
     def log(self, **kwargs):
         """ Returns a log of previous commits. Log is is a list of dict objects.
 
@@ -219,8 +225,10 @@ class GitRepo(object):
     def _git_add(self, filename):
         """ Deprecated, use self.add() instead. """
         return self.add(filename)
-    def _git_commit(self, filename, message, filelist=[]):
+    def _git_commit(self, filename, message, filelist=None):
         """ Deprecated. Use self.commit() instead."""
+        if filelist is None:
+            filelist = []
         if not filename is None:
             filelist.append(filename)
         return self.commit(message=message, filelist=filelist )
@@ -289,8 +297,10 @@ class GitRepo(object):
         filelist = filter(lambda x: self.is_dirty(x), filelist)
 
         # Run "git add" on every file. Just in case they are untracked
+        self.ignore_errors = True
         for i in filelist:
             self.add(i)
+        self.ignore_errors = True
 
         # Change ['file1','file2'] into the string """ 'file1' 'file2' """
         filestring = ''
@@ -308,6 +318,7 @@ class GitRepo(object):
         filestring = ' '.join(filelist)
         command = "git commit -m '%s' --author='%s' -- %s" % (message, author,filestring)
         return self._run_command(command=command)
+
     def add(self, filename):
         """ Run git add on filename
 
@@ -623,9 +634,15 @@ def grep(objects, **kwargs):
         elif k.endswith('__startswith'):
             k = k[:-len('__startswith')]
             expression = lambda x: str(x.get(k)).startswith(str(v))
+        elif k.endswith('__notstartswith'):
+            k = k[:-len('__notstartswith')]
+            expression = lambda x: not str(x.get(k)).startswith(str(v))
         elif k.endswith('__endswith'):
             k = k[:-len('__endswith')]
             expression = lambda x: str(x.get(k)).endswith(str(v))
+        elif k.endswith('__notendswith'):
+            k = k[:-len('__notendswith')]
+            expression = lambda x: not str(x.get(k)).endswith(str(v))
         elif k.endswith('__exists'):
             k = k[:-len('__exists')]
             expression = lambda x: str(x.has_key(k)) == str(v)
