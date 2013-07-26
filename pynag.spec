@@ -12,6 +12,7 @@ License: GPLv2
 Group: System Environment/Libraries
 BuildRequires: python-devel
 BuildRequires: python-setuptools
+BuildRequires: python-unittest2
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch
