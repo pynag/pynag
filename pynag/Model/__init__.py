@@ -688,13 +688,13 @@ class ObjectDefinition(object):
             return True
         return False
 
-    def __cmp__(a, b):
+    def __cmp__(self, a, b):
         return cmp(a.get_description(), b.get_description())
 
-    def __lt__(a, b):
+    def __lt__(self, a, b):
         return a.get_description() < b.get_description()
 
-    def __gt__(a, b):
+    def __gt__(self, a, b):
         return a.get_description() > b.get_description()
 
     def __setitem__(self, key, item):
