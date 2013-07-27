@@ -17,6 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+The Command module is capable of sending commands to Nagios via
+the configured communication path.
+"""
+
 import time
 
 from pynag.Parsers import config, mk_livestatus
@@ -48,9 +53,9 @@ def send_command(command_id, command_file=None, timestamp=0, *args):
     command_arguments = ";".join(command_arguments)
     command_string = "[%s] %s;%s" % (timestamp, command_id, command_arguments)
     try:
-        _write_to_livestatus(command_string)
-    except Exception:
         _write_to_command_file(command_file, command_string)
+    except Exception:
+        _write_to_livestatus(command_string)
 def _write_to_livestatus(command_string):
     """ Send a specific command to mk-livestatus
 
@@ -65,8 +70,6 @@ def _write_to_command_file(command_file, command_string=""):
 
     See http://nagios.sourceforge.net/docs/nagioscore/3/en/extcommands.html for details
     """
-    #print "writing to command pipe:", command_string
-    #print "command_file:", command_file
     f = open(command_file, 'a')
     f.write(command_string + '\n')
     f.close()

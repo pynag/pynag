@@ -5,10 +5,10 @@ from distutils.core import setup, Command
 from pynag import __version__
 
 NAME = "pynag"
-SHORT_DESC = "Python Modules for Nagios plugins and configuration" 
+SHORT_DESC = "Python modules for Nagios plugins and configuration" 
 LONG_DESC = """
-Contains python modules for pragmatically handling configuration
-file maintenance and plugin development.
+Python modules and utilities for pragmatically handling Nagios configuration
+file maintenance, status information, log file parsing and plug-in development.
 """
 
 class PynagTest(Command):
@@ -20,11 +20,11 @@ class PynagTest(Command):
     #def parse_command
     def run(self):
         import sys,subprocess
-        errno = subprocess.call([sys.executable, 'tests/test.py'])
+        errno = subprocess.call([sys.executable, 'tests/build-test.py'])
         raise SystemExit(errno)
 
 if __name__ == "__main__":
-    manpath        = "share/man/man1/"
+    manpath        = "share/man/man1"
     etcpath = "/etc/%s" % NAME
     etcmodpath    = "/etc/%s/modules" % NAME
     initpath    = "/etc/init.d/"
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         description = SHORT_DESC,
         long_description = LONG_DESC,
         author_email='drew@drewlink.com',
-        url='http://code.google.com/p/pynag/',
+        url='http://pynag.org/',
         license='GPLv2',
         scripts = [
             'scripts/pynag'

@@ -38,18 +38,22 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     Format of range_threshold is according to:
     http://nagiosplugins.org/rfc/new_threshold_syntax
 
-    Returns (in order of appearance):
-        UNKNOWN int(3)  -- On errors or bad input
-        OK int(0)       -- If value is within ok threshold
-        CRITICAL int(2) -- if value is within critical threshold
-        WARNING int(1)  -- If value is within warning threshold
-        OK int(0)       -- If value is outside both warning and critical
-        OK int(0)       -- If no thresholds are provided
+    This function returns (in order of appearance):
+        int(0) - If no levels are specified, return OK
+        int(3) - If any invalid input provided, return UNKNOWN
+        int(0) - If an ok level is specified and value is within range, return OK
+        int(2) - If a critical level is specified and value is within range, return CRITICAL
+        int(1) - If a warning level is specified and value is within range, return WARNING
+        int(2) - If an ok level is specified, return CRITICAL
+        int(0) - Otherwise return OK
+
     Arguments:
         value    -- value to check
         ok       -- ok range
         warning  -- warning range
         critical -- critical range
+
+
 
     # Example Usage:
     >>> check_threshold(88, warning="90..95", critical="95..100")
@@ -59,15 +63,27 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     >>> check_threshold(96, warning="90..95", critical="95..100")
     2
     """
-    if ok and check_range(value, ok):
+    try:
+        # 1 - If no levels are specified, return OK
+        if not ok and not warning and not critical:
+            return pynag.Plugins.OK
+        # 2 - If an ok level is specified and value is within range, return OK
+        if ok and check_range(value, ok):
+            return pynag.Plugins.OK
+        # 3 - If a critical level is specified and value is within range, return CRITICAL
+        if critical and check_range(value, critical):
+            return pynag.Plugins.CRITICAL
+        # 4 - If a warning level is specified and value is within range, return WARNING
+        if warning and check_range(value, warning):
+            return pynag.Plugins.WARNING
+        # 5 - If an ok level is specified, return CRITICAL
+        if ok:
+            return pynag.Plugins.CRITICAL
+        # 6 - Otherwise return OK
         return pynag.Plugins.OK
-    elif critical and check_range(value, critical):
-        return pynag.Plugins.CRITICAL
-    elif warning and check_range(value, warning):
-        return pynag.Plugins.WARNING
-    else:
-        return pynag.Plugins.OK
-
+    except Exception:
+        # Return unknown if any problem occurs, including invalid input
+        return pynag.Plugins.UNKNOWN
 
 def check_range(value, range):
     """ Returns True if value is within range, else False
@@ -112,8 +128,8 @@ def parse_threshold(threshold):
     """ takes a threshold string as an input and returns a hash map of options and values
 
     Examples:
-        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95.100")
-        {'metric':'disk_usage', 'thresholds':[(0,'0..90'), (1,'90..95'),(2,'95..100')]}
+        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95.100')
+        {'thresholds': [(0, '0..90'), (1, '90..95'), (2, '95.100')], 'metric': 'disk_usage'}
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []

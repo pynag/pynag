@@ -17,6 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+The Control module includes classes to control the Nagios service
+and the Command submodule wraps Nagios commands.
+"""
+
 import sys
 import os
 import re
@@ -49,14 +54,23 @@ class daemon:
             return None
 
     def restart(self):
+        """
+        Restarts Nagios via it's init script.
+        """
         cmd = "%s restart" % self.nagios_init
 
         return os.WEXITSTATUS(os.system(cmd))
     def status(self):
+        """
+        Returns the status of the Nagios service.
+        """
         cmd = "%s status" % self.nagios_init
 
         return os.WEXITSTATUS(os.system(cmd))
     def reload(self):
+        """
+        Reloads Nagios via it's init script.
+        """
         cmd = "%s reload" % self.nagios_init
 
         return os.WEXITSTATUS(os.system(cmd))

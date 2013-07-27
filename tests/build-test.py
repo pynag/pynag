@@ -1,7 +1,8 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # pynag - Python Nagios plug-in and configuration environment
-# Copyright (C) 2010 Pall Sigurdsson
+# Copyright (C) 2013 Pall Sigurdsson
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,18 +18,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-This file contains a dict object that maps Nagios Standard macronames to specific values.
 
-i.e. macros['$HOSTADDR$'] should return 'address'
-"""
+# Varios test that must be passed in order for build process to complete
 
-# TODO: This hash map is incomplete, someone should type everything from the documentation to here:
-# See: http://nagios.sourceforge.net/docs/3_0/macrolist.html
+import test
+import unittest
+suite = unittest.TestSuite()
+import sys
 
-_standard_macros = {
-                   '$HOSTADDRESS$':'address',
-                   '$HOSTNAME$':'host_name',
-                   '$SERVICEDESC$':'service_description',
-                   '$CONTACTEMAIL$':'email',
-                   }
+if __name__ == '__main__':
+    state = unittest.TextTestRunner().run( suite )
+    if state.failures or state.errors:
+        sys.exit(1)
+    sys.exit(0)

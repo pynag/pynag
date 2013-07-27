@@ -22,6 +22,9 @@ import re
 import time
 import socket # for mk_livestatus
 
+import pynag.Plugins
+
+
 def debug(text):
     debug = True
     if debug: print text
@@ -31,15 +34,34 @@ class config:
     """
     Parse and write nagios config files
     """
-    def __init__(self, cfg_file=None):
+    # Regex for beginning of object definition
+    # We want everything that matches:
+    # define <object_type> {
+    __beginning_of_object = re.compile("^\s*define\s+(\w+)\s*\{?(.*)$")
+
+    def __init__(self, cfg_file=None, strict=False):
+        """
+
+        Arguments:
+          cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
+          strict   -- if True, use stricter parsing which is more prone to raising exceptions
+        """
 
         self.cfg_file = cfg_file  # Main configuration file
+        self.strict = strict # Use strict parsing or not
 
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
             self.cfg_file = self.guess_cfg_file()
         self.data = {}
         self.maincfg_values = []
+
+    def guess_nagios_directory(self):
+        """ Returns a path to the nagios configuration directory on your system
+
+        Use this function for determining the nagios config directory in your code
+        """
+        return os.path.dirname(self.guess_cfg_file())
 
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
@@ -53,11 +75,12 @@ class config:
                           '/nagios/etc/nagios/nagios.cfg',
                           './nagios.cfg',
                           './nagios/nagios.cfg',
-            )
-        for file in possible_files:
-            if os.path.isfile(file):
-                return file
+        )
+        for file_path in possible_files:
+            if os.path.isfile(file_path):
+                return file_path
         raise ParserError('Could not find nagios.cfg')
+
     def reset(self):
         self.cfg_files = [] # List of other configuration files
         self.data = {} # dict of every known object definition
@@ -73,15 +96,15 @@ class config:
         self.pre_object_list = []
         self.post_object_list = []
         self.object_type_keys = {
-            'hostgroup':'hostgroup_name',
-            'hostextinfo':'host_name',
-            'host':'host_name',
-            'service':'name',
-            'servicegroup':'servicegroup_name',
-            'contact':'contact_name',
-            'contactgroup':'contactgroup_name',
-            'timeperiod':'timeperiod_name',
-            'command':'command_name',
+            'hostgroup': 'hostgroup_name',
+            'hostextinfo': 'host_name',
+            'host': 'host_name',
+            'service': 'name',
+            'servicegroup': 'servicegroup_name',
+            'contact': 'contact_name',
+            'contactgroup': 'contactgroup_name',
+            'timeperiod': 'timeperiod_name',
+            'command': 'command_name',
             #'service':['host_name','description'],
         }
 
@@ -105,7 +128,7 @@ class config:
     def _get_hostgroup(self, hostgroup_name):
         return self.data['all_hostgroup'].get(hostgroup_name, None)
 
-    def _get_key(self, object_type, user_key = None):
+    def _get_key(self, object_type, user_key=None):
         """
         Return the correct 'key' for an item.  This is mainly a helper method
         for other methods in this class.  It is used to shorten code repitition
@@ -135,51 +158,53 @@ class config:
                 if not self.item_cache.has_key(tmp_item_type):
                     self.item_cache[tmp_item_type] = {}
                 self.item_cache[tmp_item_type][name] = item
-        return self.item_cache[item_type].get(item_name, None)
+        my_cache = self.item_cache.get(item_type, None)
+        if not my_cache:
+            return None
+        return my_cache.get(item_name, None)
 
     def _apply_template(self, original_item):
         """
         Apply all attributes of item named parent_name to "original_item".
         """
+        # TODO: There is space for more performance tweaks here
         # If item does not inherit from anyone else, lets just return item as is.
-        if not original_item.has_key('use'):
+        if 'use' not in original_item:
             return original_item
         object_type = original_item['meta']['object_type']
         # Performance tweak, if item has been parsed. Lets not do it again
-        if original_item.has_key('name') and self.item_apply_cache[object_type].has_key(original_item['name']):
-            return self.item_apply_cache[object_type][ original_item['name'] ]
-        # End of performance tweak
+        if 'name' in original_item and original_item['name'] in self.item_apply_cache[object_type]:
+            return self.item_apply_cache[object_type][original_item['name']]
+            # End of performance tweak
         parent_names = original_item['use'].split(',')
         parent_items = []
         for parent_name in parent_names:
-            parent_item = self._get_item( parent_name, object_type )
+            parent_item = self._get_item(parent_name, object_type)
             if parent_item is None:
-                error_string = "Can not find any %s named %s\n" % (object_type,parent_name)
-                self.errors.append( ParserError(error_string,item=original_item) )
+                error_string = "Can not find any %s named %s\n" % (object_type, parent_name)
+                self.errors.append(ParserError(error_string, item=original_item))
                 continue
-            # Parent item probably has use flags on its own. So lets apply to parent first
+                # Parent item probably has use flags on its own. So lets apply to parent first
             try:
-                parent_item = self._apply_template( parent_item )
+                parent_item = self._apply_template(parent_item)
             except RuntimeError, e:
-                self.errors.append( ParserError("Error while parsing item: %s (it might have circular use=)" % str(e), item=original_item) )
-            parent_items.append( parent_item )
+                self.errors.append(ParserError("Error while parsing item: %s (it might have circular use=)" % str(e),
+                                               item=original_item))
+            parent_items.append(parent_item)
+
+        inherited_attributes = original_item['meta']['inherited_attributes']
+        template_fields = original_item['meta']['template_fields']
         for parent_item in parent_items:
-            for k,v in parent_item.iteritems():
-                if k == 'use':
+            for k, v in parent_item.iteritems():
+                if k in ('use', 'register', 'meta', 'name'):
                     continue
-                if k == 'register':
-                    continue
-                if k == 'meta':
-                    continue
-                if k == 'name':
-                    continue
-                if not original_item['meta']['inherited_attributes'].has_key(k):
-                    original_item['meta']['inherited_attributes'][k] = v
-                if not original_item.has_key(k):
+                if k not in inherited_attributes:
+                    inherited_attributes[k] = v
+                if k not in original_item:
                     original_item[k] = v
-                    original_item['meta']['template_fields'].append(k)
-        if original_item.has_key('name'):
-            self.item_apply_cache[object_type][ original_item['name'] ] = original_item
+                    template_fields.append(k)
+        if 'name' in original_item:
+            self.item_apply_cache[object_type][original_item['name']] = original_item
         return original_item
 
     def _get_items_in_file(self, filename):
@@ -196,26 +221,75 @@ class config:
 
     def get_new_item(self, object_type, filename):
         """ Returns an empty item with all necessary metadata """
-        current = {}
-        current['meta'] = {}
-        current['meta']['object_type'] = object_type
-        current['meta']['filename'] = filename
-        current['meta']['template_fields'] = []
-        current['meta']['needs_commit'] = None
-        current['meta']['delete_me'] = None
-        current['meta']['defined_attributes'] = {}
-        current['meta']['inherited_attributes'] = {}
-        current['meta']['raw_definition'] = "define %s {\n\n}" % object_type
-        return current
+
+        meta = {
+            'object_type': object_type,
+            'filename': filename,
+            'template_fields': [],
+            'needs_commit': None,
+            'delete_me': None,
+            'defined_attributes': {},
+            'inherited_attributes': {},
+            'raw_definition': "define %s {\n\n}" % object_type,
+        }
+        return {'meta': meta}
 
     def _load_file(self, filename):
-        ## Set globals (This is stolen from the perl module)
+        """ Parsers filename with self.parse_filename and append results in self._pre_object_list
+
+            This function is mostly here for backwards compatibility
+
+            Arguments:
+                filename -- the file to be parsed. This is supposed to a nagios object definition file
+
+            Returns:
+                None
+        """
+        for i in self.parse_file(filename):
+            self.pre_object_list.append(i)
+
+    def parse_file(self, filename):
+        """ Parses a nagios object configuration file and returns lists of dictionaries.
+
+         This is more or less a wrapper around config.parse_string, so reading documentation there
+         is useful.
+        """
+        try:
+            raw_string = open(filename, 'rb').read()
+            return self.parse_string(raw_string, filename=filename)
+        except IOError, e:
+            parser_error = ParserError(e.strerror)
+            parser_error.filename = e.filename
+            self.errors.append(parser_error)
+            return []
+
+    def parse_string(self, string, filename='None'):
+        """ Parses a string, and returns all object definitions in that string
+
+        Arguments:
+          string              -- A string containing one or more object definitions
+          filename (optional) -- If filename is provided, it will be referenced when raising exceptions
+
+        Examples:
+          >>> test_string = "define host {\\nhost_name examplehost\\n}\\n"
+          >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
+          >>> c = config()
+          >>> result = c.parse_string(test_string)
+          >>> for i in result: print i.get('host_name'), i.get('service_description', None)
+          examplehost None
+          examplehost example service
+
+         Returns:
+          A list of dictionaries, that look like self.data
+        """
         append = ""
         current = None
         in_definition = {}
         tmp_buffer = []
+        result = []
 
-        for line_num, line in enumerate( open(filename, 'rb').readlines() ):
+        for sequence_no, line in enumerate(string.splitlines(False)):
+            line_num = sequence_no + 1
 
             ## Cleanup and line skips
             line = line.strip()
@@ -225,52 +299,63 @@ class config:
                 continue
 
             # TODO: Find out why this code append lives here, are there really any cases
-            # Where a nagios attributes expands more than one line ? 
+            # Where a nagios attributes expands more than one line ?
             # append saved text to the current line
             if append:
                 append += ' '
                 line = append + line
                 append = None
 
-            # end of object definition
-            if line.find("}") != -1:
+            if '}' in line:  # end of object definition
+
+                if not in_definition:
+                    p = ParserError("Unexpected '}' found outside object definition")
+                    p.filename = filename
+                    p.line_start = line_num
+                    raise p
 
                 in_definition = None
                 current['meta']['line_end'] = line_num
                 # Looks to me like nagios ignores everything after the } so why shouldn't we ?
                 rest = line.split("}", 1)[1]
-                
-                tmp_buffer.append(  line )
+
+                tmp_buffer.append(line)
                 try:
-                    current['meta']['raw_definition'] = '\n'.join( tmp_buffer )
+                    current['meta']['raw_definition'] = '\n'.join(tmp_buffer)
                 except Exception:
                     raise ParserError("Encountered Unexpected end of object definition in file '%s'." % filename)
-                self.pre_object_list.append(current)
+                result.append(current)
 
                 ## Destroy the Nagios Object
                 current = None
                 continue
 
-            # beginning of object definition
-            boo_re = re.compile("define\s+(\w+)\s*\{?(.*)$")
-            m = boo_re.search(line)
-            if m:
+            elif '{' in line:  # beginning of object definition
+
+                if in_definition:
+                    raise ParserError(
+                        "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (
+                            filename, line_num))
+
+                m = self.__beginning_of_object.search(line)
+
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
+                if self.strict and object_type not in self.object_type_keys.keys():
+                    raise ParserError(
+                        "Don't know any object definition of type '%s'. it is not in a list of known object definitions." % object_type)
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
-                if in_definition:
-                    raise ParserError("Error: Unexpected start of object definition in file '%s' on line $line_no.  Make sure you close preceding objects before starting a new one.\n" % filename)
 
                 ## Start off an object
                 in_definition = True
-                
+
                 # Looks to me like nagios ignores everything after the {, so why shouldn't we ?
                 rest = m.groups()[1]
                 continue
-            else:
-                tmp_buffer.append( '    ' + line )
+            else:  # In the middle of an object definition
+                tmp_buffer.append('    ' + line)
 
             ## save whatever's left in the buffer for the next iteration
             if not in_definition:
@@ -302,7 +387,7 @@ class config:
 
                 # Special hack for timeperiods as they are not consistent with other objects
                 # We will treat whole line as a key with an empty value
-                if (current['meta']['object_type'] == 'timeperiod' ) and key not in  ('timeperiod_name', 'alias'):
+                if (current['meta']['object_type'] == 'timeperiod' ) and key not in ('timeperiod_name', 'alias'):
                     key = line
                     value = ''
                 current[key] = value
@@ -314,6 +399,8 @@ class config:
         ## Something is wrong in the config
         if in_definition:
             raise ParserError("Error: Unexpected EOF in file '%s'" % filename)
+
+        return result
 
     def _locate_item(self, item):
         """
@@ -344,7 +431,7 @@ class config:
         for line in file.readlines():
             if object_has_been_found:
                 # If we have found an object, lets just spool to the end
-                everything_after.append( line )
+                everything_after.append(line)
                 continue
             tmp = line.split(None, 1)
             if len(tmp) == 0:
@@ -362,26 +449,26 @@ class config:
             # When define closes, we parse the object and see if it is the object we
             # want to modify
             if keyword == 'define':
-                current_object_type = rest.split(None,1)[0]
+                current_object_type = rest.split(None, 1)[0]
                 current_object_type = current_object_type.strip(';')
                 current_object_type = current_object_type.strip('{')
                 current_object_type = current_object_type.strip()
                 tmp_buffer = []
                 i_am_within_definition = True
             if i_am_within_definition == True:
-                tmp_buffer.append( line )
+                tmp_buffer.append(line)
             else:
-                everything_before.append( line )
+                everything_before.append(line)
             if len(keyword) > 0 and keyword[0] == '}':
                 i_am_within_definition = False
-                
+
                 current_candidate = self.get_new_item(object_type=current_object_type, filename=filename)
                 for i in tmp_buffer:
                     i = i.strip()
                     tmp = i.split(None, 1)
                     if len(tmp) == 0:
                         continue
-                    # Hack that makes timeperiod attributes be contained only in the key
+                        # Hack that makes timeperiod attributes be contained only in the key
                     if current_object_type == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
                         k = i
                         v = ''
@@ -389,22 +476,23 @@ class config:
                         k = tmp[0]
                         v = ''
                     elif len(tmp) > 1:
-                        k,v = tmp[0],tmp[1]
-                        v = v.split(';',1)[0]
+                        k, v = tmp[0], tmp[1]
+                        v = v.split(';', 1)[0]
                         v = v.strip()
-                    else: continue # skip empty lines
-                    
+                    else:
+                        continue # skip empty lines
+
                     if k.startswith('#'): continue
                     if k.startswith(';'): continue
                     if k.startswith('define'): continue
                     if k.startswith('}'): continue
-                    
+
                     current_candidate[k] = v
                     current_candidate['meta']['defined_attributes'][k] = v
                     # Apply template should not be needed anymore
                     #current_candidate = self._apply_template(current_candidate)
                 # Compare objects
-                if self.compareObjects( item, current_candidate ) == True:
+                if self.compareObjects(item, current_candidate) == True:
                     # This is the object i am looking for
                     object_has_been_found = True
                     object_definition = tmp_buffer
@@ -414,9 +502,10 @@ class config:
         if object_has_been_found:
             return everything_before, object_definition, everything_after, filename
         else:
-            raise ValueError("We could not find object in %s\n%s" % (filename,item))
+            raise ValueError("We could not find object in %s\n%s" % (filename, item))
 
-    def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None, make_comments=True):
+    def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
+                       make_comments=True):
         """
         Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
         If new_value and new_field_name are both None, the attribute is removed.
@@ -436,16 +525,17 @@ class config:
         """
         if field_name is None and new_item is None:
             raise ValueError("either field_name or new_item must be set")
-        everything_before,object_definition, everything_after, filename = self._locate_item(item)
+        everything_before, object_definition, everything_after, filename = self._locate_item(item)
         if new_item is not None:
             # We have instruction on how to write new object, so we dont need to parse it
             object_definition = [new_item]
         else:
             change = None
             i = 0
-            for i in range( len(object_definition)):
+            for i in range(len(object_definition)):
                 tmp = object_definition[i].split(None, 1)
-                if len(tmp) == 0: continue
+                if len(tmp) == 0:
+                    continue
                 # Hack for timeperiods, they dont work like other objects
                 elif item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
                     tmp = [object_definition[i]]
@@ -454,8 +544,10 @@ class config:
                         new_field_name = new_value
                         new_value = None
                         value = ''
-                elif len(tmp) == 1: value = ''
-                else: value = tmp[1]
+                elif len(tmp) == 1:
+                    value = ''
+                else:
+                    value = tmp[1]
                 k = tmp[0].strip()
                 if k == field_name:
                     # Attribute was found, lets change this line
@@ -469,17 +561,17 @@ class config:
                     if new_value is not None:
                         # value has changed
                         value = new_value
-                    # Here we do the actual change    
+                        # Here we do the actual change
                     change = "\t%-30s%s\n" % (k, value)
                     if item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
                         change = "\t%s\n" % (new_field_name)
                     object_definition[i] = change
                     break
-            if not change:
+            if not change and new_value is not None:
                 # Attribute was not found. Lets add it
                 change = "\t%-30s%s\n" % (field_name, new_value)
-                object_definition.insert(i,change)
-        # Lets put a banner in front of our item
+                object_definition.insert(i, change)
+            # Lets put a banner in front of our item
         if make_comments:
             comment = '# Edited by PyNag on %s\n' % time.ctime()
             if len(everything_before) > 0:
@@ -487,12 +579,12 @@ class config:
                 if last_line_before.startswith('# Edited by PyNag on'):
                     everything_before.pop() # remove this line
             object_definition.insert(0, comment)
-        # Here we overwrite the config-file, hoping not to ruin anything
+            # Here we overwrite the config-file, hoping not to ruin anything
         buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
-        file = open(filename,'w')
-        file.write( buffer )
+        file = open(filename, 'w')
+        file.write(buffer)
         file.close()
-        return True        
+        return True
 
     def item_rewrite(self, item, str_new_item):
         """
@@ -541,7 +633,7 @@ class config:
             IOError if save fails
         """
         return self._modify_object(item, field_name=field_name, new_value=new_value)
-    
+
     def item_remove_field(self, item, field_name):
         """
         Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
@@ -555,7 +647,7 @@ class config:
             IOError if save fails
         """
         return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
-    
+
     def item_rename_field(self, item, old_field_name, new_field_name):
         """
         Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
@@ -585,18 +677,18 @@ class config:
         if not 'meta' in item:
             item['meta'] = {}
         item['meta']['filename'] = filename
-        
+
         # Create directory if it does not already exist                
         dirname = os.path.dirname(filename)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        buffer = self.print_conf( item )
-        file = open(filename,'a')
-        file.write( buffer )
+        buffer = self.print_conf(item)
+        file = open(filename, 'a')
+        file.write(buffer)
         file.close()
-        return True        
-            
+        return True
+
     def edit_object(self, item, field_name, new_value):
         """
         Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
@@ -639,7 +731,7 @@ class config:
         original_object = self.get_service(target_host, service_description)
         if original_object is None:
             raise ParserError("Service not found")
-        return self.edit_object( original_object, field_name, new_value)
+        return self.edit_object(original_object, field_name, new_value)
 
     def _get_list(self, object, key):
         """
@@ -674,8 +766,8 @@ class config:
         return_list.sort()
 
         return return_list
-        
-    def delete_object(self, object_type, object_name, user_key = None):
+
+    def delete_object(self, object_type, object_name, user_key=None):
         """
         Delete object from configuration files.
         """
@@ -706,7 +798,8 @@ class config:
         Delete service from configuration
         """
         for item in self.data['all_service']:
-            if ('service_description' in item and item['service_description'] == service_description) and (host_name in self._get_active_hosts(item)):
+            if ('service_description' in item and item['service_description'] == service_description) and (
+                    host_name in self._get_active_hosts(item)):
                 self.data['all_service'].remove(item)
                 item['meta']['delete_me'] = True
                 item['meta']['needs_commit'] = True
@@ -714,19 +807,19 @@ class config:
 
                 return True
 
-    def delete_host(self, object_name, user_key = None):
+    def delete_host(self, object_name, user_key=None):
         """
         Delete a host
         """
-        return self.delete_object('host', object_name, user_key = user_key)
+        return self.delete_object('host', object_name, user_key=user_key)
 
-    def delete_hostgroup(self, object_name, user_key = None):
+    def delete_hostgroup(self, object_name, user_key=None):
         """
         Delete a hostgroup
         """
-        return self.delete_object('hostgroup', object_name, user_key = user_key)
+        return self.delete_object('hostgroup', object_name, user_key=user_key)
 
-    def get_object(self, object_type, object_name, user_key = None):
+    def get_object(self, object_type, object_name, user_key=None):
         """
         Return a complete object dictionary
         """
@@ -741,62 +834,62 @@ class config:
                 continue
             if item[object_key] == object_name:
                 target_object = item
-            ## This is for multi-key items
+                ## This is for multi-key items
         return target_object
 
-    def get_host(self, object_name, user_key = None):
+    def get_host(self, object_name, user_key=None):
         """
         Return a host object
         """
-        return self.get_object('host', object_name, user_key = user_key)
+        return self.get_object('host', object_name, user_key=user_key)
 
-    def get_servicegroup(self, object_name, user_key = None):
+    def get_servicegroup(self, object_name, user_key=None):
         """
         Return a Servicegroup object
         """
-        return self.get_object('servicegroup', object_name, user_key = user_key)
+        return self.get_object('servicegroup', object_name, user_key=user_key)
 
-    def get_contact(self, object_name, user_key = None):
+    def get_contact(self, object_name, user_key=None):
         """
         Return a Contact object
         """
-        return self.get_object('contact', object_name, user_key = user_key)
+        return self.get_object('contact', object_name, user_key=user_key)
 
-    def get_contactgroup(self, object_name, user_key = None):
+    def get_contactgroup(self, object_name, user_key=None):
         """
         Return a Contactgroup object
         """
-        return self.get_object('contactgroup', object_name, user_key = user_key)
+        return self.get_object('contactgroup', object_name, user_key=user_key)
 
-    def get_timeperiod(self, object_name, user_key = None):
+    def get_timeperiod(self, object_name, user_key=None):
         """
         Return a Timeperiod object
         """
-        return self.get_object('timeperiod', object_name, user_key = user_key)
+        return self.get_object('timeperiod', object_name, user_key=user_key)
 
-    def get_command(self, object_name, user_key = None):
+    def get_command(self, object_name, user_key=None):
         """
         Return a Command object
         """
-        return self.get_object('command', object_name, user_key = user_key)
+        return self.get_object('command', object_name, user_key=user_key)
 
-    def get_hostgroup(self, object_name, user_key = None):
+    def get_hostgroup(self, object_name, user_key=None):
         """
         Return a hostgroup object
         """
-        return self.get_object('hostgroup', object_name, user_key = user_key)
+        return self.get_object('hostgroup', object_name, user_key=user_key)
 
-    def get_servicedependency(self, object_name, user_key = None):
+    def get_servicedependency(self, object_name, user_key=None):
         """
         Return a servicedependency object
         """
-        return self.get_object('servicedependency', object_name, user_key = user_key)
+        return self.get_object('servicedependency', object_name, user_key=user_key)
 
-    def get_hostdependency(self, object_name, user_key = None):
+    def get_hostdependency(self, object_name, user_key=None):
         """
         Return a hostdependency object
         """
-        return self.get_object('hostdependency', object_name, user_key = user_key)
+        return self.get_object('hostdependency', object_name, user_key=user_key)
 
     def get_service(self, target_host, service_description):
         """
@@ -807,7 +900,7 @@ class config:
             ## Skip service with no service_description
             if not item.has_key('service_description'):
                 continue
-            ## Skip non-matching services
+                ## Skip non-matching services
             if item['service_description'] != service_description:
                 continue
 
@@ -817,23 +910,26 @@ class config:
         return None
 
     def _append_use(self, source_item, name):
-        """
-        Append any unused values from 'name' to the dict 'item'
+        """ Append attributes to source_item that are inherited via 'use' attribute'
+
+        Attributes:
+          source_item  -- item (dict) to apply the inheritance upon
+          name         -- obsolete (discovered automatically via source_item['use']. Here for compatibility.
         """
         ## Remove the 'use' key
         if source_item.has_key('use'):
             del source_item['use']
-        
+
         for possible_item in self.pre_object_list:
             if possible_item.has_key('name'):
                 ## Start appending to the item
-                for k,v in possible_item.iteritems():
+                for k, v in possible_item.iteritems():
 
                     try:
                         if k == 'use':
                             source_item = self._append_use(source_item, v)
                     except Exception:
-                        raise ParserError( "Recursion error on %s %s" % (source_item, v) )
+                        raise ParserError("Recursion error on %s %s" % (source_item, v))
 
                     ## Only add the item if it doesn't already exist
                     if not source_item.has_key(k):
@@ -846,13 +942,13 @@ class config:
         for raw_item in self.pre_object_list:
             # Performance tweak, make sure hashmap exists for this object_type
             object_type = raw_item['meta']['object_type']
-            if not self.item_apply_cache.has_key( object_type ):
-                self.item_apply_cache[ object_type ] = {}
-            # Tweak ends
+            if not self.item_apply_cache.has_key(object_type):
+                self.item_apply_cache[object_type] = {}
+                # Tweak ends
             if raw_item.has_key('use'):
-                raw_item = self._apply_template( raw_item )
+                raw_item = self._apply_template(raw_item)
             self.post_object_list.append(raw_item)
-        ## Add the items to the class lists.  
+            ## Add the items to the class lists.
         for list_item in self.post_object_list:
             type_list_name = "all_%s" % list_item['meta']['object_type']
             if not self.data.has_key(type_list_name):
@@ -880,7 +976,7 @@ class config:
                             ## Ignore files that are already set to be deleted:w
                             if commit_item['meta']['delete_me']:
                                 continue
-                            ## Make sure we aren't adding this thing twice
+                                ## Make sure we aren't adding this thing twice
                             if item != commit_item:
                                 file_contents += self.print_conf(commit_item)
 
@@ -935,10 +1031,13 @@ class config:
         output += "\n"
         output += "define %s {\n" % item['meta']['object_type']
         for k, v in item.iteritems():
+            if v is None:
+                # Skip entries with No value
+                continue
             if k != 'meta':
                 if k not in item['meta']['template_fields']:
-                    output += "\t %-30s %-30s\n" % (k,v)
-        
+                    output += "\t %-30s %-30s\n" % (k, v)
+
         output += "}\n\n"
         return output
 
@@ -970,7 +1069,7 @@ class config:
             key, value = tmp
             key = key.strip()
             value = value.strip()
-            result.append( (key, value) )
+            result.append((key, value))
         return result
 
     def _edit_static_file(self, attribute, new_value, filename=None, old_value=None, append=False):
@@ -1002,7 +1101,7 @@ class config:
 
         write_buffer = open(filename).readlines()
         is_dirty = False # dirty if we make any changes
-        for i,line in enumerate(write_buffer):
+        for i, line in enumerate(write_buffer):
             ## Strip out new line characters
             line = line.strip()
 
@@ -1037,15 +1136,15 @@ class config:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-        if is_dirty == False:
+        if is_dirty == False and new_value is not None:
             # If we get here, it means we read the whole file,
             # and we have not yet made any changes, So we assume
             # We should append to the file
             write_buffer.append(new_line)
             is_dirty = True
-        # When we get down here, it is time to write changes to file
+            # When we get down here, it is time to write changes to file
         if is_dirty == True:
-            open(filename,'w').write(''.join(write_buffer))
+            open(filename, 'w').write(''.join(write_buffer))
             return True
         else:
             return False
@@ -1068,19 +1167,20 @@ class config:
         # Reload not needed if no object_cache file
         if object_cache_file is None:
             return False
-        for k,v in new_timestamps.items():
+        for k, v in new_timestamps.items():
             if not v or int(v) > object_cache_timestamp:
                 return True
         return False
+
     def needs_reparse(self):
         """Returns True if any Nagios configuration file has changed since last parse()"""
         # If Parse has never been run:
         if self.data == {}:
             return True
         new_timestamps = self.get_timestamps()
-        if len(new_timestamps) != len( self.timestamps ):
+        if len(new_timestamps) != len(self.timestamps):
             return True
-        for k,v in new_timestamps.items():
+        for k, v in new_timestamps.items():
             if self.timestamps.get(k, None) != v:
                 return True
         return False
@@ -1091,6 +1191,7 @@ class config:
         This function is mainly used by config.parse() which also parses your whole configuration set.
         """
         self.maincfg_values = self._load_static_file(self.cfg_file)
+
     def parse(self):
         """ Parse all objects in your nagios configuration
 
@@ -1109,7 +1210,7 @@ class config:
         self.reset()
 
         self.parse_maincfg()
-        
+
         self.cfg_files = self.get_cfg_files()
 
         # When parsing config, we will softly fail if permission denied
@@ -1118,10 +1219,10 @@ class config:
         try:
             self._resource_values = self.get_resources()
         except IOError, e:
-            self.errors.append( str(e) )
-        
+            self.errors.append(str(e))
+
         self.timestamps = self.get_timestamps()
-        
+
         ## This loads everything into
         for cfg_file in self.cfg_files:
             self._load_file(cfg_file)
@@ -1140,7 +1241,7 @@ class config:
             * ParserError if resource is not found and you do not have permissions
         """
         resources = self.get_resources()
-        for k,v in resources:
+        for k, v in resources:
             if k == resource_name:
                 return v
 
@@ -1149,13 +1250,13 @@ class config:
         """Returns a hash map of all nagios related files and their timestamps"""
         files = {}
         files[self.cfg_file] = None
-        for k,v in self.maincfg_values:
-            if k in ('resource_file','lock_file','object_cache_file'):
+        for k, v in self.maincfg_values:
+            if k in ('resource_file', 'lock_file', 'object_cache_file'):
                 files[v] = None
         for i in self.get_cfg_files():
             files[i] = None
-        # Now lets lets get timestamp of every file
-        for k,v in files.items():
+            # Now lets lets get timestamp of every file
+        for k, v in files.items():
             if not os.path.isfile(k): continue
             files[k] = os.stat(k).st_mtime
         return files
@@ -1163,7 +1264,7 @@ class config:
     def get_resources(self):
         """Returns a list of every private resources from nagios.cfg"""
         resources = []
-        for config_object,config_value in self.maincfg_values:
+        for config_object, config_value in self.maincfg_values:
             if config_object == 'resource_file' and os.path.isfile(config_value):
                 resources += self._load_static_file(config_value)
         return resources
@@ -1206,7 +1307,7 @@ class config:
 
         ## Loop through all hostgroups, appending them to their respective hosts
         for hostgroup in self.data['all_hostgroup']:
-            for member in self._get_list(hostgroup,'members'):
+            for member in self._get_list(hostgroup, 'members'):
                 index = 0
                 for host in self.data['all_host']:
                     if not host.has_key('host_name'): continue
@@ -1227,7 +1328,6 @@ class config:
         ## Expand service membership
         index = 0
         for service in self.data['all_service']:
-
             ## Find a list of hosts to negate from the final list
             self.data['all_service'][index]['meta']['service_members'] = self._get_active_hosts(service)
 
@@ -1247,7 +1347,7 @@ class config:
             for hostgroup_name in self._get_list(object, 'hostgroup_name'):
                 if hostgroup_name[0] == "!":
                     hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
-                    negate_hosts.extend(self._get_list(hostgroup_obj,'members'))
+                    negate_hosts.extend(self._get_list(hostgroup_obj, 'members'))
 
         ## Host Names
         if object.has_key("host_name"):
@@ -1263,7 +1363,7 @@ class config:
 
             for hostgroup_name in self._get_list(object, 'hostgroup_name'):
                 if hostgroup_name[0] != "!":
-                    active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name),'members'))
+                    active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
 
         ## Host Names
         if object.has_key("host_name"):
@@ -1303,7 +1403,7 @@ class config:
         """
         cfg_files = []
         for config_object, config_value in self.maincfg_values:
-            
+
             ## Add cfg_file objects to cfg file list
             if config_object == "cfg_file" and os.path.isfile(config_value):
                 cfg_files.append(config_value)
@@ -1312,29 +1412,30 @@ class config:
             if config_object == "cfg_dir":
                 directories = []
                 raw_file_list = []
-                directories.append( config_value )
+                directories.append(config_value)
                 # Walk through every subdirectory and add to our list
-                while len(directories) > 0:
+                while directories:
                     current_directory = directories.pop(0)
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
-                    if not os.path.isdir( current_directory ): continue
+                    if not os.path.isdir(current_directory): continue
                     list = os.listdir(current_directory)
                     for item in list:
                         # Append full path to file
                         item = "%s" % (os.path.join(current_directory, item.strip()))
-                        if os.path.islink( item ):
-                            item = os.readlink( item )
+                        if os.path.islink(item):
+                            item = os.readlink(item)
                         if os.path.isdir(item):
-                            directories.append( item )
-                        if raw_file_list.count( item ) < 1:
-                            raw_file_list.append( item )
+                            directories.append(item)
+                        if raw_file_list.count(item) < 1:
+                            raw_file_list.append(item)
                 for raw_file in raw_file_list:
                     if raw_file.endswith('.cfg'):
-                        if os.path.exists(raw_file):
+                        if os.path.exists(raw_file) and not os.path.isdir(raw_file):
                             # Nagios doesnt care if cfg_file exists or not, so we will not throws errors
                             cfg_files.append(raw_file)
 
         return cfg_files
+
     def get_cfg_value(self, key):
         """ Returns one specific value from your nagios.cfg file, None if value is not found.
           Arguments:
@@ -1349,7 +1450,7 @@ class config:
         """
         if self.maincfg_values == []:
             self.maincfg_values = self._load_static_file(self.cfg_file)
-        for k,v in self.maincfg_values:
+        for k, v in self.maincfg_values:
             if k == key:
                 return v
         return None
@@ -1385,6 +1486,7 @@ class mk_livestatus:
     for hostgroup s.get_hostgroups():
         print hostgroup['name'], hostgroup['num_hosts']
     """
+
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
         """ Initilize a new instance of mk_livestatus
 
@@ -1396,118 +1498,215 @@ class mk_livestatus:
         if livestatus_socket_path is None:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
-            for k,v in c.maincfg_values:
+            for k, v in c.maincfg_values:
                 if k == 'broker_module' and v.find("livestatus.o") > -1:
                     tmp = v.split()
                     if len(tmp) > 1:
                         livestatus_socket_path = tmp[1]
-        # If we get here then livestatus_socket_path should be resolved for us
+            # If we get here then livestatus_socket_path should be resolved for us
         if livestatus_socket_path is None:
-            raise ParserError("Could not find path to livestatus socket file. Please specify one or make sure livestatus broker_module is loaded")
+            msg = "No Livestatus socket define. Make sure livestatus broker module is loaded."
+            raise ParserError(msg)
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
 
     def test(self):
         """ Raises ParserError if there are problems communicating with livestatus socket """
         if not os.path.exists(self.livestatus_socket_path):
-            raise ParserError("Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
+            raise ParserError(
+                "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
             self.query("GET hosts")
         except KeyError, e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
-    def query(self, query, *args):
 
-        columns = None # Here we will keep a list of column names
-        # We break query up into a list, of commands, then put it back into a line seperated
-        # string before be talk to the socket
+    def _get_socket(self):
+        """ Return a socket.socket() instance which we can use to communicate with livestatus
+
+         Socket might be either unix filesocket or a tcp socket depenging in the content of
+         self.livestatus_socket_path
+
+
+        """
+        try:
+            # If livestatus_socket_path contains a colon, then we assume that it is tcp socket instead of a local filesocket
+            if self.livestatus_socket_path.find(':') > 0:
+                address, tcp_port = self.livestatus_socket_path.split(':', 1)
+                if not tcp_port.isdigit():
+                    msg = 'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
+                    raise ParserError(msg % (self.livestatus_socket_path, tcp_port))
+                tcp_port = int(tcp_port)
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((address, tcp_port))
+            else:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(self.livestatus_socket_path)
+            return s
+        except IOError, e:
+            msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
+            raise ParserError(msg % (e, self.livestatus_socket_path))
+
+    def query(self, query, *args, **kwargs):
+
+        # We break query up into a list, of commands, then before sending command to the socket
+        # We will write it one line per item in the array
         query = query.split('\n')
         for i in args:
             query.append(i)
-        if query[0].startswith('GET'):
+
+        # If no response header was specified, we add fixed16
+        response_header = None
+        if not filter(lambda x: x.startswith('ResponseHeader:'), query):
             query.append("ResponseHeader: fixed16")
+            response_header = "fixed16"
+
+        # If no specific outputformat is requested, we will return in python format
+        python_format = False
+        if not filter(lambda x: x.startswith('OutputFormat:'), query):
             query.append("OutputFormat: python")
-        for i in query:
-            if i.startswith('Columns:'):
-                columns = i[len('Columns:'):].split()
-        if not self.authuser is None and not self.authuser == '':
+            python_format = True
+
+        # There is a bug in livestatus where if requesting Stats, then no column headers are sent from livestatus
+        # In later version, the headers are sent, but the output is corrupted.
+        #
+        # We maintain consistency by clinging on to the old bug, and if there are Stats in the output
+        # we will not ask for column headers
+        doing_stats = len(filter(lambda x: x.startswith('Stats:'), query)) > 0
+        if not filter(lambda x: x.startswith('Stats:'), query) and not filter(
+                lambda x: x.startswith('ColumnHeaders: on'), query):
+            query.append("ColumnHeaders: on")
+
+        # Check if we need to add authuser to the query
+        if not filter(lambda x: x.startswith('AuthUser:'), query) and self.authuser not in (None, ''):
             query.append("AuthUser: %s" % self.authuser)
+
+        # When we reach here, we are done adding options to the query, so we convert to the string that will
+        # be sent to the livestatus socket
         query = '\n'.join(query) + '\n'
         self.last_query = query
 
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.connect(self.livestatus_socket_path)
-        s.send(query)
+        #
+        # Lets create a socket and see if we can write to it
+        #
+        s = self._get_socket()
+        try:
+            s.send(query)
+        except IOError:
+            msg = "Could not write to socket '%s'. Make sure you have the right permissions"
+            raise ParserError(msg % self.livestatus_socket_path)
         s.shutdown(socket.SHUT_WR)
         tmp = s.makefile()
-        response_header = tmp.readline()
-        if len(response_header) == 0:
-            return []
-        return_code = response_header.split()[0]
+
+        # Read the response header from livestatus
+        if response_header == "fixed16":
+            response_data = tmp.readline()
+            if len(response_data) == 0:
+                return []
+            return_code = response_data.split()[0]
+            if not return_code.startswith('2'):
+                error_message = tmp.readline().strip()
+                raise ParserError("Error '%s' from livestatus: %s" % (return_code, error_message))
+
         answer = tmp.read()
-        if not return_code.startswith('2'):
-            raise ParserError("Error '%s' from livestatus socket\n%s" % (return_code,answer))
+        # We are done with the livestatus socket. lets close it
+        s.close()
+
         if answer == '':
             return []
-        answer = eval(answer)
-        s.close()
-        if columns is None:
-            columns = answer.pop(0)
+
+
+
+        # If something other than python format was requested, we return the answer as is
+        if python_format == False:
+            return answer
+
+        # If we reach down here, it means we are supposed to parse the output before returning it
+        try:
+            answer = eval(answer)
+        except Exception, e:
+            raise ParserError("Error, could not parse response from livestatus.\n%s" % (answer))
+
+        # Workaround for livestatus bug, where column headers are not provided even if we asked for them
+        if doing_stats == True and len(answer) == 1:
+            return answer[0]
+
+        columns = answer.pop(0)
+
         # Lets throw everything into a hashmap before we return
         result = []
         for line in answer:
             tmp = {}
-            for i,column in enumerate(line):
+            for i, column in enumerate(line):
                 column_name = columns[i]
                 tmp[column_name] = column
             result.append(tmp)
         return result
+
     def get_host(self, host_name):
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
+
     def get_service(self, host_name, service_description):
-        return self.query('GET services', 'Filter: host_name = %s' % host_name, 'Filter: description = %s' % service_description)[0]
-    def get_hosts(self):
-        return self.query('GET hosts')
-    def get_services(self):
-        return self.query('GET services')
-    def get_hostgroups(self):
-        return self.query('GET hostgroups')
-    def get_contacts(self):
-        return self.query('GET contacts')
+        return self.query('GET services', 'Filter: host_name = %s' % host_name,
+                          'Filter: description = %s' % service_description)[0]
+
+    def get_hosts(self, *args):
+        return self.query('GET hosts', *args)
+
+    def get_services(self, *args):
+        return self.query('GET services', *args)
+
+    def get_hostgroups(self, *args):
+        return self.query('GET hostgroups', *args)
+
+    def get_servicegroups(self, *args):
+        return self.query('GET servicegroups', *args)
+
+    def get_contactgroups(self, *args):
+        return self.query('GET contactgroups', *args)
+
+    def get_contacts(self, *args):
+        return self.query('GET contacts', *args)
+
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
-class status:
-    """ Easy way to parse status.dat file from nagios
+    def get_servicegroup(self, name):
+        return self.query('GET servicegroups', 'Filter: name = %s' % name)[0]
 
-    After calling parse() contents of status.dat are kept in status.data
-    Example usage:
-    >>> s = status(filename="status.dat")
-    >>> s.parse()
-    >>> keys = s.data.keys()
-    >>> 'info' in keys
-    True
-    >>> 'programstatus' in keys
-    True
-    >>> for service in s.data.get('servicestatus',[]):
-    ...     host_name=service.get('host_name', None)
-    ...     description=service.get('service_description',None)
+    def get_hostgroup(self, name):
+        return self.query('GET hostgroups', 'Filter: name = %s' % name)[0]
+
+    def get_contactgroup(self, name):
+        return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
+
+
+class retention:
+    """ Easy way to parse the content of retention.dat
+
+    After calling parse() contents of retention.dat are kept in self.data
+
+    Example Usage:
+    >>> #r = retention()
+    >>> #r.parse()
+    >>> #print r
+    >>> #print r.data['info']
     """
 
-    def __init__(self, filename=None, cfg_file=None ):
-        """ Initilize a new instance of status
+    def __init__(self, filename=None, cfg_file=None):
+        """ Initilize a new instance of retention.dat
 
         Arguments (you only need to provide one of these):
-            filename -- path to your status.dat file
-            cfg_file -- path to your nagios.cfg file, path to status.dat
+            filename -- path to your retention.dat file
+            cfg_file -- path to your nagios.cfg file, path to retention.dat
               will be looked up in this file
         """
         # If filename is not provided, lets try to discover it from
         # nagios.cfg
         if filename is None:
             c = config(cfg_file=cfg_file)
-            for key,value in c._load_static_file():
-                if key == "status_file":
+            for key, value in c._load_static_file():
+                if key == "state_retention_file":
                     filename = value
 
         self.filename = filename
@@ -1527,9 +1726,11 @@ class status:
         status = {} # Holds all attributes of a single item
         key = None # if within definition, store everything before =
         value = None # if within definition, store everything after =
+        if not self.filename:
+            raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
-        for line_num,line in enumerate( lines ):
-
+        for sequence_no, line in enumerate(lines):
+            line_num = sequence_no + 1
             ## Cleanup and line skips
             line = line.strip()
             if line == "":
@@ -1559,7 +1760,63 @@ class status:
                     # * last line parsed started with long_plugin_output=
                     status[key] += "\n" + line
                 else:
-                    raise ParserError("Error on %s:%s: Could not parse line: %s" % (self.filename,line_num,line))
+                    raise ParserError("Error on %s:%s: Could not parse line: %s" % (self.filename, line_num, line))
+
+    def __setitem__(self, key, item):
+        self.data[key] = item
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __str__(self):
+        if not self.data:
+            self.parse()
+        buffer = "# Generated by pynag"
+        for datatype, datalist in self.data.items():
+            for item in datalist:
+                buffer += "%s {\n" % datatype
+                for attr, value in item.items():
+                    buffer += "%s=%s\n" % (attr, value)
+                buffer += "}\n"
+        return buffer
+
+
+class status(retention):
+    """ Easy way to parse status.dat file from nagios
+
+    After calling parse() contents of status.dat are kept in status.data
+    Example usage:
+    >>> s = status()
+    >>> s.parse()
+    >>> keys = s.data.keys()
+    >>> 'info' in keys
+    True
+    >>> 'programstatus' in keys
+    True
+    >>> for service in s.data.get('servicestatus',[]):
+    ...     host_name=service.get('host_name', None)
+    ...     description=service.get('service_description',None)
+    """
+
+    def __init__(self, filename=None, cfg_file=None):
+        """ Initilize a new instance of status
+
+        Arguments (you only need to provide one of these):
+            filename -- path to your status.dat file
+            cfg_file -- path to your nagios.cfg file, path to status.dat
+              will be looked up in this file
+        """
+        # If filename is not provided, lets try to discover it from
+        # nagios.cfg
+        if filename is None:
+            c = config(cfg_file=cfg_file)
+            for key, value in c._load_static_file():
+                if key == "status_file":
+                    filename = value
+
+        self.filename = filename
+        self.data = None
+
     def get_contactstatus(self, contact_name):
         """ Returns a dictionary derived from status.dat for one particular contact
 
@@ -1567,7 +1824,7 @@ class status:
             dict
         Raises:
             ValueError if object is not found
-        >>> s = status(filename="status.dat")
+        >>> s = status()
         >>> s.get_contactstatus(contact_name='invalid_contact')
         ValueError('invalid_contact',)
         >>> first_contact = s.data['contactstatus'][0]['contact_name']
@@ -1580,6 +1837,7 @@ class status:
             if i.get('contact_name') == contact_name:
                 return i
         return ValueError(contact_name)
+
     def get_hoststatus(self, host_name):
         """ Returns a dictionary derived from status.dat for one particular contact
 
@@ -1594,6 +1852,7 @@ class status:
             if i.get('host_name') == host_name:
                 return i
         raise ValueError(host_name)
+
     def get_servicestatus(self, host_name, service_description):
         """ Returns a dictionary derived from status.dat for one particular service
         Returns:
@@ -1610,19 +1869,12 @@ class status:
         raise ValueError(host_name, service_description)
 
 
-    def __setitem__(self, key, item):
-        self.data[key] = item
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-
 class object_cache(config):
     """ Loads the configuration as it appears in objects.cache file """
-    def get_cfg_files(self):
-        for k,v in self.maincfg_values:
-            if k == 'object_cache_file': return [ v ]
 
+    def get_cfg_files(self):
+        for k, v in self.maincfg_values:
+            if k == 'object_cache_file': return [v]
 
 
 class ParserError(Exception):
@@ -1630,17 +1882,263 @@ class ParserError(Exception):
 
     Typical usecase when there is a critical error while trying to read configuration.
     """
+    filename = None
+    line_start = None
+    message = None
     def __init__(self, message, item=None):
         self.message = message
         if item is None: return
         self.item = item
         self.filename = item['meta']['filename']
+        self.line_start = item['meta'].get('line_start')
 
     def __str__(self):
-        return repr(self.message)
+        message = self.message
+        if self.filename and self.line_start:
+            message = '%s in %s, line %s' % (message, self.filename, self.line_start)
+        return repr(message)
+
+
+class LogFiles(object):
+    """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
+        python-friendly arrays of dicts. Output should be more or less compatible with
+        mk_livestatus log output
+    """
+
+    def __init__(self, maincfg=None):
+        self.config = config(maincfg)
+        self.log_file = self.config.get_cfg_value('log_file')
+        self.log_archive_path = self.config.get_cfg_value('log_archive_path')
+
+    def get_log_entries(self, start_time=None, end_time=None, strict=True, search=None, **kwargs):
+        """ Get Parsed log entries for given timeperiod.
+         Arguments:
+            start_time -- unix timestamp. if None, return all entries from today
+            end_time -- If specified, only fetch log entries older than this (unix timestamp)
+            strict   -- If True, only return entries between start_time and end_time, if False,
+                     -- then return entries that belong to same log files as given timeset
+            search   -- If provided, only return log entries that contain this string (case insensitive)
+            kwargs   -- All extra arguments are provided as filter on the log entries. f.e. host_name="localhost"
+         Returns:
+            List of dicts
+        """
+        now = time.time()
+        if end_time is None:
+            end_time = now
+        if start_time is None:
+            if 'filename' in kwargs:
+                start_time = 1
+            else:
+                seconds_in_a_day = 60 * 60 * 24
+                seconds_today = end_time % seconds_in_a_day # midnight of today
+                start_time = end_time - seconds_today
+        start_time = int(start_time)
+        end_time = int(end_time)
+
+        # Create an array of all logfiles, newest logfiles go to front of array
+        logfiles = []
+        for filename in os.listdir(self.log_archive_path):
+            full_path = "%s/%s" % (self.log_archive_path, filename)
+            logfiles.append(full_path)
+        logfiles.append(self.log_file)
+        logfiles.reverse()
+
+        result = []
+        if 'filename' in kwargs:
+            logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
+        for log_file in logfiles:
+            entries = self._parse_log_file(filename=log_file)
+            if len(entries) == 0:
+                continue
+            first_entry = entries[0]
+            last_entry = entries[len(entries) - 1]
+
+            if first_entry['time'] > end_time:
+                continue
+                # If strict, filter entries to only include the ones in the timespan
+            if strict == True:
+                entries = [x for x in entries if x['time'] >= start_time and x['time'] <= end_time]
+                # If search string provided, filter the string
+            if search is not None:
+                entries = [x for x in entries if x['message'].lower().find(search.lower()) > -1]
+            for k, v in kwargs.items():
+                entries = [x for x in entries if x.get(k) == v]
+            result += entries
+
+            if start_time is None or int(start_time) >= int(first_entry.get('time')):
+                break
+        return result
+
+    def get_flap_alerts(self, **kwargs):
+        """ Same as self.get_log_entries, except return timeperiod transitions. Takes same parameters.
+        """
+        return self.get_log_entries(class_name="timeperiod transition", **kwargs)
+
+    def get_notifications(self, **kwargs):
+        """ Same as self.get_log_entries, except return only notifications. Takes same parameters.
+        """
+        return self.get_log_entries(class_name="notification", **kwargs)
+
+    def get_state_history(self, start_time=None, end_time=None, host_name=None, service_description=None):
+        """ Returns a list of dicts, with the state history of hosts and services. Parameters behaves similar to get_log_entries """
+
+        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
+        result = []
+        last_state = {} #
+        now = time.time()
+
+        for line in log_entries:
+            if 'state' not in line:
+                continue
+            line['duration'] = now - int(line.get('time'))
+            if host_name is not None and host_name != line.get('host_name'):
+                continue
+            if service_description is not None and service_description != line.get('service_description'):
+                continue
+            if start_time is None:
+                start_time = int(line.get('time'))
+
+            short_name = "%s/%s" % (line['host_name'], line['service_description'])
+            if short_name in last_state:
+                last = last_state[short_name]
+                last['end_time'] = line['time']
+                last['duration'] = last['end_time'] - last['time']
+                line['previous_state'] = last['state']
+            last_state[short_name] = line
+
+            if start_time is not None and int(start_time) > int(line.get('time')):
+                continue
+            if end_time is not None and int(end_time) < int(line.get('time')):
+                continue
+
+            result.append(line)
+        return result
+
+    def _parse_log_file(self, filename=None):
+        """ Parses one particular nagios logfile into arrays of dicts.
+
+            if filename is None, then log_file from nagios.cfg is used.
+        """
+        if filename is None:
+            filename = self.log_file
+        result = []
+        for line in open(filename).readlines():
+            parsed_entry = self._parse_log_line(line)
+            if parsed_entry != {}:
+                parsed_entry['filename'] = filename
+                result.append(parsed_entry)
+        return result
+
+    def _parse_log_line(self, line):
+        """ Parse one particular line in nagios logfile and return a dict. """
+        m = re.search('^\[(.*?)\] (.*?): (.*)', line)
+        if m is None:
+            return {}
+        line = line.strip()
+        timestamp, logtype, options = m.groups()
+
+        result = {}
+        try:
+            timestamp = int(timestamp)
+        except ValueError:
+            timestamp = 0
+        result['time'] = int(timestamp)
+        result['type'] = logtype
+        result['options'] = options
+        result['message'] = line
+        result['class'] = 0 # unknown
+        result['class_name'] = 'unclassified'
+        if logtype in ('CURRENT HOST STATE', 'CURRENT SERVICE STATE', 'SERVICE ALERT', 'HOST ALERT'):
+            result['class'] = 1
+            result['class_name'] = 'alerts'
+            if logtype.find('HOST') > -1:
+                # This matches host current state:
+                m = re.search('(.*?);(.*?);(.*);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                host, state, hard, check_attempt, plugin_output = m.groups()
+                service_description = None
+            if logtype.find('SERVICE') > -1:
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                host, service_description, state, hard, check_attempt, plugin_output = m.groups()
+            result['host_name'] = host
+            result['service_description'] = service_description
+            result['state'] = int(pynag.Plugins.state[state])
+            result['check_attempt'] = check_attempt
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif "NOTIFICATION" in logtype:
+            result['class'] = 3
+            result['class_name'] = 'notification'
+            if logtype == 'SERVICE NOTIFICATION':
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                contact, host, service_description, state, command, plugin_output = m.groups()
+            elif logtype == 'HOST NOTIFICATION':
+                m = re.search('(.*?);(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                contact, host, state, command, plugin_output = m.groups()
+                service_description = None
+            result['contact_name'] = contact
+            result['host_name'] = host
+            result['service_description'] = service_description
+            try:
+                result['state'] = int(pynag.Plugins.state[state])
+            except Exception:
+                result['state'] = -1
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif logtype == "EXTERNAL COMMAND":
+            result['class'] = 5
+            result['class_name'] = 'command'
+            m = re.search('(.*?);(.*)', options)
+            if m is None:
+                return result
+            command_name, text = m.groups()
+            result['command_name'] = command_name
+            result['text'] = text
+        elif logtype in ('PASSIVE SERVICE CHECK', 'PASSIVE HOST CHECK'):
+            result['class'] = 4
+            result['class_name'] = 'passive'
+            if logtype.find('HOST') > -1:
+                # This matches host current state:
+                m = re.search('(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                host, state, plugin_output = m.groups()
+                service_description = None
+            if logtype.find('SERVICE') > -1:
+                m = re.search('(.*?);(.*?);(.*?);(.*)', options)
+                if m is None:
+                    return result
+                host, service_description, state, plugin_output = m.groups()
+            result['host_name'] = host
+            result['service_description'] = service_description
+            result['state'] = state
+            result['plugin_output'] = plugin_output
+            result['text'] = plugin_output
+        elif logtype in ('SERVICE FLAPPING ALERT', 'HOST FLAPPING ALERT'):
+            result['class_name'] = 'flapping'
+        elif logtype == 'TIMEPERIOD TRANSITION':
+            result['class_name'] = 'timeperiod_transition'
+        elif logtype == 'Warning':
+            result['class_name'] = 'warning'
+            result['state'] = "1"
+            result['text'] = options
+        if 'text' not in result:
+            result['text'] = result['options']
+        result['log_class'] = result['class'] # since class is a python keyword
+        return result
 
 
 if __name__ == '__main__':
-    c = config()
-    print c._edit_static_file('test','new_value')
-
+    l = LogFiles()
+    entries = l.get_log_entries(start_time=1358208000, end_time=1358243258, service_description=None,
+                                class_name='alerts')
+    #import pprint
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint()
