@@ -688,13 +688,13 @@ class ObjectDefinition(object):
             return True
         return False
 
-    def __cmp__(a, b):
+    def __cmp__(self, a, b):
         return cmp(a.get_description(), b.get_description())
 
-    def __lt__(a, b):
+    def __lt__(self, a, b):
         return a.get_description() < b.get_description()
 
-    def __gt__(a, b):
+    def __gt__(self, a, b):
         return a.get_description() > b.get_description()
 
     def __setitem__(self, key, item):
@@ -2202,7 +2202,7 @@ class Status(object):
 
     def __init__(self, host_name, service_description=None):
         self.host_name = host_name
-        s = Parsers.status()
+        s = Parsers.Status()
         s.parse()
         try:
             if not service_description:
@@ -2383,7 +2383,7 @@ class StatusFetcher(object):
 
     def reload_cache(self):
         """Reload status cache"""
-        status = Parsers.status()
+        status = Parsers.Status()
         status.parse()
 
         # Fetch all objects from Parsers.config
