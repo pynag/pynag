@@ -174,6 +174,21 @@ class testParsers(unittest.TestCase):
         o = pynag.Parsers.object_cache()
         o.parse()
         self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+    def testConfig_backslash(self):
+        """ Test parsing nagios object files with lines that end with backslash
+        """
+        c = pynag.Parsers.config()
+        str1 = "define service {\nhost_name testhost\n}\n"
+        str2 = "define service {\nhost_na\\\nme testhost\n}\n"
+
+        parse1 = c.parse_string(str1)[0]
+        parse2 = c.parse_string(str2)[0]
+
+        # Remove metadata because stuff like line numbers has changed
+        del parse1['meta']
+        del parse2['meta']
+
+        self.assertEqual(parse1,parse2)
     def testConfig_edit_static_file(self):
         """ Test pynag.Parsers.config._edit_static_file() """
         fd,filename = tempfile.mkstemp()

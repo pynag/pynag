@@ -298,13 +298,16 @@ class config:
             if line[0] == "#" or line[0] == ';':
                 continue
 
-            # TODO: Find out why this code append lives here, are there really any cases
-            # Where a nagios attributes expands more than one line ?
-            # append saved text to the current line
+            # If previous line ended with backslash, treat this line as a
+            # continuation of previous line
             if append:
-                append += ' '
                 line = append + line
                 append = None
+            # If this line ends with a backslash, continue directly to next line
+            if line.endswith('\\'):
+                append = line.strip('\\')
+                continue
+
 
             if '}' in line:  # end of object definition
 
