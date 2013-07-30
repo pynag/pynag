@@ -25,7 +25,7 @@ import shutil
 import os
 import sys
 
-tests_dir = os.path.dirname( os.path.realpath(__file__) )
+tests_dir = os.path.dirname(os.path.realpath(__file__))
 if tests_dir == '':
     tests_dir = '.'
 pynagbase = os.path.realpath("%s/%s" % (tests_dir, os.path.pardir))
@@ -41,19 +41,22 @@ import pynag.Plugins
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
 
+
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
     def setUp(self):
         """ Basic setup before test suite starts
         """
         os.chdir(tests_dir)
-        self.tmp_dir = tempfile.mkdtemp() # Will be deleted after test runs
+        self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
         #os.mkdir(self.tmp_dir)
         pynag.Model.pynag_directory = self.tmp_dir
+
     def tearDown(self):
         """ Clean up after test suite has finished
         """
-        shutil.rmtree(self.tmp_dir,ignore_errors=True)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        
     def testParseDatasets(self):
         """ Parse every testdata*/nagios/nagios.cfg
         Output will be compared with testdata*/expectedoutput.txt
@@ -63,20 +66,19 @@ class testDatasetParsing(unittest.TestCase):
             if i.startswith('testdata') and os.path.isdir(i) and os.path.isfile(i + "/nagios/nagios.cfg"):
                 test_dirs.append(i)
 
-        for dir in test_dirs:
-            os.chdir(dir)
+        for directory in test_dirs:
+            os.chdir(directory)
             pynag.Model.cfg_file = "./nagios/nagios.cfg"
             pynag.Model.config = None
             actualOutput = ''
-            expectedOutput = open("expected_output.txt").read()
             for i in pynag.Model.ObjectDefinition.objects.all:
                 actualOutput += str(i)
                 # Write our parsed data to tmpfile so we have an easy diff later:
-            tmp_file = self.tmp_dir + "/" + os.path.basename(dir) + "_actual_output.txt"
-            open(tmp_file,'w').write(actualOutput)
-            diff_output = pynag.Utils.runCommand("diff -uwB expected_output.txt '%s'" % (tmp_file))[1]
-            print diff_output
+            tmp_file = self.tmp_dir + "/" + os.path.basename(directory) + "_actual_output.txt"
+            open(tmp_file, 'w').write(actualOutput)
+            diff_output = pynag.Utils.runCommand("diff -uwB expected_output.txt '%s'" % tmp_file)[1]
             self.assertEqual('', diff_output)
+
 
 class testNewPluginThresholdSyntax(unittest.TestCase):
     """ Unit tests for pynag.Plugins.new_threshold_syntax """
@@ -93,8 +95,7 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         6 - Otherwise return OK
         """
         from pynag.Plugins.new_threshold_syntax import check_threshold
-        from pynag.Plugins import ok,warning,critical,unknown
-
+        from pynag.Plugins import ok, warning, critical, unknown
 
         # 0 - return unknown on invalid input
         self.assertEqual(unknown, check_threshold(1, warning='invalid input'))
@@ -102,12 +103,10 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         # 1 - If no levels are specified, return OK
         self.assertEqual(ok, check_threshold(1))
 
-
-
         # 2 - If an ok level is specified and value is within range, return OK
         self.assertEqual(ok, check_threshold(1, ok="0..10"))
-        self.assertEqual(ok, check_threshold(1, ok="0..10",warning="0..10"))
-        self.assertEqual(ok, check_threshold(1, ok="0..10",critical="0..10"))
+        self.assertEqual(ok, check_threshold(1, ok="0..10", warning="0..10"))
+        self.assertEqual(ok, check_threshold(1, ok="0..10", critical="0..10"))
 
         # 3 - If a critical level is specified and value is within range, return CRITICAL
         self.assertEqual(critical, check_threshold(1, critical="0..10"))
@@ -123,7 +122,6 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         self.assertEqual(ok, check_threshold(1, warning="10..20"))
         self.assertEqual(ok, check_threshold(1, critical="10..20"))
         self.assertEqual(ok, check_threshold(1, warning="10..20", critical="20..30"))
-        
 
     def test_invalid_range(self):
         from pynag.Plugins.new_threshold_syntax import check_range
@@ -140,18 +138,21 @@ class testNewPluginThresholdSyntax(unittest.TestCase):
         self.assertRaises(AttributeError, parse_threshold, None)
         self.assertRaises(PynagError, parse_threshold, 'string')
 
+
 class testParsers(unittest.TestCase):
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testLivestatus(self):
-        "Test mk_livestatus integration"
+        """Test mk_livestatus integration"""
         livestatus = pynag.Parsers.mk_livestatus()
         requests = livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
+
     def testConfig(self):
-        "Test pynag.Parsers.config()"
+        """Test pynag.Parsers.config()"""
         c = pynag.Parsers.config()
         c.parse()
         self.assertTrue(len(c.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
@@ -168,12 +169,14 @@ class testParsers(unittest.TestCase):
 
         # Try to get current version of nagios
         version = info['version']
+
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testObjectCache(self):
-        "Test pynag.Parsers.object_cache"
+        """Test pynag.Parsers.object_cache"""
         o = pynag.Parsers.object_cache()
         o.parse()
         self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+
     def testConfig_backslash(self):
         """ Test parsing nagios object files with lines that end with backslash
         """
@@ -188,11 +191,12 @@ class testParsers(unittest.TestCase):
         del parse1['meta']
         del parse2['meta']
 
-        self.assertEqual(parse1,parse2)
+        self.assertEqual(parse1, parse2)
+
     def testConfig_edit_static_file(self):
         """ Test pynag.Parsers.config._edit_static_file() """
-        fd,filename = tempfile.mkstemp()
-        c  = pynag.Parsers.config(cfg_file=filename)
+        fd, filename = tempfile.mkstemp()
+        c = pynag.Parsers.config(cfg_file=filename)
 
         # Lets add some attributes to our new file
         c._edit_static_file(attribute='first', new_value='first_test')
@@ -224,6 +228,7 @@ class testParsers(unittest.TestCase):
 
         os.remove(filename)
 
+
 class testModel(unittest.TestCase):
     """
     Basic Unit Tests that relate to saving objects
@@ -231,17 +236,19 @@ class testModel(unittest.TestCase):
     def setUp(self):
         """ Basic setup before test suite starts
         """
-        self.tmp_dir = tempfile.mkdtemp() # Will be deleted after test runs
+        self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
 
         os.chdir(tests_dir)
         os.chdir('dataset01')
         pynag.Model.cfg_file = "./nagios/nagios.cfg"
         pynag.Model.config = None
         pynag.Model.pynag_directory = self.tmp_dir
+
     def tearDown(self):
         """ Clean up after test suite has finished
         """
-        shutil.rmtree(self.tmp_dir,ignore_errors=True)
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
     def testSuggestedFileName(self):
         """ Test get_suggested_filename feature in pynag.Model
         """
@@ -260,9 +267,9 @@ class testModel(unittest.TestCase):
         s2_expected = '%s/hosts/host.example.com.cfg' % pynag.Model.pynag_directory
         s3_expected = '%s/services/generic-test-service.cfg' % pynag.Model.pynag_directory
 
-        self.assertEqual(s1_expected, s1.get_suggested_filename() )
-        self.assertEqual(s2_expected, s2.get_suggested_filename() )
-        self.assertEqual(s3_expected, s3.get_suggested_filename() )
+        self.assertEqual(s1_expected, s1.get_suggested_filename())
+        self.assertEqual(s2_expected, s2.get_suggested_filename())
+        self.assertEqual(s3_expected, s3.get_suggested_filename())
 
     def testChangeAttribute(self):
         """ Change a single attribute in a pynag Model object
@@ -290,6 +297,7 @@ class testModel(unittest.TestCase):
         self.assertEqual(host_name, s.host_name)
         self.assertEqual(macro, s['__TEST_MACRO'])
         self.assertEqual(check_command, s.get_attribute('check_command'))
+
     def testServicegroupMembership(self):
         """ Loads servicegroup definitions from testdata01 and checks if get_effective_services works as expected
         """
@@ -310,20 +318,20 @@ class testModel(unittest.TestCase):
         expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$']
         self.assertEqual(sorted(expected_macrokeys),  sorted(macros.keys()))
 
-        self.assertEqual('/path/to/user1',macros['$USER1$'])
-        self.assertEqual('/path/to/user1',macros['$ARG2$'])
-        self.assertEqual('hostaddress',macros['$HOSTADDRESS$'])
+        self.assertEqual('/path/to/user1', macros['$USER1$'])
+        self.assertEqual('/path/to/user1', macros['$ARG2$'])
+        self.assertEqual('hostaddress', macros['$HOSTADDRESS$'])
 
-        self.assertEqual('macro1',macros['$_SERVICE_macro1$'])
-        self.assertEqual('macro1',macros['$ARG1$'])
-        self.assertEqual('macro1',macros['$_HOST_macro1$'])
-        self.assertEqual('this.macro.is.not.used',macros['$_SERVICE_not_used$'])
+        self.assertEqual('macro1', macros['$_SERVICE_macro1$'])
+        self.assertEqual('macro1', macros['$ARG1$'])
+        self.assertEqual('macro1', macros['$_HOST_macro1$'])
+        self.assertEqual('this.macro.is.not.used', macros['$_SERVICE_not_used$'])
 
-        self.assertEqual(None,macros['$_HOST_nonexistant$'])
-        self.assertEqual(None,macros['$_SERVICE_nonexistant$'])
+        self.assertEqual(None, macros['$_HOST_nonexistant$'])
+        self.assertEqual(None, macros['$_SERVICE_nonexistant$'])
 
-        self.assertEqual('',macros['$_SERVICE_empty$'])
-        self.assertEqual('',macros['$_HOST_empty$'])
+        self.assertEqual('', macros['$_SERVICE_empty$'])
+        self.assertEqual('', macros['$_HOST_empty$'])
 
         expected_command_line= "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
         actual_command_line = service1.get_effective_command_line()
@@ -360,9 +368,9 @@ class testModel(unittest.TestCase):
         service = pynag.Model.Service.objects.get_by_name('short-term-load')
         hosts = service.get_effective_hosts()
 
-        self.assertTrue(prod_api1 in hosts) # prod-api-1 matches the regex
-        self.assertTrue(prod_api2 in hosts) # prod-api-2 matches the regex
-        self.assertFalse(dev_api2 in hosts) # dev-api-1 does not match
+        self.assertTrue(prod_api1 in hosts)  # prod-api-1 matches the regex
+        self.assertTrue(prod_api2 in hosts)  # prod-api-2 matches the regex
+        self.assertFalse(dev_api2 in hosts)  # dev-api-1 does not match
 
         # Hostgroup.get_effective_hosts() should match the same regex:
         self.assertEqual(hosts, prod_servers.get_effective_hosts())
@@ -371,21 +379,25 @@ class testModel(unittest.TestCase):
         """ Test usage on ObjectDefinition.rewrite() """
         pass
 
+
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """
     def setUp(self):
         # Import pynag.Model so that at the end we can see if configuration changed at all
         s = pynag.Model.ObjectDefinition.objects.all
+
     def tearDown(self):
         # Check if any configuration changed while we were running tests:
         self.assertEqual(False, pynag.Model.config.needs_reparse(), "Seems like nagios configuration changed while running the unittests. Some of the tests might have made changes!")
+
     def testCommandPluginTest(self):
         """ Run Tommi's plugintest script to test pynag plugin threshold parameters
         """
         expected_output = (0,'','') # Expect exit code 0 and no output
         actual_output = pynag.Utils.runCommand(pynagbase + '/scripts/plugintest')
         self.assertEqual(expected_output,actual_output)
+
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
         pynag_script = pynagbase + '/scripts/pynag'
@@ -399,13 +411,15 @@ class testsFromCommandLine(unittest.TestCase):
             "%s config --get cfg_dir" % pynag_script,
         ]
         for i in ok_commands:
-            exit_code,stdout,stderr = pynag.Utils.runCommand(i)
-            self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i,exit_code,stdout,stderr))
+            exit_code, stdout, stderr = pynag.Utils.runCommand(i)
+            self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i, exit_code, stdout, stderr))
+
 
 def setUpParserDoctest(doctest):
     # The parser needs a Nagios config environment
     # we'll use dataset01 in the tests directory
-    os.chdir( os.path.join(tests_dir, 'dataset01') )
+    os.chdir(os.path.join(tests_dir, 'dataset01'))
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -435,16 +449,16 @@ def suite():
     suite.addTest(unittest.makeSuite(testsFromCommandLine))
 
     # Include doctests in the Plugins Module
-    suite.addTests( doctest.DocTestSuite(pynag.Plugins) )
+    suite.addTests(doctest.DocTestSuite(pynag.Plugins))
 
     # Include doctests in the Parsers Module
-    suite.addTests( doctest.DocTestSuite(pynag.Parsers, setUp=setUpParserDoctest) )
+    suite.addTests(doctest.DocTestSuite(pynag.Parsers, setUp=setUpParserDoctest))
 
     # Include doctests in the Model Module
-    suite.addTests( doctest.DocTestSuite(pynag.Model) )
+    suite.addTests(doctest.DocTestSuite(pynag.Model))
 
     # Include doctests in the Utils Module
-    suite.addTests( doctest.DocTestSuite(pynag.Utils) )
+    suite.addTests(doctest.DocTestSuite(pynag.Utils))
 
     from tests.commandtest import testCommandsToCommandFile, testCommandsToLivestatus
     suite.addTest(unittest.makeSuite(testCommandsToCommandFile))
@@ -460,7 +474,7 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-    state = unittest.TextTestRunner().run( suite() )
+    state = unittest.TextTestRunner().run(suite())
     if state.failures or state.errors:
         sys.exit(1)
     sys.exit(0)
