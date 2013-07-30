@@ -3,17 +3,17 @@
 #
 # pynag - Python Nagios plug-in and configuration environment
 # Copyright (C) 2011 Pall Sigurdsson
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -56,7 +56,7 @@ class testDatasetParsing(unittest.TestCase):
         """ Clean up after test suite has finished
         """
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
-        
+
     def testParseDatasets(self):
         """ Parse every testdata*/nagios/nagios.cfg
         Output will be compared with testdata*/expectedoutput.txt
@@ -285,7 +285,7 @@ class testModel(unittest.TestCase):
         s.service_description = service_description
 
         # Assign with set_attribute
-        s.set_attribute('check_command',check_command)
+        s.set_attribute('check_command', check_command)
 
         # Assign hashmap style
         s['host_name'] = host_name
@@ -308,7 +308,7 @@ class testModel(unittest.TestCase):
         service2 = pynag.Model.Service.objects.get_by_shortname('node-1/cpu2')
         self.assertEqual([group], service1.get_effective_servicegroups())
         self.assertEqual([group], service2.get_effective_servicegroups())
-        self.assertEqual(sorted([service1,service2]), sorted(group.get_effective_services()))
+        self.assertEqual(sorted([service1, service2]), sorted(group.get_effective_services()))
 
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
@@ -333,7 +333,7 @@ class testModel(unittest.TestCase):
         self.assertEqual('', macros['$_SERVICE_empty$'])
         self.assertEqual('', macros['$_HOST_empty$'])
 
-        expected_command_line= "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
+        expected_command_line = "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
         actual_command_line = service1.get_effective_command_line()
 
         self.assertEqual(expected_command_line, actual_command_line)
@@ -394,9 +394,9 @@ class testsFromCommandLine(unittest.TestCase):
     def testCommandPluginTest(self):
         """ Run Tommi's plugintest script to test pynag plugin threshold parameters
         """
-        expected_output = (0,'','') # Expect exit code 0 and no output
+        expected_output = (0, '', '')  # Expect exit code 0 and no output
         actual_output = pynag.Utils.runCommand(pynagbase + '/scripts/plugintest')
-        self.assertEqual(expected_output,actual_output)
+        self.assertEqual(expected_output, actual_output)
 
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
