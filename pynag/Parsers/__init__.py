@@ -431,6 +431,7 @@ class config:
         tmp_buffer = []        # Every line of current object being parsed is stored here.
         current_object_type = None # Object type of current object goes in here
         i_am_within_definition = False
+        append = None # tmp buffer to store lines that end with backslash
         for line in file.readlines():
             if object_has_been_found:
                 # If we have found an object, lets just spool to the end
@@ -459,6 +460,15 @@ class config:
                 tmp_buffer = []
                 i_am_within_definition = True
             if i_am_within_definition == True:
+                # If previous line ended with backslash, treat this line as a
+                # continuation of previous line
+                if append:
+                    line = append + line.strip() + "\n"
+                    append = None
+                # If this line ends with a backslash, continue directly to next line
+                if line.endswith('\\\n'):
+                    append = line.strip('\\\n')
+                    continue
                 tmp_buffer.append(line)
             else:
                 everything_before.append(line)
@@ -469,6 +479,7 @@ class config:
                 for i in tmp_buffer:
                     i = i.strip()
                     tmp = i.split(None, 1)
+
                     if len(tmp) == 0:
                         continue
                         # Hack that makes timeperiod attributes be contained only in the key
