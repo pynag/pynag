@@ -889,6 +889,8 @@ class PluginOutput:
     summary = None
     long_output = None
     perfdata = None
+    parsed_perfdata = None
+
     def __init__(self, stdout):
         if not stdout:
             return
@@ -898,7 +900,7 @@ class PluginOutput:
 
         lines = stdout.splitlines()
         for i in lines:
-            i = i.split('|',1)
+            i = i.split('|', 1)
             if summary is None:
                 summary = i.pop(0)
             else:
@@ -911,8 +913,6 @@ class PluginOutput:
         self.long_output = '\n'.join(long_output)
         self.perfdata = perfdata.strip()
         self.parsed_perfdata = PerfData(perfdatastring=perfdata)
-
-
 
 
 class defaultdict(dict):

@@ -78,7 +78,7 @@ except ImportError:
 
 
 def debug(text):
-    if debug == True:
+    if debug is True:
         print text
 
 
@@ -682,9 +682,9 @@ class ObjectDefinition(object):
     def is_registered(self):
         """ Returns true if object is enabled (registered)
         """
-        if not self.has_key('register'):
+        if not 'register' in self:
             return True
-        if self['register'] is "1":
+        if str(self['register']) == "1":
             return True
         return False
 
@@ -714,7 +714,7 @@ class ObjectDefinition(object):
             return self.get_shortname()
         elif key == 'effective_command_line':
             return self.get_effective_command_line()
-        elif key == 'register' and not 'register' in self._defined_attributes:
+        elif key == 'register' and key not in self:
             return "1"
         elif key == 'meta':
             return self._meta
@@ -783,25 +783,29 @@ class ObjectDefinition(object):
         global pynag_directory
         if pynag_directory is None:
             from os.path import dirname
-
             pynag_directory = dirname(config.cfg_file) + "/pynag"
-            # templates go to the template directory
-        if self['register'] == "0":
-            path = "%s/templates/%ss/%s.cfg" % (pynag_directory, object_type, description)
-        else:
-            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
 
-            # Services go to same file as their host
-            if object_type == 'service' and self.host_name is not None:
+        # By default assume this is the filename
+        path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
+
+        # templates go to the template directory
+        if not self.is_registered():
+            path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
+
+        # Filename of services should match service description or name
+        elif object_type == 'service':
+            filename = self.name or self.service_description or "untitled"
+            filename = re.sub(invalid_chars, '', filename)
+            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, filename)
+
+            # Try stuff the service in same file as the host
+            if self.host_name:
                 try:
-                    host = self.get_effective_hosts()[0]
+                    host = Host.objects.get_by_shortname(self.host_name)
                     path = host.get_filename()
                 except Exception:
                     pass
-                if self.host_name is not None:
-                    # If we get here, host_name was specified, but it is an invalid host
-                    host = re.sub(invalid_chars, '', self.host_name)
-                    path = "%s/hosts/%s.cfg" % (pynag_directory, host)
+
         return path
 
     def save(self):

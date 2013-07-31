@@ -264,7 +264,7 @@ class testModel(unittest.TestCase):
         s3.name = 'generic-test-service'
 
         s1_expected = '%s/services/Servicewithouthost_name.cfg' % pynag.Model.pynag_directory
-        s2_expected = '%s/hosts/host.example.com.cfg' % pynag.Model.pynag_directory
+        s2_expected = '%s/services/Servicewithhost_name.cfg' % pynag.Model.pynag_directory
         s3_expected = '%s/services/generic-test-service.cfg' % pynag.Model.pynag_directory
 
         self.assertEqual(s1_expected, s1.get_suggested_filename())
