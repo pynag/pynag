@@ -58,5 +58,5 @@ if __name__ == "__main__":
         'docs/pynag.1.gz',
         ]),
         ],
-        cmdclass = {'test': PynagTest},
+        cmdclass = {'test': PynagTest}, requires=['unittest2'],
     )
