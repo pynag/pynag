@@ -247,7 +247,7 @@ class ObjectRelations(object):
 
     @staticmethod
     def _expand_regex(dictionary, full_list):
-        """ Replaces any regex found in dictionary.values() or dictionary.keys() **INPLACE** with its respective matches found in full_list
+        """ Replaces any regex found in dictionary.values() or dictionary.keys() **INPLACE**
 
         Example with ObjectRelations.hostgroup_hosts
         >>> hostnames = set(['localhost','remotehost', 'not_included'])
@@ -766,7 +766,12 @@ class ObjectDefinition(object):
         #shortname = self.get_description()
         #object_name = self['name']
         filename = self._original_attributes['meta']['filename']
-        object_id = (filename, frozenset(self._defined_attributes.items()))
+        object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
+        object_id = str(object_id)
+
+        # this is good when troubleshooting ID issues:
+        #return str(object_id)
+
         return str(hash(object_id))
 
     def get_suggested_filename(self):
@@ -820,7 +825,7 @@ class ObjectDefinition(object):
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
         # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
-        if self.is_new == True or self.get_filename() is None:
+        if self.is_new is True or self.get_filename() is None:
             if not self.get_filename():
                 # discover a new filename
                 self.set_filename(self.get_suggested_filename())
@@ -836,7 +841,7 @@ class ObjectDefinition(object):
             for field_name, new_value in self._changes.items():
                 save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name,
                                                      new_value=new_value)
-                if save_result == True:
+                if save_result is True:
                     del self._changes[field_name]
                     self._event(level='write',
                                 message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
@@ -883,16 +888,21 @@ class ObjectDefinition(object):
             True on success
         """
         self._event(level='pre_save', message="Object definition is being rewritten")
-        if self.is_new == True:
+        if self.is_new is True:
             self.save()
         if str_new_definition is None:
-            str_new_definition = self._meta.get('raw_definition')
+            str_new_definition = str(self)
         config.item_rewrite(self._original_attributes, str_new_definition)
         self['meta']['raw_definition'] = str_new_definition
         self._event(level='write', message="Object definition rewritten")
 
         # this piece of code makes sure that when we current object contains all current info
+        new_me = config.parse_string(str_new_definition)
+        if new_me:
+            new_me = new_me[0]
+        self._defined_attributes = new_me['meta']['defined_attributes']
         self.reload_object()
+
         self._event(level='save', message="Object definition was rewritten")
         return True
 
@@ -907,7 +917,7 @@ class ObjectDefinition(object):
             (for example, if you delete a host, remove its name from all hostgroup.members entries)
         """
         self._event(level="pre_save", message="%s '%s' will be deleted." % (self.object_type, self.get_shortname()))
-        if recursive == True:
+        if recursive is True:
             # Recursive does not have any meaning for a generic object, this should subclassed.
             pass
         result = config.item_remove(self._original_attributes)
@@ -933,7 +943,7 @@ class ObjectDefinition(object):
 
         Returns:
           * A copy of the new ObjectDefinition
-          * A list of all copies objects if recursive == True
+          * A list of all copies objects if recursive is True
         """
         if args == {} and filename is None:
             raise ValueError('To copy an object definition you need at least one new attribute')
@@ -1290,7 +1300,7 @@ class ObjectDefinition(object):
             return []
         name = self.name
         children = self.objects.filter(use__has_field=name)
-        if recursive == True:
+        if recursive is True:
             for i in children:
                 grandchildren = i.get_effective_children(recursive)
                 for grandchild in grandchildren:
@@ -1513,7 +1523,7 @@ class Host(ObjectDefinition):
             'author': author,
             'comment': comment,
         }
-        if recursive == True:
+        if recursive is True:
             pynag.Control.Command.schedule_host_svc_downtime(**arguments)
         else:
             pynag.Control.Command.schedule_host_downtime(**arguments)
@@ -1578,7 +1588,7 @@ class Host(ObjectDefinition):
         if self.host_name is None:
             return []
         children = self.objects.filter(parents__has_field=self.host_name)
-        if recursive == True:
+        if recursive is True:
             for child in children:
                 children += child.get_effective_network_children(recursive=True)
         return children
@@ -1587,11 +1597,11 @@ class Host(ObjectDefinition):
         """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well """
         # Find all services and delete them as well
         if self.host_name is not None:
-            if cleanup_related_items == True:
+            if cleanup_related_items is True:
                 for i in Hostgroup.objects.filter(members__has_field=self.host_name):
                     i.attribute_removefield('members', self.host_name)
                     i.save()
-            if recursive == True:
+            if recursive is True:
                 for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
                 # delete only services where only this host_name and no hostgroups are defined
                     i.delete(recursive=recursive)
@@ -1885,7 +1895,7 @@ class Contact(ObjectDefinition):
         result.update(map(get_object, list_of_shortnames))
         return result
 
-    def _get_contact_macro(self, macroname):
+    def _get_contact_macro(self, macroname, contact_name=None):
         attribute_name = None
         if macroname in _standard_macros:
             attribute_name = _standard_macros.get(macroname)
@@ -2024,11 +2034,11 @@ class Hostgroup(ObjectDefinition):
         """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well
             cleanup_related_items=True will also remove references in hostgroups,hosts + dependencies and escalations"""
         if self.hostgroup_name is not None:
-            if recursive == True:
+            if recursive is True:
                 for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
                     #remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
                     i.delete(recursive=recursive)
-            if cleanup_related_items == True:
+            if cleanup_related_items is True:
                 hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
                 hosts = Host.objects.filter(hostgroups__has_field=self.hostgroup_name)
                 dependenciesAndEscalations = ObjectDefinition.objects.filter(
