@@ -252,7 +252,7 @@ class testPluginHelper(unittest.TestCase):
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
         self.run_expect(case, 3, 1)
 
-    def test_number_35(self):
+    def test_number_36(self):
         # Extra case with hardcoded thresholds
         self.my_plugin.add_metric('fakedata2', value='-4', warn='0..10', crit='10..inf')
         case='--th=metric=fakedata,ok=0..10,warn=10..20'
