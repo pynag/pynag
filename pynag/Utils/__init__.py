@@ -669,7 +669,7 @@ def grep(objects, **kwargs):
             expression = lambda x: str(v) in str(x)
         else:
             # If all else fails, assume they are asking for exact match
-            expression = lambda x: str(x.get(k)) == str(v) or ( isinstance(x.get(k), list) and isinstance(v,str) and v in x.get(k) )
+            expression = lambda obj: (lambda objval: str(objval) == str(v) or ( isinstance(objval, list) and isinstance(v,str) and v in objval ) ) (obj.get(k))
         matching_objects = filter(expression, matching_objects)
     return matching_objects
 
