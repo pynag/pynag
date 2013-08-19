@@ -625,30 +625,31 @@ def grep(objects, **kwargs):
     matching_objects = objects
     for k,v in search:
         #v = str(v)
+        v_str = str(v)
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
-            expression = lambda x: str(v) in str(x.get(k))
+            expression = lambda x: v_str in str(x.get(k))
         elif k.endswith('__notcontains'):
             k = k[:-len('__notcontains')]
-            expression = lambda x: not str(v) in str(x.get(k))
+            expression = lambda x: not v_str in str(x.get(k))
         elif k.endswith('__startswith'):
             k = k[:-len('__startswith')]
-            expression = lambda x: str(x.get(k)).startswith(str(v))
+            expression = lambda x: str(x.get(k)).startswith(v_str)
         elif k.endswith('__notstartswith'):
             k = k[:-len('__notstartswith')]
-            expression = lambda x: not str(x.get(k)).startswith(str(v))
+            expression = lambda x: not str(x.get(k)).startswith(v_str)
         elif k.endswith('__endswith'):
             k = k[:-len('__endswith')]
-            expression = lambda x: str(x.get(k)).endswith(str(v))
+            expression = lambda x: str(x.get(k)).endswith(v_str)
         elif k.endswith('__notendswith'):
             k = k[:-len('__notendswith')]
-            expression = lambda x: not str(x.get(k)).endswith(str(v))
+            expression = lambda x: not str(x.get(k)).endswith(v_str)
         elif k.endswith('__exists'):
             k = k[:-len('__exists')]
-            expression = lambda x: str(x.has_key(k)) == str(v)
+            expression = lambda x: str(x.has_key(k)) == v_str
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
-            expression = lambda x: str(v) != str(x.get(k))
+            expression = lambda x: v_str != str(x.get(k))
         elif k.endswith('__regex'):
             k = k[:-len('__regex')]
             regex = re.compile(str(v))
@@ -661,15 +662,16 @@ def grep(objects, **kwargs):
             expression = lambda x: str(x.get(k)) in v
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
-            expression = lambda x: str(v) in AttributeList(x.get(k)).fields
+            expression = lambda x: v_str in AttributeList(x.get(k)).fields
         elif k == 'register' and str(v) == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
         elif k in ('search','q'):
-            expression = lambda x: str(v) in str(x)
+            expression = lambda x: v_str in str(x)
         else:
             # If all else fails, assume they are asking for exact match
-            expression = lambda x: str(x.get(k)) == str(v) or ( isinstance(x.get(k), list) and isinstance(v,str) and v in x.get(k) )
+            v_is_str = isinstance(v, str)
+            expression = lambda obj: (lambda objval: str(objval) == v_str or ( v_is_str and isinstance(objval, list) and v in objval ) ) (obj.get(k))
         matching_objects = filter(expression, matching_objects)
     return matching_objects
 
