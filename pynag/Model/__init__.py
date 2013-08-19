@@ -277,8 +277,11 @@ class ObjectRelations(object):
         # del dictionary['.*']
         regex_keys = filter(is_regex, dictionary.keys())
         for key in regex_keys:
-            regex = re.compile(key)
-            expanded_list = filter(regex.search, regex_keys)
+            if key == '*':
+                expanded_list = regex_keys
+            else:
+                regex = re.compile(key)
+                expanded_list = filter(regex.search, regex_keys)
             for i in expanded_list:
                 if i == key:  # No need to react if regex resolved to itself
                     continue
@@ -299,8 +302,11 @@ class ObjectRelations(object):
                 value = set(value)
                 #new_value = value.copy()
             for i in regex_members:
-                regex = re.compile(i)
-                expanded_list = filter(regex.search, full_list)
+                if i == '*':  # Nagios allows * instead of a valid regex, lets adjust to that
+                    expanded_list = full_list
+                else:
+                    regex = re.compile(i)
+                    expanded_list = filter(regex.search, full_list)
                 value.remove(i)
                 value.update(expanded_list)
                 #dictionary[key] = new_value
