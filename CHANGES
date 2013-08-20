@@ -1,3 +1,19 @@
+Changes in next
+New Features:
+    - Support line continuations with \ at end of line in config files
+    - Fix traceback in ParserError initilization
+    - Better error messages when invalid livestatus syntax has been used
+    - Utils.grep() new keywords __notstartswith and __notendswith
+    - Model.ObjectDefinition now supports "in" operator
+    - Multiple performance tweaks for parsing 
+    - Plugins.PluginHelper.add_option() wrapper created 
+    - Performance tweaks in Utils.grep()
+Bug Fixes:
+    - Fix traceback on search when searching for shortname in invalid configs
+    - pynag.Utils.GitRepo better handles file renames now
+    - pynag.Plugins.PluginHelper - no more crashing if parse_arguments was not called
+
+
 Changes in 0.5.0 (Jun 26 2013)
 New Features:
     - pynag cli - new action "unset" to remove attributes when updating
