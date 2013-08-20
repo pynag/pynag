@@ -92,5 +92,5 @@ debs: build sdist
 	cd deb-build/ ; \
 	  tar -zxvf pynag_${VERSION}.orig.tar.gz ; \
 	  cd pynag-${VERSION} ;\
-	  ln -s debian.upstream debian ;\
+	  cp -r debian.upstream debian ;\
 	  debuild
