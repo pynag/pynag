@@ -682,7 +682,8 @@ class ObjectDefinition(object):
         self[attribute_name] = attribute_value
 
     def attribute_is_empty(self,attribute_name):
-        if self.get_attribute(attribute_name) in (None,'','+','-','!'):
+        attr = self.get_attribute(attribute_name)
+        if attr == None or attr.strip() in (None,'','+','-','!'):
             return True
         else:
             return False

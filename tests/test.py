@@ -379,7 +379,28 @@ class testModel(unittest.TestCase):
         """ Test usage on ObjectDefinition.rewrite() """
         pass
 
+    def test_attribute_is_empty(self):
+        """Test if pynag properly determines if an attribute is empty"""
 
+        #creating test object
+        host =  pynag.Model.Host()
+        host['host_name']   = "+"
+        host['address']     = "not empty"
+        host['contacts']    = "!"
+        host['hostgroups']  = "                                             "
+        host['contactgroups']="-"
+
+        self.assertEqual(True,host.attribute_is_empty("host_name"))
+        self.assertEqual(True,host.attribute_is_empty("contacts"))
+        self.assertEqual(True,host.attribute_is_empty("hostgroups"))
+        self.assertEqual(True,host.attribute_is_empty("contactgroups"))
+        self.assertEqual(True,host.attribute_is_empty("_non_existing_attribute"))
+
+        self.assertEqual(False,host.attribute_is_empty("address"))
+
+
+
+#
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """
