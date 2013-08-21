@@ -398,9 +398,43 @@ class testModel(unittest.TestCase):
 
         self.assertEqual(False,host.attribute_is_empty("address"))
 
+    @staticmethod
+    def help_createObject(name,o="host",h="h1",c="c1",hg="hg1",cg="cg1"):
+        #creating test object - the contactgroup/contact/host/hostgroup deletion tests
+        #mainly useful for hosts, services and escalations
+        obj=  pynag.Model.string_to_class[o]()
+        obj['host_name']   = h
+        obj['contacts']    = c
+        obj['hostgroups']  = hg
+        obj['contactgroups']=cg
+        obj[o+'_name']      = name
+        obj.save()
+        return obj
 
+    def test_contactgroup_delete(self):
+        """Test if the right objects are removed when a contactgroup is deleted"""
+        
+        #creating test object
+        cg =  pynag.Model.Contactgroup()
+        cg['contactgroup_name']   = "cg_to_be_deleted"
+        cg.save() # an object has to be saved before we can delete it!
 
-#
+        hostesc_stay = testModel.help_createObject(o="hostescalation",c="stay",cg="cg_to_be_deleted",name="stay")
+        hostesc_del  = testModel.help_createObject(o="hostescalation",c=None,cg="+cg_to_be_deleted",name="del")
+        hostesc_del2  = testModel.help_createObject(o="hostescalation",c='',cg="cg_to_be_deleted",name="del2")
+        
+        hostesc_stay_file = hostesc_stay.get_filename()
+        hostesc_del_file = hostesc_del.get_filename()
+        hostesc_del2_file = hostesc_del2.get_filename()
+        cg.delete(recursive=True,cleanup_related_items=True)
+        
+        #pynag.Model.ObjectFetcher("host").reload_cache()
+        print(hostesc_stay_file)
+        self.assertEqual(1,len(pynag.Model.ObjectDefinition.objects.filter(filename=hostesc_stay_file)))
+        self.assertEqual(0,len(pynag.Model.ObjectDefinition.objects.filter(filename=hostesc_del_file)))
+        self.assertEqual(0,len(pynag.Model.ObjectDefinition.objects.filter(filename=hostesc_del2_file)))
+        
+
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """

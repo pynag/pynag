@@ -1948,6 +1948,13 @@ class HostDependency(ObjectDefinition):
     object_type = 'hostdependency'
     objects = ObjectFetcher('hostdependency')
 
+class HostEscalation(ObjectDefinition):
+    object_type = 'hostescalation'
+    objects = ObjectFetcher('hostescalation')
+
+class ServiceEscalation(ObjectDefinition):
+    object_type = 'serviceescalation'
+    objects = ObjectFetcher('serviceescalation')
 
 class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
@@ -1999,6 +2006,40 @@ class Contactgroup(ObjectDefinition):
         """ Remove one specific contact from this contactgroup """
         contact = Contact.objects.get_by_shortname(contact_name)
         return _remove_from_contactgroup(contact, self)
+
+    def delete(self, recursive=False, cleanup_related_items=True):
+        """ Overwrites ObjectDefinition.delete() so that 
+        cleanup_related_items=True will also remove references to contactgroups in hosts, services and escalations
+        recursive=True doesn't have any effect, no objects are 100% dependent on contactsgroups"""
+        if self.contactgroup_name is not None:
+            if recursive is True:
+                # No object is 100% dependent on a contactgroup
+                pass
+            if cleanup_related_items is True:
+                contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
+                hostSvcAndEscalations = ObjectDefinition.objects.filter(contactgroups__has_field=self.contactgroup_name)
+                # will find references in Hosts, Services as well as Host/Service-escalations
+                for i in contactgroups:
+                    # remove contactgroup from other contactgroups
+                    i.attribute_removefield('contactgroup_members', self.contactgroup_name)
+                    cgm = i.get_attribute('contactgroup_members').strip()
+                    # Remove the + character if it's the only thing remaining after removing a field from the contactgroup_members attribute
+                    # Workaround for https://dev.icinga.org/issues/3900
+                    if len(cgm) == 1 and cgm[0] == "+":
+                        i.set_attribute('contactgroup_members', None)
+                    i.save()
+                for i in hostSvcAndEscalations:
+                    # remove contactgroup from objects
+                    i.attribute_removefield('contactgroups', self.contactgroup_name)
+                    if (i.get_attribute('object_type').endswith("escalation")
+                    and recursive is True and i.attribute_is_empty("contacts") 
+                         and i.attribute_is_empty("contact_groups")): 
+                        # no contacts or contact_groups defined for this escalation
+                        i.delete(recursive=recursive)
+                    else:
+                        i.save()
+            # Call parent to get delete myself
+            super(self.__class__, self).delete(recursive=recursive)
 
 
 class Hostgroup(ObjectDefinition):
@@ -2437,6 +2478,8 @@ string_to_class['servicegroup'] = Servicegroup
 string_to_class['timeperiod'] = Timeperiod
 string_to_class['hostdependency'] = HostDependency
 string_to_class['servicedependency'] = ServiceDependency
+string_to_class['hostescalation'] = HostEscalation
+string_to_class['serviceescalation'] = ServiceEscalation
 string_to_class['command'] = Command
 #string_to_class[None] = ObjectDefinition
 
