@@ -681,6 +681,12 @@ class ObjectDefinition(object):
         """Set (but does not save) one attribute in our object"""
         self[attribute_name] = attribute_value
 
+    def attribute_is_empty(self,attribute_name):
+        if self.get_attribute(attribute_name) in (None,'','+','-','!'):
+            return True
+        else:
+            return False
+
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
         return len(self._changes.keys()) == 0
