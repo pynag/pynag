@@ -173,8 +173,8 @@ class config:
             return original_item
         object_type = original_item['meta']['object_type']
         # Performance tweak, if item has been parsed. Lets not do it again
-        if 'name' in original_item and original_item['name'] in self.item_apply_cache[object_type]:
-            return self.item_apply_cache[object_type][original_item['name']]
+        if original_item['meta']['raw_definition'] in self.item_apply_cache[object_type]:
+            return self.item_apply_cache[object_type][original_item['meta']['raw_definition']]
             # End of performance tweak
         parent_names = original_item['use'].split(',')
         parent_items = []
@@ -204,7 +204,7 @@ class config:
                     original_item[k] = v
                     template_fields.append(k)
         if 'name' in original_item:
-            self.item_apply_cache[object_type][original_item['name']] = original_item
+            self.item_apply_cache[object_type][original_item['meta']['raw_definition']] = original_item
         return original_item
 
     def _get_items_in_file(self, filename):
@@ -2150,9 +2150,5 @@ class LogFiles(object):
 
 
 if __name__ == '__main__':
-    l = LogFiles()
-    entries = l.get_log_entries(start_time=1358208000, end_time=1358243258, service_description=None,
-                                class_name='alerts')
-    #import pprint
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint()
+    c = config()
+    c.parse()
