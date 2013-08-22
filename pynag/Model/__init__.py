@@ -799,6 +799,14 @@ class ObjectDefinition(object):
         # By default assume this is the filename
         path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
 
+        # Services go to same file as their host
+        if object_type == "service" and self.get('host_name'):
+            try:
+                host = Host.objects.get_by_shortname(self.host_name)
+                return host.get_filename()
+            except Exception:
+                pass
+
         # templates go to the template directory
         if not self.is_registered():
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
@@ -809,13 +817,6 @@ class ObjectDefinition(object):
             filename = re.sub(invalid_chars, '', filename)
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, filename)
 
-            # Try stuff the service in same file as the host
-            if self.host_name:
-                try:
-                    host = Host.objects.get_by_shortname(self.host_name)
-                    path = host.get_filename()
-                except Exception:
-                    pass
 
         return path
 
