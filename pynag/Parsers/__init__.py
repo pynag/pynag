@@ -1421,6 +1421,9 @@ class config:
         """
         Return a list of all cfg files used in this configuration
 
+        Filenames are normalised so that if nagios.cfg specifies relative filenames
+        we will convert it to fully qualified filename before returning.
+
         Example:
         print get_cfg_files()
         ['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
@@ -1429,11 +1432,14 @@ class config:
         for config_object, config_value in self.maincfg_values:
 
             ## Add cfg_file objects to cfg file list
-            if config_object == "cfg_file" and os.path.isfile(config_value):
-                cfg_files.append(config_value)
+            if config_object == "cfg_file":
+                config_value = self.abspath(config_value)
+                if os.path.isfile(config_value):
+                    cfg_files.append(config_value)
 
             ## Parse all files in a cfg directory
             if config_object == "cfg_dir":
+                config_value = self.abspath(config_value)
                 directories = []
                 raw_file_list = []
                 directories.append(config_value)
@@ -1459,6 +1465,26 @@ class config:
                             cfg_files.append(raw_file)
 
         return cfg_files
+    def abspath(self, path):
+        """ Return the absolute path of a given relative path.
+
+         The current working directory is assumed to be the dirname of nagios.cfg
+
+         Example:
+         >>> c = config()
+         >>> c.parse()
+         >>> c.abspath('nagios.cfg')
+         '/etc/nagios3/nagios.cfg'
+         >>> c.abspath('/etc/nagios3/nagios.cfg')
+         '/etc/nagios3/nagios.cfg'
+        """
+        if not isinstance(path, str):
+            return ValueError("Path must be a string got %s instead" % type(path))
+        if path.startswith('/'):
+            return path
+        nagiosdir = os.path.dirname(self.cfg_file)
+        normpath = os.path.abspath(os.path.join(nagiosdir, path))
+        return normpath
 
     def get_cfg_value(self, key):
         """ Returns one specific value from your nagios.cfg file, None if value is not found.
