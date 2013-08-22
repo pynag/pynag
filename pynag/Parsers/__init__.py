@@ -423,7 +423,7 @@ class config:
             filename = item['meta']['filename']
         else:
             raise ValueError("item does not have a filename")
-        file = open(filename)
+        my_file = open(filename)
         object_has_been_found = False
         everything_before = [] # Every line before our object definition
         everything_after = []  # Every line after our object definition
@@ -432,7 +432,7 @@ class config:
         current_object_type = None # Object type of current object goes in here
         i_am_within_definition = False
         append = None # tmp buffer to store lines that end with backslash
-        for line in file.readlines():
+        for line in my_file.readlines():
             if object_has_been_found:
                 # If we have found an object, lets just spool to the end
                 everything_after.append(line)
@@ -513,6 +513,7 @@ class config:
                 else:
                     # This is not the item you are looking for
                     everything_before += tmp_buffer
+        my_file.close()
         if object_has_been_found:
             return everything_before, object_definition, everything_after, filename
         else:
@@ -545,6 +546,7 @@ class config:
             object_definition = [new_item]
         else:
             change = None
+            value = None
             i = 0
             for i in range(len(object_definition)):
                 tmp = object_definition[i].split(None, 1)
@@ -594,10 +596,10 @@ class config:
                     everything_before.pop() # remove this line
             object_definition.insert(0, comment)
             # Here we overwrite the config-file, hoping not to ruin anything
-        buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
-        file = open(filename, 'w')
-        file.write(buffer)
-        file.close()
+        str_buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
+        fh = open(filename, 'w')
+        fh.write(str_buffer)
+        fh.close()
         return True
 
     def item_rewrite(self, item, str_new_item):
@@ -697,10 +699,10 @@ class config:
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        buffer = self.print_conf(item)
-        file = open(filename, 'a')
-        file.write(buffer)
-        file.close()
+        str_buffer = self.print_conf(item)
+        fh = open(filename, 'a')
+        fh.write(str_buffer)
+        fh.close()
         return True
 
     def edit_object(self, item, field_name, new_value):
@@ -747,7 +749,7 @@ class config:
             raise ParserError("Service not found")
         return self.edit_object(original_object, field_name, new_value)
 
-    def _get_list(self, object, key):
+    def _get_list(self, item, key):
         """
         Return a comma list from an item
 
@@ -762,19 +764,19 @@ class config:
         return
         ['larry','curly','moe']
         """
-        if type(object) != type({}):
-            raise ParserError("%s is not a dictionary\n" % object)
+        if type(item) != type({}):
+            raise ParserError("%s is not a dictionary\n" % item)
             # return []
-        if not object.has_key(key):
+        if not item.has_key(key):
             return []
 
         return_list = []
 
-        if object[key].find(",") != -1:
-            for name in object[key].split(","):
+        if item[key].find(",") != -1:
+            for name in item[key].split(","):
                 return_list.append(name)
         else:
-            return_list.append(object[key])
+            return_list.append(item[key])
 
         ## Alphabetize
         return_list.sort()
@@ -1348,7 +1350,7 @@ class config:
             ## Increment count
             index += 1
 
-    def _get_active_hosts(self, object):
+    def _get_active_hosts(self, item):
         """
         Given an object, return a list of active hosts.  This will exclude hosts that ar negated with a "!"
         """
@@ -1356,16 +1358,16 @@ class config:
         negate_hosts = []
 
         ## Hostgroups
-        if object.has_key("hostgroup_name"):
+        if item.has_key("hostgroup_name"):
 
-            for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+            for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] == "!":
                     hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
                     negate_hosts.extend(self._get_list(hostgroup_obj, 'members'))
 
         ## Host Names
-        if object.has_key("host_name"):
-            for host_name in self._get_list(object, 'host_name'):
+        if item.has_key("host_name"):
+            for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] == "!":
                     negate_hosts.append(host_name[1:])
 
@@ -1373,15 +1375,15 @@ class config:
         active_hosts = []
 
         ## Hostgroups
-        if object.has_key("hostgroup_name"):
+        if item.has_key("hostgroup_name"):
 
-            for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+            for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] != "!":
                     active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
 
         ## Host Names
-        if object.has_key("host_name"):
-            for host_name in self._get_list(object, 'host_name'):
+        if item.has_key("host_name"):
+            for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] != "!":
                     active_hosts.append(host_name)
 
@@ -1431,9 +1433,9 @@ class config:
                 while directories:
                     current_directory = directories.pop(0)
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
-                    if not os.path.isdir(current_directory): continue
-                    list = os.listdir(current_directory)
-                    for item in list:
+                    if not os.path.isdir(current_directory):
+                        continue
+                    for item in os.listdir(current_directory):
                         # Append full path to file
                         item = "%s" % (os.path.join(current_directory, item.strip()))
                         if os.path.islink(item):
@@ -1785,14 +1787,14 @@ class retention:
     def __str__(self):
         if not self.data:
             self.parse()
-        buffer = "# Generated by pynag"
+        str_buffer = "# Generated by pynag"
         for datatype, datalist in self.data.items():
             for item in datalist:
-                buffer += "%s {\n" % datatype
+                str_buffer += "%s {\n" % datatype
                 for attr, value in item.items():
-                    buffer += "%s=%s\n" % (attr, value)
-                buffer += "}\n"
-        return buffer
+                    str_buffer += "%s=%s\n" % (attr, value)
+                str_buffer += "}\n"
+        return str_buffer
 
 
 class status(retention):
