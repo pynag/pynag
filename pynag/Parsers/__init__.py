@@ -1471,12 +1471,11 @@ class config:
          The current working directory is assumed to be the dirname of nagios.cfg
 
          Example:
-         >>> c = config()
-         >>> c.parse()
+         >>> c = config(cfg_file="/etc/nagios/nagios.cfg")
          >>> c.abspath('nagios.cfg')
-         '/etc/nagios3/nagios.cfg'
-         >>> c.abspath('/etc/nagios3/nagios.cfg')
-         '/etc/nagios3/nagios.cfg'
+         '/etc/nagios/nagios.cfg'
+         >>> c.abspath('/etc/nagios/nagios.cfg')
+         '/etc/nagios/nagios.cfg'
         """
         if not isinstance(path, str):
             return ValueError("Path must be a string got %s instead" % type(path))
