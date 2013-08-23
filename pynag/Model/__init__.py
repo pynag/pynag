@@ -1371,10 +1371,12 @@ class ObjectDefinition(object):
 
         Example:
            >>> myservice = Service()
-           >>> myservice.contact_groups = "+alladmins,localadmins"
+           >>> myservice.attribute_appendfield(attribute_name="contact_groups", value="alladmins")
+           >>> myservice.contact_groups
+           '+alladmins'
            >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
            >>> print myservice.contact_groups
-           +alladmins,localadmins,webmasters
+           +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
 
@@ -1395,12 +1397,18 @@ class ObjectDefinition(object):
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value='localadmins')
            >>> print myservice.contact_groups
            +alladmins
+           >>> myservice.attribute_removefield(attribute_name="contact_groups", value="alladmins")
+           >>> print myservice.contact_groups
+           None
            """
         aList = AttributeList(self[attribute_name])
 
         if value in aList.fields:
             aList.fields.remove(value)
-            self[attribute_name] = str(aList)
+            if not aList.fields:  # If list is empty, lets remove the attribute
+                self[attribute_name] = None
+            else:
+                self[attribute_name] = str(aList)
         return
 
     def attribute_replacefield(self, attribute_name, old_value, new_value):
