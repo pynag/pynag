@@ -234,16 +234,10 @@ class ObjectRelations(object):
 
         host_names = shortnames['host'].keys()
         hostgroup_names = shortnames['hostgroup'].keys()
-        servicegroup_names = shortnames['servicegroup'].keys()
-        contact_names = shortnames['contact'].keys()
-        contactgroup_names = shortnames['contactgroup'].keys()
-        service_names = shortnames['service'].keys()  # Will be a host/service_description string
 
         expand(self.hostgroup_hosts, host_names)
         expand(self.host_hostgroups, hostgroup_names)
         expand(self.service_hostgroups, hostgroup_names)
-        #expand(self.service_hosts, host_names)
-        #expand(self.service_hosts, host_names)
 
     @staticmethod
     def _expand_regex(dictionary, full_list):
@@ -478,8 +472,8 @@ class ObjectFetcher(object):
         """
         if self.needs_reload():
             self.reload_cache()
-        id = str(id).strip()
-        return ObjectFetcher._cached_ids[id]
+        str_id = str(id).strip()
+        return ObjectFetcher._cached_ids[str_id]
 
     def get_by_shortname(self, shortname, cache_only=False):
         """ Get one specific object by its shortname (i.e. host_name for host, etc)
@@ -806,6 +800,14 @@ class ObjectDefinition(object):
         # By default assume this is the filename
         path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
 
+        # Services go to same file as their host
+        if object_type == "service" and self.get('host_name'):
+            try:
+                host = Host.objects.get_by_shortname(self.host_name)
+                return host.get_filename()
+            except Exception:
+                pass
+
         # templates go to the template directory
         if not self.is_registered():
             path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
@@ -816,13 +818,6 @@ class ObjectDefinition(object):
             filename = re.sub(invalid_chars, '', filename)
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, filename)
 
-            # Try stuff the service in same file as the host
-            if self.host_name:
-                try:
-                    host = Host.objects.get_by_shortname(self.host_name)
-                    path = host.get_filename()
-                except Exception:
-                    pass
 
         return path
 
@@ -1377,10 +1372,12 @@ class ObjectDefinition(object):
 
         Example:
            >>> myservice = Service()
-           >>> myservice.contact_groups = "+alladmins,localadmins"
+           >>> myservice.attribute_appendfield(attribute_name="contact_groups", value="alladmins")
+           >>> myservice.contact_groups
+           '+alladmins'
            >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
            >>> print myservice.contact_groups
-           +alladmins,localadmins,webmasters
+           +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
 
@@ -1401,12 +1398,18 @@ class ObjectDefinition(object):
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value='localadmins')
            >>> print myservice.contact_groups
            +alladmins
+           >>> myservice.attribute_removefield(attribute_name="contact_groups", value="alladmins")
+           >>> print myservice.contact_groups
+           None
            """
         aList = AttributeList(self[attribute_name])
 
         if value in aList.fields:
             aList.fields.remove(value)
-            self[attribute_name] = str(aList)
+            if not aList.fields:  # If list is empty, lets remove the attribute
+                self[attribute_name] = None
+            else:
+                self[attribute_name] = str(aList)
         return
 
     def attribute_replacefield(self, attribute_name, old_value, new_value):
@@ -1484,6 +1487,8 @@ class Host(ObjectDefinition):
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
                     recursive=False):
+        if recursive is True:
+            pass  # Its here for compatibility but we are not using recursive so far.
         pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
                                                        sticky=sticky,
                                                        notify=notify,
@@ -1749,7 +1754,7 @@ class Service(ObjectDefinition):
                                                       persistent=persistent,
                                                       author=author,
                                                       comment=comment,
-                                                      timestamp=0,
+                                                      timestamp=timestamp,
                                                       command_file=config.get_cfg_value('command_file')
         )
 
@@ -1772,6 +1777,8 @@ class Service(ObjectDefinition):
         Raises:
           PynagError if this does not look an active object.
         """
+        if recursive is True:
+            pass  # Only for compatibility, it has no effect.
         if self.register == '0':
             raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
         if not self.host_name:
@@ -1909,7 +1916,6 @@ class Contact(ObjectDefinition):
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
-        attribute_name = None
         if macroname in _standard_macros:
             attribute_name = _standard_macros.get(macroname)
         elif macroname.startswith('$_CONTACT'):
@@ -2141,6 +2147,8 @@ class Hostgroup(ObjectDefinition):
         Raises:
           PynagError if this does not look an active object.
         """
+        if recursive is True:
+            pass  # Not used, but is here for backwards compatibility
         if self.register == '0':
             raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
         if not self.hostgroup_name:
@@ -2228,6 +2236,8 @@ class Servicegroup(ObjectDefinition):
         Raises:
           PynagError if this does not look an active object.
         """
+        if recursive is True:
+            pass  # Its here for compatibility but we dont do anything with it.
         if self.register == '0':
             raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
         if not self.servicegroup_name:
@@ -2297,9 +2307,6 @@ def _add_object_to_group(my_object, my_group):
 
     _add_to_group(c, g )
     """
-    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
-    object_type = my_object.object_type     # contact,host,service, etc
-
     # First of all, we behave a little differently depending on what type of an object we lets define some variables:
     group_type = my_group.object_type        # contactgroup,hostgroup,servicegroup
     group_name = my_group.get_shortname()    # admins

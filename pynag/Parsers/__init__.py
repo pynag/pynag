@@ -20,14 +20,15 @@
 import os
 import re
 import time
-import socket # for mk_livestatus
+import socket  # for mk_livestatus
 
 import pynag.Plugins
 
 
 def debug(text):
     debug = True
-    if debug: print text
+    if debug:
+        print text
 
 
 class config:
@@ -48,7 +49,7 @@ class config:
         """
 
         self.cfg_file = cfg_file  # Main configuration file
-        self.strict = strict # Use strict parsing or not
+        self.strict = strict  # Use strict parsing or not
 
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
@@ -82,13 +83,13 @@ class config:
         raise ParserError('Could not find nagios.cfg')
 
     def reset(self):
-        self.cfg_files = [] # List of other configuration files
-        self.data = {} # dict of every known object definition
-        self.errors = [] # List of ParserErrors
+        self.cfg_files = []  # List of other configuration files
+        self.data = {}  # dict of every known object definition
+        self.errors = []  # List of ParserErrors
         self.item_list = None
         self.item_cache = None
-        self.maincfg_values = [] # The contents of main nagios.cfg
-        self._resource_values = [] # The contents of any resource_files
+        self.maincfg_values = []  # The contents of main nagios.cfg
+        self._resource_values = []  # The contents of any resource_files
 
         ## This is a pure listof all the key/values in the config files.  It
         ## shouldn't be useful until the items in it are parsed through with the proper
@@ -133,7 +134,7 @@ class config:
         Return the correct 'key' for an item.  This is mainly a helper method
         for other methods in this class.  It is used to shorten code repitition
         """
-        if not user_key and not self.object_type_keys.has_key(object_type):
+        if not user_key and not object_type in self.object_type_keys:
             raise ParserError("Unknown key for object type:  %s\n" % object_type)
 
         ## Use a default key
@@ -143,19 +144,17 @@ class config:
         return user_key
 
     def _get_item(self, item_name, item_type):
-        """ 
-           Return an item from a list
-           """
+        """ Return an item from a list """
         # create local cache for performance optimizations. TODO: Rewrite functions that call this function
         if not self.item_list:
             self.item_list = self.pre_object_list
             self.item_cache = {}
             for item in self.item_list:
-                if not item.has_key('name'):
+                if not "name" in item:
                     continue
                 name = item['name']
                 tmp_item_type = (item['meta']['object_type'])
-                if not self.item_cache.has_key(tmp_item_type):
+                if not tmp_item_type in self.item_cache:
                     self.item_cache[tmp_item_type] = {}
                 self.item_cache[tmp_item_type][name] = item
         my_cache = self.item_cache.get(item_type, None)
@@ -173,8 +172,8 @@ class config:
             return original_item
         object_type = original_item['meta']['object_type']
         # Performance tweak, if item has been parsed. Lets not do it again
-        if 'name' in original_item and original_item['name'] in self.item_apply_cache[object_type]:
-            return self.item_apply_cache[object_type][original_item['name']]
+        if original_item['meta']['raw_definition'] in self.item_apply_cache[object_type]:
+            return self.item_apply_cache[object_type][original_item['meta']['raw_definition']]
             # End of performance tweak
         parent_names = original_item['use'].split(',')
         parent_items = []
@@ -204,7 +203,7 @@ class config:
                     original_item[k] = v
                     template_fields.append(k)
         if 'name' in original_item:
-            self.item_apply_cache[object_type][original_item['name']] = original_item
+            self.item_apply_cache[object_type][original_item['meta']['raw_definition']] = original_item
         return original_item
 
     def _get_items_in_file(self, filename):
@@ -308,7 +307,6 @@ class config:
                 append = line.strip('\\')
                 continue
 
-
             if '}' in line:  # end of object definition
 
                 if not in_definition:
@@ -350,7 +348,6 @@ class config:
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
-
                 ## Start off an object
                 in_definition = True
 
@@ -390,7 +387,7 @@ class config:
 
                 # Special hack for timeperiods as they are not consistent with other objects
                 # We will treat whole line as a key with an empty value
-                if (current['meta']['object_type'] == 'timeperiod' ) and key not in ('timeperiod_name', 'alias'):
+                if (current['meta']['object_type'] == 'timeperiod') and key not in ('timeperiod_name', 'alias'):
                     key = line
                     value = ''
                 current[key] = value
@@ -409,7 +406,7 @@ class config:
         """
         This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
         file which is configured in, and locates exactly the lines which contain that definition.
-        
+
         Returns tuple:
             (everything_before, object_definition, everything_after, filename)
             everything_before(string) - Every line in filename before object was defined
@@ -419,20 +416,20 @@ class config:
         Raises:
             ValueError if object was not found in "filename"
         """
-        if item['meta'].has_key("filename"):
+        if "filename" in item['meta']:
             filename = item['meta']['filename']
         else:
             raise ValueError("item does not have a filename")
-        file = open(filename)
+        my_file = open(filename)
         object_has_been_found = False
-        everything_before = [] # Every line before our object definition
-        everything_after = []  # Every line after our object definition
-        object_definition = [] # List of every line of our object definition
-        tmp_buffer = []        # Every line of current object being parsed is stored here.
-        current_object_type = None # Object type of current object goes in here
+        everything_before = []  # Every line before our object definition
+        everything_after = []   # Every line after our object definition
+        object_definition = []  # List of every line of our object definition
+        tmp_buffer = []         # Every line of current object being parsed is stored here.
+        current_object_type = None  # Object type of current object goes in here
         i_am_within_definition = False
-        append = None # tmp buffer to store lines that end with backslash
-        for line in file.readlines():
+        append = None  # tmp buffer to store lines that end with backslash
+        for line in my_file.readlines():
             if object_has_been_found:
                 # If we have found an object, lets just spool to the end
                 everything_after.append(line)
@@ -494,12 +491,16 @@ class config:
                         v = v.split(';', 1)[0]
                         v = v.strip()
                     else:
-                        continue # skip empty lines
+                        continue  # skip empty lines
 
-                    if k.startswith('#'): continue
-                    if k.startswith(';'): continue
-                    if k.startswith('define'): continue
-                    if k.startswith('}'): continue
+                    if k.startswith('#'):
+                        continue
+                    if k.startswith(';'):
+                        continue
+                    if k.startswith('define'):
+                        continue
+                    if k.startswith('}'):
+                        continue
 
                     current_candidate[k] = v
                     current_candidate['meta']['defined_attributes'][k] = v
@@ -513,6 +514,7 @@ class config:
                 else:
                     # This is not the item you are looking for
                     everything_before += tmp_buffer
+        my_file.close()
         if object_has_been_found:
             return everything_before, object_definition, everything_after, filename
         else:
@@ -545,6 +547,7 @@ class config:
             object_definition = [new_item]
         else:
             change = None
+            value = None
             i = 0
             for i in range(len(object_definition)):
                 tmp = object_definition[i].split(None, 1)
@@ -578,7 +581,7 @@ class config:
                         # Here we do the actual change
                     change = "\t%-30s%s\n" % (k, value)
                     if item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
-                        change = "\t%s\n" % (new_field_name)
+                        change = "\t%s\n" % new_field_name
                     object_definition[i] = change
                     break
             if not change and new_value is not None:
@@ -591,19 +594,19 @@ class config:
             if len(everything_before) > 0:
                 last_line_before = everything_before[-1]
                 if last_line_before.startswith('# Edited by PyNag on'):
-                    everything_before.pop() # remove this line
+                    everything_before.pop()  # remove this line
             object_definition.insert(0, comment)
             # Here we overwrite the config-file, hoping not to ruin anything
-        buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
-        file = open(filename, 'w')
-        file.write(buffer)
-        file.close()
+        str_buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
+        fh = open(filename, 'w')
+        fh.write(str_buffer)
+        fh.close()
         return True
 
     def item_rewrite(self, item, str_new_item):
         """
         Completely rewrites item with string provided.
-        
+
         Arguments:
             item -- Item that is to be rewritten
             str_new_item -- str representation of the new item
@@ -620,7 +623,7 @@ class config:
     def item_remove(self, item):
         """
         Completely rewrites item with string provided.
-        
+
         Arguments:
             item -- Item that is to be rewritten
             str_new_item -- str representation of the new item
@@ -637,7 +640,7 @@ class config:
     def item_edit_field(self, item, field_name, new_value):
         """
         Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
-        
+
         Example usage:
             edit_object( item, field_name="host_name", new_value="examplehost.example.com")
         Returns:
@@ -651,7 +654,7 @@ class config:
     def item_remove_field(self, item, field_name):
         """
         Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
-        
+
         Example usage:
             item_remove_field( item, field_name="contactgroups" )
         Returns:
@@ -665,7 +668,7 @@ class config:
     def item_rename_field(self, item, old_field_name, new_field_name):
         """
         Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
-        
+
         Example usage:
             item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
         Returns:
@@ -679,7 +682,7 @@ class config:
     def item_add(self, item, filename):
         """
         Adds a new object to a specified config file
-        
+
         Arguments:
             item -- Item to be created
             filename -- Filename that we are supposed to write to
@@ -692,23 +695,23 @@ class config:
             item['meta'] = {}
         item['meta']['filename'] = filename
 
-        # Create directory if it does not already exist                
+        # Create directory if it does not already exist
         dirname = os.path.dirname(filename)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
-        buffer = self.print_conf(item)
-        file = open(filename, 'a')
-        file.write(buffer)
-        file.close()
+        str_buffer = self.print_conf(item)
+        fh = open(filename, 'a')
+        fh.write(str_buffer)
+        fh.close()
         return True
 
     def edit_object(self, item, field_name, new_value):
         """
         Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
-        
+
         Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
-        
+
         THIS FUNCTION IS DEPRECATED. USE item_edit_field() instead
         """
         return self.item_edit_field(item=item, field_name=field_name, new_value=new_value)
@@ -725,7 +728,8 @@ class config:
         if keys1 != keys2:
             return False
         for key in keys1:
-            if key == 'meta': continue
+            if key == 'meta':
+                continue
             key1 = item1[key]
             key2 = item2[key]
             # For our purpose, 30 is equal to 30.000
@@ -734,7 +738,8 @@ class config:
                 key2 = int(float(key2))
             if str(key1) != str(key2):
                 result = False
-        if result == False: return False
+        if result == False:
+            return False
         return True
 
     def edit_service(self, target_host, service_description, field_name, new_value):
@@ -747,7 +752,7 @@ class config:
             raise ParserError("Service not found")
         return self.edit_object(original_object, field_name, new_value)
 
-    def _get_list(self, object, key):
+    def _get_list(self, item, key):
         """
         Return a comma list from an item
 
@@ -762,19 +767,19 @@ class config:
         return
         ['larry','curly','moe']
         """
-        if type(object) != type({}):
-            raise ParserError("%s is not a dictionary\n" % object)
+        if type(item) != type({}):
+            raise ParserError("%s is not a dictionary\n" % item)
             # return []
-        if not object.has_key(key):
+        if not key in item:
             return []
 
         return_list = []
 
-        if object[key].find(",") != -1:
-            for name in object[key].split(","):
+        if item[key].find(",") != -1:
+            for name in item[key].split(","):
                 return_list.append(name)
         else:
-            return_list.append(object[key])
+            return_list.append(item[key])
 
         ## Alphabetize
         return_list.sort()
@@ -788,9 +793,10 @@ class config:
         object_key = self._get_key(object_type, user_key)
 
         k = 'all_%s' % object_type
-        if k not in self.data: return None
+        if k not in self.data:
+            return None
         for item in self.data[k]:
-            if not item.has_key(object_key):
+            if not object_key in item:
                 continue
 
             ## If the object matches, mark it for deletion
@@ -844,7 +850,7 @@ class config:
         #print object_type
         for item in self.data['all_%s' % object_type]:
             ## Skip items without the specified key
-            if not item.has_key(object_key):
+            if not object_key in item:
                 continue
             if item[object_key] == object_name:
                 target_object = item
@@ -912,7 +918,7 @@ class config:
         """
         for item in self.data['all_service']:
             ## Skip service with no service_description
-            if not item.has_key('service_description'):
+            if not "service_description" in item:
                 continue
                 ## Skip non-matching services
             if item['service_description'] != service_description:
@@ -931,11 +937,11 @@ class config:
           name         -- obsolete (discovered automatically via source_item['use']. Here for compatibility.
         """
         ## Remove the 'use' key
-        if source_item.has_key('use'):
+        if "use" in source_item:
             del source_item['use']
 
         for possible_item in self.pre_object_list:
-            if possible_item.has_key('name'):
+            if "name" in possible_item:
                 ## Start appending to the item
                 for k, v in possible_item.iteritems():
 
@@ -946,26 +952,26 @@ class config:
                         raise ParserError("Recursion error on %s %s" % (source_item, v))
 
                     ## Only add the item if it doesn't already exist
-                    if not source_item.has_key(k):
+                    if not k in source_item:
                         source_item[k] = v
         return source_item
 
     def _post_parse(self):
         self.item_list = None
-        self.item_apply_cache = {} # This is performance tweak used by _apply_template
+        self.item_apply_cache = {}  # This is performance tweak used by _apply_template
         for raw_item in self.pre_object_list:
             # Performance tweak, make sure hashmap exists for this object_type
             object_type = raw_item['meta']['object_type']
-            if not self.item_apply_cache.has_key(object_type):
+            if not object_type in self.item_apply_cache:
                 self.item_apply_cache[object_type] = {}
                 # Tweak ends
-            if raw_item.has_key('use'):
+            if "use" in raw_item:
                 raw_item = self._apply_template(raw_item)
             self.post_object_list.append(raw_item)
             ## Add the items to the class lists.
         for list_item in self.post_object_list:
             type_list_name = "all_%s" % list_item['meta']['object_type']
-            if not self.data.has_key(type_list_name):
+            if not type_list_name in self.data:
                 self.data[type_list_name] = []
 
             self.data[type_list_name].append(list_item)
@@ -1027,15 +1033,15 @@ class config:
         output += "# Edited by PyNag on %s\n" % time.ctime()
 
         ## Some hostgroup information
-        if item['meta'].has_key('hostgroup_list'):
+        if "hostgroup_list" in item['meta']:
             output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
 
         ## Some hostgroup information
-        if item['meta'].has_key('service_list'):
+        if "service_list" in item['meta']:
             output += "# Services: %s\n" % ",".join(item['meta']['service_list'])
 
         ## Some hostgroup information
-        if item['meta'].has_key('service_members'):
+        if "service_members" in item['meta']:
             output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
 
         if len(item['meta']['template_fields']) != 0:
@@ -1079,7 +1085,8 @@ class config:
             if line[0] == "#" or line[0] == ';':
                 continue
             tmp = line.split("=", 1)
-            if len(tmp) < 2: continue
+            if len(tmp) < 2:
+                continue
             key, value = tmp
             key = key.strip()
             value = value.strip()
@@ -1114,7 +1121,7 @@ class config:
             new_line = ''
 
         write_buffer = open(filename).readlines()
-        is_dirty = False # dirty if we make any changes
+        is_dirty = False  # dirty if we make any changes
         for i, line in enumerate(write_buffer):
             ## Strip out new line characters
             line = line.strip()
@@ -1143,7 +1150,7 @@ class config:
             elif value == new_value:
                 return False
             # Special so cfg_dir matches despite double-slashes, etc
-            elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
+            elif attribute == 'cfg_dir' and new_value and os.path.normpath(value) == os.path.normpath(new_value):
                 return False
             # We are not appending, and no old value was specified:
             elif append == False and not old_value:
@@ -1259,9 +1266,8 @@ class config:
             if k == resource_name:
                 return v
 
-
     def get_timestamps(self):
-        """Returns a hash map of all nagios related files and their timestamps"""
+        """Returns hash map of all nagios related files and their timestamps"""
         files = {}
         files[self.cfg_file] = None
         for k, v in self.maincfg_values:
@@ -1271,7 +1277,8 @@ class config:
             files[i] = None
             # Now lets lets get timestamp of every file
         for k, v in files.items():
-            if not os.path.isfile(k): continue
+            if not os.path.isfile(k):
+                continue
             files[k] = os.stat(k).st_mtime
         return files
 
@@ -1294,15 +1301,17 @@ class config:
         ## First, cycle through the hosts, and append hostgroup information
         index = 0
         for host in self.data['all_host']:
-            if host.has_key('register') and host['register'] == '0': continue
-            if not host.has_key('host_name'): continue
-            if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+            if host.get("register", None) == "0":
+                continue
+            if not "host_name" in host:
+                continue
+            if not "hostgroup_list" in self.data['all_host'][index]['meta']:
                 self.data['all_host'][index]['meta']['hostgroup_list'] = []
 
             ## Append any hostgroups that are directly listed in the host definition
-            if host.has_key('hostgroups'):
+            if "hostgroups" in host:
                 for hostgroup_name in self._get_list(host, 'hostgroups'):
-                    if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+                    if not "hostgroup_list" in self.data['all_host'][index]['meta']:
                         self.data['all_host'][index]['meta']['hostgroup_list'] = []
                     if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
                         self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
@@ -1310,8 +1319,10 @@ class config:
             ## Append any services which reference this host
             service_list = []
             for service in self.data['all_service']:
-                if service.has_key('register') and service['register'] == '0': continue
-                if not service.has_key('service_description'): continue
+                if service.get("register", None) == "0":
+                    continue
+                if not "service_description" in service:
+                    continue
                 if host['host_name'] in self._get_active_hosts(service):
                     service_list.append(service['service_description'])
             self.data['all_host'][index]['meta']['service_list'] = service_list
@@ -1324,13 +1335,14 @@ class config:
             for member in self._get_list(hostgroup, 'members'):
                 index = 0
                 for host in self.data['all_host']:
-                    if not host.has_key('host_name'): continue
+                    if not "host_name" in host:
+                        continue
 
                     ## Skip members that do not match
                     if host['host_name'] == member:
 
                         ## Create the meta var if it doesn' exist
-                        if not self.data['all_host'][index]['meta'].has_key('hostgroup_list'):
+                        if not "hostgroup_list" in self.data['all_host'][index]['meta']:
                             self.data['all_host'][index]['meta']['hostgroup_list'] = []
 
                         if hostgroup['hostgroup_name'] not in self.data['all_host'][index]['meta']['hostgroup_list']:
@@ -1348,7 +1360,7 @@ class config:
             ## Increment count
             index += 1
 
-    def _get_active_hosts(self, object):
+    def _get_active_hosts(self, item):
         """
         Given an object, return a list of active hosts.  This will exclude hosts that ar negated with a "!"
         """
@@ -1356,16 +1368,15 @@ class config:
         negate_hosts = []
 
         ## Hostgroups
-        if object.has_key("hostgroup_name"):
-
-            for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+        if "hostgroup_name" in item:
+            for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] == "!":
                     hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
                     negate_hosts.extend(self._get_list(hostgroup_obj, 'members'))
 
         ## Host Names
-        if object.has_key("host_name"):
-            for host_name in self._get_list(object, 'host_name'):
+        if "host_name" in item:
+            for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] == "!":
                     negate_hosts.append(host_name[1:])
 
@@ -1373,15 +1384,14 @@ class config:
         active_hosts = []
 
         ## Hostgroups
-        if object.has_key("hostgroup_name"):
-
-            for hostgroup_name in self._get_list(object, 'hostgroup_name'):
+        if "hostgroup_name" in item:
+            for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] != "!":
                     active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
 
         ## Host Names
-        if object.has_key("host_name"):
-            for host_name in self._get_list(object, 'host_name'):
+        if "host_name" in item:
+            for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] != "!":
                     active_hosts.append(host_name)
 
@@ -1411,6 +1421,9 @@ class config:
         """
         Return a list of all cfg files used in this configuration
 
+        Filenames are normalised so that if nagios.cfg specifies relative filenames
+        we will convert it to fully qualified filename before returning.
+
         Example:
         print get_cfg_files()
         ['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
@@ -1419,11 +1432,14 @@ class config:
         for config_object, config_value in self.maincfg_values:
 
             ## Add cfg_file objects to cfg file list
-            if config_object == "cfg_file" and os.path.isfile(config_value):
-                cfg_files.append(config_value)
+            if config_object == "cfg_file":
+                config_value = self.abspath(config_value)
+                if os.path.isfile(config_value):
+                    cfg_files.append(config_value)
 
             ## Parse all files in a cfg directory
             if config_object == "cfg_dir":
+                config_value = self.abspath(config_value)
                 directories = []
                 raw_file_list = []
                 directories.append(config_value)
@@ -1431,9 +1447,9 @@ class config:
                 while directories:
                     current_directory = directories.pop(0)
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
-                    if not os.path.isdir(current_directory): continue
-                    list = os.listdir(current_directory)
-                    for item in list:
+                    if not os.path.isdir(current_directory):
+                        continue
+                    for item in os.listdir(current_directory):
                         # Append full path to file
                         item = "%s" % (os.path.join(current_directory, item.strip()))
                         if os.path.islink(item):
@@ -1449,6 +1465,25 @@ class config:
                             cfg_files.append(raw_file)
 
         return cfg_files
+    def abspath(self, path):
+        """ Return the absolute path of a given relative path.
+
+         The current working directory is assumed to be the dirname of nagios.cfg
+
+         Example:
+         >>> c = config(cfg_file="/etc/nagios/nagios.cfg")
+         >>> c.abspath('nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+         >>> c.abspath('/etc/nagios/nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+        """
+        if not isinstance(path, str):
+            return ValueError("Path must be a string got %s instead" % type(path))
+        if path.startswith('/'):
+            return path
+        nagiosdir = os.path.dirname(self.cfg_file)
+        normpath = os.path.abspath(os.path.join(nagiosdir, path))
+        return normpath
 
     def get_cfg_value(self, key):
         """ Returns one specific value from your nagios.cfg file, None if value is not found.
@@ -1629,8 +1664,6 @@ class mk_livestatus:
         if answer == '':
             return []
 
-
-
         # If something other than python format was requested, we return the answer as is
         if python_format == False:
             return answer
@@ -1639,7 +1672,7 @@ class mk_livestatus:
         try:
             answer = eval(answer)
         except Exception, e:
-            raise ParserError("Error, could not parse response from livestatus.\n%s" % (answer))
+            raise ParserError("Error, could not parse response from livestatus.\n%s" % answer)
 
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
         if doing_stats == True and len(answer) == 1:
@@ -1737,9 +1770,9 @@ class retention:
             IOError -- if status.dat cannot be read
         """
         self.data = {}
-        status = {} # Holds all attributes of a single item
-        key = None # if within definition, store everything before =
-        value = None # if within definition, store everything after =
+        status = {}  # Holds all attributes of a single item
+        key = None  # if within definition, store everything before =
+        value = None  # if within definition, store everything after =
         if not self.filename:
             raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
@@ -1785,14 +1818,14 @@ class retention:
     def __str__(self):
         if not self.data:
             self.parse()
-        buffer = "# Generated by pynag"
+        str_buffer = "# Generated by pynag"
         for datatype, datalist in self.data.items():
             for item in datalist:
-                buffer += "%s {\n" % datatype
+                str_buffer += "%s {\n" % datatype
                 for attr, value in item.items():
-                    buffer += "%s=%s\n" % (attr, value)
-                buffer += "}\n"
-        return buffer
+                    str_buffer += "%s=%s\n" % (attr, value)
+                str_buffer += "}\n"
+        return str_buffer
 
 
 class status(retention):
@@ -1888,7 +1921,8 @@ class object_cache(config):
 
     def get_cfg_files(self):
         for k, v in self.maincfg_values:
-            if k == 'object_cache_file': return [v]
+            if k == 'object_cache_file':
+                return [v]
 
 
 class ParserError(Exception):
@@ -1899,9 +1933,11 @@ class ParserError(Exception):
     filename = None
     line_start = None
     message = None
+
     def __init__(self, message, item=None):
         self.message = message
-        if item is None: return
+        if item is None:
+            return
         self.item = item
         self.filename = item['meta']['filename']
         self.line_start = item['meta'].get('line_start')
@@ -1944,7 +1980,7 @@ class LogFiles(object):
                 start_time = 1
             else:
                 seconds_in_a_day = 60 * 60 * 24
-                seconds_today = end_time % seconds_in_a_day # midnight of today
+                seconds_today = end_time % seconds_in_a_day  # midnight of today
                 start_time = end_time - seconds_today
         start_time = int(start_time)
         end_time = int(end_time)
@@ -1998,7 +2034,7 @@ class LogFiles(object):
 
         log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
         result = []
-        last_state = {} #
+        last_state = {}
         now = time.time()
 
         for line in log_entries:
@@ -2045,6 +2081,13 @@ class LogFiles(object):
 
     def _parse_log_line(self, line):
         """ Parse one particular line in nagios logfile and return a dict. """
+        host = None
+        service_description = None
+        state = None
+        check_attempt = None
+        plugin_output = None
+        contact = None
+
         m = re.search('^\[(.*?)\] (.*?): (.*)', line)
         if m is None:
             return {}
@@ -2060,7 +2103,7 @@ class LogFiles(object):
         result['type'] = logtype
         result['options'] = options
         result['message'] = line
-        result['class'] = 0 # unknown
+        result['class'] = 0  # unknown
         result['class_name'] = 'unclassified'
         if logtype in ('CURRENT HOST STATE', 'CURRENT SERVICE STATE', 'SERVICE ALERT', 'HOST ALERT'):
             result['class'] = 1
@@ -2145,14 +2188,10 @@ class LogFiles(object):
             result['text'] = options
         if 'text' not in result:
             result['text'] = result['options']
-        result['log_class'] = result['class'] # since class is a python keyword
+        result['log_class'] = result['class']  # since class is a python keyword
         return result
 
 
 if __name__ == '__main__':
-    l = LogFiles()
-    entries = l.get_log_entries(start_time=1358208000, end_time=1358243258, service_description=None,
-                                class_name='alerts')
-    #import pprint
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint()
+    c = config()
+    c.parse()

@@ -24,6 +24,8 @@ import tempfile
 import shutil
 import os
 import sys
+import string
+import random
 
 tests_dir = os.path.dirname(os.path.realpath(__file__))
 if tests_dir == '':
@@ -243,11 +245,15 @@ class testModel(unittest.TestCase):
         pynag.Model.cfg_file = "./nagios/nagios.cfg"
         pynag.Model.config = None
         pynag.Model.pynag_directory = self.tmp_dir
+        pynag.Model.ObjectDefinition.objects.get_all()
+        pynag.Model.config._edit_static_file(attribute='cfg_dir', new_value=self.tmp_dir)
 
     def tearDown(self):
         """ Clean up after test suite has finished
         """
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        pynag.Model.ObjectDefinition.objects.get_all()
+        pynag.Model.config._edit_static_file(attribute='cfg_dir',old_value=self.tmp_dir,new_value=None)
 
     def testSuggestedFileName(self):
         """ Test get_suggested_filename feature in pynag.Model
@@ -309,6 +315,35 @@ class testModel(unittest.TestCase):
         self.assertEqual([group], service1.get_effective_servicegroups())
         self.assertEqual([group], service2.get_effective_servicegroups())
         self.assertEqual(sorted([service1, service2]), sorted(group.get_effective_services()))
+
+    def testHostDelete(self):
+        """ Create a test object and then delete it. """
+        host = pynag.Model.Host()
+
+        all_hosts = pynag.Model.Host.objects.get_all()
+        all_hostnames = map(lambda x: x.host_name, all_hosts)
+
+        # generate a random hostname for our new host
+        chars = string.letters + string.digits
+        host_name = "host-delete-test"  + ''.join([random.choice(chars) for i in xrange(10)])
+
+        # Produce an error if our randomly generated host already exists in config
+        self.assertTrue(host_name not in all_hostnames)
+
+        # Save our new host and reload our config if we somehow failed to create the
+        # host we will get an exception here.
+        host.host_name = host_name
+        host.save()
+        host = pynag.Model.Host.objects.get_by_shortname(host_name)
+
+        # Host has been created. Lets delete it.
+        host.delete()
+
+        # Lets get all hosts again, and make sure the list is the same as when we started
+        # If it is the same, the host was surely deleted
+        all_hosts_after_delete = pynag.Model.Host.objects.get_all()
+        self.assertEqual(all_hosts,all_hosts_after_delete)
+
 
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
