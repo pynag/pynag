@@ -1150,7 +1150,7 @@ class config:
             elif value == new_value:
                 return False
             # Special so cfg_dir matches despite double-slashes, etc
-            elif attribute == 'cfg_dir' and os.path.normpath(value) == os.path.normpath(new_value):
+            elif attribute == 'cfg_dir' and new_value and os.path.normpath(value) == os.path.normpath(new_value):
                 return False
             # We are not appending, and no old value was specified:
             elif append == False and not old_value:
