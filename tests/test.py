@@ -452,7 +452,9 @@ class testModel(unittest.TestCase):
         hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contact_groups=cg_name,      name="stay").save()
         hostesc_del  = pynag.Model.HostEscalation(contacts=None,            contact_groups="+"+cg_name,  name="del").save()
         hostesc_del2 = pynag.Model.HostEscalation(contacts='',              contact_groups=cg_name,      name="del2").save()
-        
+        host         = pynag.Model.Host(          contacts="contact_STAYS", contact_groups=cg_name,      name="hoststay").save() 
+        contact      = pynag.Model.Contact(       contactgroups=cg_name,                                 contact_name="contactstay").save()
+
         cg.delete(recursive=True,cleanup_related_items=True)
         
         all_contactgroups_after_delete = pynag.Model.Contactgroup.objects.get_all()
@@ -460,6 +462,10 @@ class testModel(unittest.TestCase):
         
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
         self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contact_groups"))
+        self.assertEqual(1,len(pynag.Model.Host.objects.filter(name="hoststay")))
+        self.assertTrue(pynag.Model.Host.objects.filter(name="hoststay")[0].attribute_is_empty("contact_groups"))
+        self.assertEqual(1,len(pynag.Model.Contact.objects.filter(contact_name="contactstay")))
+        self.assertTrue(pynag.Model.Contact.objects.filter(contact_name="contactstay")[0].attribute_is_empty("contactgroups"))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del")))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del2")))
 
@@ -580,6 +586,7 @@ class testModel(unittest.TestCase):
         hostesc_stay = pynag.Model.HostEscalation(contact_groups="contactgroup_STAYS", contacts=c_name,      name="stay").save()
         hostesc_del  = pynag.Model.HostEscalation(contact_groups=None,                 contacts="+"+c_name,  name="del").save()
         hostesc_del2 = pynag.Model.HostEscalation(contact_groups='',                   contacts=c_name,      name="del2").save()
+        contactGroup = pynag.Model.Contactgroup(  contactgroup_name="cgstay",          members=c_name                   ).save()
 
         c.delete(recursive=True,cleanup_related_items=True)
 
@@ -588,6 +595,8 @@ class testModel(unittest.TestCase):
 
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
         self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.Contactgroup.objects.filter(contactgroup_name="cgstay")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("members"))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del")))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del2")))
 

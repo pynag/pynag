@@ -2052,11 +2052,16 @@ class Contactgroup(ObjectDefinition):
                 pass
             if cleanup_related_items is True:
                 contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
+                contacts      = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name) 
+                    # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
                 hostSvcAndEscalations = ObjectDefinition.objects.filter(contact_groups__has_field=self.contactgroup_name)
                 # will find references in Hosts, Services as well as Host/Service-escalations
                 for i in contactgroups:
                     # remove contactgroup from other contactgroups
                     i.attribute_removefield('contactgroup_members', self.contactgroup_name)
+                    i.save()
+                for i in contacts:
+                    i.attribute_removefield('contactgroups', self.contactgroup_name)
                     i.save()
                 for i in hostSvcAndEscalations:
                     # remove contactgroup from objects
