@@ -4,15 +4,23 @@ import sys
 import pynag.Utils
 import pynag.Plugins
 
+# Some of the methods here print directly to stdout but we
+# dont want to spam the output of the unittests. Lets do a temp
+# blocking of stdout and stderr
+from cStringIO import StringIO
+original_stdout = sys.stdout
+original_stderr = sys.stderr
 
 class testPluginParams(unittest.TestCase):
     def setUp(self):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
         self.np = Plugin(must_threshold=False)
+        sys.stdout = StringIO()
 
     def tearDown(self):
         sys.argv = self.argv_store
+        sys.stdout = original_stdout
 
     def create_params(self, *args):
         sys.argv.extend(args)
@@ -53,9 +61,11 @@ class testPluginNoThreshold(unittest.TestCase):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
         self.np = Plugin(must_threshold=False)
+        sys.stdout = StringIO()
 
     def tearDown(self):
         sys.argv = self.argv_store
+        sys.stdout = original_stdout
 
     def run_expect(self, case, expected_exit, value):
         sys.argv = [sys.argv[0]] + case.split()
@@ -102,9 +112,10 @@ class testPluginHelper(unittest.TestCase):
         self.my_plugin.parser.add_option('-F',
                                          dest='fakedata',
                                          help='fake data to test thresholds')
-
+        sys.stdout = StringIO()
     def tearDown(self):
         sys.argv = self.argv_store
+        sys.stdout = original_stdout
 
     def run_expect(self, case, value, expected_exit):
         sys.argv = [sys.argv[0]] + case.split() + ('-F %s' % value).split()
@@ -309,9 +320,12 @@ class testPlugin(unittest.TestCase):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
         self.np = Plugin()
-
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
     def tearDown(self):
         sys.argv = self.argv_store
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
 
     def run_expect(self, case, expected_exit, value):
         sys.argv = [sys.argv[0]] + case.split()
@@ -335,6 +349,7 @@ class testPlugin(unittest.TestCase):
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
+
 
     """
     Throws SystemExit, required parameter not set when activating
