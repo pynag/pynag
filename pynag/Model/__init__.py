@@ -487,7 +487,7 @@ class ObjectFetcher(object):
         Raises:
             ValueError if object is not found
         """
-        if not cache_only and self.needs_reload():
+        if cache_only is False and self.needs_reload():
             self.reload_cache()
         shortname = str(shortname).strip()
         return ObjectFetcher._cached_shortnames[self.object_type][shortname]
