@@ -675,6 +675,13 @@ class ObjectDefinition(object):
         """Set (but does not save) one attribute in our object"""
         self[attribute_name] = attribute_value
 
+    def attribute_is_empty(self,attribute_name):
+        attr = self.get_attribute(attribute_name)
+        if attr == None or attr.strip() in (None,'','+','-','!'):
+            return True
+        else:
+            return False
+
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
         return len(self._changes.keys()) == 0
@@ -1605,19 +1612,46 @@ class Host(ObjectDefinition):
         return children
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well """
+        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well 
+        cleanup_related_items=True will also remove references in hostgroups, dependencies and escalations"""
         # Find all services and delete them as well
-        if self.host_name is not None:
-            if cleanup_related_items is True:
-                for i in Hostgroup.objects.filter(members__has_field=self.host_name):
-                    i.attribute_removefield('members', self.host_name)
+        if self.host_name is None:
+            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        if recursive is True:
+            for i in Service.objects.filter(host_name__has_field=self.host_name, host_name__exists=False):
+            # delete only services where only this host_name and no hostgroups are defined
+                i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        if cleanup_related_items is True:
+            hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
+            dependenciesAndEscalations = ObjectDefinition.objects.filter(
+                host_name__has_field=self.host_name, object_type__isnot='host')
+            for i in hostgroups:
+                # remove host from hostgroups
+                i.attribute_removefield('members', self.host_name)
+                i.save()
+            for i in dependenciesAndEscalations:
+                # remove from host/service escalations/dependencies
+                i.attribute_removefield('host_name', self.host_name)
+                if ((i.get_attribute('object_type').endswith("escalation") or
+                     i.get_attribute('object_type').endswith("dependency"))
+                  and recursive is True and i.attribute_is_empty("host_name")
+                  and i.attribute_is_empty("hostgroup_name")):
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
                     i.save()
-            if recursive is True:
-                for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
-                # delete only services where only this host_name and no hostgroups are defined
-                    i.delete(recursive=recursive)
+            # get these here as we might have deleted some in the block above
+            dependencies = ObjectDefinition.objects.filter(dependent_host_name__has_field=self.host_name)
+            for i in dependencies:
+                # remove from host/service escalations/dependencies
+                i.attribute_removefield('dependent_host_name', self.host_name)
+                if (i.get_attribute('object_type').endswith("dependency")
+                  and recursive is True and i.attribute_is_empty("dependent_host_name")
+                  and i.attribute_is_empty("dependent_hostgroup_name")):
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
+                    i.save()
             # Call parent to get delete myself
-        super(self.__class__, self).delete(recursive=recursive)
+        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
 
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
@@ -1937,6 +1971,36 @@ class Contact(ObjectDefinition):
     def remove_from_contactgroup(self, contactgroup):
         return _remove_from_contactgroup(self, contactgroup)
 
+    def delete(self, recursive=False, cleanup_related_items=True):
+        """ Overwrites ObjectDefinition.delete() so that
+        cleanup_related_items=True will also remove references to contacts in hosts, services and escalations
+        recursive=True doesn't have any effect, no objects are 100% dependent on contacts"""
+        if self.contact_name is None:
+            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        if recursive is True:
+            # No object is 100% dependent on a contact
+            pass
+        if cleanup_related_items is True:
+            contactgroups = Contactgroup.objects.filter(members__has_field=self.contact_name)
+            hostSvcAndEscalations = ObjectDefinition.objects.filter(contacts__has_field=self.contact_name)
+            # will find references in Hosts, Services as well as Host/Service-escalations
+            for i in contactgroups:
+                # remove contact from contactgroups
+                i.attribute_removefield('members', self.contact_name)
+                i.save()
+            for i in hostSvcAndEscalations:
+                # remove contact from objects
+                i.attribute_removefield('contacts', self.contact_name)
+                if (i.get_attribute('object_type').endswith("escalation")
+                  and recursive is True and i.attribute_is_empty("contacts")
+                  and i.attribute_is_empty("contact_groups")):
+                    # no contacts or contact_groups defined for this escalation
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
+                    i.save()
+            # Call parent to get delete myself
+        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+
 
 class ServiceDependency(ObjectDefinition):
     object_type = 'servicedependency'
@@ -1947,6 +2011,13 @@ class HostDependency(ObjectDefinition):
     object_type = 'hostdependency'
     objects = ObjectFetcher('hostdependency')
 
+class HostEscalation(ObjectDefinition):
+    object_type = 'hostescalation'
+    objects = ObjectFetcher('hostescalation')
+
+class ServiceEscalation(ObjectDefinition):
+    object_type = 'serviceescalation'
+    objects = ObjectFetcher('serviceescalation')
 
 class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
@@ -1999,6 +2070,41 @@ class Contactgroup(ObjectDefinition):
         contact = Contact.objects.get_by_shortname(contact_name)
         return _remove_from_contactgroup(contact, self)
 
+    def delete(self, recursive=False, cleanup_related_items=True):
+        """ Overwrites ObjectDefinition.delete() so that 
+        cleanup_related_items=True will also remove references to contactgroups in hosts, services and escalations
+        recursive=True doesn't have any effect, no objects are 100% dependent on contactsgroups"""
+        if self.contactgroup_name is None:
+            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        if recursive is True:
+            # No object is 100% dependent on a contactgroup
+            pass
+        if cleanup_related_items is True:
+            contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
+            contacts      = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name) 
+                # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
+            hostSvcAndEscalations = ObjectDefinition.objects.filter(contact_groups__has_field=self.contactgroup_name)
+            # will find references in Hosts, Services as well as Host/Service-escalations
+            for i in contactgroups:
+                # remove contactgroup from other contactgroups
+                i.attribute_removefield('contactgroup_members', self.contactgroup_name)
+                i.save()
+            for i in contacts:
+                i.attribute_removefield('contactgroups', self.contactgroup_name)
+                i.save()
+            for i in hostSvcAndEscalations:
+                # remove contactgroup from objects
+                i.attribute_removefield('contact_groups', self.contactgroup_name)
+                if (i.get_attribute('object_type').endswith("escalation")
+                  and recursive is True and i.attribute_is_empty("contacts") 
+                  and i.attribute_is_empty("contact_groups")): 
+                    # no contacts or contact_groups defined for this escalation
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
+                    i.save()
+            # Call parent to get delete myself
+        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+
 
 class Hostgroup(ObjectDefinition):
     object_type = 'hostgroup'
@@ -2045,41 +2151,49 @@ class Hostgroup(ObjectDefinition):
     def delete(self, recursive=False, cleanup_related_items=True):
         """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well
             cleanup_related_items=True will also remove references in hostgroups,hosts + dependencies and escalations"""
-        if self.hostgroup_name is not None:
-            if recursive is True:
-                for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
-                    #remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
-                    i.delete(recursive=recursive)
-            if cleanup_related_items is True:
-                hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
-                hosts = Host.objects.filter(hostgroups__has_field=self.hostgroup_name)
-                dependenciesAndEscalations = ObjectDefinition.objects.filter(
-                    hostgroup_name__has_field=self.hostgroup_name, object_type__isnot='hostgroup')
-                dependencies = ObjectDefinition.objects.filter(dependent_hostgroup_name__has_field=self.hostgroup_name)
-                for i in hostgroups:
-                    # remove hostgroup from other hostgroups
-                    i.attribute_removefield('hostgroup_members', self.hostgroup_name)
-                    hgm = i.get_attribute('hostgroup_members')
-                    # Remove the + character if it's the only thing remaining after removing a field from the hostgroup_members attribute
-                    # Workaround for https://dev.icinga.org/issues/3900
-                    if len(hgm) == 1 and hgm[0] == "+":
-                        i.set_attribute('hostgroup_members', None)
+        if self.hostgroup_name is None:
+            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        if recursive is True:
+            for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
+                #remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
+                i.delete(recursive=recursive)
+        if cleanup_related_items is True:
+            hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
+            hosts = Host.objects.filter(hostgroups__has_field=self.hostgroup_name)
+            dependenciesAndEscalations = ObjectDefinition.objects.filter(
+                hostgroup_name__has_field=self.hostgroup_name, object_type__isnot='hostgroup')
+            for i in hostgroups:
+                # remove hostgroup from other hostgroups
+                i.attribute_removefield('hostgroup_members', self.hostgroup_name)
+                i.save()
+            for i in hosts:
+                # remove hostgroup from hosts
+                i.attribute_removefield('hostgroups', self.hostgroup_name)
+                i.save()
+            for i in dependenciesAndEscalations:
+                # remove from host/service escalations/dependencies
+                i.attribute_removefield('hostgroup_name', self.hostgroup_name)
+                if ((i.get_attribute('object_type').endswith("escalation") or
+                     i.get_attribute('object_type').endswith("dependency")) 
+                  and recursive is True and i.attribute_is_empty("host_name")  
+                  and i.attribute_is_empty("hostgroup_name")): 
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
                     i.save()
-                for i in hosts:
-                    # remove hostgroup from hosts
-                    i.attribute_removefield('hostgroups', self.hostgroup_name)
-                    i.save()
-                for i in dependenciesAndEscalations:
-                    # remove from host/service escalations/dependencies
-                    i.attribute_removefield('hostgroup_name', self.hostgroup_name)
-                    i.save()
-                for i in dependencies:
-                    # remove from host/service escalations/dependencies
-                    i.attribute_removefield('dependent_hostgroup_name', self.hostgroup_name)
+            # get these here as we might have deleted some in the block above
+            dependencies = ObjectDefinition.objects.filter(dependent_hostgroup_name__has_field=self.hostgroup_name)
+            for i in dependencies:
+                # remove from host/service escalations/dependencies
+                i.attribute_removefield('dependent_hostgroup_name', self.hostgroup_name)
+                if (i.get_attribute('object_type').endswith("dependency")
+                  and recursive is True and i.attribute_is_empty("dependent_host_name")
+                  and i.attribute_is_empty("dependent_hostgroup_name")):
+                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                else:
                     i.save()
             # Call parent to get delete myself
-        super(self.__class__, self).delete(recursive=recursive)
-
+        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+#
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
         """ Put every host and service in this hostgroup in a schedule downtime.
@@ -2437,6 +2551,8 @@ string_to_class['servicegroup'] = Servicegroup
 string_to_class['timeperiod'] = Timeperiod
 string_to_class['hostdependency'] = HostDependency
 string_to_class['servicedependency'] = ServiceDependency
+string_to_class['hostescalation'] = HostEscalation
+string_to_class['serviceescalation'] = ServiceEscalation
 string_to_class['command'] = Command
 #string_to_class[None] = ObjectDefinition
 
