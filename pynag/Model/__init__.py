@@ -1620,13 +1620,11 @@ class Host(ObjectDefinition):
            cleanup_related_items -- If True, remove references found in hostgroups and escalations
            recursive             -- If True, also delete all services of this host
         """
-        if self.host_name is None:
-            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
-        if recursive is True:
+        if recursive is True and self.host_name:
             for i in Service.objects.filter(host_name__has_field=self.host_name, host_name__exists=False):
             # delete only services where only this host_name and no hostgroups are defined
                 i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
-        if cleanup_related_items is True:
+        if cleanup_related_items is True and self.host_name:
             hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
             dependenciesAndEscalations = ObjectDefinition.objects.filter(
                 host_name__has_field=self.host_name, object_type__isnot='host')
@@ -1655,7 +1653,7 @@ class Host(ObjectDefinition):
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
-            # Call parent to get delete myself
+        # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
 
     def get_related_objects(self):
@@ -1985,12 +1983,10 @@ class Contact(ObjectDefinition):
           cleanup_related_items -- If True, remove all references to this contact in contactgroups and escalations
           recursive             -- Only here for compatibility. Has no effect.
         """
-        if self.contact_name is None:
-            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
             # No object is 100% dependent on a contact
             pass
-        if cleanup_related_items is True:
+        if cleanup_related_items is True and self.contact_name:
             contactgroups = Contactgroup.objects.filter(members__has_field=self.contact_name)
             hostSvcAndEscalations = ObjectDefinition.objects.filter(contacts__has_field=self.contact_name)
             # will find references in Hosts, Services as well as Host/Service-escalations
@@ -2008,7 +2004,7 @@ class Contact(ObjectDefinition):
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
-            # Call parent to get delete myself
+        # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
 
 
@@ -2089,12 +2085,10 @@ class Contactgroup(ObjectDefinition):
           cleanup_related_items -- If True, remove all references to this group in hosts,services,etc.
           recursive             -- Only here for compatibility. Has no effect.
         """
-        if self.contactgroup_name is None:
-            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
             # No object is 100% dependent on a contactgroup
             pass
-        if cleanup_related_items is True:
+        if cleanup_related_items is True and self.contactgroup_name:
             contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
             contacts      = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name) 
                 # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
@@ -2117,7 +2111,7 @@ class Contactgroup(ObjectDefinition):
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
-            # Call parent to get delete myself
+        # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
 
 
@@ -2172,13 +2166,11 @@ class Hostgroup(ObjectDefinition):
           cleanup_related_items -- If True, remove all references to this group in hosts/services,escalations,etc
           recursive             -- Only here for compatibility. Has no effect.
         """
-        if self.hostgroup_name is None:
-            return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
-        if recursive is True:
+        if recursive is True and self.hostgroup_name:
             for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
                 #remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
                 i.delete(recursive=recursive)
-        if cleanup_related_items is True:
+        if cleanup_related_items is True and self.hostgroup_name:
             hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
             hosts = Host.objects.filter(hostgroups__has_field=self.hostgroup_name)
             dependenciesAndEscalations = ObjectDefinition.objects.filter(
@@ -2212,9 +2204,10 @@ class Hostgroup(ObjectDefinition):
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
-            # Call parent to get delete myself
+        # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
-#
+
+
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
         """ Put every host and service in this hostgroup in a schedule downtime.
