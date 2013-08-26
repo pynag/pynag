@@ -409,10 +409,10 @@ class config:
 
         Returns tuple:
             (everything_before, object_definition, everything_after, filename)
-            everything_before(string) - Every line in filename before object was defined
-            everything_after(string) - Every line in "filename" after object was defined
-            object_definition - exact configuration of the object as it appears in "filename"
-            filename - file in which the object was written to
+            everything_before (list of lines) - Every line in filename before object was defined
+            everything_after (list of lines) - Every line in "filename" after object was defined
+            object_definition (list of lines) - Every line used to define our item in "filename"
+            filename (string) - file in which the object was written to
         Raises:
             ValueError if object was not found in "filename"
         """
@@ -420,108 +420,31 @@ class config:
             filename = item['meta']['filename']
         else:
             raise ValueError("item does not have a filename")
-        my_file = open(filename)
-        object_has_been_found = False
-        everything_before = []  # Every line before our object definition
-        everything_after = []   # Every line after our object definition
-        object_definition = []  # List of every line of our object definition
-        tmp_buffer = []         # Every line of current object being parsed is stored here.
-        current_object_type = None  # Object type of current object goes in here
-        i_am_within_definition = False
-        append = None  # tmp buffer to store lines that end with backslash
-        for line in my_file.readlines():
-            if object_has_been_found:
-                # If we have found an object, lets just spool to the end
-                everything_after.append(line)
-                continue
-            tmp = line.split(None, 1)
-            if len(tmp) == 0:
-                # empty line
-                keyword = ''
-                rest = ''
-            elif len(tmp) == 1:
-                # single word on the line
-                keyword = tmp[0]
-                rest = ''
-            else:
-                keyword, rest = tmp[0], tmp[1]
-            keyword = keyword.strip()
-            # If we reach a define statement, we log every line to a special buffer
-            # When define closes, we parse the object and see if it is the object we
-            # want to modify
-            if keyword == 'define':
-                current_object_type = rest.split(None, 1)[0]
-                current_object_type = current_object_type.strip(';')
-                current_object_type = current_object_type.strip('{')
-                current_object_type = current_object_type.strip()
-                tmp_buffer = []
-                i_am_within_definition = True
-            if i_am_within_definition == True:
-                # If previous line ended with backslash, treat this line as a
-                # continuation of previous line
-                if append:
-                    line = append + line.strip() + "\n"
-                    append = None
-                # If this line ends with a backslash, continue directly to next line
-                if line.endswith('\\\n'):
-                    append = line.strip('\\\n')
-                    continue
-                tmp_buffer.append(line)
-            else:
-                everything_before.append(line)
-            if len(keyword) > 0 and keyword[0] == '}':
-                i_am_within_definition = False
 
-                current_candidate = self.get_new_item(object_type=current_object_type, filename=filename)
-                for i in tmp_buffer:
-                    i = i.strip()
-                    tmp = i.split(None, 1)
-
-                    if len(tmp) == 0:
-                        continue
-                        # Hack that makes timeperiod attributes be contained only in the key
-                    if current_object_type == 'timeperiod' and tmp[0] not in ('alias', 'timeperiod_name'):
-                        k = i
-                        v = ''
-                    elif len(tmp) == 1:
-                        k = tmp[0]
-                        v = ''
-                    elif len(tmp) > 1:
-                        k, v = tmp[0], tmp[1]
-                        v = v.split(';', 1)[0]
-                        v = v.strip()
-                    else:
-                        continue  # skip empty lines
-
-                    if k.startswith('#'):
-                        continue
-                    if k.startswith(';'):
-                        continue
-                    if k.startswith('define'):
-                        continue
-                    if k.startswith('}'):
-                        continue
-
-                    current_candidate[k] = v
-                    current_candidate['meta']['defined_attributes'][k] = v
-                    # Apply template should not be needed anymore
-                    #current_candidate = self._apply_template(current_candidate)
-                # Compare objects
-                if self.compareObjects(item, current_candidate) == True:
-                    # This is the object i am looking for
-                    object_has_been_found = True
-                    object_definition = tmp_buffer
-                else:
-                    # This is not the item you are looking for
-                    everything_before += tmp_buffer
-        my_file.close()
-        if object_has_been_found:
-            return everything_before, object_definition, everything_after, filename
+        # Look for our item, store it as my_item
+        for i in self.parse_file(filename):
+            if self.compareObjects(item, i):
+                my_item = i
+                break
         else:
             raise ValueError("We could not find object in %s\n%s" % (filename, item))
 
+        # Caller of this method expects to be returned
+        # several lists that describe the lines in our file.
+        # The splitting logic starts here.
+        my_file = open(filename)
+        all_lines = my_file.readlines()
+        my_file.close()
+
+        start = my_item['meta']['line_start']-1
+        end = my_item['meta']['line_end']
+        everything_before = all_lines[:start]
+        object_definition = all_lines[start:end]
+        everything_after = all_lines[end:]
+        return everything_before, object_definition, everything_after, filename
+
     def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
-                       make_comments=True):
+                       make_comments=False):
         """
         Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
         If new_value and new_field_name are both None, the attribute is removed.
