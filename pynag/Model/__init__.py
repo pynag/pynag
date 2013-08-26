@@ -1622,7 +1622,7 @@ class Host(ObjectDefinition):
         """
         if recursive is True and self.host_name:
             for i in Service.objects.filter(host_name__has_field=self.host_name, host_name__exists=False):
-            # delete only services where only this host_name and no hostgroups are defined
+                # delete only services where only this host_name and no hostgroups are defined
                 i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if cleanup_related_items is True and self.host_name:
             hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
@@ -1981,7 +1981,7 @@ class Contact(ObjectDefinition):
 
         Arguments:
           cleanup_related_items -- If True, remove all references to this contact in contactgroups and escalations
-          recursive             -- Only here for compatibility. Has no effect.
+          recursive             -- If True, remove escalations/dependencies that rely on this (and only this) contact
         """
         if recursive is True:
             # No object is 100% dependent on a contact
@@ -2083,7 +2083,7 @@ class Contactgroup(ObjectDefinition):
 
         Arguments:
           cleanup_related_items -- If True, remove all references to this group in hosts,services,etc.
-          recursive             -- Only here for compatibility. Has no effect.
+          recursive             -- If True, remove dependant escalations.
         """
         if recursive is True:
             # No object is 100% dependent on a contactgroup
@@ -2091,7 +2091,7 @@ class Contactgroup(ObjectDefinition):
         if cleanup_related_items is True and self.contactgroup_name:
             contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
             contacts      = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name) 
-                # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
+            # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
             hostSvcAndEscalations = ObjectDefinition.objects.filter(contact_groups__has_field=self.contactgroup_name)
             # will find references in Hosts, Services as well as Host/Service-escalations
             for i in contactgroups:
@@ -2164,7 +2164,7 @@ class Hostgroup(ObjectDefinition):
 
         Arguments:
           cleanup_related_items -- If True, remove all references to this group in hosts/services,escalations,etc
-          recursive             -- Only here for compatibility. Has no effect.
+          recursive             -- If True, remove services and escalations that bind to this (and only this) hostgroup
         """
         if recursive is True and self.hostgroup_name:
             for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
