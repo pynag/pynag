@@ -1612,17 +1612,43 @@ class Host(ObjectDefinition):
         return children
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well """
+        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well 
+        cleanup_related_items=True will also remove references in hostgroups, dependencies and escalations"""
         # Find all services and delete them as well
         if self.host_name is not None:
-            if cleanup_related_items is True:
-                for i in Hostgroup.objects.filter(members__has_field=self.host_name):
-                    i.attribute_removefield('members', self.host_name)
-                    i.save()
             if recursive is True:
-                for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
+                for i in Service.objects.filter(host_name__has_field=self.host_name, host_name__exists=False):
                 # delete only services where only this host_name and no hostgroups are defined
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+            if cleanup_related_items is True:
+                hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
+                dependenciesAndEscalations = ObjectDefinition.objects.filter(
+                    host_name__has_field=self.host_name, object_type__isnot='host')
+                for i in hostgroups:
+                    # remove host from hostgroups
+                    i.attribute_removefield('members', self.host_name)
+                    i.save()
+                for i in dependenciesAndEscalations:
+                    # remove from host/service escalations/dependencies
+                    i.attribute_removefield('host_name', self.host_name)
+                    if ((i.get_attribute('object_type').endswith("escalation") or
+                         i.get_attribute('object_type').endswith("dependency"))
+                      and recursive is True and i.attribute_is_empty("host_name")
+                      and i.attribute_is_empty("hostgroup_name")):
+                        i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    else:
+                        i.save()
+                # get these here as we might have deleted some in the block above
+                dependencies = ObjectDefinition.objects.filter(dependent_host_name__has_field=self.host_name)
+                for i in dependencies:
+                    # remove from host/service escalations/dependencies
+                    i.attribute_removefield('dependent_host_name', self.host_name)
+                    if (i.get_attribute('object_type').endswith("dependency")
+                      and recursive is True and i.attribute_is_empty("dependent_host_name")
+                      and i.attribute_is_empty("dependent_hostgroup_name")):
+                        i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    else:
+                        i.save()
             # Call parent to get delete myself
         super(self.__class__, self).delete(recursive=recursive)
 
@@ -2163,7 +2189,7 @@ class Hostgroup(ObjectDefinition):
                         i.save()
             # Call parent to get delete myself
         super(self.__class__, self).delete(recursive=recursive)
-
+#
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
         """ Put every host and service in this hostgroup in a schedule downtime.
