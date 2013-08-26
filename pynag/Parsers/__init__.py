@@ -56,6 +56,7 @@ class config:
             self.cfg_file = self.guess_cfg_file()
         self.data = {}
         self.maincfg_values = []
+        self._is_dirty = False
 
     def guess_nagios_directory(self):
         """ Returns a path to the nagios configuration directory on your system
@@ -597,10 +598,18 @@ class config:
             object_definition.insert(0, comment)
             # Here we overwrite the config-file, hoping not to ruin anything
         str_buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
-        fh = open(filename, 'w')
-        fh.write(str_buffer)
-        fh.close()
+        self.write(filename, str_buffer)
         return True
+
+    def write(self, filename, string):
+        """ Wrapper around open(filename).write() """
+        fh = open(filename, 'w')
+        return_code = fh.write(string)
+        fh.flush()
+        os.fsync(fh)
+        fh.close()
+        self._is_dirty = True
+        return return_code
 
     def item_rewrite(self, item, str_new_item):
         """
@@ -1004,9 +1013,8 @@ class config:
                         file_contents += self.print_conf(item)
 
                     ## Write the file
-                    f = open(item['meta']['filename'], 'w')
-                    f.write(file_contents)
-                    f.close()
+                    filename = item['meta']['filename']
+                    self.write(filename, file_contents)
 
                     ## Recreate the item entry without the commit flag
                     self.data[k].remove(item)
@@ -1164,7 +1172,8 @@ class config:
             is_dirty = True
             # When we get down here, it is time to write changes to file
         if is_dirty == True:
-            open(filename, 'w').write(''.join(write_buffer))
+            str_buffer = ''.join(write_buffer)
+            self.write(filename, str_buffer)
             return True
         else:
             return False
@@ -1197,6 +1206,11 @@ class config:
         # If Parse has never been run:
         if self.data == {}:
             return True
+        # If previous save operation has forced a reparse
+        if self._is_dirty is True:
+            return True
+
+        # If we get here, we check the timestamps of the configs
         new_timestamps = self.get_timestamps()
         if len(new_timestamps) != len(self.timestamps):
             return True
@@ -1248,6 +1262,8 @@ class config:
             self._load_file(cfg_file)
 
         self._post_parse()
+
+        self._is_dirty = False
 
     def get_resource(self, resource_name):
         """ Get a single resource value which can be located in any resource.cfg file
