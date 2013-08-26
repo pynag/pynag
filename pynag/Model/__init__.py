@@ -1612,9 +1612,14 @@ class Host(ObjectDefinition):
         return children
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well 
-        cleanup_related_items=True will also remove references in hostgroups, dependencies and escalations"""
-        # Find all services and delete them as well
+        """ Delete this host and optionally its services
+
+         Works like ObjectDefinition.delete() except for:
+
+         Arguments:
+           cleanup_related_items -- If True, remove references found in hostgroups and escalations
+           recursive             -- If True, also delete all services of this host
+        """
         if self.host_name is None:
             return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
@@ -1972,9 +1977,14 @@ class Contact(ObjectDefinition):
         return _remove_from_contactgroup(self, contactgroup)
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that
-        cleanup_related_items=True will also remove references to contacts in hosts, services and escalations
-        recursive=True doesn't have any effect, no objects are 100% dependent on contacts"""
+        """ Delete this contact and optionally remove references in groups and escalations
+
+        Works like ObjectDefinition.delete() except:
+
+        Arguments:
+          cleanup_related_items -- If True, remove all references to this contact in contactgroups and escalations
+          recursive             -- Only here for compatibility. Has no effect.
+        """
         if self.contact_name is None:
             return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
@@ -2071,9 +2081,14 @@ class Contactgroup(ObjectDefinition):
         return _remove_from_contactgroup(contact, self)
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that 
-        cleanup_related_items=True will also remove references to contactgroups in hosts, services and escalations
-        recursive=True doesn't have any effect, no objects are 100% dependent on contactsgroups"""
+        """ Delete this contactgroup and optionally remove references in hosts/services
+
+        Works like ObjectDefinition.delete() except:
+
+        Arguments:
+          cleanup_related_items -- If True, remove all references to this group in hosts,services,etc.
+          recursive             -- Only here for compatibility. Has no effect.
+        """
         if self.contactgroup_name is None:
             return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
@@ -2149,8 +2164,14 @@ class Hostgroup(ObjectDefinition):
         return _remove_object_from_group(host, self)
 
     def delete(self, recursive=False, cleanup_related_items=True):
-        """ Overwrites ObjectDefinition.delete() so that recursive=True will delete all services as well
-            cleanup_related_items=True will also remove references in hostgroups,hosts + dependencies and escalations"""
+        """ Delete this hostgroup and optionally remove references in hosts and services
+
+        Works like ObjectDefinition.delete() except:
+
+        Arguments:
+          cleanup_related_items -- If True, remove all references to this group in hosts/services,escalations,etc
+          recursive             -- Only here for compatibility. Has no effect.
+        """
         if self.hostgroup_name is None:
             return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if recursive is True:
