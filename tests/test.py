@@ -698,6 +698,95 @@ class testModel(unittest.TestCase):
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
         self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contacts"))
 
+    def test_hostgroup_delete_recursive_cleanup(self):
+        """Test if the right objects are removed when a hostgroup is deleted"""
+        """ => test with delete(recursive=True,cleanup_related_items=True) """
+        all_hostgroups = pynag.Model.Hostgroup.objects.get_all()
+        all_hostgroup_names = map(lambda x: x.name, all_hostgroups)
+
+        #creating test object
+        chars = string.letters + string.digits
+        hg_name = "hg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        hg =  pynag.Model.Hostgroup()
+        # Produce an error if our randomly generated hostgroup already exists in config
+        self.assertTrue(hg_name not in all_hostgroup_names)
+        hg['hostgroup_name']   = hg_name
+        hg.save() # an object has to be saved before we can delete it!
+
+        # since the hostgroup is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(host_name="host_STAYS", hostgroup_name=hg_name,           name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(host_name=None,            hostgroup_name="+"+hg_name,         name="del").save()
+        
+        
+        hostdep_stay = pynag.Model.HostDependency(host_name='host_STAYS',dependent_host_name="host_stays", hostgroup_name=hg_name, name="stay").save()
+        hostdep_del  = pynag.Model.HostDependency(host_name='host_STAYS',dependent_hostgroup_name=hg_name,          name="del").save()
+        hostdep_unrl = pynag.Model.HostDependency(dependent_host_name='foobar',hostgroup_name="unrelated_hg",    name="stays_because_its_not_related_to_deleted_hg").save()
+        
+        hoststay     = pynag.Model.Host(host_name="host_STAYS",    hostgroups=hg_name,                      name="hoststay").save()
+        
+        svcEscdel    = pynag.Model.ServiceEscalation(hostgroup_name=hg_name,                                name="svcEscdel").save()
+        
+        hg.delete(recursive=True,cleanup_related_items=True)
+
+        all_hostgroups_after_delete = pynag.Model.Hostgroup.objects.get_all()
+        self.assertEqual(all_hostgroups,all_hostgroups_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("hostgroup_name"))
+        self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del")))
+        
+        self.assertEqual(1,len(pynag.Model.HostDependency.objects.filter(name="stay")))
+        self.assertEqual(0,len(pynag.Model.HostDependency.objects.filter(name="del")))
+        self.assertEqual(1,len(pynag.Model.HostDependency.objects.filter(name="stays_because_its_not_related_to_deleted_hg")))
+                
+        self.assertEqual(1,len(pynag.Model.Host.objects.filter(name="hoststay")))
+        self.assertTrue(pynag.Model.Host.objects.filter(name="hoststay")[0].attribute_is_empty("hostgroup_name"))
+        
+        self.assertEqual(0,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscdel")))
+
+    def test_hostgroup_delete_nonRecursive_cleanup(self):
+        """Test if the right objects are cleaned up when a hostgroup is deleted"""
+        """ => test with delete(recursive=False,cleanup_related_items=True) """
+        all_hostgroups = pynag.Model.Hostgroup.objects.get_all()
+        all_hostgroup_names = map(lambda x: x.name, all_hostgroups)
+
+        #creating test object
+        chars = string.letters + string.digits
+        hg_name = "hg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        hg =  pynag.Model.Hostgroup()
+        # Produce an error if our randomly generated hostgroup already exists in config
+        self.assertTrue(hg_name not in all_hostgroup_names)
+        hg['hostgroup_name']   = hg_name
+        hg.save() # an object has to be saved before we can delete it!
+
+        # since the hostgroup is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(host_name="host_STAYS", hostgroup_name=hg_name,           name="stay").save()
+        hostesc_stay2= pynag.Model.HostEscalation(host_name=None,         hostgroup_name="+"+hg_name,       name="stay2").save()
+
+        hostdep_stay = pynag.Model.HostDependency(host_name='host_STAYS',dependent_host_name="host_stays", hostgroup_name=hg_name, name="stay").save()
+        hostdep_stay2= pynag.Model.HostDependency(host_name='host_STAYS',dependent_hostgroup_name=hg_name,                         name="stay2").save()
+
+        svcEscstay    = pynag.Model.ServiceEscalation(hostgroup_name=hg_name,                                name="svcEscstay").save()
+
+        hg.delete(recursive=False,cleanup_related_items=True)
+
+        all_hostgroups_after_delete = pynag.Model.Hostgroup.objects.get_all()
+        self.assertEqual(all_hostgroups,all_hostgroups_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("hostgroup_name"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("hostgroup_name"))
+        
+        self.assertEqual(1,len(pynag.Model.HostDependency.objects.filter(name="stay")))
+        self.assertTrue(pynag.Model.HostDependency.objects.filter(name="stay")[0].attribute_is_empty("hostgroup_name"))
+        self.assertEqual(1,len(pynag.Model.HostDependency.objects.filter(name="stay2")))
+        self.assertTrue(pynag.Model.HostDependency.objects.filter(name="stay2")[0].attribute_is_empty("dependent_hostgroup_name"))
+
+        self.assertEqual(1,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")))
+        self.assertTrue(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")[0].attribute_is_empty("hostgroup_name"))
+
+
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """
