@@ -423,12 +423,12 @@ class testModel(unittest.TestCase):
         host['address']     = "not empty"
         host['contacts']    = "!"
         host['hostgroups']  = "                                             "
-        host['contactgroups']="-"
+        host['contact_groups']="-"
 
         self.assertEqual(True,host.attribute_is_empty("host_name"))
         self.assertEqual(True,host.attribute_is_empty("contacts"))
         self.assertEqual(True,host.attribute_is_empty("hostgroups"))
-        self.assertEqual(True,host.attribute_is_empty("contactgroups"))
+        self.assertEqual(True,host.attribute_is_empty("contact_groups"))
         self.assertEqual(True,host.attribute_is_empty("_non_existing_attribute"))
 
         self.assertEqual(False,host.attribute_is_empty("address"))
@@ -449,9 +449,9 @@ class testModel(unittest.TestCase):
         cg.save() # an object has to be saved before we can delete it!
 
         # since the contactgroup is unique as per the check above, the dependent escalations will consequently be unique as well
-        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contactgroups=cg_name,      name="stay").save()
-        hostesc_del  = pynag.Model.HostEscalation(contacts=None,            contactgroups="+"+cg_name,  name="del").save()
-        hostesc_del2 = pynag.Model.HostEscalation(contacts='',              contactgroups=cg_name,      name="del2").save()
+        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contact_groups=cg_name,      name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(contacts=None,            contact_groups="+"+cg_name,  name="del").save()
+        hostesc_del2 = pynag.Model.HostEscalation(contacts='',              contact_groups=cg_name,      name="del2").save()
         
         cg.delete(recursive=True,cleanup_related_items=True)
         
@@ -459,7 +459,7 @@ class testModel(unittest.TestCase):
         self.assertEqual(all_contactgroups,all_contactgroups_after_delete)
         
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
-        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contactgroups"))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del")))
         self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del2")))
 
@@ -479,9 +479,9 @@ class testModel(unittest.TestCase):
         cg.save() # an object has to be saved before we can delete it!
 
         # since the contactgroup is unique as per the check above, the dependent escalations will consequently be unique as well
-        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contactgroups=cg_name,      name="stay").save()
-        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contactgroups="+"+cg_name,  name="stay2").save()
-        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contactgroups=cg_name,      name="stay3").save()
+        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contact_groups=cg_name,      name="stay").save()
+        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contact_groups="+"+cg_name,  name="stay2").save()
+        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contact_groups=cg_name,      name="stay3").save()
 
         cg.delete(recursive=False,cleanup_related_items=True)
 
@@ -489,11 +489,11 @@ class testModel(unittest.TestCase):
         self.assertEqual(all_contactgroups,all_contactgroups_after_delete)
 
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
-        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contactgroups"))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
-        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contactgroups"))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
-        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contactgroups"))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contact_groups"))
 
     def test_contactgroup_delete_nonRecursive_nonCleanup(self):
         """Test if the no changes are made to related items if contactgroup is deleted"""
@@ -512,20 +512,20 @@ class testModel(unittest.TestCase):
         cg.save() # an object has to be saved before we can delete it!
 
         # since the contactgroup is unique as per the check above, the dependent escalations will consequently be unique as well
-        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contactgroups=cg_name,      name="stay").save()
-        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contactgroups="+"+cg_name,  name="stay2").save()
-        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contactgroups=cg_name,      name="stay3").save()
+        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contact_groups=cg_name,      name="stay").save()
+        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contact_groups="+"+cg_name,  name="stay2").save()
+        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contact_groups=cg_name,      name="stay3").save()
         cg.delete(recursive=False,cleanup_related_items=False)
 
         all_contactgroups_after_delete = pynag.Model.Contactgroup.objects.get_all()
         self.assertEqual(all_contactgroups,all_contactgroups_after_delete)
 
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contactgroups"))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contactgroups"))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contactgroups"))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contact_groups"))
 
     def test_contactgroup_delete_recursive_nonCleanup(self):
         """Test if the no changes are made to related items if contactgroup is deleted - no deletion should happen even with recursive=True"""
@@ -545,9 +545,9 @@ class testModel(unittest.TestCase):
         cg.save() # an object has to be saved before we can delete it!
 
         # since the contactgroup is unique as per the check above, the dependent escalations will consequently be unique as well
-        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contactgroups=cg_name,      name="stay").save()
-        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contactgroups="+"+cg_name,  name="stay2").save()
-        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contactgroups=cg_name,      name="stay3").save()
+        hostesc_stay = pynag.Model.HostEscalation(contacts="contact_STAYS", contact_groups=cg_name,      name="stay").save()
+        hostesc_stay2= pynag.Model.HostEscalation(contacts=None,            contact_groups="+"+cg_name,  name="stay2").save()
+        hostesc_stay3= pynag.Model.HostEscalation(contacts='',              contact_groups=cg_name,      name="stay3").save()
 
         cg.delete(recursive=True,cleanup_related_items=False)
 
@@ -555,11 +555,139 @@ class testModel(unittest.TestCase):
         self.assertEqual(all_contactgroups,all_contactgroups_after_delete)
 
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contactgroups"))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contactgroups"))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contact_groups"))
         self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
-        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contactgroups")) 
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contact_groups")) 
+
+    def test_contact_delete_recursive_cleanup(self):
+        """Test if the right objects are removed when a contact is deleted"""
+        """ => test with delete(recursive=True,cleanup_related_items=True) """
+        all_contacts = pynag.Model.Contact.objects.get_all()
+        all_contact_names = map(lambda x: x.name, all_contacts)
+
+        #creating test object
+        chars = string.letters + string.digits
+        c_name = "c_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c =  pynag.Model.Contact()
+        # Produce an error if our randomly generated contact already exists in config
+        self.assertTrue(c_name not in all_contact_names)
+        c['contact_name']   = c_name
+        c.save() # an object has to be saved before we can delete it!
+
+        # since the contact is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(contact_groups="contactgroup_STAYS", contacts=c_name,      name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(contact_groups=None,                 contacts="+"+c_name,  name="del").save()
+        hostesc_del2 = pynag.Model.HostEscalation(contact_groups='',                   contacts=c_name,      name="del2").save()
+
+        c.delete(recursive=True,cleanup_related_items=True)
+
+        all_contacts_after_delete = pynag.Model.Contact.objects.get_all()
+        self.assertEqual(all_contacts,all_contacts_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contacts"))
+        self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del")))
+        self.assertEqual(0,len(pynag.Model.HostEscalation.objects.filter(name="del2")))
+
+    def test_contact_delete_nonRecursive_cleanup(self):
+        """Test if the right objects are _NOT_ removed when a contact is deleted with recursive=False"""
+        """ => test with delete(recursive=False,cleanup_related_items=True) """
+        all_contacts = pynag.Model.Contact.objects.get_all()
+        all_contact_names = map(lambda x: x.name, all_contacts)
+
+        #creating test object
+        chars = string.letters + string.digits
+        c_name = "c_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c =  pynag.Model.Contact()
+        # Produce an error if our randomly generated contact already exists in config
+        self.assertTrue(c_name not in all_contact_names)
+        c['contact_name']   = c_name
+        c.save() # an object has to be saved before we can delete it!
+
+        # since the contact is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(contact_groups="contactgroup_STAYS", contacts=c_name,      name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(contact_groups=None,                 contacts="+"+c_name,  name="stay2").save()
+        hostesc_del2 = pynag.Model.HostEscalation(contact_groups='',                   contacts=c_name,      name="stay3").save()
+
+        c.delete(recursive=False,cleanup_related_items=True)
+
+        all_contacts_after_delete = pynag.Model.Contact.objects.get_all()
+        self.assertEqual(all_contacts,all_contacts_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
+        self.assertTrue(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contacts"))
+
+    def test_contact_delete_nonRecursive_nonCleanup(self):
+        """Test if the no changes are made to related items if contact is deleted"""
+        """ => test with delete(recursive=False,cleanup_related_items=False) """
+
+        all_contacts = pynag.Model.Contact.objects.get_all()
+        all_contact_names = map(lambda x: x.name, all_contacts)
+
+        #creating test object
+        chars = string.letters + string.digits
+        c_name = "c_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c =  pynag.Model.Contact()
+        # Produce an error if our randomly generated contact already exists in config
+        self.assertTrue(c_name not in all_contact_names)
+        c['contact_name']   = c_name
+        c.save() # an object has to be saved before we can delete it!
+
+        # since the contact is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(contact_groups="contactgroup_STAYS", contacts=c_name,      name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(contact_groups=None,                 contacts="+"+c_name,  name="stay2").save()
+        hostesc_del2 = pynag.Model.HostEscalation(contact_groups='',                   contacts=c_name,      name="stay3").save()
+        c.delete(recursive=False,cleanup_related_items=False)
+
+        all_contacts_after_delete = pynag.Model.Contact.objects.get_all()
+        self.assertEqual(all_contacts,all_contacts_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contacts"))
+
+    def test_contact_delete_recursive_nonCleanup(self):
+        """Test if the no changes are made to related items if contact is deleted - no deletion should happen even with recursive=True"""
+        """ => test with delete(recursive=True,cleanup_related_items=False) """
+        """ should have the same results as  test_contact_delete_nonRecursive_nonCleanup()"""
+
+        all_contacts = pynag.Model.Contact.objects.get_all()
+        all_contact_names = map(lambda x: x.name, all_contacts)
+
+        #creating test object
+        chars = string.letters + string.digits
+        c_name = "c_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c =  pynag.Model.Contact()
+        # Produce an error if our randomly generated contact already exists in config
+        self.assertTrue(c_name not in all_contact_names)
+        c['contact_name']   = c_name
+        c.save() # an object has to be saved before we can delete it!
+
+        # since the contact is unique as per the check above, the dependent escalations will consequently be unique as well
+        hostesc_stay = pynag.Model.HostEscalation(contact_groups="contactgroup_STAYS", contacts=c_name,      name="stay").save()
+        hostesc_del  = pynag.Model.HostEscalation(contact_groups=None,                 contacts="+"+c_name,  name="stay2").save()
+        hostesc_del2 = pynag.Model.HostEscalation(contact_groups='',                   contacts=c_name,      name="stay3").save()
+
+        c.delete(recursive=True,cleanup_related_items=False)
+
+        all_contacts_after_delete = pynag.Model.Contact.objects.get_all()
+        self.assertEqual(all_contacts,all_contacts_after_delete)
+
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay2")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay2")[0].attribute_is_empty("contacts"))
+        self.assertEqual(1,len(pynag.Model.HostEscalation.objects.filter(name="stay3")))
+        self.assertFalse(pynag.Model.HostEscalation.objects.filter(name="stay3")[0].attribute_is_empty("contacts"))
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts

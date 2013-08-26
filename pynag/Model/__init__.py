@@ -1944,6 +1944,35 @@ class Contact(ObjectDefinition):
     def remove_from_contactgroup(self, contactgroup):
         return _remove_from_contactgroup(self, contactgroup)
 
+    def delete(self, recursive=False, cleanup_related_items=True):
+        """ Overwrites ObjectDefinition.delete() so that
+        cleanup_related_items=True will also remove references to contacts in hosts, services and escalations
+        recursive=True doesn't have any effect, no objects are 100% dependent on contacts"""
+        if self.contact_name is not None:
+            if recursive is True:
+                # No object is 100% dependent on a contact
+                pass
+            if cleanup_related_items is True:
+                contactgroups = Contactgroup.objects.filter(members__has_field=self.contact_name)
+                hostSvcAndEscalations = ObjectDefinition.objects.filter(contacts__has_field=self.contact_name)
+                # will find references in Hosts, Services as well as Host/Service-escalations
+                for i in contactgroups:
+                    # remove contact from contactgroups
+                    i.attribute_removefield('members', self.contact_name)
+                    i.save()
+                for i in hostSvcAndEscalations:
+                    # remove contact from objects
+                    i.attribute_removefield('contacts', self.contact_name)
+                    if (i.get_attribute('object_type').endswith("escalation")
+                      and recursive is True and i.attribute_is_empty("contacts")
+                      and i.attribute_is_empty("contact_groups")):
+                        # no contacts or contact_groups defined for this escalation
+                        i.delete(recursive=recursive)
+                    else:
+                        i.save()
+            # Call parent to get delete myself
+            super(self.__class__, self).delete(recursive=recursive)
+
 
 class ServiceDependency(ObjectDefinition):
     object_type = 'servicedependency'
@@ -2023,23 +2052,18 @@ class Contactgroup(ObjectDefinition):
                 pass
             if cleanup_related_items is True:
                 contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
-                hostSvcAndEscalations = ObjectDefinition.objects.filter(contactgroups__has_field=self.contactgroup_name)
+                hostSvcAndEscalations = ObjectDefinition.objects.filter(contact_groups__has_field=self.contactgroup_name)
                 # will find references in Hosts, Services as well as Host/Service-escalations
                 for i in contactgroups:
                     # remove contactgroup from other contactgroups
                     i.attribute_removefield('contactgroup_members', self.contactgroup_name)
-                    cgm = i.get_attribute('contactgroup_members').strip()
-                    # Remove the + character if it's the only thing remaining after removing a field from the contactgroup_members attribute
-                    # Workaround for https://dev.icinga.org/issues/3900
-                    if len(cgm) == 1 and cgm[0] == "+":
-                        i.set_attribute('contactgroup_members', None)
                     i.save()
                 for i in hostSvcAndEscalations:
                     # remove contactgroup from objects
-                    i.attribute_removefield('contactgroups', self.contactgroup_name)
+                    i.attribute_removefield('contact_groups', self.contactgroup_name)
                     if (i.get_attribute('object_type').endswith("escalation")
-                    and recursive is True and i.attribute_is_empty("contacts") 
-                         and i.attribute_is_empty("contact_groups")): 
+                      and recursive is True and i.attribute_is_empty("contacts") 
+                      and i.attribute_is_empty("contact_groups")): 
                         # no contacts or contact_groups defined for this escalation
                         i.delete(recursive=recursive)
                     else:
