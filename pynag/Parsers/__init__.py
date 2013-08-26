@@ -307,7 +307,7 @@ class config:
                 append = line.strip('\\')
                 continue
 
-            if '}' in line:  # end of object definition
+            if line.startswith('}'):  # end of object definition
 
                 if not in_definition:
                     p = ParserError("Unexpected '}' found outside object definition")
@@ -331,8 +331,7 @@ class config:
                 current = None
                 continue
 
-            elif '{' in line:  # beginning of object definition
-
+            elif line.startswith('define'):  # beginning of object definition
                 if in_definition:
                     raise ParserError(
                         "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (
