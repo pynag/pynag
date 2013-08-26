@@ -436,7 +436,7 @@ class config:
         all_lines = my_file.readlines()
         my_file.close()
 
-        start = my_item['meta']['line_start']-1
+        start = my_item['meta']['line_start'] - 1
         end = my_item['meta']['line_end']
         everything_before = all_lines[:start]
         object_definition = all_lines[start:end]
@@ -462,6 +462,8 @@ class config:
             ValueError if object or field_name is not found
             IOError is save is unsuccessful.
         """
+        if item is None:
+            return
         if field_name is None and new_item is None:
             raise ValueError("either field_name or new_item must be set")
         everything_before, object_definition, everything_after, filename = self._locate_item(item)
@@ -535,8 +537,7 @@ class config:
         return return_code
 
     def item_rewrite(self, item, str_new_item):
-        """
-        Completely rewrites item with string provided.
+        """ Completely rewrites item with string provided.
 
         Arguments:
             item -- Item that is to be rewritten
@@ -552,8 +553,7 @@ class config:
         return self._modify_object(item=item, new_item=str_new_item)
 
     def item_remove(self, item):
-        """
-        Completely rewrites item with string provided.
+        """ Delete one specific item from its configuration files
 
         Arguments:
             item -- Item that is to be rewritten
@@ -569,8 +569,7 @@ class config:
         return self._modify_object(item=item, new_item="")
 
     def item_edit_field(self, item, field_name, new_value):
-        """
-        Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+        """ Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
 
         Example usage:
             edit_object( item, field_name="host_name", new_value="examplehost.example.com")
@@ -583,8 +582,7 @@ class config:
         return self._modify_object(item, field_name=field_name, new_value=new_value)
 
     def item_remove_field(self, item, field_name):
-        """
-        Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+        """ Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
 
         Example usage:
             item_remove_field( item, field_name="contactgroups" )
@@ -597,8 +595,7 @@ class config:
         return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
 
     def item_rename_field(self, item, old_field_name, new_field_name):
-        """
-        Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
+        """ Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
 
         Example usage:
             item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
@@ -611,8 +608,7 @@ class config:
         return self._modify_object(item=item, field_name=old_field_name, new_field_name=new_field_name)
 
     def item_add(self, item, filename):
-        """
-        Adds a new object to a specified config file
+        """ Adds a new object to a specified config file
 
         Arguments:
             item -- Item to be created
@@ -638,8 +634,7 @@ class config:
         return True
 
     def edit_object(self, item, field_name, new_value):
-        """
-        Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
+        """ Modifies a (currently existing) item. Changes are immediate (i.e. there is no commit)
 
         Example Usage: edit_object( item, field_name="host_name", new_value="examplehost.example.com")
 
@@ -648,9 +643,7 @@ class config:
         return self.item_edit_field(item=item, field_name=field_name, new_value=new_value)
 
     def compareObjects(self, item1, item2):
-        """
-        Compares two items. Returns true if they are equal"
-        """
+        """ Compares two items. Returns true if they are equal """
         keys1 = item1['meta']['defined_attributes'].keys()
         keys2 = item2['meta']['defined_attributes'].keys()
         keys1.sort()
@@ -674,9 +667,7 @@ class config:
         return True
 
     def edit_service(self, target_host, service_description, field_name, new_value):
-        """
-        Edit a service's attributes
-        """
+        """ Edit a service's attributes """
 
         original_object = self.get_service(target_host, service_description)
         if original_object is None:
@@ -684,8 +675,7 @@ class config:
         return self.edit_object(original_object, field_name, new_value)
 
     def _get_list(self, item, key):
-        """
-        Return a comma list from an item
+        """ Return a comma list from an item
 
         Example:
 
@@ -718,146 +708,75 @@ class config:
         return return_list
 
     def delete_object(self, object_type, object_name, user_key=None):
-        """
-        Delete object from configuration files.
-        """
-        object_key = self._get_key(object_type, user_key)
-
-        k = 'all_%s' % object_type
-        if k not in self.data:
-            return None
-        for item in self.data[k]:
-            if not object_key in item:
-                continue
-
-            ## If the object matches, mark it for deletion
-            if item[object_key] == object_name:
-                self.data[k].remove(item)
-                item['meta']['delete_me'] = True
-                item['meta']['needs_commit'] = True
-                self.data[k].append(item)
-
-                ## Commit the delete
-                self.commit()
-                return True
-
-        ## Only make it here if the object isn't found
-        return None
+        """ Delete object from configuration files """
+        item = self.get_object(object_type=object_type, object_name=object_name, user_key=user_key)
+        return self.item_remove(item)
 
     def delete_service(self, service_description, host_name):
-        """
-        Delete service from configuration
-        """
-        for item in self.data['all_service']:
-            if ('service_description' in item and item['service_description'] == service_description) and (
-                    host_name in self._get_active_hosts(item)):
-                self.data['all_service'].remove(item)
-                item['meta']['delete_me'] = True
-                item['meta']['needs_commit'] = True
-                self.data['all_service'].append(item)
-
-                return True
+        """ Delete service from configuration files """
+        item = self.get_service(host_name, service_description)
+        return self.item_remove(item)
 
     def delete_host(self, object_name, user_key=None):
-        """
-        Delete a host
-        """
+        """ Delete a host from its configuration files """
         return self.delete_object('host', object_name, user_key=user_key)
 
     def delete_hostgroup(self, object_name, user_key=None):
-        """
-        Delete a hostgroup
-        """
+        """ Delete a hostgroup from its configuration files """
         return self.delete_object('hostgroup', object_name, user_key=user_key)
 
     def get_object(self, object_type, object_name, user_key=None):
-        """
-        Return a complete object dictionary
+        """ Return a complete object dictionary
+
+            Returns None if object is not found
         """
         object_key = self._get_key(object_type, user_key)
-
-        target_object = None
-
-        #print object_type
         for item in self.data['all_%s' % object_type]:
-            ## Skip items without the specified key
-            if not object_key in item:
-                continue
-            if item[object_key] == object_name:
-                target_object = item
-                ## This is for multi-key items
-        return target_object
+            if item.get(object_key, None) == object_name:
+                return item
+        return None
 
     def get_host(self, object_name, user_key=None):
-        """
-        Return a host object
-        """
+        """ Return a host object """
         return self.get_object('host', object_name, user_key=user_key)
 
     def get_servicegroup(self, object_name, user_key=None):
-        """
-        Return a Servicegroup object
-        """
+        """ Return a Servicegroup object """
         return self.get_object('servicegroup', object_name, user_key=user_key)
 
     def get_contact(self, object_name, user_key=None):
-        """
-        Return a Contact object
-        """
+        """ Return a Contact object """
         return self.get_object('contact', object_name, user_key=user_key)
 
     def get_contactgroup(self, object_name, user_key=None):
-        """
-        Return a Contactgroup object
-        """
+        """ Return a Contactgroup object """
         return self.get_object('contactgroup', object_name, user_key=user_key)
 
     def get_timeperiod(self, object_name, user_key=None):
-        """
-        Return a Timeperiod object
-        """
+        """ Return a Timeperiod object """
         return self.get_object('timeperiod', object_name, user_key=user_key)
 
     def get_command(self, object_name, user_key=None):
-        """
-        Return a Command object
-        """
+        """ Return a Command object """
         return self.get_object('command', object_name, user_key=user_key)
 
     def get_hostgroup(self, object_name, user_key=None):
-        """
-        Return a hostgroup object
-        """
+        """ Return a hostgroup object """
         return self.get_object('hostgroup', object_name, user_key=user_key)
 
     def get_servicedependency(self, object_name, user_key=None):
-        """
-        Return a servicedependency object
-        """
+        """ Return a servicedependency object """
         return self.get_object('servicedependency', object_name, user_key=user_key)
 
     def get_hostdependency(self, object_name, user_key=None):
-        """
-        Return a hostdependency object
-        """
+        """ Return a hostdependency object """
         return self.get_object('hostdependency', object_name, user_key=user_key)
 
     def get_service(self, target_host, service_description):
-        """
-        Return a service object.  This has to be seperate from the 'get_object'
-        method, because it requires more than one key
-        """
+        """ Return a service object """
         for item in self.data['all_service']:
-            ## Skip service with no service_description
-            if not "service_description" in item:
-                continue
-                ## Skip non-matching services
-            if item['service_description'] != service_description:
-                continue
-
-            if target_host in self._get_active_hosts(item):
-                return item
-
+            if item.get('service_description') == service_description and item.get('host_name') == target_host:
+                return i
         return None
 
     def _append_use(self, source_item, name):
@@ -1403,6 +1322,7 @@ class config:
                             cfg_files.append(raw_file)
 
         return cfg_files
+
     def abspath(self, path):
         """ Return the absolute path of a given relative path.
 
@@ -1447,16 +1367,14 @@ class config:
         return map(lambda x: re.sub("all_", "", x), self.data.keys())
 
     def cleanup(self):
-        """
-        This cleans up dead configuration files
-        """
+        """ Remove configuration files that have no configuration items"""
         for filename in self.cfg_files:
-            if os.path.isfile(filename):
-                size = os.stat(filename)[6]
-                if size == 0:
-                    os.remove(filename)
-
-        return True
+            if not self.parse_file(filename):  # parse_file returns empty list on empty files
+                os.remove(filename)
+                # If nagios.cfg specifies this file directly via cfg_file directive then...
+                for k,v in self.maincfg_values:
+                    if k == 'cfg_file' and v == filename:
+                        self._edit_static_file(k, old_value=v, new_value=None)
 
     def __setitem__(self, key, item):
         self.data[key] = item
