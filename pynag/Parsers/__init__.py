@@ -291,6 +291,12 @@ class config:
         for sequence_no, line in enumerate(string.splitlines(False)):
             line_num = sequence_no + 1
 
+            # If previous line ended with backslash, treat this line as a
+            # continuation of previous line
+            if append:
+                line = append + line
+                append = None
+
             ## Cleanup and line skips
             line = line.strip()
             if line == "":
@@ -298,11 +304,6 @@ class config:
             if line[0] == "#" or line[0] == ';':
                 continue
 
-            # If previous line ended with backslash, treat this line as a
-            # continuation of previous line
-            if append:
-                line = append + line
-                append = None
             # If this line ends with a backslash, continue directly to next line
             if line.endswith('\\'):
                 append = line.strip('\\')
@@ -311,7 +312,7 @@ class config:
             if line.startswith('}'):  # end of object definition
 
                 if not in_definition:
-                    p = ParserError("Unexpected '}' found outside object definition")
+                    p = ParserError("Unexpected '}' found outside object definition in line %s" % line_num)
                     p.filename = filename
                     p.line_start = line_num
                     raise p
