@@ -824,6 +824,7 @@ class ObjectDefinition(object):
 
         return path
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def save(self):
         """Saves any changes to the current object to its configuration file
 
@@ -889,6 +890,7 @@ class ObjectDefinition(object):
         self._inherited_attributes = new_me._inherited_attributes
         self._meta = new_me._meta
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def rewrite(self, str_new_definition=None):
         """ Rewrites this Object Definition in its configuration files.
 
