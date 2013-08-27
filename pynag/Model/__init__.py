@@ -404,6 +404,7 @@ class ObjectFetcher(object):
     def __init__(self, object_type):
         self.object_type = object_type
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def get_all(self):
         """ Return all object definitions of specified type"""
         if self.needs_reload():
@@ -415,6 +416,7 @@ class ObjectFetcher(object):
 
     all = property(get_all)
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def reload_cache(self):
         """Reload configuration cache"""
         # clear object list
@@ -452,6 +454,7 @@ class ObjectFetcher(object):
         ObjectRelations.resolve_regex()
         return True
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def needs_reload(self):
         """ Returns true if configuration files need to be reloaded/reparsed """
         if ObjectFetcher._cached_objects == []:

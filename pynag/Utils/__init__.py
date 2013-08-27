@@ -27,11 +27,14 @@ that are used throughout the pynag library.
 import subprocess
 import re
 import shlex
+import threading
 from os import getenv, environ, listdir, path
 from platform import node
 from getpass import getuser
 import datetime
 import pynag.Plugins
+
+rlock = threading.RLock()
 
 
 class PynagError(Exception):
@@ -964,3 +967,20 @@ class defaultdict(dict):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
 
+def synchronized(lock):
+    """ Synchronization decorator
+
+    Use this to make a multi-threaded method synchronized and thread-safe.
+
+    Use the decorator like so:
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
+    """
+    def wrap(f):
+        def newFunction(*args, **kw):
+            lock.acquire()
+            try:
+                return f(*args, **kw)
+            finally:
+                lock.release()
+        return newFunction
+    return wrap

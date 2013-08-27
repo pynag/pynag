@@ -23,7 +23,7 @@ import time
 import socket  # for mk_livestatus
 
 import pynag.Plugins
-
+import pynag.Utils
 
 def debug(text):
     debug = True
@@ -527,6 +527,7 @@ class config:
         self.write(filename, str_buffer)
         return True
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def write(self, filename, string):
         """ Wrapper around open(filename).write() """
         fh = open(filename, 'w')
@@ -1062,6 +1063,7 @@ class config:
                 return True
         return False
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def parse_maincfg(self):
         """ Parses your main configuration (nagios.cfg) and stores it as key/value pairs in self.maincfg_values
 
@@ -1069,6 +1071,7 @@ class config:
         """
         self.maincfg_values = self._load_static_file(self.cfg_file)
 
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
     def parse(self):
         """ Parse all objects in your nagios configuration
 
