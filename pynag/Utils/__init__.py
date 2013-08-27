@@ -597,7 +597,6 @@ class PerfDataMetric(object):
             return '',''
         return tmp[0]
 
-
 def grep(objects, **kwargs):
     """  Returns all the elements from array that match the keywords in **kwargs
 

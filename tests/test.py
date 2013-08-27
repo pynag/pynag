@@ -230,7 +230,23 @@ class testParsers(unittest.TestCase):
 
         os.remove(filename)
 
+    def testLogFileParsing(self):
+        expected_no_of_logentries = 63692
+        expected_no_for_app01 = 127
+        len_state_history = 14301
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        pynag.Model.cfg_file = "./nagios/nagios.cfg"
+        l = pynag.Parsers.LogFiles(maincfg=pynag.Model.cfg_file)
 
+        log = l.get_log_entries(start_time=0)
+        self.assertEqual(expected_no_of_logentries, len(log))
+
+        app01 = l.get_log_entries(start_time=0, host_name='app01.acme.com')
+        self.assertEqual(expected_no_for_app01, len(app01))
+
+        state_history = l.get_state_history(start_time=0)
+        self.assertEqual(len_state_history, len(state_history))
 class testModel(unittest.TestCase):
     """
     Basic Unit Tests that relate to saving objects
