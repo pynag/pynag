@@ -778,7 +778,7 @@ class config:
         """ Return a service object """
         for item in self.data['all_service']:
             if item.get('service_description') == service_description and item.get('host_name') == target_host:
-                return i
+                return item
         return None
 
     def _append_use(self, source_item, name):
