@@ -17,3 +17,8 @@ after_success:
   - coveralls
 notifications:
   email: false
+  irc:
+    channels:
+      - "chat.freenode.net#pynag"
+    on_success: always
+    on_failure: always
