@@ -35,8 +35,13 @@ are scripts which list services, do network discovery among other tasks.
 %setup -q
 
 %build
-%{__python} setup.py build
-%{__python} setup.py test
+%if 0%{?rhel} <= 5
+  # Unittests do not run currently on rhel 5 and older
+  %{__python} setup.py build
+%else
+  %{__python} setup.py build
+  %{__python} setup.py test
+%endif
 
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
