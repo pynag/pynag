@@ -123,8 +123,7 @@ class testUtils(unittest.TestCase):
         expected_msg += '\* Command was:\n%s\n' % command
         expected_msg += '\* Output was:\n\n'
         expected_msg += 'Check if y/our path is correct: %s' % os.getenv('PATH')
-        with self.assertRaisesRegexp(utils.PynagError, expected_msg):
-            utils.runCommand(command, raise_error_on_fail=True)
+        self.assertRaisesRegexp(utils.PynagError, expected_msg, utils.runCommand, command, raise_error_on_fail=True)
 
     def test_gitrepo_init_empty(self):
         from getpass import getuser
@@ -192,8 +191,7 @@ class testUtils(unittest.TestCase):
                 repo.show(initial_hash)
                 gitrunpatch.assert_called_once_with('git show %s' % initial_hash)
         invalid_hash = '123'
-        with self.assertRaisesRegexp(PynagError, '123 is not a valid commit id'):
-            repo.show('123')
+        self.assertRaisesRegexp(PynagError, '123 is not a valid commit id', repo.show, '123')
         # Add file
         tmp_file_2 = tempfile.mkstemp(dir=self.tmp_dir)
         self.assertEquals(len(repo.get_uncommited_files()), 1)
