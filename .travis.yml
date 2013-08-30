@@ -20,5 +20,4 @@ notifications:
   irc:
     channels:
       - "chat.freenode.net#pynag"
-    on_success: always
     on_failure: always
