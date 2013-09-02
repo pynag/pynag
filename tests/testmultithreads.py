@@ -16,17 +16,18 @@ def change(host):
   print "Set address", host.address, "to", host.host_name
     
 
-hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
-for i in hosts:
-  i.address = "127.0.0.2"
-  i.save()
-hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
+if __name__ == '__main__':
+    hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
+    for i in hosts:
+      i.address = "127.0.0.2"
+      i.save()
+    hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
 
-p = ThreadPool(4)
-p.map(change, hosts)
+    p = ThreadPool(4)
+    p.map(change, hosts)
 
 
-hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
-for i in hosts:
-  if i.address != "127.0.0.1":
-    print "ERROR", i.host_name, "has address", i.address
+    hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
+    for i in hosts:
+      if i.address != "127.0.0.1":
+        print "ERROR", i.host_name, "has address", i.address
