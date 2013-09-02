@@ -27,6 +27,7 @@ import traceback
 from platform import node
 from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, PynagError
+from pynag.Parsers import ExtraOptsParser
 import new_threshold_syntax
 
 # Map the return codes
@@ -573,6 +574,7 @@ class PluginHelper:
         self.parser = OptionParser()
         general = OptionGroup(self.parser, "Generic Options")
         self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
+        self.parser.add_option('--extra-opts', help="Read extra options from [section][@config_file]", metavar='', dest="extra_opts")
 
         display_group = OptionGroup(self.parser, "Display Options")
         display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
@@ -597,6 +599,20 @@ class PluginHelper:
             None
         """
         self.options, self.arguments = self.parser.parse_args(args=argument_list)
+
+        extra_opts = self.options.extra_opts
+        if extra_opts is not None:  # --extra-opts was specified
+            if extra_opts == '':  # --extra-opts= with no value.
+                section_name = None
+                config_file = None
+            elif '@' in extra_opts:  # filename was specified
+                section_name, config_file = extra_opts.split('@',1)
+            else:  # Only section was specified
+                section_name = extra_opts
+                config_file = None
+            values = self.get_default_values(section_name, config_file)
+            self.options, self.arguments = self.parser.parse_args(args=argument_list, values=values)
+
         # TODO: Handle it if developer decides to remove some options before calling parse_arguments()
         self.thresholds = self.options.thresholds
         self.show_longoutput = self.options.show_longoutput
@@ -728,6 +744,40 @@ class PluginHelper:
         else:
             self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
 
+    def get_default_values(self,section_name=None, config_file=None):
+        """ Returns an optionParser.Values instance of all defaults after parsing extra opts config file
+
+        The Nagios extra-opts spec we use is the same as described here: http://nagiosplugins.org/extra-opts
+
+        Arguments
+
+        """
+        # Get the program defaults
+        values = self.parser.get_default_values()
+
+
+        # Create an ExtraOptsParser instance and get all the values from that config file
+        extra_opts = ExtraOptsParser(section_name=section_name, config_file=config_file).get_values()
+
+        for option in self.parser.option_list:
+            name = option.dest
+            if name in extra_opts:
+                if option.action == 'append':
+                    setattr(values,name, extra_opts[option.dest])
+                else:
+                    setattr(values,name, extra_opts[option.dest][0])
+        return values
+
+    def _optional_arg(arg_default):
+        """ This is a callback for optparse to allow an option with an optional empty value """
+        def func(option,opt_str,value,parser):
+            if parser.rargs and not parser.rargs[0].startswith('-'):
+                val=parser.rargs[0]
+                parser.rargs.pop(0)
+            else:
+                val=arg_default
+            setattr(parser.values,option.dest,val)
+        return func
     def get_metric(self, label):
         """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found.
 
