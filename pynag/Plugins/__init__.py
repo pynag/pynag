@@ -24,6 +24,7 @@ Python Nagios extensions
 import sys
 import os
 import traceback
+import signal
 from platform import node
 from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, PynagError
@@ -431,7 +432,6 @@ def check_threshold(value, warning=None, critical=None):
     else:
         return OK
 
-
 def check_range(value, range_threshold=None):
     """ Returns True if value is within range_threshold.
 
@@ -550,9 +550,9 @@ class PluginHelper:
     p.exit()
     """
     _nagios_status = -1     # exit status of the plugin
-    _long_output = None       # Long output of the plugin
-    _summary = None           # Summary of the plugin
-    _perfdata = None  # Performance and Threshold Metrics are stored here
+    _long_output = None     # Long output of the plugin
+    _summary = None         # Summary of the plugin
+    _perfdata = None        # Performance and Threshold Metrics are stored here
     show_longoutput = True  # If True, print longoutput
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
@@ -560,9 +560,9 @@ class PluginHelper:
     show_legacy = False     # If True, print perfdata in legacy form
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
-    timeout = 50            # Default timeout set to little less than nagios service check timeout
+    timeout = 58            # By default, plugins timeout right before nagios kills the plugin
 
-    thresholds = None # List of strings in the nagios threshold format
+    thresholds = None       # List of strings in the nagios threshold format
     options = None          # OptionParser() options
     arguments = None        # OptionParser() arguments
     def __init__(self):
@@ -573,8 +573,11 @@ class PluginHelper:
 
         self.parser = OptionParser()
         general = OptionGroup(self.parser, "Generic Options")
-        self.parser.add_option('--threshold','--th',default=[], help="Thresholds in standard nagios threshold format", metavar='', dest="thresholds",action="append")
-        self.parser.add_option('--extra-opts', help="Read extra options from [section][@config_file]", metavar='', dest="extra_opts")
+        self.parser.add_option('--threshold', default=[], help="Thresholds in standard nagios threshold format", metavar='range', dest="thresholds",action="append")
+        self.parser.add_option('--th', default=[], help="Same as --threshold", metavar='range', dest="thresholds",action="append")
+
+        self.parser.add_option('--extra-opts', help="Read extra options from [section][@config_file]", metavar='@file', dest="extra_opts")
+        self.parser.add_option('--timeout', help="Exit plugin with unknown status after x seconds", type='int', metavar='50', dest="timeout", default=self.timeout)
 
         display_group = OptionGroup(self.parser, "Display Options")
         display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
@@ -621,6 +624,10 @@ class PluginHelper:
         self.show_debug = self.options.show_debug
         self.verbose = self.options.verbose
         #self.show_status_in_summary = self.options.show_status_in_summary
+
+        self.set_timeout(self.options.timeout)
+
+
 
     def add_long_output(self, message):
         """ Appends message to the end of Plugin long_output. Message does not need a \n suffix
@@ -899,6 +906,11 @@ class PluginHelper:
         return_buffer = return_buffer.strip()
         return return_buffer
 
+    def set_timeout(self, seconds=50):
+        """ Configures plugin to timeout after seconds number of seconds """
+        timeout = lambda x, y: self.exit(unknown, summary="Plugin timeout exceeded after %s seconds." % seconds)
+        signal.signal(signal.SIGALRM, timeout)
+        signal.alarm(seconds)
     def exit(self, exit_code=None,summary=None, long_output=None, perfdata=None):
         """ Print all collected output to screen and exit nagios style, no arguments are needed
             except if you want to override default behavior.
