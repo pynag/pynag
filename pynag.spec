@@ -3,19 +3,33 @@
 %{!?python_version: %global python_version %(%{__python} -c "from distutils.sysconfig import get_python_version; print get_python_version()")}
 %endif
 
+# RHEL6 and newer has unittest2
+# All other distributions assume that we have access to unittest2
+%define unittest2 0
+%if 0%{?rhel} 
+%if 0%{?rhel} >= 6
+%define unittest2 1
+%endif
+%else
+%define unittest2 1
+%endif
+
+
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.6.0
+Version: 0.6.1
 Release: 1%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
 BuildRequires: python-devel
 BuildRequires: python-setuptools
-BuildRequires: python-unittest2
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch
+%if 0%{?unittest2}
+BuildRequires: python-unittest2
+%endif
 
 %description
 Python modules and utilities for pragmatically handling Nagios configuration
@@ -36,7 +50,10 @@ are scripts which list services, do network discovery among other tasks.
 
 %build
 %{__python} setup.py build
+
+%if 0%{?unittest2}
 %{__python} setup.py test
+%endif
 
 %install
 test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
@@ -72,6 +89,9 @@ rm -fr $RPM_BUILD_ROOT
 %doc examples/README
 
 %changelog
+* Wed Aug 30 2013 Pall Sigurdsson <palli@opensource.is> 0.6.1-1
+- New upstream version
+
 * Tue Apr 30 2013 Tomas Edwardsson <tommi@tommi.org> 0.4.9-1
 - New upstream version
 

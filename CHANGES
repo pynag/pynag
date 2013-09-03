@@ -1,3 +1,7 @@
+Changes in 0.6.1 (Aug 30 2013)
+Bug Fixes:
+    - Disable unittesting on rhel5 (stops build because of unittest2)
+
 Changes in 0.6.0 (Aug 28 2013)
 New Features:
     - Support line continuations with \ at end of line in config files
