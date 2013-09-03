@@ -409,6 +409,11 @@ class PerfData(object):
         for i in self.metrics:
             if i.label == metric_name:
                 return i
+
+    def reconsile_thresholds(self):
+        """ Convert all thresholds in new_threshold_syntax to the standard one """
+        for i in self.metrics:
+            i.reconsile_thresholds()
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
@@ -499,6 +504,7 @@ class PerfDataMetric(object):
             self.min = tmp.pop(0)
         if len(tmp) > 0:
             self.max = tmp.pop(0)
+
     def get_status(self):
         """ Return nagios-style exit code (int 0-3) by comparing
 
@@ -569,6 +575,12 @@ class PerfDataMetric(object):
 
         # If we get here, we passed all tests
         return True
+
+    def reconsile_thresholds(self):
+        """ Convert threshold from new threshold syntax to current one, for backwards compatibility """
+        print 'yeah', self
+        self.warn = reconsile_threshold(self.warn)
+        self.crit = reconsile_threshold(self.crit)
 
 
     def split_value_and_uom(self, value):
@@ -966,6 +978,59 @@ class defaultdict(dict):
     def __repr__(self):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
+
+def reconsile_threshold(threshold_range):
+    """ Take threshold string as and normalize it to the format supported by plugin development team
+
+    the input (usually a string in the form of 'the new threshold syntax') is a string in the form of x..y
+
+    the output will be a compatible string in the older nagios plugin format @x:y
+
+    examples
+    >>> reconsile_threshold("0..5")
+    '@0:5'
+    >>> reconsile_threshold("inf..5")
+    '5:'
+    >>> reconsile_threshold("5..inf")
+    '~:5'
+    >>> reconsile_threshold("inf..inf")
+    '@~:'
+    >>> reconsile_threshold("^0..5")
+    '0:5'
+    >>> reconsile_threshold("10..20")
+    '@10:20'
+    >>> reconsile_threshold("10..inf")
+    '~:10'
+    """
+    threshold_range = str(threshold_range)
+    if not '..' in threshold_range:
+        return threshold_range
+    threshold_range = threshold_range.strip()
+    if threshold_range.startswith('^'):
+        operator = ''
+        threshold_range = threshold_range[1:]
+    else:
+        operator = '@'
+
+    start, end = threshold_range.split('..', 1)
+    start = start.replace('-inf', '~').replace('inf', '~')
+    end = end.replace('-inf', '').replace('inf', '')
+
+    if not start:
+        start = '0'
+
+    # Lets convert the common case of @0:x into x:
+    if operator == '@' and start == '~' and end not in ('','~'):
+        result = "%s:" % end
+    # Convert the common case of @x: into 0:x
+    elif operator == '@' and end in ('','~') and start != '~':
+        result = '~:%s' % start
+    else:
+        result = '%s%s:%s' % (operator, start, end)
+    #result = '%s%s:%s' % (operator, start, end)
+    return result
+
+
 
 def synchronized(lock):
     """ Synchronization decorator
