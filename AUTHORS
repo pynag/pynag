@@ -1,12 +1,49 @@
 
-pynag is written and maintained by ...
+Core maintainers:
+    Pall Sigurdsson <pall.sigurdsson@gmail.com>
+    Pall Valmundsson <pall.valmundsson@gmail.com>
+    Tomas Edwardsson <tommi@tommi.org>
 
-	Drew Stinnett <drew@drewlink.com>
-	Pall Sigurdsson <pall.sigurdsson@gmail.com>
-	Pall Valmundsson <pall.valmundsson@gmail.com>
-	Tomas Edwardsson <tommi@tommi.org>
+Original author:
+    Drew Stinnett <drew@drewlink.com>
 
-Additional patches and contributions by ...
 
-	Abhinav Upadhyay <er.abhinav.upadhyay@gmail.com>
-	Christian Eichelmann <ceichelmann@gmx.de>
+
+Contributors by year, sorted by number of patches.
+
+
+Contributors in 2013:
+    192 Pall Sigurdsson <palli@opensource.is>
+     88 Pall Valmundsson <pall.valmundsson@gmail.com>
+     26 Pall Sigurdsson <palli-github@minor.is>
+     25 Tomas Edwardsson <tommi@tommi.org>
+     14 gradecke <gerdradecke@gmx.de>
+      3 refik <refik.rfk@gmail.com>
+      2 palli <palli-github@minor.is>
+      2 Gerd Radecke <gerdradecke@gmx.de>
+      1 Olivier Bornet <Olivier.Bornet@idiap.ch>
+      1 Michael Sverdlik <mhsver@gmail.com>
+      1 Daniel Kimsey <dekimsey@ufl.edu>
+      1 bene <b.von.st.vieth@fz-juelich.de>
+
+Contributors in 2012:
+    216 Pall Sigurdsson <palli@opensource.is>
+     80 Tomas Edwardsson <tommi@tommi.org>
+     33 Abhinav Upadhyay <er.abhinav.upadhyay@gmail.com>
+      4 Pall Valmundsson <pall.valmundsson@gmail.com>
+      4 palli <palli-github@minor.is>
+      4 abhinav <er.abhinav.upadhyay@gmail.com>
+      2 Tomas Edwardsson <tomas.edwardsson@gmail.com>
+      1 palli-lsh <palli@lsh.is>
+      1 Christian Eichelmann <ceichelmann@gmx.de>
+      1 Abhinav Upadhyay <abhinav@abhinav.(none)>
+
+Contributors in 2011:
+     81 Pall Sigurdsson <pall.sigurdsson@gmail.com>
+     29 Tomas Edwardsson <tomas.edwardsson@gmail.com>
+      1 Drew Stinnet <drew@drewlink.com>
+
+Contributors in 2008:
+     49 Drew Stinnet <drew@drewlink.com>
+      1 (no author) <(no author)>
+
