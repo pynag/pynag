@@ -21,3 +21,5 @@ notifications:
     channels:
       - "chat.freenode.net#pynag"
     on_failure: always
+    on_success: change
+
