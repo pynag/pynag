@@ -254,10 +254,23 @@ class testParsers(unittest.TestCase):
         e = pynag.Parsers.ExtraOptsParser(section_name='main', config_file='dataset01/extraopts/other.ini')
         self.assertEqual('other.ini', e.get('filename'))
 
+        # Test if default value works as expected:
+        try:
+            e.get('does not exist')
+            self.assertTrue(False, "Code above should have raised an error")
+        except ValueError:
+            pass
+        self.assertEqual("test", e.get('does not exist', "test"))
+
         # See if extraopts picks up on the NAGIOS_CONFIG_PATH variable
         os.environ['NAGIOS_CONFIG_PATH'] = "dataset01/extraopts/"
         e = pynag.Parsers.ExtraOptsParser(section_name='main')
         self.assertEqual('plugins.ini', e.get('filename'))
+
+        # Using same config as above, test the getlist method
+        self.assertEqual(['plugins.ini'], e.getlist('filename'))
+
+
 
 
 class testModel(unittest.TestCase):

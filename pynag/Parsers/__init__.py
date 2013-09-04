@@ -2146,18 +2146,26 @@ class ExtraOptsParser(object):
                 return path
         return None
 
-    def get(self, option_name, default=None):
+    def get(self, option_name, default=_sentinel):
         """ Return the value of one specific option """
-        result = self.get_values().get(option_name, default)
-        if not result:
-            return default
-        return result[0]
+        result = self.getlist(option_name, default)
+
+        # If option was not found, raise error
+        if result == _sentinel:
+            raise ValueError("Option named %s was not found" % (option_name))
+        elif result == default:
+            return result
+        elif not result:
+            # empty list
+            return result
+        else:
+            return result[0]
 
     def getlist(self, option_name, default=_sentinel):
         """ Return a list of all values for option_name """
-        if default == ExtraOptsParser._sentinel:
-            default = []
         result = self.get_values().get(option_name, default)
+        if result == _sentinel:
+            raise ValueError("Option named %s was not found" % (option_name))
         return result
 
     def parse_file(self, filename):
