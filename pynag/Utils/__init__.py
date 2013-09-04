@@ -38,20 +38,22 @@ rlock = threading.RLock()
 
 
 class PynagError(Exception):
+
     """ The default pynag exception.
 
     Exceptions raised within the pynag library should aim
     to inherit this one.
 
     """
+
     def __init__(self, message, errorcode=None, errorstring=None, *args, **kwargs):
         self.errorcode = errorcode
         self.message = message
         self.errorstring = errorstring
         try:
-            super(self.__class__, self).__init__(message, *args,**kwargs)
+            super(self.__class__, self).__init__(message, *args, **kwargs)
         except TypeError:  # Python 2.4 is fail
-            Exception.__init__(self, message, *args,**kwargs)
+            Exception.__init__(self, message, *args, **kwargs)
 
 
 def runCommand(command, raise_error_on_fail=False):
@@ -68,21 +70,22 @@ def runCommand(command, raise_error_on_fail=False):
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
     stdout, stderr = proc.communicate('through stdin to stdout')
     result = proc.returncode, stdout, stderr
-    if proc.returncode > 0 and raise_error_on_fail==True:
+    if proc.returncode > 0 and raise_error_on_fail == True:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
         error_string += "* Error was:\n%s\n" % (stderr.strip())
         error_string += "* Command was:\n%s\n" % command
         error_string += "* Output was:\n%s\n" % (stdout.strip())
-        if proc.returncode == 127: # File not found, lets print path
+        if proc.returncode == 127:  # File not found, lets print path
             path = getenv("PATH")
             error_string += "Check if y/our path is correct: %s" % path
-        raise PynagError( error_string )
+        raise PynagError(error_string)
     else:
         return result
 
 
 class GitRepo(object):
-    def __init__(self, directory,auto_init=True,author_name="Pynag User", author_email=None):
+
+    def __init__(self, directory, auto_init=True, author_name="Pynag User", author_email=None):
         """
         Python Wrapper around Git command line.
 
@@ -107,7 +110,8 @@ class GitRepo(object):
         # Which program did the change
         #self.source = source
 
-        # Every string in self.messages indicated a line in the eventual commit message
+        # Every string in self.messages indicated a line in the eventual commit
+        # message
         self.messages = []
 
         self.ignore_errors = False
@@ -120,7 +124,7 @@ class GitRepo(object):
                     self.init()
             #self._run_command('git status --short')
 
-        self._is_dirty = self.is_dirty # Backwards compatibility
+        self._is_dirty = self.is_dirty  # Backwards compatibility
 
     def _update_author(self):
         """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
@@ -129,6 +133,7 @@ class GitRepo(object):
         """
         environ['GIT_AUTHOR_NAME'] = self.author_name
         environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
+
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         import subprocess
@@ -142,9 +147,11 @@ class GitRepo(object):
             errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
             raise PynagError( errorstring, errorcode=returncode, errorstring=stderr )
         return stdout
+
     def is_up_to_date(self):
         """ Returns True if all files in git repo are fully commited """
         return len(self.get_uncommited_files()) == 0
+
     def get_valid_commits(self):
         """ Returns a list of all commit ids from git log
         """
@@ -182,19 +189,20 @@ class GitRepo(object):
           self.log(author_name='nagiosadmin')
           self.log(comment__contains='localhost')
         """
-        raw_log =self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
+        raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
             hash,author, authoremail, authortime, comment = line.split("\t", 4)
-            result.append( {
+            result.append({
                 "hash": hash,
                 "author_name": author,
                 "author_email": authoremail,
                 "author_time": datetime.datetime.fromtimestamp(float(authortime)),
                 "timestamp": float(authortime),
                 "comment": comment,
-                })
+            })
         return grep(result, **kwargs)
+
     def diff(self, commit_id_or_filename=None):
         """ Returns diff (as outputted by "git diff") for filename or commit id.
 
@@ -203,20 +211,21 @@ class GitRepo(object):
         if commit_id_or_filename in ('', None):
             command = "git diff"
         elif path.exists(commit_id_or_filename):
-            commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
+            commit_id_or_filename = commit_id_or_filename.replace("'", r"\'")
             command = "git diff '%s'" % commit_id_or_filename
         elif commit_id_or_filename in self.get_valid_commits():
-            commit_id_or_filename = commit_id_or_filename.replace("'",r"\'")
+            commit_id_or_filename = commit_id_or_filename.replace("'", r"\'")
             command = "git diff '%s'" % commit_id_or_filename
         else:
             raise  PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
         # Clean single quotes from parameters:
         return self._run_command(command)
+
     def show(self, commit_id,):
         """ Returns output from "git show" for a specified commit_id
         """
         if commit_id not in self.get_valid_commits():
-            raise  PynagError("%s is not a valid commit id" % commit_id)
+            raise PynagError("%s is not a valid commit id" % commit_id)
         command = "git show %s" % commit_id
         return self._run_command(command)
 
@@ -228,24 +237,28 @@ class GitRepo(object):
         # Only do initial commit if there are files in the directory
         if not listdir(self.directory) == ['.git']:
             self.commit(message='Initial Commit')
+
     def _git_add(self, filename):
         """ Deprecated, use self.add() instead. """
         return self.add(filename)
+
     def _git_commit(self, filename, message, filelist=None):
         """ Deprecated. Use self.commit() instead."""
         if filelist is None:
             filelist = []
         if not filename is None:
             filelist.append(filename)
-        return self.commit(message=message, filelist=filelist )
+        return self.commit(message=message, filelist=filelist)
+
     def pre_save(self, object_definition, message):
         """ Commits object_definition.get_filename() if it has any changes """
         filename = object_definition.get_filename()
         if self.is_dirty(filename):
             self._git_add(filename)
             self._git_commit(filename,
-                message="External changes commited in %s '%s'" %
-                        (object_definition.object_type, object_definition.get_shortname()))
+                             message="External changes commited in %s '%s'" %
+                            (object_definition.object_type, object_definition.get_shortname()))
+
     def save(self, object_definition, message):
         filename = object_definition.get_filename()
         if len(self.messages) > 0:
@@ -255,22 +268,26 @@ class GitRepo(object):
         if self.is_dirty(filename):
             self._git_commit(filename, message)
         self.messages = []
-    def is_dirty(self,filename):
+
+    def is_dirty(self, filename):
         """ Returns True if filename needs to be committed to git """
         command = "git status --porcelain '%s'" % filename
         output = self._run_command(command)
         # Return True if there is any output
         return len(output) > 0
+
     def write(self, object_definition, message):
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
-        self.messages.append( " * %s" % message )
+        self.messages.append(" * %s" % message)
+
     def revert(self, commit):
         """ Revert some existing commits works like "git revert" """
         commit = commit.replace(r"'", r"\'")
         command = "git revert --no-edit -- '%s'" % commit
         return self._run_command(command)
-    def commit(self, message='commited by pynag',filelist=None, author=None):
+
+    def commit(self, message='commited by pynag', filelist=None, author=None):
         """ Commit files with "git commit"
 
         Arguments:
@@ -296,7 +313,8 @@ class GitRepo(object):
             command = "git commit -a -m '%s' --author='%s'" % (message, author)
             return self._run_command(command=command)
         elif isinstance(filelist, str):
-            # in case filelist was provided as a string, consider to be only one file
+            # in case filelist was provided as a string, consider to be only
+            # one file
             filelist = [filelist]
 
         # Remove from commit list files that have not changed:
@@ -312,12 +330,13 @@ class GitRepo(object):
         filestring = ''
 
         # Escape all single quotes in filenames
-        filelist = map(lambda x: x.replace("'", r"\'"), filelist )
+        filelist = map(lambda x: x.replace("'", r"\'"), filelist)
 
         # Wrap filename inside single quotes:
-        filelist = map(lambda x: "'%s'" % x, filelist )
+        filelist = map(lambda x: "'%s'" % x, filelist)
 
-        # If filelist is empty, we have nothing to commit and we will return as opposed to throwing error
+        # If filelist is empty, we have nothing to commit and we will return as
+        # opposed to throwing error
         if not filelist:
             return
         # Create a space seperated string with the filenames
@@ -342,6 +361,7 @@ class GitRepo(object):
 
 
 class PerfData(object):
+
     """ Data Structure for a nagios perfdata string with multiple perfdata metric
 
     Example string:
@@ -354,19 +374,21 @@ class PerfData(object):
     load3 20
     label with spaces 5
     """
+
     def __init__(self, perfdatastring=""):
         """ >>> perf = PerfData("load1=10 load2=10 load3=20") """
         self.metrics = []
         self.invalid_metrics = []
-        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
-        perfdatastring = perfdatastring.replace('\x00','')
+        # Hack: For some weird reason livestatus sometimes delivers perfdata in
+        # utf-32 encoding.
+        perfdatastring = perfdatastring.replace('\x00', '')
         try:
             perfdata = shlex.split(perfdatastring)
             for metric in perfdata:
                 try:
-                    self.add_perfdatametric( metric )
+                    self.add_perfdatametric(metric)
                 except Exception:
-                    self.invalid_metrics.append( metric )
+                    self.invalid_metrics.append(metric)
         except ValueError:
             return
 
@@ -389,7 +411,8 @@ class PerfData(object):
 
         # If we get here, all tests passed
         return True
-    def add_perfdatametric(self, perfdatastring="", label="",value="",warn="",crit="",min="",max="",uom=""):
+
+    def add_perfdatametric(self, perfdatastring="", label="", value="", warn="", crit="", min="", max="", uom=""):
         """ Add a new perfdatametric to existing list of metrics.
 
          Example:
@@ -398,7 +421,8 @@ class PerfData(object):
          >>> s.add_perfdatametric(label="utilization",value="10",uom="%")
         """
         metric=PerfDataMetric(perfdatastring=perfdatastring, label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
-        self.metrics.append(  metric )
+        self.metrics.append(metric)
+
     def get_perfdatametric(self, metric_name):
         """ Get one specific perfdatametric
         >>> s = PerfData("cpu=90% memory=50% disk_usage=20%")
@@ -409,11 +433,19 @@ class PerfData(object):
         for i in self.metrics:
             if i.label == metric_name:
                 return i
+
+    def reconsile_thresholds(self):
+        """ Convert all thresholds in new_threshold_syntax to the standard one """
+        for i in self.metrics:
+            i.reconsile_thresholds()
+
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
 
+
 class PerfDataMetric(object):
+
     """ Data structure for one single Nagios Perfdata Metric """
     label = ""
     value = ""
@@ -422,6 +454,7 @@ class PerfDataMetric(object):
     min = ""
     max = ""
     uom = ""
+
     def __repr__(self):
         return "'%s'=%s%s;%s;%s;%s;%s" % (
             self.label,
@@ -431,11 +464,12 @@ class PerfDataMetric(object):
             self.crit,
             self.min,
             self.max,
-            )
+        )
+
     def __str__(self):
         return self.__repr__()
 
-    def __init__(self, perfdatastring="", label="",value="",warn="",crit="",min="",max="",uom=""):
+    def __init__(self, perfdatastring="", label="", value="", warn="", crit="", min="", max="", uom=""):
         """
         >>> p = PerfData(perfdatastring="size=10M;20M;;;")
         >>> metric = p.get_perfdatametric('size')
@@ -461,13 +495,15 @@ class PerfDataMetric(object):
 
         perfdatastring = str(perfdatastring)
 
-        # Hack: For some weird reason livestatus sometimes delivers perfdata in utf-32 encoding.
-        perfdatastring = perfdatastring.replace('\x00','')
+        # Hack: For some weird reason livestatus sometimes delivers perfdata in
+        # utf-32 encoding.
+        perfdatastring = perfdatastring.replace('\x00', '')
         if len(perfdatastring) == 0:
             return
 
         # If label is single quoted, there might be any symbol in the label
-        # including other single quotes and the = sign. Therefore, we take special precautions if it is so
+        # including other single quotes and the = sign. Therefore, we take
+        # special precautions if it is so
         if perfdatastring.startswith("'"):
             tmp = perfdatastring.split("'")
             everything_but_label = tmp.pop()
@@ -499,6 +535,7 @@ class PerfDataMetric(object):
             self.min = tmp.pop(0)
         if len(tmp) > 0:
             self.max = tmp.pop(0)
+
     def get_status(self):
         """ Return nagios-style exit code (int 0-3) by comparing
 
@@ -520,7 +557,6 @@ class PerfDataMetric(object):
         except pynag.Utils.PynagError:
             status = 3
         return status
-
 
     def is_valid(self):
         """ Returns True if all Performance data is valid. Otherwise False
@@ -546,7 +582,7 @@ class PerfDataMetric(object):
         if self.label in (None, ''):
             return False
 
-        if self.value in (None,''):
+        if self.value in (None, ''):
             return False
 
         try:
@@ -570,6 +606,11 @@ class PerfDataMetric(object):
         # If we get here, we passed all tests
         return True
 
+    def reconsile_thresholds(self):
+        """ Convert threshold from new threshold syntax to current one, for backwards compatibility """
+        print 'yeah', self
+        self.warn = reconsile_threshold(self.warn)
+        self.crit = reconsile_threshold(self.crit)
 
     def split_value_and_uom(self, value):
         """ get value="10M" and return (10,"M")
@@ -597,8 +638,9 @@ class PerfDataMetric(object):
         """
         tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
         if len(tmp) == 0:
-            return '',''
+            return '', ''
         return tmp[0]
+
 
 def grep(objects, **kwargs):
     """  Returns all the elements from array that match the keywords in **kwargs
@@ -621,14 +663,14 @@ def grep(objects, **kwargs):
     # is a list, it means the calling function is doing multible search on
     # the same key
     search = []
-    for k,v in kwargs.items():
+    for k, v in kwargs.items():
         if type(v) == type([]):
             for i in v:
-                search.append((k,i))
+                search.append((k, i))
         else:
-            search.append((k,v))
+            search.append((k, v))
     matching_objects = objects
-    for k,v in search:
+    for k, v in search:
         #v = str(v)
         v_str = str(v)
         if k.endswith('__contains'):
@@ -658,12 +700,12 @@ def grep(objects, **kwargs):
         elif k.endswith('__regex'):
             k = k[:-len('__regex')]
             regex = re.compile(str(v))
-            expression = lambda x: regex.search( str(x.get(k)) )
+            expression = lambda x: regex.search(str(x.get(k)))
         elif k.endswith('__in'):
-            k  = k = k[:-len('__in')]
+            k = k = k[:-len('__in')]
             expression = lambda x: str(x.get(k)) in v
         elif k.endswith('__notin'):
-            k  = k = k[:-len('__notin')]
+            k = k = k[:-len('__notin')]
             expression = lambda x: str(x.get(k)) in v
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
@@ -671,7 +713,7 @@ def grep(objects, **kwargs):
         elif k == 'register' and str(v) == '1':
             # in case of register attribute None is the same as "1"
             expression = lambda x: x.get(k) in (v, None)
-        elif k in ('search','q'):
+        elif k in ('search', 'q'):
             expression = lambda x: v_str in str(x)
         else:
             # If all else fails, assume they are asking for exact match
@@ -680,7 +722,8 @@ def grep(objects, **kwargs):
         matching_objects = filter(expression, matching_objects)
     return matching_objects
 
-def grep_to_livestatus(*args,**kwargs):
+
+def grep_to_livestatus(*args, **kwargs):
     """ Converts from pynag style grep syntax to livestatus filter syntax.
 
     Example:
@@ -690,25 +733,27 @@ def grep_to_livestatus(*args,**kwargs):
         >>> grep_to_livestatus(service_description__contains='serv')
         ['Filter: service_description ~ serv']
     """
-    result = list(args) # Args go unchanged back into results
-    for k,v in kwargs.items():
-        if isinstance(v,list) and len(v) > 0:
+    result = list(args)  # Args go unchanged back into results
+    for k, v in kwargs.items():
+        if isinstance(v, list) and len(v) > 0:
             v = v[0]
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
-            my_string = "Filter: %s ~ %s" % (k,v)
+            my_string = "Filter: %s ~ %s" % (k, v)
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
-            my_string = "Filter: %s >= %s" % (k,v)
+            my_string = "Filter: %s >= %s" % (k, v)
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
-            my_string = "Filter: %s != %s" % (k,v)
+            my_string = "Filter: %s != %s" % (k, v)
         else:
-            my_string = "Filter: %s = %s" % (k,v)
+            my_string = "Filter: %s = %s" % (k, v)
         result.append(my_string)
     return result
 
+
 class AttributeList(object):
+
     """ Parse a list of nagios attributes (e. contact_groups) into a parsable format
 
     This makes it handy to mangle with nagios attribute values that are in a comma seperated format.
@@ -766,7 +811,6 @@ class AttributeList(object):
         # Strip whitespaces from each field
         self.fields = map(lambda x: x.strip(), self.fields)
 
-
     def __str__(self):
         return self.operator + ','.join(self.fields)
 
@@ -782,7 +826,7 @@ class AttributeList(object):
         ['group1', 'group4', 'group2', 'group3']
 
         """
-        return self.fields.insert(index,object)
+        return self.fields.insert(index, object)
 
     def append(self, object):
         """ Same as list.append()
@@ -862,6 +906,7 @@ class AttributeList(object):
 
         """
         return self.fields.remove(value)
+
     def __iter__(self):
         """ Same as list.__iter__()
 
@@ -873,7 +918,9 @@ class AttributeList(object):
         """
         return self.fields.__iter__()
 
+
 class PluginOutput:
+
     """ This class parses a typical stdout from a nagios plugin
 
     It splits the output into the following fields:
@@ -923,6 +970,7 @@ class PluginOutput:
 
 
 class defaultdict(dict):
+
     """ This is an alternative implementation of collections.defaultdict.
 
     Used as a fallback if using python 2.4 or older.
@@ -933,39 +981,99 @@ class defaultdict(dict):
     except ImportError:
         from pynag.Utils import defaultdict
     """
+
     def __init__(self, default_factory=None, *a, **kw):
         if (default_factory is not None and
             not hasattr(default_factory, '__call__')):
             raise TypeError('first argument must be callable')
         dict.__init__(self, *a, **kw)
         self.default_factory = default_factory
+
     def __getitem__(self, key):
         try:
             return dict.__getitem__(self, key)
         except KeyError:
             return self.__missing__(key)
+
     def __missing__(self, key):
         if self.default_factory is None:
             raise KeyError(key)
         self[key] = value = self.default_factory()
         return value
+
     def __reduce__(self):
         if self.default_factory is None:
             args = tuple()
         else:
             args = self.default_factory,
         return type(self), args, None, None, self.items()
+
     def copy(self):
         return self.__copy__()
+
     def __copy__(self):
         return type(self)(self.default_factory, self)
+
     def __deepcopy__(self, memo):
         import copy
-        return type(self)(self.default_factory,
-            copy.deepcopy(self.items()))
+        return type(self)(self.default_factory, copy.deepcopy(self.items()))
+
     def __repr__(self):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
+
+
+def reconsile_threshold(threshold_range):
+    """ Take threshold string as and normalize it to the format supported by plugin development team
+
+    the input (usually a string in the form of 'the new threshold syntax') is a string in the form of x..y
+
+    the output will be a compatible string in the older nagios plugin format @x:y
+
+    examples
+    >>> reconsile_threshold("0..5")
+    '@0:5'
+    >>> reconsile_threshold("inf..5")
+    '5:'
+    >>> reconsile_threshold("5..inf")
+    '~:5'
+    >>> reconsile_threshold("inf..inf")
+    '@~:'
+    >>> reconsile_threshold("^0..5")
+    '0:5'
+    >>> reconsile_threshold("10..20")
+    '@10:20'
+    >>> reconsile_threshold("10..inf")
+    '~:10'
+    """
+    threshold_range = str(threshold_range)
+    if not '..' in threshold_range:
+        return threshold_range
+    threshold_range = threshold_range.strip()
+    if threshold_range.startswith('^'):
+        operator = ''
+        threshold_range = threshold_range[1:]
+    else:
+        operator = '@'
+
+    start, end = threshold_range.split('..', 1)
+    start = start.replace('-inf', '~').replace('inf', '~')
+    end = end.replace('-inf', '').replace('inf', '')
+
+    if not start:
+        start = '0'
+
+    # Lets convert the common case of @0:x into x:
+    if operator == '@' and start == '~' and end not in ('', '~'):
+        result = "%s:" % end
+    # Convert the common case of @x: into 0:x
+    elif operator == '@' and end in ('', '~') and start != '~':
+        result = '~:%s' % start
+    else:
+        result = '%s%s:%s' % (operator, start, end)
+    #result = '%s%s:%s' % (operator, start, end)
+    return result
+
 
 def synchronized(lock):
     """ Synchronization decorator

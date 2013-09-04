@@ -1,5 +1,6 @@
 import unittest2 as unittest
 import sys
+import time
 
 import pynag.Utils
 import pynag.Plugins
@@ -313,6 +314,18 @@ class testPluginHelper(unittest.TestCase):
                                   warn='0..10', crit='10..inf')
         case = '--th=metric=fakedata,ok=0..10,warn=10..20'
         self.run_expect(case, 3, 0)
+
+    def testTimeout(self):
+        try:
+            self.my_plugin.set_timeout(1)
+            time.sleep(1)
+            self.assertTrue(False, "Code should have timed out by now")
+        except SystemExit, e:
+            self.assertEquals(type(e), type(SystemExit()))
+            self.assertEquals(e.code, pynag.Plugins.unknown)
+        self.assertTrue(True, "Timeout occured in plugin, just like expected.")
+
+
 
 
 class testPlugin(unittest.TestCase):
