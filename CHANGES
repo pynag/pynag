@@ -1,3 +1,12 @@
+Changes in next ()
+New Features:
+    - All plugins now have a --timeout=58 seconds
+    - New option to plugins: --extra-opts
+    - More thread safety in Model
+
+Bug Fixes:
+    - python 2.4 compatibility in unittests
+
 Changes in 0.6.1 (Aug 30 2013)
 Bug Fixes:
     - Disable unittesting on rhel5 (stops build because of unittest2)
