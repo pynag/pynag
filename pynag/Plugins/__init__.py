@@ -820,17 +820,6 @@ class PluginHelper:
                     setattr(values, name, extra_opts[option.dest][0])
         return values
 
-    def _optional_arg(arg_default):
-        """ This is a callback for optparse to allow an option with an optional empty value """
-        def func(option, opt_str, value, parser):
-            if parser.rargs and not parser.rargs[0].startswith('-'):
-                val = parser.rargs[0]
-                parser.rargs.pop(0)
-            else:
-                val = arg_default
-            setattr(parser.values, option.dest, val)
-        return func
-
     def get_metric(self, label):
         """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found.
 
