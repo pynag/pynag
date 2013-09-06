@@ -1154,7 +1154,7 @@ class PluginHelper:
         """
         try:
             function(*args, **kwargs)
-        except Exception, e:
+        except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exit_code = unknown
             # traceback.print_exc(file=sys.stdout)
