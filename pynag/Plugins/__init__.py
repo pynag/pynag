@@ -2,7 +2,7 @@
 #
 # pynag - Python Nagios plug-in and configuration environment
 # Copyright (C) 2010 Drew Stinnet
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -12,7 +12,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -37,7 +37,7 @@ WARNING = 1
 CRITICAL = 2
 UNKNOWN = 3
 
-ok,warning,critical,unknown = 0,1,2,3
+ok, warning, critical, unknown = 0, 1, 2, 3
 
 state = {}
 state['ok'] = 0
@@ -63,7 +63,9 @@ state_text[warning] = 'Warning'
 state_text[critical] = "Critical"
 state_text[unknown] = "Unknown"
 
+
 class simple:
+
     """
     Nagios plugin helper library based on Nagios::Plugin
 
@@ -86,28 +88,30 @@ class simple:
     nagios_exit(code, message)
     """
 
-    def __init__(self, shortname = None, version = None, blurb = None, extra = None, url = None, license = None, plugin = None, timeout = 15, must_threshold = True):
+    def __init__(self, shortname=None, version=None, blurb=None, extra=None, url=None, license=None, plugin=None, timeout=15, must_threshold=True):
 
-        ## this is the custom parser
+        # this is the custom parser
         self.extra_list_optional = []
         self.extra_list_required = []
 
-        ## Set the option parser stuff here
+        # Set the option parser stuff here
         self.parser = OptionParser()
 
-        ## Variables we'll get later
+        # Variables we'll get later
         self.opts = None
         self.must_threshold = must_threshold
         self.data = {}
         self.data['perfdata'] = []
-        self.data['messages'] = { OK:[], WARNING:[], CRITICAL:[], UNKNOWN:[] }
+        self.data['messages'] = {
+            OK: [], WARNING: [], CRITICAL: [], UNKNOWN: []}
         self.data['threshhold'] = None
 
-        ## Error mappings, for easy access
-        self.errors = { "OK":0, "WARNING":1, "CRITICAL":2, "UNKNOWN":3, }
-        self.status_text = { 0:"OK", 1:"WARNING", 2:"CRITICAL", 3:"UNKNOWN", }
+        # Error mappings, for easy access
+        self.errors = {"OK": 0, "WARNING": 1, "CRITICAL": 2, "UNKNOWN": 3, }
+        self.status_text = {
+            0: "OK", 1: "WARNING", 2: "CRITICAL", 3: "UNKNOWN", }
 
-        ## Shortname creation
+        # Shortname creation
         if not shortname:
             self.data['shortname'] = os.path.basename("%s" % sys.argv[0])
         else:
@@ -120,7 +124,8 @@ class simple:
         required = optional parameter
         action = [store, append, store_true]
         """
-        self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" % spec, help=help_text, metavar="%s" % spec.upper(), action=action)
+        self.parser.add_option("-%s" % spec_abbr, "--%s" % spec, dest="%s" %
+                               spec, help=help_text, metavar="%s" % spec.upper(), action=action)
         if required:
             self.extra_list_required.append(spec)
         else:
@@ -133,66 +138,72 @@ class simple:
         timeout = None
         verbose = 0
 
-        self.parser.add_option("-v", "--verbose", dest="verbose", help="Verbosity Level", metavar="VERBOSE", default=0)
-        self.parser.add_option("-H", "--host", dest="host", help="Target Host", metavar="HOST")
-        self.parser.add_option("-t", "--timeout", dest="timeout", help="Connection Timeout", metavar="TIMEOUT")
+        self.parser.add_option(
+            "-v", "--verbose", dest="verbose", help="Verbosity Level", metavar="VERBOSE", default=0)
+        self.parser.add_option(
+            "-H", "--host", dest="host", help="Target Host", metavar="HOST")
+        self.parser.add_option(
+            "-t", "--timeout", dest="timeout", help="Connection Timeout", metavar="TIMEOUT")
 
-        if self.must_threshold == True:
-            self.parser.add_option("-c", "--critical", dest="critical", help="Critical Threshhold", metavar="CRITICAL")
-            self.parser.add_option("-w", "--warning", dest="warning", help="Warn Threshhold", metavar="WARNING")
+        if self.must_threshold is True:
+            self.parser.add_option(
+                "-c", "--critical", dest="critical", help="Critical Threshhold", metavar="CRITICAL")
+            self.parser.add_option(
+                "-w", "--warning", dest="warning", help="Warn Threshhold", metavar="WARNING")
 
         (options, args) = self.parser.parse_args()
 
-        ## Set verbosity level
+        # Set verbosity level
         if int(options.verbose) in (0, 1, 2, 3):
             self.data['verbosity'] = int(options.verbose)
         else:
             self.data['verbosity'] = verbose
 
-        ## Ensure the hostname is set
+        # Ensure the hostname is set
         if options.host:
             self.data['host'] = options.host
 
-        ## Set timeout
+        # Set timeout
         if options.timeout:
             self.data['timeout'] = options.timeout
         else:
             self.data['timeout'] = timeout
 
-        if self.must_threshold == True and not options.critical and not options.warning:
-            self.parser.error("You must provide a WARNING and/or CRITICAL value")
+        if self.must_threshold is True and not options.critical and not options.warning:
+            self.parser.error(
+                "You must provide a WARNING and/or CRITICAL value")
 
-        ## Set Critical; if the option is available in the plugin
+        # Set Critical; if the option is available in the plugin
         if hasattr(options, 'critical'):
             self.data['critical'] = options.critical
         else:
             self.data['critical'] = None
 
-        ## Set Warn; if the option is available in the plugin
+        # Set Warn; if the option is available in the plugin
         if hasattr(options, 'warning'):
             self.data['warning'] = options.warning
         else:
             self.data['warning'] = None
 
-        ## Ensurethat the extra items are provided
+        # Ensurethat the extra items are provided
         for extra_item in self.extra_list_required:
             if not options.__dict__[extra_item]:
                 self.parser.error("option '%s' is required" % extra_item)
 
-
-        ## Put the remaining values into the data dictionary
-        for key,value in options.__dict__.items():
+        # Put the remaining values into the data dictionary
+        for key, value in options.__dict__.items():
             if key in (self.extra_list_required + self.extra_list_optional):
                 self.data[key] = value
 
-    def add_perfdata(self, label , value , uom = None, warn = None, crit = None, minimum = None, maximum = None):
+    def add_perfdata(self, label, value, uom=None, warn=None, crit=None, minimum=None, maximum=None):
         """
         Append perfdata string to the end of the message
         """
 
         # Append perfdata (assume multiple)
-        self.data['perfdata'].append({ 'label' : label, 'value' : value, 'uom' : uom, 
-            'warn' : warn, 'crit' : crit, 'min' : minimum, 'max' : maximum})
+        self.data[
+            'perfdata'].append({'label': label, 'value': value, 'uom': uom,
+                                'warn': warn, 'crit': crit, 'min': minimum, 'max': maximum})
 
     def check_perfdata_as_metric(self):
         for perfdata in self.data['perfdata']:
@@ -205,17 +216,20 @@ class simple:
 
         self._check_messages_and_exit()
 
-    def _add_message_from_range_check(self, value, warning = None, critical = None, label = 'data'):
+    def _add_message_from_range_check(self, value, warning=None, critical=None, label='data'):
         if not (critical or warning):
             critical = self.data['critical']
             warning = self.data['warning']
 
         if critical and not self._range_checker(value, critical):
-            self.add_message(CRITICAL,"%s %s is outside critical range: %s" % (label, value, critical))
+            self.add_message(CRITICAL, "%s %s is outside critical range: %s" %
+                             (label, value, critical))
         elif warning and not self._range_checker(value, warning):
-            self.add_message(WARNING,"%s %s is outside warning range: %s" % (label, value, warning))
+            self.add_message(
+                WARNING, "%s %s is outside warning range: %s" % (label, value, warning))
         else:
-            self.add_message(OK,"%s %s is inside warning=%s and critical=%s" % (label, value, warning, critical))
+            self.add_message(OK, "%s %s is inside warning=%s and critical=%s" %
+                             (label, value, warning, critical))
 
     def _check_messages_and_exit(self):
         # Get all messages appended and exit code
@@ -243,7 +257,6 @@ class simple:
         self._add_message_from_range_check(value)
         self._check_messages_and_exit()
 
-
     def _range_checker(self, value, range_threshold):
         """ deprecated. Use pynag.Plugins.check_range() """
         return check_range(value=value, range_threshold=range_threshold)
@@ -252,7 +265,7 @@ class simple:
         """
         Send data via send_nsca for passive service checks
         """
-    
+
         # Execute send_nsca
         from popen2 import Popen3
         command = "send_nsca -H %s" % ncsahost
@@ -260,10 +273,12 @@ class simple:
 
         # Service check
         if service:
-            print >>p.tochild, "%s	%s	%s	%s %s" % (hostname, service, code, message, self.perfdata_string())
+            print >>p.tochild, "%s	%s	%s	%s %s" % (
+                hostname, service, code, message, self.perfdata_string())
         # Host check, omit service_description
         else:
-            print >>p.tochild, "%s	%s	%s %s" % (hostname, code, message, self.perfdata_string())
+            print >>p.tochild, "%s	%s	%s %s" % (
+                hostname, code, message, self.perfdata_string())
 
         # Send eof
         # TODO, support multiple statuses ?
@@ -276,14 +291,15 @@ class simple:
 
         # Wait for send_nsca to exit
         returncode = p.wait()
-        returncode = os.WEXITSTATUS( returncode) 
+        returncode = os.WEXITSTATUS(returncode)
 
         # Problem with running nsca
         if returncode != 0:
             if returncode == 127:
                 raise Exception("Could not find send_nsca in path")
             else:
-                raise Exception("returncode: %i\n%s" % (returncode, nsca_output))
+                raise Exception(
+                    "returncode: %i\n%s" % (returncode, nsca_output))
 
         return 0
 
@@ -295,13 +311,13 @@ class simple:
         # Change text based codes to int
         code = self.code_string2int(code_text)
 
-        ## This should be one line (or more in nagios 3)
+        # This should be one line (or more in nagios 3)
         print "%s: %s %s" % (self.status_text[code], message, self.perfdata_string())
         sys.exit(code)
 
     def perfdata_string(self):
 
-        ## Append perfdata to the message, if perfdata exists
+        # Append perfdata to the message, if perfdata exists
         if self.data['perfdata']:
             append = '|'
         else:
@@ -319,7 +335,7 @@ class simple:
 
         return append
 
-    def add_message( self, code, message ):
+    def add_message(self, code, message):
         """
         Add a message with code to the object. May be called
         multiple times.  The messages added are checked by check_messages,
@@ -330,9 +346,9 @@ class simple:
         # Change text based codes to int
         code = self.code_string2int(code)
 
-        self.data['messages'][code].append( message )
+        self.data['messages'][code].append(message)
 
-    def check_messages( self, joinstr = " ", joinallstr = None ):
+    def check_messages(self, joinstr=" ", joinallstr=None):
         """
         Check the current set of messages and return an appropriate nagios
         return code and/or a result message. In scalar context, returns
@@ -374,11 +390,12 @@ class simple:
             message = ""
             for c in keys:
                 if len(self.data['messages'][c]):
-                    message += joinallstr.join(self.data['messages'][c]) + joinallstr
+                    message += joinallstr.join(
+                        self.data['messages'][c]) + joinallstr
 
         return code, message.rstrip(joinallstr)
 
-    def code_string2int( self, code_text ):
+    def code_string2int(self, code_text):
         """
         Changes CRITICAL, WARNING, OK and UNKNOWN code_text to integer
         representation for use within add_message() and nagios_exit()
@@ -400,6 +417,7 @@ class simple:
             return self.data[key]
         else:
             return None
+
 
 def check_threshold(value, warning=None, critical=None):
     """ Checks value against warning/critical and returns Nagios exit code.
@@ -431,6 +449,7 @@ def check_threshold(value, warning=None, critical=None):
         return WARNING
     else:
         return OK
+
 
 def check_range(value, range_threshold=None):
     """ Returns True if value is within range_threshold.
@@ -534,6 +553,7 @@ def check_range(value, range_threshold=None):
 
 
 class PluginHelper:
+
     """ PluginHelper takes away some of the tedious work of writing Nagios plugins. Primary features include:
 
     * Keep a collection of your plugin messages (queue for both summary and longoutput)
@@ -560,34 +580,50 @@ class PluginHelper:
     show_legacy = False     # If True, print perfdata in legacy form
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
-    timeout = 58            # By default, plugins timeout right before nagios kills the plugin
+    # By default, plugins timeout right before nagios kills the plugin
+    timeout = 58
 
     thresholds = None       # List of strings in the nagios threshold format
     options = None          # OptionParser() options
     arguments = None        # OptionParser() arguments
+
     def __init__(self):
         self._long_output = []
         self._summary = []
         self.thresholds = []
-        self._perfdata = PerfData()  # Performance and Threshold Metrics are stored here
+        # Performance and Threshold Metrics are stored here
+        self._perfdata = PerfData()
 
         self.parser = OptionParser()
         general = OptionGroup(self.parser, "Generic Options")
-        self.parser.add_option('--threshold', default=[], help="Thresholds in standard nagios threshold format", metavar='range', dest="thresholds",action="append")
-        self.parser.add_option('--th', default=[], help="Same as --threshold", metavar='range', dest="thresholds",action="append")
+        self.parser.add_option(
+            '--threshold', default=[], help="Thresholds in standard nagios threshold format", metavar='range', dest="thresholds", action="append")
+        self.parser.add_option(
+            '--th', default=[], help="Same as --threshold", metavar='range', dest="thresholds", action="append")
 
-        self.parser.add_option('--extra-opts', help="Read extra options from [section][@config_file]", metavar='@file', dest="extra_opts")
-        self.parser.add_option('--timeout', help="Exit plugin with unknown status after x seconds", type='int', metavar='50', dest="timeout", default=self.timeout)
+        self.parser.add_option(
+            '--extra-opts', help="Read extra options from [section][@config_file]", metavar='@file', dest="extra_opts")
+        self.parser.add_option(
+            '--timeout', help="Exit plugin with unknown status after x seconds",
+            type='int', metavar='50', dest="timeout", default=self.timeout)
 
         display_group = OptionGroup(self.parser, "Display Options")
-        display_group.add_option("-v", "--verbose", dest="verbose", help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
-        general.add_option("-d", "--debug", dest="show_debug", help="Print debug info", metavar="d", action="store_true", default=self.show_debug)
-        display_group.add_option("--no-perfdata", dest="show_perfdata", help="Dont show any performance data", action="store_false", default=self.show_perfdata)
-        display_group.add_option("--no-longoutput", dest="show_longoutput", help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=self.show_longoutput)
-        display_group.add_option("--no-summary", dest="show_summary", help="Hide summary from plugin output", action="store_false", default=self.show_summary)
+        display_group.add_option("-v", "--verbose", dest="verbose",
+                                 help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
+        general.add_option(
+            "-d", "--debug", dest="show_debug", help="Print debug info",
+            metavar="d", action="store_true", default=self.show_debug)
+        display_group.add_option("--no-perfdata", dest="show_perfdata",
+                                 help="Dont show any performance data", action="store_false", default=self.show_perfdata)
+        display_group.add_option("--no-longoutput", dest="show_longoutput",
+                                 help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=self.show_longoutput)
+        display_group.add_option("--no-summary", dest="show_summary",
+                                 help="Hide summary from plugin output", action="store_false", default=self.show_summary)
         #display_group.add_option("--show-status-in-summary", dest="show_status_in_summary", help="Prefix the summary of the plugin with OK- or WARN- ", action="store_true", default=False)
-        display_group.add_option("--get-metrics", dest="get_metrics", help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
-        display_group.add_option("--legacy", dest="show_legacy", help="Output perfdata in legacy format", action="store_true", default=self.show_legacy)
+        display_group.add_option("--get-metrics", dest="get_metrics",
+                                 help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
+        display_group.add_option(
+            "--legacy", dest="show_legacy", help="Output perfdata in legacy format", action="store_true", default=self.show_legacy)
         self.parser.add_option_group(display_group)
 
     def parse_arguments(self, argument_list=None):
@@ -601,7 +637,8 @@ class PluginHelper:
         Returns:
             None
         """
-        self.options, self.arguments = self.parser.parse_args(args=argument_list)
+        self.options, self.arguments = self.parser.parse_args(
+            args=argument_list)
 
         extra_opts = self.options.extra_opts
         if extra_opts is not None:  # --extra-opts was specified
@@ -609,14 +646,16 @@ class PluginHelper:
                 section_name = None
                 config_file = None
             elif '@' in extra_opts:  # filename was specified
-                section_name, config_file = extra_opts.split('@',1)
+                section_name, config_file = extra_opts.split('@', 1)
             else:  # Only section was specified
                 section_name = extra_opts
                 config_file = None
             values = self.get_default_values(section_name, config_file)
-            self.options, self.arguments = self.parser.parse_args(args=argument_list, values=values)
+            self.options, self.arguments = self.parser.parse_args(
+                args=argument_list, values=values)
 
-        # TODO: Handle it if developer decides to remove some options before calling parse_arguments()
+        # TODO: Handle it if developer decides to remove some options before
+        # calling parse_arguments()
         self.thresholds = self.options.thresholds
         self.show_longoutput = self.options.show_longoutput
         self.show_perfdata = self.options.show_perfdata
@@ -626,8 +665,6 @@ class PluginHelper:
         #self.show_status_in_summary = self.options.show_status_in_summary
 
         self.set_timeout(self.options.timeout)
-
-
 
     def add_long_output(self, message):
         """ Appends message to the end of Plugin long_output. Message does not need a \n suffix
@@ -641,9 +678,10 @@ class PluginHelper:
           'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
         """
         self._long_output.append(message)
+
     def add_option(self, *args, **kwargs):
         """ Same as self.parser.add_option() """
-        return self.parser.add_option(*args,**kwargs)
+        return self.parser.add_option(*args, **kwargs)
 
     def get_long_output(self):
         """ Returns all long_output that has been added via add_long_output """
@@ -660,9 +698,11 @@ class PluginHelper:
         'Fatal error'
         """
         self._long_output = [message]
+
     def add_summary(self, message):
         """ Adds message to Plugin Summary """
         self._summary.append(message.strip())
+
     def set_summary(self, message):
         """ Overwrite current summary with message
 
@@ -674,6 +714,7 @@ class PluginHelper:
         'Fatal error'
         """
         self._summary = [message]
+
     def get_summary(self):
         return '. '.join(self._summary)
 
@@ -719,16 +760,18 @@ class PluginHelper:
         Exception: Invalid status supplied "okay"
         """
 
-        # If new status was entered as a human readable string (ok,warn,etc) lets convert it to int:
+        # If new status was entered as a human readable string (ok,warn,etc)
+        # lets convert it to int:
         if type(new_status) == type(''):
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:
-                raise Exception("Invalid status supplied \"%s\"" % (new_status))
+                raise Exception(
+                    "Invalid status supplied \"%s\"" % (new_status))
 
         self._nagios_status = max(self._nagios_status, new_status)
 
-    def add_metric(self, label="",value="",warn="",crit="",min="",max="",uom="", perfdatastring=None):
+    def add_metric(self, label="", value="", warn="", crit="", min="", max="", uom="", perfdatastring=None):
         """ Add numerical metric (will be outputted as nagios performanca data)
 
         Examples:
@@ -749,9 +792,10 @@ class PluginHelper:
         if not perfdatastring is None:
             self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)
         else:
-            self._perfdata.add_perfdatametric(label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
+            self._perfdata.add_perfdatametric(
+                label=label, value=value, warn=warn, crit=crit, min=min, max=max, uom=uom)
 
-    def get_default_values(self,section_name=None, config_file=None):
+    def get_default_values(self, section_name=None, config_file=None):
         """ Returns an optionParser.Values instance of all defaults after parsing extra opts config file
 
         The Nagios extra-opts spec we use is the same as described here: http://nagiosplugins.org/extra-opts
@@ -762,29 +806,31 @@ class PluginHelper:
         # Get the program defaults
         values = self.parser.get_default_values()
 
-
-        # Create an ExtraOptsParser instance and get all the values from that config file
-        extra_opts = ExtraOptsParser(section_name=section_name, config_file=config_file).get_values()
+        # Create an ExtraOptsParser instance and get all the values from that
+        # config file
+        extra_opts = ExtraOptsParser(
+            section_name=section_name, config_file=config_file).get_values()
 
         for option in self.parser.option_list:
             name = option.dest
             if name in extra_opts:
                 if option.action == 'append':
-                    setattr(values,name, extra_opts[option.dest])
+                    setattr(values, name, extra_opts[option.dest])
                 else:
-                    setattr(values,name, extra_opts[option.dest][0])
+                    setattr(values, name, extra_opts[option.dest][0])
         return values
 
     def _optional_arg(arg_default):
         """ This is a callback for optparse to allow an option with an optional empty value """
-        def func(option,opt_str,value,parser):
+        def func(option, opt_str, value, parser):
             if parser.rargs and not parser.rargs[0].startswith('-'):
-                val=parser.rargs[0]
+                val = parser.rargs[0]
                 parser.rargs.pop(0)
             else:
-                val=arg_default
-            setattr(parser.values,option.dest,val)
+                val = arg_default
+            setattr(parser.values, option.dest, val)
         return func
+
     def get_metric(self, label):
         """ Return one specific metric (PerfdataMetric object) with the specified label. Returns None if not found.
 
@@ -813,10 +859,11 @@ class PluginHelper:
             -inf..inf -> :        
         """
         for metric in perfdata:
-            metric.warn = metric.warn.replace("..",":").replace("-inf","").replace("inf","")
-            metric.crit = metric.crit.replace("..",":").replace("-inf","").replace("inf","")
+            metric.warn = metric.warn.replace(
+                "..", ":").replace("-inf", "").replace("inf", "")
+            metric.crit = metric.crit.replace(
+                "..", ":").replace("-inf", "").replace("inf", "")
         return None
-
 
     def get_perfdata(self):
         """ Get perfdatastring for all valid perfdatametrics collected via add_perfdata
@@ -835,11 +882,11 @@ class PluginHelper:
         "'load1'=7;:10;10:;; 'load5'=5;:7;7:;; 'load15'=2;:5;5:;;"
 
         """
-        if self.show_legacy == True:
+        if self.show_legacy is True:
             self.convert_perfdata(self._perfdata.metrics)
-        return str(self._perfdata   )
+        return str(self._perfdata)
 
-    def get_plugin_output(self, exit_code=None,summary=None, long_output=None, perfdata=None):
+    def get_plugin_output(self, exit_code=None, summary=None, long_output=None, perfdata=None):
         """ Get all plugin output as it would be printed to screen with self.exit()
 
         Examples of functionality:
@@ -891,16 +938,16 @@ class PluginHelper:
             exit_code = self.get_status()
 
         return_buffer = ""
-        if self.show_status_in_summary == True:
+        if self.show_status_in_summary is True:
             return_buffer += "%s - " % state_text[exit_code]
-        if self.show_summary == True:
+        if self.show_summary is True:
             return_buffer += summary
-        if self.show_perfdata == True and len(perfdata) > 0:
+        if self.show_perfdata is True and len(perfdata) > 0:
             return_buffer += " | %s\n" % perfdata
 
         if not return_buffer.endswith('\n'):
             return_buffer += '\n'
-        if self.show_longoutput == True and len(long_output) > 0:
+        if self.show_longoutput is True and len(long_output) > 0:
             return_buffer += long_output
 
         return_buffer = return_buffer.strip()
@@ -908,10 +955,12 @@ class PluginHelper:
 
     def set_timeout(self, seconds=50):
         """ Configures plugin to timeout after seconds number of seconds """
-        timeout = lambda x, y: self.exit(unknown, summary="Plugin timeout exceeded after %s seconds." % seconds)
+        timeout = lambda x, y: self.exit(
+            unknown, summary="Plugin timeout exceeded after %s seconds." % seconds)
         signal.signal(signal.SIGALRM, timeout)
         signal.alarm(seconds)
-    def exit(self, exit_code=None,summary=None, long_output=None, perfdata=None):
+
+    def exit(self, exit_code=None, summary=None, long_output=None, perfdata=None):
         """ Print all collected output to screen and exit nagios style, no arguments are needed
             except if you want to override default behavior.
 
@@ -923,19 +972,19 @@ class PluginHelper:
         """
         if exit_code is None:
             exit_code = self.get_status()
-        if self.options and self.options.get_metrics == True:
+        if self.options and self.options.get_metrics is True:
             summary = "Available metrics for this plugin:"
             metrics = []
 
             for i in self._perfdata.metrics:
-                if self.options.verbose == True:
-                    metrics.append( str(i) )
+                if self.options.verbose is True:
+                    metrics.append(str(i))
                 else:
-                    metrics.append( i.label )
+                    metrics.append(i.label)
             long_output = '\n'.join(metrics)
 
-
-        plugin_output = self.get_plugin_output(exit_code=exit_code,summary=summary,long_output=long_output,perfdata=perfdata)
+        plugin_output = self.get_plugin_output(
+            exit_code=exit_code, summary=summary, long_output=long_output, perfdata=perfdata)
 
         print plugin_output
         sys.exit(exit_code)
@@ -957,7 +1006,6 @@ class PluginHelper:
         >>> p.get_plugin_output()
         "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;"
 
-        
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
         >>> p.add_metric('load15', '3')
@@ -991,16 +1039,18 @@ class PluginHelper:
         """
         metric = self.get_metric(label=metric_name)
 
-        # If threshold was specified but metric not found in our data, set status unknown
+        # If threshold was specified but metric not found in our data, set
+        # status unknown
         if metric is None:
             self.status(unknown)
             self.add_summary("Metric %s not found" % (metric_name))
             return
 
-        metric_status = -1 # by default assume nothing
-        default_state = 0 # By default if no treshold matches, we assume OK
-        highest_level = ok # highest threshold range seen
-        # Iterate through all thresholds, and log down warn and crit for perfdata purposes
+        metric_status = -1  # by default assume nothing
+        default_state = 0  # By default if no treshold matches, we assume OK
+        highest_level = ok  # highest threshold range seen
+        # Iterate through all thresholds, and log down warn and crit for
+        # perfdata purposes
         for level, threshold_range in thresholds:
             if metric.warn == '' and level == warning:
                 metric.warn = threshold_range
@@ -1015,31 +1065,37 @@ class PluginHelper:
             # If ok threshold was specified, default state is critical according to spec
             # If value matches our threshold, we increment the status
             try:
-                in_range = new_threshold_syntax.check_range(metric.value, threshold_range)
+                in_range = new_threshold_syntax.check_range(
+                    metric.value, threshold_range)
             except PynagError:
                 self.set_summary(
                     "Could not parse threshold %s=%s for metric %s" %
-                                 (state_text[level], threshold_range, metric_name)
+                    (state_text[
+                     level], threshold_range, metric_name)
                 )
-                self.set_long_output("Thresholds should be in the format metric=<metric_name>,ok=0..90,warning=90..95")
+                self.set_long_output(
+                    "Thresholds should be in the format metric=<metric_name>,ok=0..90,warning=90..95")
                 self.add_long_output("Example: ")
-                self.add_long_output("--th metric=load,ok=0..1,warning=1..5,critical=5..inf")
+                self.add_long_output(
+                    "--th metric=load,ok=0..1,warning=1..5,critical=5..inf")
                 self.status(unknown)
                 self.exit()
             if in_range:
                 metric_status = max(metric_status, level)
-                self.debug('%s is within %s range "%s"' % (metric_name, state_text[level], threshold_range))
+                self.debug('%s is within %s range "%s"' %
+                           (metric_name, state_text[level], threshold_range))
                 if level == ok:
-                    self.debug("OK threshold matches, not checking any more thresholds")
+                    self.debug(
+                        "OK threshold matches, not checking any more thresholds")
                     metric_status = ok
                     break
             else:
-                self.debug('%s is outside %s range "%s"' % (metric_name, state_text[level],threshold_range))
+                self.debug('%s is outside %s range "%s"' %
+                           (metric_name, state_text[level], threshold_range))
 
         # If no thresholds matched, set a default return code
         if metric_status < 0:
             metric_status = default_state
-
 
         # OK's go to long output, errors go directly to summary
         self.add_status(metric_status)
@@ -1049,9 +1105,8 @@ class PluginHelper:
         if metric_status > 0:
             self.add_summary(message)
 
-        if self.verbose == True:
+        if self.verbose is True:
             self.add_long_output(message)
-
 
     def check_all_metrics(self):
         """ Checks all metrics (add_metric() against any thresholds set in self.options.thresholds or with --threshold from commandline)"""
@@ -1061,7 +1116,7 @@ class PluginHelper:
             metric_name = parsed_threshold['metric']
             thresholds = parsed_threshold['thresholds']
             self.check_metric(metric_name, thresholds)
-            checked_metrics.append( metric_name )
+            checked_metrics.append(metric_name)
 
         # Lets look at metrics that were not specified on the command-line but might have a default
         # threshold specified with their metric data
@@ -1071,15 +1126,15 @@ class PluginHelper:
             thresholds = []
 
             if i.warn != '':
-                thresholds.append( (warning, i.warn))
+                thresholds.append((warning, i.warn))
             if i.crit != '':
-                thresholds.append( (critical, i.crit))
+                thresholds.append((critical, i.crit))
             self.check_metric(i.label, thresholds)
 
     def run_function(self, function, *args, **kwargs):
         """ Executes "function" and exits Nagios style with status "unkown"
         if there are any exceptions. The stacktrace will be in long_output.
-        
+
         Example:
         >>> p = PluginHelper()
         >>> p.add_status('ok')
@@ -1102,15 +1157,15 @@ class PluginHelper:
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exit_code = unknown
-            #traceback.print_exc(file=sys.stdout)
+            # traceback.print_exc(file=sys.stdout)
             summary = "Unhandled '%s' exception while running plugin (traceback below)" % exc_type
             long_output = traceback.format_exc()
-            self.exit(exit_code=exit_code, summary=summary, long_output=long_output,perfdata='')
+            self.exit(exit_code=exit_code, summary=summary,
+                      long_output=long_output, perfdata='')
 
-    def debug(self, message): # pragma: no cover
-        if self.show_debug == True:
+    def debug(self, message):  # pragma: no cover
+        if self.show_debug is True:
             self.add_long_output("debug: %s" % message)
-
 
     def __str__(self):
         """
@@ -1123,4 +1178,4 @@ class PluginHelper:
         return self.get_plugin_output()
 
     def __repr__(self):
-        return self.get_plugin_output(long_output='',perfdata='')
+        return self.get_plugin_output(long_output='', perfdata='')
