@@ -120,7 +120,7 @@ class simple:
     def add_arg(self, spec_abbr, spec, help_text, required=1, action="store"):
         """
         Add an argument to be handled by the option parser.  By default, the arg is not required.
-        
+
         required = optional parameter
         action = [store, append, store_true]
         """
@@ -244,7 +244,7 @@ class simple:
 
         Taken from:  http://nagiosplug.sourceforge.net/developer-guidelines.html
         Range definition
-    
+
         Generate an alert if x...
         10        < 0 or > 10, (outside the range of {0 .. 10})
         10:        < 10, (outside {10 .. #})
@@ -762,7 +762,7 @@ class PluginHelper:
 
         # If new status was entered as a human readable string (ok,warn,etc)
         # lets convert it to int:
-        if type(new_status) == type(''):
+        if isinstance(new_status, basestring):
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:
@@ -856,7 +856,7 @@ class PluginHelper:
             inf..y -> :y
             -inf..y -> :y
             x..inf -> x:
-            -inf..inf -> :        
+            -inf..inf -> :
         """
         for metric in perfdata:
             metric.warn = metric.warn.replace(
