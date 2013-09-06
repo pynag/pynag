@@ -669,7 +669,7 @@ class config:
                 key2 = int(float(key2))
             if str(key1) != str(key2):
                 result = False
-        if result == False:
+        if result is False:
             return False
         return True
 
@@ -695,7 +695,7 @@ class config:
         return
         ['larry','curly','moe']
         """
-        if type(item) != type({}):
+        if not isinstance(item, dict):
             raise ParserError("%s is not a dictionary\n" % item)
             # return []
         if not key in item:
@@ -1009,18 +1009,18 @@ class config:
             elif attribute == 'cfg_dir' and new_value and os.path.normpath(value) == os.path.normpath(new_value):
                 return False
             # We are not appending, and no old value was specified:
-            elif append == False and not old_value:
+            elif append is False and not old_value:
                 write_buffer[i] = new_line
                 is_dirty = True
                 break
-        if is_dirty == False and new_value is not None:
+        if is_dirty is False and new_value is not None:
             # If we get here, it means we read the whole file,
             # and we have not yet made any changes, So we assume
             # We should append to the file
             write_buffer.append(new_line)
             is_dirty = True
             # When we get down here, it is time to write changes to file
-        if is_dirty == True:
+        if is_dirty is True:
             str_buffer = ''.join(write_buffer)
             self.write(filename, str_buffer)
             return True
@@ -1530,7 +1530,7 @@ class mk_livestatus:
             return []
 
         # If something other than python format was requested, we return the answer as is
-        if python_format == False:
+        if python_format is False:
             return answer
 
         # If we reach down here, it means we are supposed to parse the output before returning it
@@ -1540,7 +1540,7 @@ class mk_livestatus:
             raise ParserError("Error, could not parse response from livestatus.\n%s" % answer)
 
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
-        if doing_stats == True and len(answer) == 1:
+        if doing_stats is True and len(answer) == 1:
             return answer[0]
 
         columns = answer.pop(0)
@@ -1871,7 +1871,7 @@ class LogFiles(object):
             if first_entry['time'] > end_time:
                 continue
                 # If strict, filter entries to only include the ones in the timespan
-            if strict == True:
+            if strict is True:
                 entries = [x for x in entries if x['time'] >= start_time and x['time'] <= end_time]
                 # If search string provided, filter the string
             if search is not None:
@@ -2200,7 +2200,6 @@ class ExtraOptsParser(object):
             return self.parse_string(data)
         finally:
             f.close()
-
 
     def parse_string(self, string):
         """ Parsers a string that is supposed to be ini-style format. See parse_file() for more ifno
