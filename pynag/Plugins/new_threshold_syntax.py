@@ -98,11 +98,16 @@ def check_range(value, range):
     False
     """
 
-    if not type(range) == type('') or range == '':
+    if not isinstance(range, basestring) or range == '':
         raise PynagError('range must be a string')
-        # value must be numeric, so we try to convert it to float
+
+    # value must be numeric, so we try to convert it to float
     value = float(value)
 
+    # If range does not contain ".." then we assume its the older style of
+    # ranges (either a plain number or the start:end syntax)
+    if '..' not in range:
+        return not pynag.Plugins.check_range(value=value, range_threshold=range)
     # If range starts with ^ we the conditions are inverted
     if range[0] == '^':
         return not check_range(value, range[1:])
