@@ -1052,7 +1052,7 @@ class PluginHelper:
         >>> p.add_metric('load15', '3')
         >>> p.check_metric('load15',thresholds)
         >>> p.get_plugin_output()
-        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;"
+        "Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;"
 
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
@@ -1060,7 +1060,7 @@ class PluginHelper:
         >>> p.verbose = True
         >>> p.check_metric('load15',thresholds)
         >>> p.get_plugin_output()
-        "Warning - Warning on load15 | 'load15'=3;2..5;5..inf;;\\nWarning on load15"
+        "Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;\\nWarning on load15"
 
         Invalid metric:
         >>> p = PluginHelper()
