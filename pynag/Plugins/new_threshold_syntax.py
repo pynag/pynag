@@ -1,4 +1,4 @@
-1# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 # pynag - Python Nagios plug-in and configuration environment
 # Copyright (C) 2012 Pall Sigurdsson
@@ -85,6 +85,7 @@ def check_threshold(value, ok=None, warning=None, critical=None):
         # Return unknown if any problem occurs, including invalid input
         return pynag.Plugins.UNKNOWN
 
+
 def check_range(value, range):
     """ Returns True if value is within range, else False
 
@@ -118,7 +119,7 @@ def check_range(value, range):
         raise PynagError('Invalid Format for threshold range: "%s"' % range)
     start, end = tmp
 
-    if not start in ('inf','-inf'):
+    if not start in ('inf', '-inf'):
         start = float(start)
         if start > value:
             return False
@@ -138,7 +139,6 @@ def parse_threshold(threshold):
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []
-    metric_name = None
     results = {}
     results['thresholds'] = parsed_thresholds
     for i in tmp:
@@ -146,7 +146,7 @@ def parse_threshold(threshold):
             raise PynagError("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
         if key in pynag.Plugins.state.keys():
-            parsed_thresholds.append( (pynag.Plugins.state[key], value) )
+            parsed_thresholds.append((pynag.Plugins.state[key], value))
         else:
             results[key] = value
     return results
