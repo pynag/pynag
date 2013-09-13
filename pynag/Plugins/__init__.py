@@ -27,7 +27,7 @@ import traceback
 import signal
 from platform import node
 from optparse import OptionParser, OptionGroup
-from pynag.Utils import PerfData, PynagError
+from pynag.Utils import PerfData, PynagError, reconsile_threshold
 from pynag.Parsers import ExtraOptsParser
 import new_threshold_syntax
 
@@ -577,7 +577,7 @@ class PluginHelper:
     show_perfdata = True    # If True, print perfdata
     show_summary = True     # If True, print Summary
     show_status_in_summary = True
-    show_legacy = False     # If True, print perfdata in legacy form
+    show_legacy = False     # Deprecated, doesnt do anything
     verbose = False         # Extra verbosity
     show_debug = False      # Extra debugging
     # By default, plugins timeout right before nagios kills the plugin
@@ -595,35 +595,96 @@ class PluginHelper:
         self._perfdata = PerfData()
 
         self.parser = OptionParser()
-        general = OptionGroup(self.parser, "Generic Options")
-        self.parser.add_option(
-            '--threshold', default=[], help="Thresholds in standard nagios threshold format", metavar='range', dest="thresholds", action="append")
-        self.parser.add_option(
-            '--th', default=[], help="Same as --threshold", metavar='range', dest="thresholds", action="append")
+        generic_group = OptionGroup(self.parser, "Generic Options")
+        generic_group.add_option(
+            '--timeout',
+            help="Exit plugin with unknown status after x seconds",
+            type='int',
+            metavar='50',
+            dest="timeout",
+            default=self.timeout
+        )
+        generic_group.add_option(
+            '--threshold',
+            default=[],
+            help="Thresholds in standard nagios threshold format",
+            metavar='range',
+            dest="thresholds",
+            action="append"
+        )
+        generic_group.add_option(
+            '--th',
+            default=[],
+            help="Same as --threshold",
+            metavar='range',
+            dest="thresholds",
+            action="append"
+        )
 
-        self.parser.add_option(
-            '--extra-opts', help="Read extra options from [section][@config_file]", metavar='@file', dest="extra_opts")
-        self.parser.add_option(
-            '--timeout', help="Exit plugin with unknown status after x seconds",
-            type='int', metavar='50', dest="timeout", default=self.timeout)
+        generic_group.add_option(
+            '--extra-opts',
+            help="Read options from an ini file. See http://nagiosplugins.org/extra-opts",
+            metavar='@file',
+            dest="extra_opts"
+        )
+        generic_group.add_option(
+            "-d", "--debug",
+            dest="show_debug",
+            help="Print debug info",
+            metavar="d",
+            action="store_true",
+            default=self.show_debug
+        )
 
+        # Display options are options that affect the output of the plugin
+        # But usually not its function
         display_group = OptionGroup(self.parser, "Display Options")
-        display_group.add_option("-v", "--verbose", dest="verbose",
-                                 help="Print more verbose info", metavar="v", action="store_true", default=self.verbose)
-        general.add_option(
-            "-d", "--debug", dest="show_debug", help="Print debug info",
-            metavar="d", action="store_true", default=self.show_debug)
-        display_group.add_option("--no-perfdata", dest="show_perfdata",
-                                 help="Dont show any performance data", action="store_false", default=self.show_perfdata)
-        display_group.add_option("--no-longoutput", dest="show_longoutput",
-                                 help="Hide longoutput from the plugin output (i.e. only display first line of the output)", action="store_false", default=self.show_longoutput)
-        display_group.add_option("--no-summary", dest="show_summary",
-                                 help="Hide summary from plugin output", action="store_false", default=self.show_summary)
-        #display_group.add_option("--show-status-in-summary", dest="show_status_in_summary", help="Prefix the summary of the plugin with OK- or WARN- ", action="store_true", default=False)
-        display_group.add_option("--get-metrics", dest="get_metrics",
-                                 help="Print all available metrics and exit (can be combined with --verbose)", action="store_true", default=False)
         display_group.add_option(
-            "--legacy", dest="show_legacy", help="Output perfdata in legacy format", action="store_true", default=self.show_legacy)
+            "-v", "--verbose",
+            dest="verbose",
+            help="Print more verbose info",
+            metavar="v",
+            action="store_true",
+            default=self.verbose
+        )
+        display_group.add_option(
+            "--no-perfdata",
+            dest="show_perfdata",
+            help="Dont show any performance data",
+            action="store_false",
+            default=self.show_perfdata
+        )
+        display_group.add_option(
+            "--no-longoutput",
+            dest="show_longoutput",
+            help="Hide longoutput from the plugin output (i.e. only display first line of the output)",
+            action="store_false",
+            default=self.show_longoutput
+        )
+        display_group.add_option(
+            "--no-summary",
+            dest="show_summary",
+            help="Hide summary from plugin output",
+            action="store_false",
+            default=self.show_summary
+        )
+
+        display_group.add_option(
+            "--get-metrics",
+            dest="get_metrics",
+            help="Print all available metrics and exit (can be combined with --verbose)",
+            action="store_true",
+            default=False
+        )
+        display_group.add_option(
+            "--legacy",
+            dest="show_legacy",
+            help="Deprecated, do not use",
+            action="store_true",
+            default=self.show_legacy
+        )
+
+        self.parser.add_option_group(generic_group)
         self.parser.add_option_group(display_group)
 
     def parse_arguments(self, argument_list=None):
@@ -848,10 +909,8 @@ class PluginHelper:
             -inf..inf -> :
         """
         for metric in perfdata:
-            metric.warn = metric.warn.replace(
-                "..", ":").replace("-inf", "").replace("inf", "")
-            metric.crit = metric.crit.replace(
-                "..", ":").replace("-inf", "").replace("inf", "")
+            metric.warn = reconsile_threshold(metric.warn)
+            metric.crit = reconsile_threshold(metric.crit)
         return None
 
     def get_perfdata(self):
@@ -871,8 +930,8 @@ class PluginHelper:
         "'load1'=7;:10;10:;; 'load5'=5;:7;7:;; 'load15'=2;:5;5:;;"
 
         """
-        if self.show_legacy is True:
-            self.convert_perfdata(self._perfdata.metrics)
+        # Normalize the perfdata to so the thresholds match the current nagios plugin guidelines
+        self.convert_perfdata(self._perfdata.metrics)
         return str(self._perfdata)
 
     def get_plugin_output(self, exit_code=None, summary=None, long_output=None, perfdata=None):
