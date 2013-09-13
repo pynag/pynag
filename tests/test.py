@@ -386,6 +386,33 @@ class testModel(unittest.TestCase):
         all_hosts_after_delete = pynag.Model.Host.objects.get_all()
         self.assertEqual(all_hosts,all_hosts_after_delete)
 
+    def testSaveNewObject(self):
+        """ Test creating a new object with the model """
+        hostname1 = "new_host1"
+        hostname2 = "new_host2"
+
+        # First of all, make sure the new hosts do not exist in the config before we save.
+        hostlist1 = pynag.Model.Host.objects.filter(host_name=hostname1)
+        hostlist2 = pynag.Model.Host.objects.filter(host_name=hostname2)
+
+        self.assertEqual([], hostlist1)
+        self.assertEqual([], hostlist2)
+
+        # Save a new object, let pynag decide where it is saved.
+        host = pynag.Model.Host(host_name=hostname1)
+        host.save()
+        hostlist1 = pynag.Model.Host.objects.filter(host_name=hostname1)
+        self.assertEqual(1, len(hostlist1))
+
+        # Save a new object, this time lets specify a filename for it
+        host = pynag.Model.Host(host_name=hostname2)
+        dest_dir = "%s/newhost2.cfg" % pynag.Model.pynag_directory
+        host.set_filename(dest_dir)
+        host.save()
+        hostlist2 = pynag.Model.Host.objects.filter(host_name=hostname2)
+        self.assertEqual(1, len(hostlist2))
+        host = hostlist2[0]
+        self.assertEqual(dest_dir, host.get_filename())
 
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
