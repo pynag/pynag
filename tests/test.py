@@ -414,6 +414,32 @@ class testModel(unittest.TestCase):
         host = hostlist2[0]
         self.assertEqual(dest_dir, host.get_filename())
 
+    def testMoveObject(self):
+        """ Test ObjectDefinition.move() """
+
+        file1 = pynag.Model.pynag_directory + "/file1.cfg"
+        file2 = pynag.Model.pynag_directory + "/file2.cfg"
+        host_name="movable_host"
+        new_object = pynag.Model.Host(host_name=host_name)
+        new_object.set_filename(file1)
+        new_object.save()
+
+        # Reload config, and see if new object is saved where we wanted it to be
+        search_results = pynag.Model.Host.objects.filter(host_name=host_name)
+        self.assertEqual(1, len(search_results))
+
+        host = search_results[0]
+        self.assertEqual(file1, host.get_filename())
+
+        # Move the host to a new file and make sure it is moved.
+        host.move(file2)
+
+        search_results = pynag.Model.Host.objects.filter(host_name=host_name)
+        self.assertEqual(1, len(search_results))
+
+        host = search_results[0]
+        self.assertEqual(file2, host.get_filename())
+
     def testMacroResolving(self):
         """ Test the get_macro and get_all_macros commands of services """
 
@@ -936,12 +962,13 @@ class testModel(unittest.TestCase):
         self.assertEqual(1,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")))
         self.assertTrue(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")[0].attribute_is_empty("host_name"))
 
+
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
     """
     def setUp(self):
         # Import pynag.Model so that at the end we can see if configuration changed at all
-        s = pynag.Model.ObjectDefinition.objects.all
+        pynag.Model.ObjectDefinition.objects.get_all()
 
     def tearDown(self):
         # Check if any configuration changed while we were running tests:

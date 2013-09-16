@@ -938,6 +938,19 @@ class ObjectDefinition(object):
         self._event(level="save", message="%s '%s' was deleted." % (self.object_type, self.get_shortname()))
         return result
 
+    def move(self, filename):
+        """ Move this object definition to a new file. It will be deleted from current file.
+
+         This is the same as running:
+            self.copy(filename=filename)
+            self.delete()
+
+         Returns:
+          * the new object definition
+        """
+        new_me = self.copy(filename=filename)
+        self.delete()
+        return new_me
     def copy(self, recursive=False, filename=None, **args):
         """ Copies this object definition with any unsaved changes to a new configuration object
 
