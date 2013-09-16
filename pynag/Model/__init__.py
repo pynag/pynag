@@ -2467,8 +2467,8 @@ def _remove_object_from_group(my_object, my_group):
 def _add_to_contactgroup(my_object, contactgroup):
     """ add Host or Service to a contactgroup
     """
-    if type(contactgroup) == type(str):
-        contactgroup = Contactgroup.get_by_shortname(contactgroup)
+    if isinstance(contactgroup, basestring):
+        contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
 
@@ -2487,8 +2487,8 @@ def _add_to_contactgroup(my_object, contactgroup):
 def _remove_from_contactgroup(my_object, contactgroup):
     """ remove Host or Service from  a contactgroup
     """
-    if type(contactgroup) == type(str):
-        contactgroup = Contactgroup.get_by_shortname(contactgroup)
+    if isinstance(contactgroup, basestring):
+        contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
     if my_object.object_type == "contact":
