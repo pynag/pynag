@@ -922,12 +922,12 @@ class PluginHelper:
         >>> p.add_metric(label="load5", value="5", warn="-inf..7", crit="7..inf")
         >>> p.add_metric(label="load15",value="2", warn="-inf..5", crit="5..inf")
         >>> p.get_perfdata()
-        "'load1'=7;-inf..10;10..inf;; 'load5'=5;-inf..7;7..inf;; 'load15'=2;-inf..5;5..inf;;"
+        "'load1'=7;10:;~:10;; 'load5'=5;7:;~:7;; 'load15'=2;5:;~:5;;"
 
         Example with legacy output (show_legacy should be set with a cmdline option):
         >>> p.show_legacy = True
         >>> p.get_perfdata()
-        "'load1'=7;:10;10:;; 'load5'=5;:7;7:;; 'load15'=2;:5;5:;;"
+        "'load1'=7;10:;~:10;; 'load5'=5;7:;~:7;; 'load15'=2;5:;~:5;;"
 
         """
         # Normalize the perfdata to so the thresholds match the current nagios plugin guidelines
