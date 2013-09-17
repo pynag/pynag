@@ -1931,10 +1931,6 @@ class Contact(ObjectDefinition):
     object_type = 'contact'
     objects = ObjectFetcher('contact')
 
-    def get_description(self):
-        """ Returns a friendly description of the object """
-        return self['contact_name']
-
     def get_effective_contactgroups(self):
         """ Get a list of all Contactgroup that are hooked to this contact """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
