@@ -1,11 +1,14 @@
-Changes in next ()
+Changes in 0.7.0 (Oct 14 2013)
 New Features:
     - All plugins now have a --timeout=58 seconds
     - New option to plugins: --extra-opts
     - More thread safety in Model
+    - New method: ObjectDefinition.move() to move definition to a new file
+    - Plugins new threshold syntax can now fail back on the old syntax
 
 Bug Fixes:
     - python 2.4 compatibility in unittests
+    - Removed deprecated overload of Contact.get_description()
 
 Changes in 0.6.1 (Aug 30 2013)
 Bug Fixes:

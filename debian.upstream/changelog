@@ -1,3 +1,10 @@
+pynag (0.7.0-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Pall Sigurdsson <palli@opensource.is>  Wed, 14 Oct 2013 10:39:37 +0000
+
+
 pynag (0.6.1-1) unstable; urgency=low
 
   * New upstream version
