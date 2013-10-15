@@ -1038,11 +1038,7 @@ class ObjectDefinition(object):
         * return self get_shortname()
         * return "Untitled $object_type"
         """
-        if self.name:
-            return self.name
-        if self.get_shortname():
-            return self.get_shortname()
-        return "Untitled %s" % self.object_type
+        return self.name or self.get_shortname() or "Untitled %s" % self.object_type
 
     def get_shortname(self):
         """ Returns shortname of an object in string format.
