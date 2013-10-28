@@ -448,9 +448,9 @@ class ObjectFetcher(object):
                 if i.name is not None:
                     ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
-        ObjectRelations.resolve_contactgroups()
-        ObjectRelations.resolve_hostgroups()
-        ObjectRelations.resolve_servicegroups()
+        #ObjectRelations.resolve_contactgroups()
+        #ObjectRelations.resolve_hostgroups()
+        #ObjectRelations.resolve_servicegroups()
         ObjectRelations.resolve_regex()
         return True
 
@@ -1743,12 +1743,14 @@ class Service(ObjectDefinition):
     objects = ObjectFetcher('service')
 
     def get_shortname(self):
-        if self.host_name and self.service_description:
-            return "%s/%s" % (self['host_name'], self['service_description'])
-        if self.service_description:
-            return "%s" % (self['service_description'], )
-
-        return None
+        host_name = self.host_name
+        service_description = self.service_description
+        if host_name and service_description:
+            return "%s/%s" % (host_name, service_description)
+        elif service_description:
+            return "%s" % (service_description, )
+        else:
+            return None
 
     def _get_host_macro(self, macroname, host_name=None):
         if not host_name:
