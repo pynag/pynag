@@ -630,6 +630,7 @@ class ObjectDefinition(object):
 
     def __init__(self, item=None, filename=None, **kwargs):
         # Check if we have parsed the configuration yet
+        self.__object_id__ = None
         if config is None:
             self.objects.reload_cache()
             # if Item is empty, we are creating a new object
@@ -775,14 +776,16 @@ class ObjectDefinition(object):
         #object_type = self['object_type']
         #shortname = self.get_description()
         #object_name = self['name']
-        filename = self._original_attributes['meta']['filename']
-        object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
-        object_id = str(object_id)
-
-        # this is good when troubleshooting ID issues:
-        #return str(object_id)
-
-        return str(hash(object_id))
+        if not self.__object_id__:
+            filename = self._original_attributes['meta']['filename']
+            #definition = self._original_attributes['meta']['raw_definition']
+            object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
+            object_id = str(object_id)
+            #object_id = str((filename, definition))
+            # this is good when troubleshooting ID issues:
+            #self.__id__ = object_id
+            self.__object_id__ = str(hash(object_id))
+        return self.__object_id__
 
     def get_suggested_filename(self):
         """Returns a suitable configuration filename to store this object in
@@ -889,6 +892,7 @@ class ObjectDefinition(object):
         self._original_attributes = new_me._original_attributes
         self._inherited_attributes = new_me._inherited_attributes
         self._meta = new_me._meta
+        self.__object_id__ = None
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def rewrite(self, str_new_definition=None):
@@ -2597,7 +2601,7 @@ def _add_property(ClassType, name):
 
     Returns: None
     """
-    fget = lambda self: self.get_attribute(name)
+    fget = lambda self: self[name]
     fset = lambda self, value: self.set_attribute(name, value)
     fdel = lambda self: self.set_attribute(name, None)
     fdoc = "This is the %s attribute for object definition"
