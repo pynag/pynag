@@ -448,9 +448,9 @@ class ObjectFetcher(object):
                 if i.name is not None:
                     ObjectFetcher._cached_names[i.object_type][i.name] = i
                 i._do_relations()
-        #ObjectRelations.resolve_contactgroups()
-        #ObjectRelations.resolve_hostgroups()
-        #ObjectRelations.resolve_servicegroups()
+        ObjectRelations.resolve_contactgroups()
+        ObjectRelations.resolve_hostgroups()
+        ObjectRelations.resolve_servicegroups()
         ObjectRelations.resolve_regex()
         return True
 
