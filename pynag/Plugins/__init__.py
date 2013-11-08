@@ -27,7 +27,7 @@ import traceback
 import signal
 from platform import node
 from optparse import OptionParser, OptionGroup
-from pynag.Utils import PerfData, PynagError, reconsile_threshold
+from pynag.Utils import PerfData, PynagError, reconsile_threshold, runCommand
 from pynag.Parsers import ExtraOptsParser
 import new_threshold_syntax
 
@@ -261,45 +261,57 @@ class simple:
         """ deprecated. Use pynag.Plugins.check_range() """
         return check_range(value=value, range_threshold=range_threshold)
 
-    def send_nsca(self, code, message, ncsahost, hostname=node(), service=None):
+    def send_nsca(
+        self,
+        code,
+        message,
+        nscahost,
+        hostname=node(),
+        service=None,
+        nscabin="send_nsca",
+        nscaconf=None
+    ):
         """
         Send data via send_nsca for passive service checks
+
+        Arguments:
+            code -- Return code of plugin.
+            message -- Message to pass back.
+            nscahost -- Hostname or IP address of NSCA server.
+            hostname -- Hostname the check results apply to.
+            service -- Service the check results apply to.
+            nscabin -- Location of send_nsca binary. If none specified whatever
+                       is in the path will be used.
+            nscaconf -- Location of the NSCA configuration to use if any.
         """
 
-        # Execute send_nsca
-        from popen2 import Popen3
-        command = "send_nsca -H %s" % ncsahost
-        p = Popen3(command,  capturestderr=True)
+        # Format nscaconf if necessary
+        if nscaconf is not None:
+            nscaconf = "-c %s" % nscaconf
+
+        # Build command
+        command = "%s %s -H %s" % (nscabin, nscaconf or "", nscahost)
 
         # Service check
         if service:
-            print >>p.tochild, "%s	%s	%s	%s %s" % (
-                hostname, service, code, message, self.perfdata_string())
+            command = "echo -e '%s\t%s\t%d\t%s' | %s" % (
+                hostname,
+                service,
+                code,
+                message,
+                command
+            )
         # Host check, omit service_description
         else:
-            print >>p.tochild, "%s	%s	%s %s" % (
-                hostname, code, message, self.perfdata_string())
-
-        # Send eof
-        # TODO, support multiple statuses ?
-        p.tochild.close()
-
-        # Save output incase we have an error
-        nsca_output = ''
-        for line in p.fromchild.readlines():
-            nsca_output += line
-
-        # Wait for send_nsca to exit
-        returncode = p.wait()
-        returncode = os.WEXITSTATUS(returncode)
-
-        # Problem with running nsca
-        if returncode != 0:
-            if returncode == 127:
-                raise Exception("Could not find send_nsca in path")
-            else:
-                raise Exception(
-                    "returncode: %i\n%s" % (returncode, nsca_output))
+            command = "echo -e '%s\t%d\t%s' | %s" % (
+                hostname,
+                code,
+                message,
+                command
+            )
+    
+        # Execute command
+        runCommand(command, raise_error_on_fail=True)
 
         return 0
 
