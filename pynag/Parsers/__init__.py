@@ -177,10 +177,13 @@ class config:
         if 'use' not in original_item:
             return original_item
         object_type = original_item['meta']['object_type']
+        raw_definition = original_item['meta']['raw_definition']
+        my_cache = self.item_apply_cache[object_type]
+
         # Performance tweak, if item has been parsed. Lets not do it again
-        if original_item['meta']['raw_definition'] in self.item_apply_cache[object_type]:
-            return self.item_apply_cache[object_type][original_item['meta']['raw_definition']]
-            # End of performance tweak
+        if raw_definition in my_cache:
+            return my_cache[raw_definition]
+
         parent_names = original_item['use'].split(',')
         parent_items = []
         for parent_name in parent_names:
@@ -189,8 +192,9 @@ class config:
                 error_string = "Can not find any %s named %s\n" % (object_type, parent_name)
                 self.errors.append(ParserError(error_string, item=original_item))
                 continue
-                # Parent item probably has use flags on its own. So lets apply to parent first
+
             try:
+                # Parent item probably has use flags on its own. So lets apply to parent first
                 parent_item = self._apply_template(parent_item)
             except RuntimeError, e:
                 self.errors.append(ParserError("Error while parsing item: %s (it might have circular use=)" % str(e),
@@ -209,7 +213,8 @@ class config:
                     original_item[k] = v
                     template_fields.append(k)
         if 'name' in original_item:
-            self.item_apply_cache[object_type][original_item['meta']['raw_definition']] = original_item
+            my_cache[raw_definition] = original_item
+
         return original_item
 
     def _get_items_in_file(self, filename):
