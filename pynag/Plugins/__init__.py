@@ -264,6 +264,12 @@ class simple:
 
     def send_nsca(self, *args, **kwargs):
         """ Wrapper around pynag.Utils.send_nsca - here for backwards compatibility """
+
+        # Previous versions of this method had a typo where one argument was called
+        # ncsahost instead of nscahost. We will maintain backwards compatibility here.
+        if 'ncsahost' in kwargs and not 'nscahost' in kwargs:
+            kwargs['nscahost'] = kwargs['ncsahost']
+            del kwargs['ncsahost']
         pynag.Utils.send_nsca(*args, **kwargs)
         return 0
 
