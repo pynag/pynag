@@ -1113,13 +1113,9 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
         hostname = node()
 
     # Build command
-    if not nscaconf:
-        command = "'{nscabin}' -H '{nscahost}'"
-    else:
-        command = "'{nscabin}' -H '{nscahost}' -c '{nscaconf}'"
-
-    command = command.format(**locals())  # Resolve local variables in command
-    command = shlex.split(command)  # Turn command into a list
+    command = [nscabin, '-H', nscahost]
+    if nscaconf:
+        command += ['-c', nscaconf]
 
     # Just in case, status code was sent in as an integer:
     code = str(code)
