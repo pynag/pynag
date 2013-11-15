@@ -29,6 +29,7 @@ from platform import node
 from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, PynagError, reconsile_threshold, runCommand
 from pynag.Parsers import ExtraOptsParser
+import pynag.Utils
 import new_threshold_syntax
 
 # Map the return codes
@@ -261,58 +262,15 @@ class simple:
         """ deprecated. Use pynag.Plugins.check_range() """
         return check_range(value=value, range_threshold=range_threshold)
 
-    def send_nsca(
-        self,
-        code,
-        message,
-        nscahost,
-        hostname=node(),
-        service=None,
-        nscabin="send_nsca",
-        nscaconf=None
-    ):
-        """
-        Send data via send_nsca for passive service checks
+    def send_nsca(self, *args, **kwargs):
+        """ Wrapper around pynag.Utils.send_nsca - here for backwards compatibility """
 
-        Arguments:
-            code -- Return code of plugin.
-            message -- Message to pass back.
-            nscahost -- Hostname or IP address of NSCA server.
-            hostname -- Hostname the check results apply to.
-            service -- Service the check results apply to.
-            nscabin -- Location of send_nsca binary. If none specified whatever
-                       is in the path will be used.
-            nscaconf -- Location of the NSCA configuration to use if any.
-        """
-
-        # Format nscaconf if necessary
-        if nscaconf is not None:
-            nscaconf = "-c %s" % nscaconf
-
-        # Build command
-        command = "%s %s -H %s" % (nscabin, nscaconf or "", nscahost)
-
-        # Service check
-        if service:
-            command = "echo -e '%s\t%s\t%d\t%s' | %s" % (
-                hostname,
-                service,
-                code,
-                message,
-                command
-            )
-        # Host check, omit service_description
-        else:
-            command = "echo -e '%s\t%d\t%s' | %s" % (
-                hostname,
-                code,
-                message,
-                command
-            )
-    
-        # Execute command
-        runCommand(command, raise_error_on_fail=True)
-
+        # Previous versions of this method had a typo where one argument was called
+        # ncsahost instead of nscahost. We will maintain backwards compatibility here.
+        if 'ncsahost' in kwargs and not 'nscahost' in kwargs:
+            kwargs['nscahost'] = kwargs['ncsahost']
+            del kwargs['ncsahost']
+        pynag.Utils.send_nsca(*args, **kwargs)
         return 0
 
     def nagios_exit(self, code_text, message):

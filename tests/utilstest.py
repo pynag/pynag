@@ -284,4 +284,27 @@ class testUtils(unittest.TestCase):
         except PynagError:
             pass
 
+    def test_send_nsca(self):
+        """ test pynag.Utils.send_nsca
+
+        By its very nature, send_nsca binary itself does not allow for much testing,
+        however we can still test if the function is working as expected
+        """
+
+        # Run send_nsca normally for a smoke test (we don't know much about what send_nsca will do with out packet)
+        # This test will only fail if there are unhandled tracebacks in the code somewhere
+        try:
+            result = pynag.Utils.send_nsca(code=0, message="test", nscahost="localhost")
+        except OSError, e:
+            # We don't care about the result if we have error because send_nsca is not installed
+            if e.errno != 2:
+                raise e
+
+        result = pynag.Utils.send_nsca(code=0, message="match", nscahost="match", hostname="test", service=None, nscabin="/bin/grep", nscaconf="-")
+        self.assertEqual(0, result[0])
+        self.assertEqual('(standard input):1\n', result[1])
+
+        result = pynag.Utils.send_nsca(code=0, message="match", nscahost="nomatch", hostname="test", service=None, nscabin="/bin/grep", nscaconf="-")
+        self.assertEqual(1, result[0])
+        self.assertEqual('(standard input):0\n', result[1])
 
