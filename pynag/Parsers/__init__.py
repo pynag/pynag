@@ -30,7 +30,7 @@ import pynag.Utils
 def debug(text):
     debug = True
     if debug:
-        print text
+        print(text)
 
 
 _sentinel = object()
@@ -196,7 +196,7 @@ class config:
             try:
                 # Parent item probably has use flags on its own. So lets apply to parent first
                 parent_item = self._apply_template(parent_item)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 self.errors.append(ParserError("Error while parsing item: %s (it might have circular use=)" % str(e),
                                                item=original_item))
             parent_items.append(parent_item)
@@ -267,7 +267,7 @@ class config:
         try:
             raw_string = open(filename, 'rb').read()
             return self.parse_string(raw_string, filename=filename)
-        except IOError, e:
+        except IOError as e:
             parser_error = ParserError(e.strerror)
             parser_error.filename = e.filename
             self.errors.append(parser_error)
@@ -1108,7 +1108,7 @@ class config:
         # get_resource, we will fail hard
         try:
             self._resource_values = self.get_resources()
-        except IOError, e:
+        except IOError as e:
             self.errors.append(str(e))
 
         self.timestamps = self.get_timestamps()
@@ -1436,7 +1436,7 @@ class mk_livestatus:
                 "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
             self.query("GET hosts")
-        except KeyError, e:
+        except KeyError as e:
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
 
@@ -1462,7 +1462,7 @@ class mk_livestatus:
                 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 s.connect(self.livestatus_socket_path)
             return s
-        except IOError, e:
+        except IOError as e:
             msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
@@ -1541,7 +1541,7 @@ class mk_livestatus:
         # If we reach down here, it means we are supposed to parse the output before returning it
         try:
             answer = eval(answer)
-        except Exception, e:
+        except Exception as e:
             raise ParserError("Error, could not parse response from livestatus.\n%s" % answer)
 
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
