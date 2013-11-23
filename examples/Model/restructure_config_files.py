@@ -36,7 +36,6 @@ for i in all_objects:
     # if i.object.type == 'host' and i.host_name is not None:
     #     new_filename = '/tmp/nagios/conf.d/hosts/%s" % i.host_name
     
-    i.set_filename(new_filename)
-    i.save()
-    print "Saved to", i.get_filename()
+    my_copy = i.copy(filename=new_filename)
+    print "Saved to", my_copy.get_filename()
 
