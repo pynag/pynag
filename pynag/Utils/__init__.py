@@ -732,6 +732,15 @@ def grep_to_livestatus(*args, **kwargs):
 
         >>> grep_to_livestatus(service_description__contains='serv')
         ['Filter: service_description ~ serv']
+
+        >>> grep_to_livestatus(service_description__isnot='serv')
+        ['Filter: service_description != serv']
+
+        >>> grep_to_livestatus(service_description__contains=['serv','check'])
+        ['Filter: service_description ~ serv']
+
+        >>> grep_to_livestatus(service_description__contains='serv', contacts__has_field='admin')
+        ['Filter: contacts >= admin', 'Filter: service_description ~ serv']
     """
     result = list(args)  # Args go unchanged back into results
     for k, v in kwargs.items():
