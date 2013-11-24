@@ -664,7 +664,8 @@ def grep(objects, **kwargs):
     # the same key
     search = []
     for k, v in kwargs.items():
-        if type(v) == type([]):
+        # We need the actual array in "v" for __in and __notin
+        if type(v) == type([]) and not (k.endswith('__in') or k.endswith('__notin')):
             for i in v:
                 search.append((k, i))
         else:
@@ -702,11 +703,11 @@ def grep(objects, **kwargs):
             regex = re.compile(str(v))
             expression = lambda x: regex.search(str(x.get(k)))
         elif k.endswith('__in'):
-            k = k = k[:-len('__in')]
+            k = k[:-len('__in')]
             expression = lambda x: str(x.get(k)) in v
         elif k.endswith('__notin'):
-            k = k = k[:-len('__notin')]
-            expression = lambda x: str(x.get(k)) in v
+            k = k[:-len('__notin')]
+            expression = lambda x: str(x.get(k)) not in v
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
             expression = lambda x: v_str in AttributeList(x.get(k)).fields
