@@ -31,7 +31,7 @@ for i in all_objects:
     print "Saving", i.object_type, i.get_description(), "...",
     # Set a new filename for our object, None means
     # That pynag decides where it goes
-    new_filename = None
+    new_filename = i.get_suggested_filename()
     # Alternative:
     # if i.object.type == 'host' and i.host_name is not None:
     #     new_filename = '/tmp/nagios/conf.d/hosts/%s" % i.host_name
