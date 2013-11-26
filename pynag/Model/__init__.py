@@ -1639,7 +1639,7 @@ class Host(ObjectDefinition):
            recursive             -- If True, also delete all services of this host
         """
         if recursive is True and self.host_name:
-            for i in Service.objects.filter(host_name__has_field=self.host_name, host_name__exists=False):
+            for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
                 # delete only services where only this host_name and no hostgroups are defined
                 i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
         if cleanup_related_items is True and self.host_name:
