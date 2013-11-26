@@ -106,6 +106,21 @@ class testUtils(unittest.TestCase):
         result = pynag.Utils.grep(hosts, **{'name__notcontains': 'A'})
         self.assertEqual(1, len(result))
 
+        result = pynag.Utils.grep(hosts, **{'name__regex': 'A.C'})
+        self.assertEqual(1, len(result))
+        self.assertEqual('ABC', result[0].name)
+
+        result = pynag.Utils.grep(hosts, **{'name__in': ['ABC','BCD']})
+        self.assertEqual(1, len(result))
+        self.assertEqual('ABC', result[0].name)
+
+        result = pynag.Utils.grep(hosts, **{'name__notin': ['ABC','BCD']})
+        self.assertEqual(1, len(result))
+        self.assertEqual('XYZ', result[0].name)
+
+        result = pynag.Utils.grep(hosts, **{'search': 'Switch'})
+        self.assertEqual(1, len(result))
+        self.assertEqual('XYZ', result[0].name)
 
     def _compare_search_expressions(self, **expression):
         #print "Testing search expression %s" % expression
