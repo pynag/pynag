@@ -77,37 +77,6 @@ except ImportError:
     from pynag.Utils import defaultdict
 
 
-def debug(text):
-    if debug is True:
-        print text
-
-
-def contains(str1, str2):
-    """Returns True if str1 contains str2"""
-    if not str1:
-        return False
-    if str1.find(str2) > -1:
-        return True
-
-
-def not_contains(str1, str2):
-    """Returns True if str1 does not contain str2"""
-    return not contains(str1, str2)
-
-
-def has_field(str1, str2):
-    """Returns True if str2 is a field in str1
-
-    For this purpose the string 'example' is a field in '+this,is,an,example'
-    """
-    str1 = str1.strip('+')
-    str1 = str1.split(',')
-    str1 = map(lambda x: x.strip(), str1)
-    if str2 in str1:
-        return True
-    return False
-
-
 class ObjectRelations(object):
     """ Static container for objects and their respective neighbours """
     # c['contact_name'] = [host1.get_id(),host2.get_id()]
@@ -429,7 +398,6 @@ class ObjectFetcher(object):
         if not config:
             config = Parsers.config(cfg_file)
         if config.needs_reparse():
-            debug('Debug: Doing a reparse of configuration')
             config.parse()
             # Reset our list of how objects are related to each other
         ObjectRelations.reset()
@@ -547,75 +515,8 @@ class ObjectFetcher(object):
         Host.objects.filter(address_exists=True)
 
         """
-        result = []
-        # Lets convert all values to str()
-        tmp = {}
-        for k, v in kwargs.items():
-            k = str(k)
-            if v is not None:
-                v = str(v)
-            tmp[k] = v
-        kwargs = tmp
-        for i in self.all:
-            object_matches = True
-            negative_filter = False
-            for k, v in kwargs.items():
-                if k.endswith('__exists'):
-                    k = k[:-len('__exists')]
-                    object_matches = str(k in i) == str(v)
-                    continue
-                elif k.endswith('__startswith'):
-                    k = k[:-12]
-                    match_function = str.startswith
-                elif k.endswith('__endswith'):
-                    k = k[:-10]
-                    match_function = str.endswith
-                elif k.endswith('__isnot'):
-                    k = k[:-7]
-                    object_matches = str(i[k]) != str(v)
-                    continue
-                elif k.endswith('__contains'):
-                    k = k[:-10]
-                    match_function = contains
-                elif k.endswith('__has_field'):
-                    k = k[:-11]
-                    match_function = has_field
-                elif k.endswith('__notcontains'):
-                    k = k[:-13]
-                    match_function = not_contains
-                    negative_filter = True
-                else:
-                    match_function = str.__eq__
-                if not object_matches:
-                    break
-                if k == 'id' and str(v) != str(i.get_id()):
-                    object_matches = False
-                    break
-                if k == 'register' and v == '1' and not k in i:
-                    # not defined means item is registered
-                    continue
-                if v is None and k in i:
-                    object_matches = False
-                    break
-                if not k in i:
-                    if v is None:
-                        continue  # if None was the search attribute
-                    # Handle negated filter
-                    if not negative_filter:
-                        object_matches = False
-                        break
-                # Special case, if asking for a shortname and  there is an object with no shortname
-                # we work around it so filter does not crash. However be aware that the config is invalid
-                # if you have this
-                if k == 'shortname' and not i[k]:
-                    object_matches = False
-                    break
-                if not match_function(i[k], v):
-                    object_matches = False
-                    break
-            if object_matches:
-                result.append(i)
-        return result
+        return pynag.Utils.grep(self.all, **kwargs)
+
 
 
 class ObjectDefinition(object):
