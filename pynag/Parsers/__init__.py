@@ -1039,6 +1039,9 @@ class config:
 
         Returns False if reload not needed or Nagios is not running
         """
+        if not self.maincfg_values:
+            self.reset()
+            self.parse_maincfg()
         new_timestamps = self.get_timestamps()
         object_cache_file = self.get_cfg_value('object_cache_file')
 
