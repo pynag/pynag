@@ -58,9 +58,10 @@ cfg_file = None  # '/etc/nagios/nagios.cfg'
 # Were new objects are written by default
 pynag_directory = None
 
-# This will be a Parsers.config instance once we have parsed
-config = None
-#config.parse()
+# This is the config parser that we use internally, if cfg_file is changed, then config
+# will be recreated whenever a parse is called.
+config = Parsers.config(cfg_file=cfg_file)
+
 
 
 #: eventhandlers -- A list of Model.EventHandlers object.
@@ -395,11 +396,13 @@ class ObjectFetcher(object):
         ObjectFetcher._cached_names = defaultdict(dict)
         ObjectFetcher._cached_object_type = defaultdict(list)
         global config
-        if not config:
+        # If global variable cfg_file has been changed, lets create a new ConfigParser object
+        if config is None or config.cfg_file != cfg_file:
             config = Parsers.config(cfg_file)
         if config.needs_reparse():
             config.parse()
-            # Reset our list of how objects are related to each other
+
+        # Reset our list of how objects are related to each other
         ObjectRelations.reset()
 
         # Fetch all objects from Parsers.config
@@ -425,7 +428,7 @@ class ObjectFetcher(object):
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def needs_reload(self):
         """ Returns true if configuration files need to be reloaded/reparsed """
-        if ObjectFetcher._cached_objects == []:
+        if not ObjectFetcher._cached_objects:
             # we get here on first run
             return True
         elif config is None or config.needs_reparse():
@@ -478,7 +481,7 @@ class ObjectFetcher(object):
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
-        if config is None:
+        if config is None or config.needs_reparse():
             self.reload_cache()
         return config.get_object_types()
 
@@ -518,7 +521,6 @@ class ObjectFetcher(object):
         return pynag.Utils.grep(self.all, **kwargs)
 
 
-
 class ObjectDefinition(object):
     """
     Holds one instance of one particular Object definition
@@ -530,11 +532,9 @@ class ObjectDefinition(object):
     objects = ObjectFetcher(None)
 
     def __init__(self, item=None, filename=None, **kwargs):
-        # Check if we have parsed the configuration yet
         self.__object_id__ = None
-        if config is None:
-            self.objects.reload_cache()
-            # if Item is empty, we are creating a new object
+
+        # if item is empty, we are creating a new object
         if item is None:
             item = config.get_new_item(object_type=self.object_type, filename=filename)
             self.is_new = True
@@ -735,12 +735,12 @@ class ObjectDefinition(object):
         Returns:
             Number of changes made to the object
         """
-        if config is None:
-            self.objects.reload_cache()
+
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
-        # If this is a new object, we save it with config.item_add()
         number_of_changes = len(self._changes.keys())
+
+        # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self.get_filename() is None:
             if not self.get_filename():
                 # discover a new filename
@@ -856,6 +856,7 @@ class ObjectDefinition(object):
         new_me = self.copy(filename=filename)
         self.delete()
         return new_me
+
     def copy(self, recursive=False, filename=None, **args):
         """ Copies this object definition with any unsaved changes to a new configuration object
 
