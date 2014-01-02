@@ -59,6 +59,7 @@ class config:
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
             self.cfg_file = self.guess_cfg_file()
+
         self.data = {}
         self.maincfg_values = []
         self._is_dirty = False
@@ -68,7 +69,10 @@ class config:
 
         Use this function for determining the nagios config directory in your code
         """
-        return os.path.dirname(self.guess_cfg_file())
+        cfg_file = self.guess_cfg_file()
+        if not cfg_file:
+            raise ParserError("Could not find nagios.cfg")
+        return os.path.dirname(cfg_file)
 
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
@@ -88,7 +92,7 @@ class config:
         for file_path in possible_files:
             if os.path.isfile(file_path):
                 return file_path
-        raise ParserError('Could not find nagios.cfg')
+        return None
 
     def reset(self):
         self.cfg_files = []  # List of other configuration files
@@ -1084,6 +1088,10 @@ class config:
 
         This function is mainly used by config.parse() which also parses your whole configuration set.
         """
+        # If nagios.cfg is not set, lets do some minor autodiscover.
+        if self.cfg_file is None:
+            raise ParserError('Could not find nagios.cfg')
+
         self.maincfg_values = self._load_static_file(self.cfg_file)
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
