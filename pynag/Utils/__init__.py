@@ -56,7 +56,7 @@ class PynagError(Exception):
             Exception.__init__(self, message, *args, **kwargs)
 
 
-def runCommand(command, raise_error_on_fail=False):
+def runCommand(command, raise_error_on_fail=False, shell=True):
     """ Run command from the shell prompt. Wrapper around subprocess.
 
      Arguments:
@@ -67,7 +67,7 @@ def runCommand(command, raise_error_on_fail=False):
      Raises:
          PynagError if returncode > 0
      """
-    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    proc = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
     stdout, stderr = proc.communicate('through stdin to stdout')
     result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail == True:
