@@ -21,7 +21,7 @@ manpage:
 	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod > ./docs/$$manpage.1); done
 
 
-build: clean manpage versionfile
+build: clean manpage
 	$(PYTHON) setup.py build -f
 
 clean:
