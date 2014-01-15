@@ -676,7 +676,7 @@ def grep(objects, **kwargs):
         v_str = str(v)
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
-            expression = lambda x: v_str in str(x.get(k))
+            expression = lambda x: x.get(k) and v_str in str(x.get(k))
         elif k.endswith('__notcontains'):
             k = k[:-len('__notcontains')]
             expression = lambda x: not v_str in str(x.get(k))

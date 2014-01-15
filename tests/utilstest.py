@@ -67,6 +67,13 @@ class testUtils(unittest.TestCase):
         result = pynag.Utils.grep(hosts, **{'_code__contains': 'BC'})
         self.assertEqual(1, len(result))
 
+        # Check that contains does not match nonexisting values
+        result = pynag.Utils.grep(hosts, **{'_code__contains': ''})
+        self.assertEqual(2, len(result))
+
+        result = pynag.Utils.grep(hosts, **{'nonexistant__contains': ''})
+        self.assertEqual(0, len(result))
+
         result = pynag.Utils.grep(hosts, **{'_code__notcontains': 'ABC'})
         self.assertEqual(1, len(result))
 
