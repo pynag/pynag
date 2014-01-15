@@ -88,6 +88,13 @@ class config:
                           './nagios/nagios.cfg',
                           '/etc/icinga/icinga.cfg',
                           '/usr/local/icinga/etc/icinga.cfg',
+                          './icinga.cfg',
+                          './icinga/icinga.cfg',
+                          '/etc/naemon/naemon.cfg',
+                          '/usr/local/naemon/etc/naemon.cfg',
+                          './naemon.cfg',
+                          './naemon/naemon.cfg',
+
         )
         for file_path in possible_files:
             if os.path.isfile(file_path):
