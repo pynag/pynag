@@ -1437,15 +1437,19 @@ class mk_livestatus:
         if livestatus_socket_path is None:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
+            # Look for a broker_module line in the main config and parse its arguments
+            # One of the arguments is path to the file socket created
             for k, v in c.maincfg_values:
-                if k == 'broker_module' and v.find("livestatus.o") > -1:
-                    tmp = v.split()
-                    if len(tmp) > 1:
-                        livestatus_socket_path = tmp[1]
-            # If we get here then livestatus_socket_path should be resolved for us
-        if livestatus_socket_path is None:
-            msg = "No Livestatus socket define. Make sure livestatus broker module is loaded."
-            raise ParserError(msg)
+                if k == 'broker_module' and "livestatus.o" in v:
+                    for arg in v.split()[1:]:
+                        if arg.startswith('/') or '=' not in arg:
+                            livestatus_socket_path = arg
+                            break
+                    else:
+                        # If we get here, then we could not locate a broker_module argument
+                        # that looked like a filename
+                        msg = "No Livestatus socket defined. Make sure livestatus broker module is loaded."
+                        raise ParserError(msg)
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
 

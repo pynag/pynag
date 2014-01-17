@@ -171,6 +171,43 @@ class testParsers(unittest.TestCase):
 
         # Try to get current version of nagios
         version = info['version']
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testParseMaincfg(self):
+        """ Test parsing of different broker_module declarations """
+        path = "/var/lib/nagios/rw/livestatus"  # Path to the livestatus socket
+
+        # Test plain setup with no weird arguments
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if arguments are provided
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if arguments are provided before and after file socket path
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if livestatus socket path cannot be found
+        try:
+            fd, filename = tempfile.mkstemp()
+            os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20')
+            status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+            self.assertEqual(path, status.livestatus_socket_path)
+            os.close(fd)
+            self.assertEqual(True, "Above could should have raised exception")
+        except pynag.Parsers.ParserError:
+            pass
+
 
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testObjectCache(self):
