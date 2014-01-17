@@ -1042,7 +1042,9 @@ class ObjectDefinition(object):
             # Lets save our attribute
             c[arg_number] = new_value
             self.check_command = '!'.join(c)
-
+        elif macroname.startswith('$_HOST'):
+            macroname = "_" + macroname[6:-1]
+            self[macroname] = new_value
         elif macroname.startswith('$_SERVICE'):
             macroname = "_" + macroname[9:-1]
             self[macroname] = new_value
