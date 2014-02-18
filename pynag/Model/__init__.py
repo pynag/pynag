@@ -1408,7 +1408,9 @@ class Host(ObjectDefinition):
     objects = ObjectFetcher('host')
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
-                    recursive=False):
+                    recursive=False, timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
         if recursive is True:
             pass  # Its here for compatibility but we are not using recursive so far.
         pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
@@ -1417,7 +1419,7 @@ class Host(ObjectDefinition):
                                                        persistent=persistent,
                                                        author=author,
                                                        comment=comment,
-                                                       timestamp=0,
+                                                       timestamp=timestamp,
                                                        command_file=config.get_cfg_value('command_file')
         )
 
@@ -1700,7 +1702,9 @@ class Service(ObjectDefinition):
             ObjectRelations.host_services[i].add(self.get_id())
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
-                    timestamp=0):
+                    timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
         pynag.Control.Command.acknowledge_svc_problem(host_name=self.host_name,
                                                       service_description=self.service_description,
                                                       sticky=sticky,
