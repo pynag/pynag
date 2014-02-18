@@ -63,6 +63,7 @@ class config:
         self.data = {}
         self.maincfg_values = []
         self._is_dirty = False
+        self.reset() # Initilize misc member variables
 
     def guess_nagios_directory(self):
         """ Returns a path to the nagios configuration directory on your system
@@ -109,6 +110,7 @@ class config:
         self.item_cache = None
         self.maincfg_values = []  # The contents of main nagios.cfg
         self._resource_values = []  # The contents of any resource_files
+        self.item_apply_cache = {}  # This is performance tweak used by _apply_template
 
         ## This is a pure listof all the key/values in the config files.  It
         ## shouldn't be useful until the items in it are parsed through with the proper
@@ -191,7 +193,7 @@ class config:
             return original_item
         object_type = original_item['meta']['object_type']
         raw_definition = original_item['meta']['raw_definition']
-        my_cache = self.item_apply_cache[object_type]
+        my_cache = self.item_apply_cache.get(object_type, {})
 
         # Performance tweak, if item has been parsed. Lets not do it again
         if raw_definition in my_cache:
@@ -1166,7 +1168,7 @@ class config:
                 files[v] = None
         for i in self.get_cfg_files():
             files[i] = None
-            # Now lets lets get timestamp of every file
+        # Now lets lets get timestamp of every file
         for k, v in files.items():
             if not os.path.isfile(k):
                 continue
