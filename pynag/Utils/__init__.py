@@ -119,7 +119,8 @@ class GitRepo(object):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except PynagError, e:
+            except PynagError:
+                t, e = sys.exc_info()[:2]
                 if e.errorcode == 128:
                     self.init()
             #self._run_command('git status --short')
@@ -368,7 +369,7 @@ class PerfData(object):
     >>> perf = PerfData("load1=10 load2=10 load3=20 'label with spaces'=5")
     >>> perf.metrics
     ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;, 'label with spaces'=5;;;;]
-    >>> for i in perf.metrics: print i.label, i.value
+    >>> for i in perf.metrics: print(i.label, i.value)
     load1 10
     load2 10
     load3 20
@@ -473,16 +474,16 @@ class PerfDataMetric(object):
         """
         >>> p = PerfData(perfdatastring="size=10M;20M;;;")
         >>> metric = p.get_perfdatametric('size')
-        >>> print metric.label
+        >>> print(metric.label)
         size
-        >>> print metric.value
+        >>> print(metric.value)
         10
-        >>> print metric.uom
+        >>> print(metric.uom)
         M
         >>> p = PerfDataMetric(perfdatastring="'with spaces'=10")
-        >>> print p.label
+        >>> print(p.label)
         with spaces
-        >>> print p.value
+        >>> print(p.value)
         10
         """
         self.label = label
@@ -608,7 +609,6 @@ class PerfDataMetric(object):
 
     def reconsile_thresholds(self):
         """ Convert threshold from new threshold syntax to current one, for backwards compatibility """
-        print 'yeah', self
         self.warn = reconsile_threshold(self.warn)
         self.crit = reconsile_threshold(self.crit)
 
@@ -789,19 +789,19 @@ class AttributeList(object):
 
     Example:
         >>> i = AttributeList('+group1,group2,group3')
-        >>> print "Operator is:", i.operator
+        >>> print("Operator is:", i.operator)
         Operator is: +
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
         if your data is already in a list format you can use it directly:
         >>> i = AttributeList(['group1', 'group2', 'group3'])
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
         white spaces will be stripped from all fields
         >>> i = AttributeList('+group1, group2')
-        >>> print i
+        >>> print(i)
         +group1,group2
 
     """
@@ -848,7 +848,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.insert(1, 'group4')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group4', 'group2', 'group3']
 
         """
@@ -859,7 +859,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.append('group5')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3', 'group5']
 
         """
@@ -879,7 +879,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.extend(['group4', 'group5'])
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3', 'group4', 'group5']
         """
         return self.fields.extend(iterable)
@@ -903,7 +903,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.reverse()
-        >>> print i.fields
+        >>> print(i.fields)
         ['group3', 'group2', 'group1']
 
         """
@@ -915,7 +915,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group3,group1,group2')
         >>> i.sort()
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
 
@@ -927,7 +927,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.remove('group3')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2']
 
         """
@@ -937,7 +937,7 @@ class AttributeList(object):
         """ Same as list.__iter__()
 
         >>> mylist = AttributeList('group1,group2,group3')
-        >>> for i in mylist: print i
+        >>> for i in mylist: print(i)
         group1
         group2
         group3
