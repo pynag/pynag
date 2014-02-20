@@ -756,6 +756,12 @@ def grep_to_livestatus(*args, **kwargs):
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
             my_string = "Filter: %s != %s" % (k, v)
+        elif k.endswith('__startswith'):
+            k = k[:-len('__startswith')]
+            my_string = "Filter: %s ~ ^%s" % (k, v)
+        elif k.endswith('__endswith'):
+            k = k[:-len('__endswith')]
+            my_string = "Filter: %s ~ %s$" % (k, v)
         else:
             my_string = "Filter: %s = %s" % (k, v)
         result.append(my_string)
