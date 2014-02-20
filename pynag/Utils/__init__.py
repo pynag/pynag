@@ -119,7 +119,7 @@ class GitRepo(object):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except PynagError, e:
+            except PynagError as e:
                 if e.errorcode == 128:
                     self.init()
             #self._run_command('git status --short')
@@ -608,7 +608,7 @@ class PerfDataMetric(object):
 
     def reconsile_thresholds(self):
         """ Convert threshold from new threshold syntax to current one, for backwards compatibility """
-        print 'yeah', self
+        print('yeah', self)
         self.warn = reconsile_threshold(self.warn)
         self.crit = reconsile_threshold(self.crit)
 
