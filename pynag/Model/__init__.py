@@ -534,6 +534,10 @@ class ObjectDefinition(object):
     def __init__(self, item=None, filename=None, **kwargs):
         self.__object_id__ = None
 
+        # When we are saving, it is useful to know if we are already expecting
+        # This object to exist in file or not.
+        self.__filename_has_changed = False
+
         # if item is empty, we are creating a new object
         if item is None:
             item = config.get_new_item(object_type=self.object_type, filename=filename)
@@ -729,44 +733,52 @@ class ObjectDefinition(object):
         return path
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
-    def save(self):
+    def save(self, filename=None):
         """Saves any changes to the current object to its configuration file
-
+        Arguments:
+            filename -- If filename is provided, save a copy of this object in that file
+                        If filename is None, either save to current file (in case of existing objects)
+                        or let pynag guess a location for it in case of new objects.
         Returns:
-            Number of changes made to the object
+            In case of existing objects, return number of attributes changed.
+            In case of new objects, return True
         """
 
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
         number_of_changes = len(self._changes.keys())
 
+        filename = filename or self.get_filename() or self.get_suggested_filename()
+        self.set_filename(filename)
+
         # If this is a new object, we save it with config.item_add()
-        if self.is_new is True or self.get_filename() is None:
-            if not self.get_filename():
-                # discover a new filename
-                self.set_filename(self.get_suggested_filename())
+        if self.is_new is True or self.__filename_has_changed:
             for k, v in self._changes.items():
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
                 del self._changes[k]
-            config.item_add(self._original_attributes, self.get_filename())
             self.is_new = False
+            return config.item_add(self._original_attributes, self.get_filename())
+
+        # If we get here, we are making modifications to an object
         else:
-            # If we get here, we are making modifications to an object
             number_of_changes = 0
             for field_name, new_value in self._changes.items():
-                save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name,
-                                                     new_value=new_value)
+                save_result = config.item_edit_field(
+                    item=self._original_attributes,
+                    field_name=field_name,
+                    new_value=new_value
+                )
                 if save_result is True:
                     del self._changes[field_name]
                     self._event(level='write',
                                 message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
-                    if not new_value:
-                        if field_name in self._defined_attributes:
-                            del self._defined_attributes[field_name]
-                        if field_name in self._original_attributes:
-                            del self._original_attributes[field_name]
+                    # Setting new_value to None, is a signal to remove the attribute
+                    # Therefore we remove it from our internal data structure
+                    if new_value is None:
+                        self._defined_attributes.pop(field_name, None)
+                        self._original_attributes.pop(field_name, None)
                     else:
                         self._defined_attributes[field_name] = new_value
                         self._original_attributes[field_name] = new_value
@@ -971,6 +983,8 @@ class ObjectDefinition(object):
 
     def set_filename(self, filename):
         """ set name of the config file which this object will be written to on next save. """
+        if filename != self.get_filename():
+            self.__filename_has_changed = True
         if filename is None:
             self._meta['filename'] = filename
         else:

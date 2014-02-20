@@ -443,13 +443,58 @@ class testModel(unittest.TestCase):
 
         # Save a new object, this time lets specify a filename for it
         host = pynag.Model.Host(host_name=hostname2)
-        dest_dir = "%s/newhost2.cfg" % pynag.Model.pynag_directory
-        host.set_filename(dest_dir)
+        dest_file = "%s/newhost2.cfg" % pynag.Model.pynag_directory
+        host.set_filename(dest_file)
         host.save()
         hostlist2 = pynag.Model.Host.objects.filter(host_name=hostname2)
         self.assertEqual(1, len(hostlist2))
         host = hostlist2[0]
-        self.assertEqual(dest_dir, host.get_filename())
+        self.assertEqual(dest_file, host.get_filename())
+
+    def testSaveExistingObjects(self):
+        """ Test saving existing objects to both same file and a new file
+        """
+        # Save our host
+        host_name = "testhost"
+        use = 'generic-host'
+        host = pynag.Model.Host(host_name=host_name, use=use)
+        host.save()
+        origin_filename = host.get_filename()
+
+        # Parse again and see if we find the same host:
+        host = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(host_name, host.host_name)
+        self.assertEqual(use, host.use)
+        self.assertEqual(origin_filename, host.get_filename())
+
+        # Change host a little bit, and save to a new file:
+        new_host_name = host_name + "2"
+        new_filename = origin_filename + "-saveagain.cfg"
+        host.host_name = new_host_name
+        host.set_filename(new_filename)
+        host.save()
+
+        # Parse again and see if we find the same host:
+        host = pynag.Model.Host.objects.get_by_shortname(new_host_name)
+        self.assertEqual(new_host_name, host.host_name)
+        self.assertEqual(use, host.use)
+        self.assertEqual(new_filename, host.get_filename())
+
+        # Save it for the third time, this time using parameter to save()
+        new_new_host_name = host.host_name + "-2"
+        new_new_filename = host.get_filename() + "-new.cfg"
+        host.host_name = new_new_host_name
+        host.save(filename=new_new_filename)
+
+        new_host = pynag.Model.Host.objects.get_by_shortname(new_new_host_name)
+        self.assertEqual(new_new_filename, new_host.get_filename())
+        self.assertEqual(new_new_host_name, new_host.host_name)
+
+
+
+
+
+
 
     def testMoveObject(self):
         """ Test ObjectDefinition.move() """
