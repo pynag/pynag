@@ -999,6 +999,41 @@ class testModel(unittest.TestCase):
         self.assertEqual(1,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")))
         self.assertTrue(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")[0].attribute_is_empty("host_name"))
 
+    def test_add_model_hosts_to_hostgroups(self):
+        """ Test pynag.Model.Host.add_to_hostgroup """
+        host_name = "testhost1"
+        hostgroup_name = "testhostgroup1"
+        hostgroup = pynag.Model.Hostgroup(hostgroup_name=hostgroup_name)
+        hostgroup.save()
+        host1 = pynag.Model.Host(host_name=host_name)
+        host1.save()
+
+        message = "Newly created host should not belong to any hostgroups"
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Host should belong to hostgroup after we specificly add it"
+        host1.add_to_hostgroup(hostgroup_name)
+        self.assertEqual(True, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Host should not belong to hostgroup after we have removed it"
+        host1.remove_from_hostgroup(hostgroup_name)
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        # Lets try the same via the hostgroup:
+        message = "Host should belong to hostgroup after we have specifically added host to that hostgroup"
+        hostgroup.add_host(host_name)
+        host1 = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(True, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Hostgroup should not have host after we specifically remove the host"
+        hostgroup.remove_host(host_name)
+        host1 = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts

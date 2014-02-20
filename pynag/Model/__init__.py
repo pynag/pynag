@@ -751,6 +751,7 @@ class ObjectDefinition(object):
                     self._original_attributes[k] = v
                 del self._changes[k]
             config.item_add(self._original_attributes, self.get_filename())
+            self.is_new = False
         else:
             # If we get here, we are making modifications to an object
             number_of_changes = 0
@@ -2360,14 +2361,14 @@ def _remove_object_from_group(my_object, my_group):
     list_of_members = pynag.Utils.AttributeList(members)
 
     if group_name in list_of_groups:
-        # Remove object from the group
-        my_group.attribute_removefield(group_field, object_name)
-        my_group.save()
-
-    if object_name in list_of_members:
         # Remove group from the object
         my_object.attribute_removefield(object_field, group_name)
         my_object.save()
+
+    if object_name in list_of_members:
+        # Remove object from the group
+        my_group.attribute_removefield(group_field, object_name)
+        my_group.save()
 
 
 def _add_to_contactgroup(my_object, contactgroup):
