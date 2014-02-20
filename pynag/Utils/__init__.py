@@ -645,7 +645,8 @@ class PerfDataMetric(object):
 def grep(objects, **kwargs):
     """  Returns all the elements from array that match the keywords in **kwargs
 
-    TODO: Refactor pynag.Model.ObjectDefinition.objects.filter() and reuse it here.
+    See documentation for pynag.Model.ObjectDefinition.objects.filter() for example how to use this.
+
     Arguments:
         array -- a list of dict that is to be searched
         kwargs -- Any search argument provided will be checked against every dict
@@ -740,8 +741,17 @@ def grep_to_livestatus(*args, **kwargs):
         >>> grep_to_livestatus(service_description__contains=['serv','check'])
         ['Filter: service_description ~ serv']
 
-        >>> grep_to_livestatus(service_description__contains='serv', contacts__has_field='admin')
-        ['Filter: contacts >= admin', 'Filter: service_description ~ serv']
+        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
+        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
+
+        >>> grep_to_livestatus(service_description__has_field='foo')
+        ['Filter: service_description >= foo']
+
+        >>> grep_to_livestatus(service_description__startswith='foo')
+        ['Filter: service_description ~ ^foo']
+
+        >>> grep_to_livestatus(service_description__endswith='foo')
+        ['Filter: service_description ~ foo$']
     """
     result = list(args)  # Args go unchanged back into results
     for k, v in kwargs.items():
