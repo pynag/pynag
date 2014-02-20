@@ -27,12 +27,6 @@ import pynag.Plugins
 import pynag.Utils
 
 
-def debug(text):
-    debug = True
-    if debug:
-        print text
-
-
 _sentinel = object()
 
 
@@ -211,7 +205,8 @@ class config:
             try:
                 # Parent item probably has use flags on its own. So lets apply to parent first
                 parent_item = self._apply_template(parent_item)
-            except RuntimeError, e:
+            except RuntimeError:
+                t, e = sys.exc_info()[:2]
                 self.errors.append(ParserError("Error while parsing item: %s (it might have circular use=)" % str(e),
                                                item=original_item))
             parent_items.append(parent_item)
@@ -282,7 +277,8 @@ class config:
         try:
             raw_string = open(filename, 'rb').read()
             return self.parse_string(raw_string, filename=filename)
-        except IOError, e:
+        except IOError:
+            t, e = sys.exc_info()[:2]
             parser_error = ParserError(e.strerror)
             parser_error.filename = e.filename
             self.errors.append(parser_error)
@@ -1130,7 +1126,8 @@ class config:
         # get_resource, we will fail hard
         try:
             self._resource_values = self.get_resources()
-        except IOError, e:
+        except IOError:
+            t, e = sys.exc_info()[:2]
             self.errors.append(str(e))
 
         self.timestamps = self.get_timestamps()
@@ -1301,7 +1298,7 @@ class config:
         Return a list of all cfg directories used in this configuration
 
         Example:
-        print get_cfg_dirs()
+        print(get_cfg_dirs())
         ['/etc/nagios/hosts','/etc/nagios/objects',...]
         """
         cfg_dirs = []
@@ -1318,7 +1315,7 @@ class config:
         we will convert it to fully qualified filename before returning.
 
         Example:
-        print get_cfg_files()
+        print(get_cfg_files())
         ['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
         """
         cfg_files = []
@@ -1425,7 +1422,7 @@ class mk_livestatus:
     Example usage:
     s = mk_livestatus()
     for hostgroup s.get_hostgroups():
-        print hostgroup['name'], hostgroup['num_hosts']
+        print(hostgroup['name'], hostgroup['num_hosts'])
     """
 
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
@@ -1462,7 +1459,8 @@ class mk_livestatus:
                 "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
             self.query("GET hosts")
-        except KeyError, e:
+        except KeyError:
+            t, e = sys.exc_info()[:2]
             raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
         return True
 
@@ -1488,7 +1486,8 @@ class mk_livestatus:
                 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 s.connect(self.livestatus_socket_path)
             return s
-        except IOError, e:
+        except IOError:
+            t, e = sys.exc_info()[:2]
             msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
@@ -1567,7 +1566,7 @@ class mk_livestatus:
         # If we reach down here, it means we are supposed to parse the output before returning it
         try:
             answer = eval(answer)
-        except Exception, e:
+        except Exception:
             raise ParserError("Error, could not parse response from livestatus.\n%s" % answer)
 
         # Workaround for livestatus bug, where column headers are not provided even if we asked for them
