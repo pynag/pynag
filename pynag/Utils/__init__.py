@@ -33,6 +33,7 @@ from platform import node
 from getpass import getuser
 import datetime
 import pynag.Plugins
+import sys
 
 rlock = threading.RLock()
 
@@ -369,7 +370,7 @@ class PerfData(object):
     >>> perf = PerfData("load1=10 load2=10 load3=20 'label with spaces'=5")
     >>> perf.metrics
     ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;, 'label with spaces'=5;;;;]
-    >>> for i in perf.metrics: print(i.label, i.value)
+    >>> for i in perf.metrics: print("%s %s" % (i.label, i.value))
     load1 10
     load2 10
     load3 20
@@ -789,7 +790,7 @@ class AttributeList(object):
 
     Example:
         >>> i = AttributeList('+group1,group2,group3')
-        >>> print("Operator is:", i.operator)
+        >>> print("Operator is: %s" % i.operator)
         Operator is: +
         >>> print(i.fields)
         ['group1', 'group2', 'group3']

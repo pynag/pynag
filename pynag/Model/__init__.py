@@ -536,7 +536,7 @@ class ObjectDefinition(object):
 
         # When we are saving, it is useful to know if we are already expecting
         # This object to exist in file or not.
-        self.__filename_has_changed = False
+        self._filename_has_changed = False
 
         # if item is empty, we are creating a new object
         if item is None:
@@ -752,13 +752,14 @@ class ObjectDefinition(object):
         self.set_filename(filename)
 
         # If this is a new object, we save it with config.item_add()
-        if self.is_new is True or self.__filename_has_changed:
+        if self.is_new is True or self._filename_has_changed:
             for k, v in self._changes.items():
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
                 del self._changes[k]
             self.is_new = False
+            self._filename_has_changed = False
             return config.item_add(self._original_attributes, self.get_filename())
 
         # If we get here, we are making modifications to an object
@@ -984,7 +985,7 @@ class ObjectDefinition(object):
     def set_filename(self, filename):
         """ set name of the config file which this object will be written to on next save. """
         if filename != self.get_filename():
-            self.__filename_has_changed = True
+            self._filename_has_changed = True
         if filename is None:
             self._meta['filename'] = filename
         else:

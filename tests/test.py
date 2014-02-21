@@ -1044,7 +1044,7 @@ class testModel(unittest.TestCase):
         self.assertEqual(1,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")))
         self.assertTrue(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")[0].attribute_is_empty("host_name"))
 
-    def test_add_model_hosts_to_hostgroups(self):
+    def test_add_hosts_to_hostgroups(self):
         """ Test pynag.Model.Host.add_to_hostgroup """
         host_name = "testhost1"
         hostgroup_name = "testhostgroup1"
