@@ -683,13 +683,17 @@ class ObjectDefinition(object):
         #object_name = self['name']
         if not self.__object_id__:
             filename = self._original_attributes['meta']['filename']
-            #definition = self._original_attributes['meta']['raw_definition']
+
             object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
             object_id = str(object_id)
-            #object_id = str((filename, definition))
-            # this is good when troubleshooting ID issues:
-            #self.__id__ = object_id
+
             self.__object_id__ = str(hash(object_id))
+
+            ## this is good when troubleshooting ID issues:
+            # definition = self._original_attributes['meta']['raw_definition']
+            # object_id = str((filename, definition))
+            #self.__object_id__ = object_id
+
         return self.__object_id__
 
     def get_suggested_filename(self):
@@ -1004,7 +1008,7 @@ class ObjectDefinition(object):
         """
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
-            return self._get_command_macro(macroname)
+            return self._get_command_macro(macroname, host_name=host_name)
         if macroname.startswith('$USER'):
             # $USERx$ macros are supposed to be private, but we will display them anyway
             return config.get_resource(macroname)
@@ -1180,7 +1184,7 @@ class ObjectDefinition(object):
         result = map(lambda x: x.replace('ESCAPE_EXCL_MARK', '\!'), tmp)
         return result
 
-    def _get_command_macro(self, macroname, check_command=None):
+    def _get_command_macro(self, macroname, check_command=None, host_name=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
         if check_command is None:
             check_command = self.check_command
@@ -1194,7 +1198,7 @@ class ObjectDefinition(object):
             all_args[name] = v
         result = all_args.get(macroname, '')
         # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
-        result = self._resolve_macros(result)
+        result = self._resolve_macros(result, host_name=host_name)
         return result
 
     def _get_service_macro(self, macroname):
@@ -1215,6 +1219,8 @@ class ObjectDefinition(object):
             # if this is a custom macro
             name = macroname[6:-1]
             return self["_%s" % name]
+        elif macroname == '$HOSTADDRESS$' and not self.address:
+            return self.get("host_name")
         elif macroname in _standard_macros:
             attr = _standard_macros[macroname]
             return self[attr]
