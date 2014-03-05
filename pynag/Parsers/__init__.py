@@ -1942,8 +1942,9 @@ class LayeredConfig(config):
         new_item['meta']['template_fields'] = []
         if src_item.get('register', '1') == 0:
             new_item['register'] = src_item.get('register', '1')
+            new_item['name'] = src_item.get('name', 'New Template')
 
-        if src_item['meta']['object_type'] == 'host':
+        elif src_item['meta']['object_type'] == 'host':
             new_item['host_name'] = src_item['host_name']
 
         elif src_item['meta']['object_type'] == 'hostgroup':
