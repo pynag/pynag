@@ -1602,7 +1602,7 @@ class LayeredConfigCompiler(config):
         layer (easier if they are generated)
         """
         cfg_files = []
-        for direc in [os.path.dirname(lay) for lay in self.additional_layers]:
+        for direc in self.additional_layers:
             for base, subfolders, files in os.walk(direc):
                 for fiter in files:
                     if fiter.endswith('.cfg'):
@@ -2245,7 +2245,7 @@ class mk_livestatus:
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
             for k, v in c.maincfg_values:
-                if k == 'broker_module' and "livestatus.o" in v:
+                if k == 'broker_module' and "live" in v:
                     for arg in v.split()[1:]:
                         if arg.startswith('/') or '=' not in arg:
                             livestatus_socket_path = arg
