@@ -228,7 +228,7 @@ class testUtils(unittest.TestCase):
         validcommitspatcher.stop()
 
         self.assertRaisesRegexp(
-            PynagError, '%s is not a valid commit id' % invalid_hash, repo.show, invalid_hash)
+            PynagError, '%s is not a valid commit id' %  initial_hash)
         # Add file
         tempfile.mkstemp(dir=self.tmp_dir)
         self.assertEquals(len(repo.get_uncommited_files()), 1)
