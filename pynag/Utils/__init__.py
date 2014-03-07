@@ -812,7 +812,7 @@ class AttributeList(object):
         self.fields = []
 
         # this is easy to do if attribue_name is unset
-        if not value or value == '':
+        if not value or value == 'null':
             return
 
         # value in this case should usually be a comma seperated string, but sometimes
