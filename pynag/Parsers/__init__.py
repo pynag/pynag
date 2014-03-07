@@ -89,8 +89,9 @@ class config:
                           '/usr/local/naemon/etc/naemon.cfg',
                           './naemon.cfg',
                           './naemon/naemon.cfg',
-
+                          '/etc/shinken/shinken.cfg',
         )
+
         for file_path in possible_files:
             if os.path.isfile(file_path):
                 return file_path
