@@ -24,6 +24,7 @@ and the Command submodule wraps Nagios commands.
 
 import sys
 import os
+import pynag.Utils
 from subprocess import Popen, PIPE
 import re
 import warnings
@@ -35,8 +36,15 @@ class daemon:
     Control the nagios daemon through python
     """
 
-    def __init__(self, nagios_bin = "/usr/bin/nagios", nagios_cfg = "/etc/nagios/nagios.cfg", nagios_init = "/etc/init.d/nagios", sudo=False, shell=True):
-
+    def __init__(self, 
+		 nagios_bin = "/usr/bin/nagios", 
+                 nagios_cfg = "/etc/nagios/nagios.cfg", 
+                 nagios_init = "/etc/init.d/nagios", 
+                 sudo=False, 
+                 shell=True):
+        """
+        Setup some variables
+        """
         self.nagios_bin = nagios_bin
         self.nagios_cfg = nagios_cfg
         self.nagios_init = nagios_init
@@ -54,9 +62,9 @@ class daemon:
         if self.sudo:
             cmd.insert(0, 'sudo')
 
-        process = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
         self.stdout, self.stderr = process.communicate()
-        result = process.close()
+        result = os.WEXITSTATUS(process.wait())
 
         if result == 0:
             return True
