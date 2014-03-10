@@ -282,7 +282,7 @@ class simple:
         code = self.code_string2int(code_text)
 
         # This should be one line (or more in nagios 3)
-        print "%s: %s %s" % (self.status_text[code], message, self.perfdata_string())
+        print("%s: %s %s" % (self.status_text[code], message, self.perfdata_string()))
         sys.exit(code)
 
     def perfdata_string(self):
@@ -1004,7 +1004,7 @@ class PluginHelper:
         plugin_output = self.get_plugin_output(
             exit_code=exit_code, summary=summary, long_output=long_output, perfdata=perfdata)
 
-        print plugin_output
+        print(plugin_output)
         sys.exit(exit_code)
 
     def check_metric(self, metric_name, thresholds):
@@ -1190,7 +1190,7 @@ class PluginHelper:
         >>> p = PluginHelper()
         >>> p.add_status(ok)
         >>> p.add_summary('Test')
-        >>> print p
+        >>> print(p)
         OK - Test
         """
         return self.get_plugin_output()

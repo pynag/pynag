@@ -534,6 +534,10 @@ class ObjectDefinition(object):
     def __init__(self, item=None, filename=None, **kwargs):
         self.__object_id__ = None
 
+        # When we are saving, it is useful to know if we are already expecting
+        # This object to exist in file or not.
+        self._filename_has_changed = False
+
         # if item is empty, we are creating a new object
         if item is None:
             item = config.get_new_item(object_type=self.object_type, filename=filename)
@@ -543,9 +547,6 @@ class ObjectDefinition(object):
 
         # store the object_type (i.e. host,service,command, etc)
         self.object_type = item['meta']['object_type']
-
-        # self.objects is a convenient way to access more objects of the same type
-        self.objects = ObjectFetcher(self.object_type)
 
         # self.data -- This dict stores all effective attributes of this objects
         self._original_attributes = item
@@ -679,13 +680,17 @@ class ObjectDefinition(object):
         #object_name = self['name']
         if not self.__object_id__:
             filename = self._original_attributes['meta']['filename']
-            #definition = self._original_attributes['meta']['raw_definition']
+
             object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
             object_id = str(object_id)
-            #object_id = str((filename, definition))
-            # this is good when troubleshooting ID issues:
-            #self.__id__ = object_id
+
             self.__object_id__ = str(hash(object_id))
+
+            ## this is good when troubleshooting ID issues:
+            # definition = self._original_attributes['meta']['raw_definition']
+            # object_id = str((filename, definition))
+            #self.__object_id__ = object_id
+
         return self.__object_id__
 
     def get_suggested_filename(self):
@@ -729,43 +734,53 @@ class ObjectDefinition(object):
         return path
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
-    def save(self):
+    def save(self, filename=None):
         """Saves any changes to the current object to its configuration file
-
+        Arguments:
+            filename -- If filename is provided, save a copy of this object in that file
+                        If filename is None, either save to current file (in case of existing objects)
+                        or let pynag guess a location for it in case of new objects.
         Returns:
-            Number of changes made to the object
+            In case of existing objects, return number of attributes changed.
+            In case of new objects, return True
         """
 
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
         number_of_changes = len(self._changes.keys())
 
+        filename = filename or self.get_filename() or self.get_suggested_filename()
+        self.set_filename(filename)
+
         # If this is a new object, we save it with config.item_add()
-        if self.is_new is True or self.get_filename() is None:
-            if not self.get_filename():
-                # discover a new filename
-                self.set_filename(self.get_suggested_filename())
+        if self.is_new is True or self._filename_has_changed:
             for k, v in self._changes.items():
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
                 del self._changes[k]
-            config.item_add(self._original_attributes, self.get_filename())
+            self.is_new = False
+            self._filename_has_changed = False
+            return config.item_add(self._original_attributes, self.get_filename())
+
+        # If we get here, we are making modifications to an object
         else:
-            # If we get here, we are making modifications to an object
             number_of_changes = 0
             for field_name, new_value in self._changes.items():
-                save_result = config.item_edit_field(item=self._original_attributes, field_name=field_name,
-                                                     new_value=new_value)
+                save_result = config.item_edit_field(
+                    item=self._original_attributes,
+                    field_name=field_name,
+                    new_value=new_value
+                )
                 if save_result is True:
                     del self._changes[field_name]
                     self._event(level='write',
                                 message="%s changed from '%s' to '%s'" % (field_name, self[field_name], new_value))
-                    if not new_value:
-                        if field_name in self._defined_attributes:
-                            del self._defined_attributes[field_name]
-                        if field_name in self._original_attributes:
-                            del self._original_attributes[field_name]
+                    # Setting new_value to None, is a signal to remove the attribute
+                    # Therefore we remove it from our internal data structure
+                    if new_value is None:
+                        self._defined_attributes.pop(field_name, None)
+                        self._original_attributes.pop(field_name, None)
                     else:
                         self._defined_attributes[field_name] = new_value
                         self._original_attributes[field_name] = new_value
@@ -970,6 +985,8 @@ class ObjectDefinition(object):
 
     def set_filename(self, filename):
         """ set name of the config file which this object will be written to on next save. """
+        if filename != self.get_filename():
+            self._filename_has_changed = True
         if filename is None:
             self._meta['filename'] = filename
         else:
@@ -988,7 +1005,7 @@ class ObjectDefinition(object):
         """
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
-            return self._get_command_macro(macroname)
+            return self._get_command_macro(macroname, host_name=host_name)
         if macroname.startswith('$USER'):
             # $USERx$ macros are supposed to be private, but we will display them anyway
             return config.get_resource(macroname)
@@ -1164,7 +1181,7 @@ class ObjectDefinition(object):
         result = map(lambda x: x.replace('ESCAPE_EXCL_MARK', '\!'), tmp)
         return result
 
-    def _get_command_macro(self, macroname, check_command=None):
+    def _get_command_macro(self, macroname, check_command=None, host_name=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
         if check_command is None:
             check_command = self.check_command
@@ -1178,7 +1195,7 @@ class ObjectDefinition(object):
             all_args[name] = v
         result = all_args.get(macroname, '')
         # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
-        result = self._resolve_macros(result)
+        result = self._resolve_macros(result, host_name=host_name)
         return result
 
     def _get_service_macro(self, macroname):
@@ -1199,6 +1216,8 @@ class ObjectDefinition(object):
             # if this is a custom macro
             name = macroname[6:-1]
             return self["_%s" % name]
+        elif macroname == '$HOSTADDRESS$' and not self.address:
+            return self.get("host_name")
         elif macroname in _standard_macros:
             attr = _standard_macros[macroname]
             return self[attr]
@@ -1408,7 +1427,9 @@ class Host(ObjectDefinition):
     objects = ObjectFetcher('host')
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
-                    recursive=False):
+                    recursive=False, timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
         if recursive is True:
             pass  # Its here for compatibility but we are not using recursive so far.
         pynag.Control.Command.acknowledge_host_problem(host_name=self.host_name,
@@ -1417,7 +1438,7 @@ class Host(ObjectDefinition):
                                                        persistent=persistent,
                                                        author=author,
                                                        comment=comment,
-                                                       timestamp=0,
+                                                       timestamp=timestamp,
                                                        command_file=config.get_cfg_value('command_file')
         )
 
@@ -1700,7 +1721,9 @@ class Service(ObjectDefinition):
             ObjectRelations.host_services[i].add(self.get_id())
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
-                    timestamp=0):
+                    timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
         pynag.Control.Command.acknowledge_svc_problem(host_name=self.host_name,
                                                       service_description=self.service_description,
                                                       sticky=sticky,
@@ -2356,14 +2379,14 @@ def _remove_object_from_group(my_object, my_group):
     list_of_members = pynag.Utils.AttributeList(members)
 
     if group_name in list_of_groups:
-        # Remove object from the group
-        my_group.attribute_removefield(group_field, object_name)
-        my_group.save()
-
-    if object_name in list_of_members:
         # Remove group from the object
         my_object.attribute_removefield(object_field, group_name)
         my_object.save()
+
+    if object_name in list_of_members:
+        # Remove object from the group
+        my_group.attribute_removefield(group_field, object_name)
+        my_group.save()
 
 
 def _add_to_contactgroup(my_object, contactgroup):

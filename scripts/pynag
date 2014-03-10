@@ -412,8 +412,8 @@ def acknowledge():
         return
 
     for i in objects:
-        if opts.quiet == False:
-            print "Acknowledge %s: %s" % (i.object_type,i.get_shortname())
+        if opts.quiet is False:
+            print "Acknowledge %s: %s" % (i.object_type, i.get_shortname())
         i.acknowledge(comment=opts.comment,author=opts.author,timestamp=opts.ts)
 
 def downtime():

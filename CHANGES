@@ -1,3 +1,11 @@
+Changes in 0.8.1 (Feb 19 2014)
+New Features:
+    - Support setting of custom host variables
+    - Allow Model.*.acknowledge() with a timestamp
+Bug Fixes:
+    - Better support for weird mk-livestatus configs
+    - Fix unintilized variables in pynag.Parsers.config
+
 Changes in 0.8.0 (Jan 15 2014)
 New Features:
     - Auto guess config locations for icinga and naemon

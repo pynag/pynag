@@ -33,6 +33,7 @@ from platform import node
 from getpass import getuser
 import datetime
 import pynag.Plugins
+import sys
 
 rlock = threading.RLock()
 
@@ -119,7 +120,8 @@ class GitRepo(object):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except PynagError, e:
+            except PynagError:
+                t, e = sys.exc_info()[:2]
                 if e.errorcode == 128:
                     self.init()
             #self._run_command('git status --short')
@@ -368,7 +370,7 @@ class PerfData(object):
     >>> perf = PerfData("load1=10 load2=10 load3=20 'label with spaces'=5")
     >>> perf.metrics
     ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;, 'label with spaces'=5;;;;]
-    >>> for i in perf.metrics: print i.label, i.value
+    >>> for i in perf.metrics: print("%s %s" % (i.label, i.value))
     load1 10
     load2 10
     load3 20
@@ -473,16 +475,16 @@ class PerfDataMetric(object):
         """
         >>> p = PerfData(perfdatastring="size=10M;20M;;;")
         >>> metric = p.get_perfdatametric('size')
-        >>> print metric.label
+        >>> print(metric.label)
         size
-        >>> print metric.value
+        >>> print(metric.value)
         10
-        >>> print metric.uom
+        >>> print(metric.uom)
         M
         >>> p = PerfDataMetric(perfdatastring="'with spaces'=10")
-        >>> print p.label
+        >>> print(p.label)
         with spaces
-        >>> print p.value
+        >>> print(p.value)
         10
         """
         self.label = label
@@ -608,7 +610,6 @@ class PerfDataMetric(object):
 
     def reconsile_thresholds(self):
         """ Convert threshold from new threshold syntax to current one, for backwards compatibility """
-        print 'yeah', self
         self.warn = reconsile_threshold(self.warn)
         self.crit = reconsile_threshold(self.crit)
 
@@ -645,7 +646,8 @@ class PerfDataMetric(object):
 def grep(objects, **kwargs):
     """  Returns all the elements from array that match the keywords in **kwargs
 
-    TODO: Refactor pynag.Model.ObjectDefinition.objects.filter() and reuse it here.
+    See documentation for pynag.Model.ObjectDefinition.objects.filter() for example how to use this.
+
     Arguments:
         array -- a list of dict that is to be searched
         kwargs -- Any search argument provided will be checked against every dict
@@ -740,8 +742,17 @@ def grep_to_livestatus(*args, **kwargs):
         >>> grep_to_livestatus(service_description__contains=['serv','check'])
         ['Filter: service_description ~ serv']
 
-        >>> grep_to_livestatus(service_description__contains='serv', contacts__has_field='admin')
-        ['Filter: contacts >= admin', 'Filter: service_description ~ serv']
+        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
+        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
+
+        >>> grep_to_livestatus(service_description__has_field='foo')
+        ['Filter: service_description >= foo']
+
+        >>> grep_to_livestatus(service_description__startswith='foo')
+        ['Filter: service_description ~ ^foo']
+
+        >>> grep_to_livestatus(service_description__endswith='foo')
+        ['Filter: service_description ~ foo$']
     """
     result = list(args)  # Args go unchanged back into results
     for k, v in kwargs.items():
@@ -756,6 +767,12 @@ def grep_to_livestatus(*args, **kwargs):
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
             my_string = "Filter: %s != %s" % (k, v)
+        elif k.endswith('__startswith'):
+            k = k[:-len('__startswith')]
+            my_string = "Filter: %s ~ ^%s" % (k, v)
+        elif k.endswith('__endswith'):
+            k = k[:-len('__endswith')]
+            my_string = "Filter: %s ~ %s$" % (k, v)
         else:
             my_string = "Filter: %s = %s" % (k, v)
         result.append(my_string)
@@ -773,19 +790,19 @@ class AttributeList(object):
 
     Example:
         >>> i = AttributeList('+group1,group2,group3')
-        >>> print "Operator is:", i.operator
+        >>> print("Operator is: %s" % i.operator)
         Operator is: +
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
         if your data is already in a list format you can use it directly:
         >>> i = AttributeList(['group1', 'group2', 'group3'])
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
         white spaces will be stripped from all fields
         >>> i = AttributeList('+group1, group2')
-        >>> print i
+        >>> print(i)
         +group1,group2
 
     """
@@ -795,7 +812,7 @@ class AttributeList(object):
         self.fields = []
 
         # this is easy to do if attribue_name is unset
-        if not value or value == '':
+        if not value or value == 'null':
             return
 
         # value in this case should usually be a comma seperated string, but sometimes
@@ -832,7 +849,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.insert(1, 'group4')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group4', 'group2', 'group3']
 
         """
@@ -843,7 +860,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.append('group5')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3', 'group5']
 
         """
@@ -863,7 +880,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.extend(['group4', 'group5'])
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3', 'group4', 'group5']
         """
         return self.fields.extend(iterable)
@@ -887,7 +904,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.reverse()
-        >>> print i.fields
+        >>> print(i.fields)
         ['group3', 'group2', 'group1']
 
         """
@@ -899,7 +916,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group3,group1,group2')
         >>> i.sort()
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2', 'group3']
 
 
@@ -911,7 +928,7 @@ class AttributeList(object):
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.remove('group3')
-        >>> print i.fields
+        >>> print(i.fields)
         ['group1', 'group2']
 
         """
@@ -921,7 +938,7 @@ class AttributeList(object):
         """ Same as list.__iter__()
 
         >>> mylist = AttributeList('group1,group2,group3')
-        >>> for i in mylist: print i
+        >>> for i in mylist: print(i)
         group1
         group2
         group3

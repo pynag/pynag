@@ -443,13 +443,58 @@ class testModel(unittest.TestCase):
 
         # Save a new object, this time lets specify a filename for it
         host = pynag.Model.Host(host_name=hostname2)
-        dest_dir = "%s/newhost2.cfg" % pynag.Model.pynag_directory
-        host.set_filename(dest_dir)
+        dest_file = "%s/newhost2.cfg" % pynag.Model.pynag_directory
+        host.set_filename(dest_file)
         host.save()
         hostlist2 = pynag.Model.Host.objects.filter(host_name=hostname2)
         self.assertEqual(1, len(hostlist2))
         host = hostlist2[0]
-        self.assertEqual(dest_dir, host.get_filename())
+        self.assertEqual(dest_file, host.get_filename())
+
+    def testSaveExistingObjects(self):
+        """ Test saving existing objects to both same file and a new file
+        """
+        # Save our host
+        host_name = "testhost"
+        use = 'generic-host'
+        host = pynag.Model.Host(host_name=host_name, use=use)
+        host.save()
+        origin_filename = host.get_filename()
+
+        # Parse again and see if we find the same host:
+        host = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(host_name, host.host_name)
+        self.assertEqual(use, host.use)
+        self.assertEqual(origin_filename, host.get_filename())
+
+        # Change host a little bit, and save to a new file:
+        new_host_name = host_name + "2"
+        new_filename = origin_filename + "-saveagain.cfg"
+        host.host_name = new_host_name
+        host.set_filename(new_filename)
+        host.save()
+
+        # Parse again and see if we find the same host:
+        host = pynag.Model.Host.objects.get_by_shortname(new_host_name)
+        self.assertEqual(new_host_name, host.host_name)
+        self.assertEqual(use, host.use)
+        self.assertEqual(new_filename, host.get_filename())
+
+        # Save it for the third time, this time using parameter to save()
+        new_new_host_name = host.host_name + "-2"
+        new_new_filename = host.get_filename() + "-new.cfg"
+        host.host_name = new_new_host_name
+        host.save(filename=new_new_filename)
+
+        new_host = pynag.Model.Host.objects.get_by_shortname(new_new_host_name)
+        self.assertEqual(new_new_filename, new_host.get_filename())
+        self.assertEqual(new_new_host_name, new_host.host_name)
+
+
+
+
+
+
 
     def testMoveObject(self):
         """ Test ObjectDefinition.move() """
@@ -999,6 +1044,41 @@ class testModel(unittest.TestCase):
         self.assertEqual(1,len(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")))
         self.assertTrue(pynag.Model.ServiceEscalation.objects.filter(name="svcEscstay")[0].attribute_is_empty("host_name"))
 
+    def test_add_hosts_to_hostgroups(self):
+        """ Test pynag.Model.Host.add_to_hostgroup """
+        host_name = "testhost1"
+        hostgroup_name = "testhostgroup1"
+        hostgroup = pynag.Model.Hostgroup(hostgroup_name=hostgroup_name)
+        hostgroup.save()
+        host1 = pynag.Model.Host(host_name=host_name)
+        host1.save()
+
+        message = "Newly created host should not belong to any hostgroups"
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Host should belong to hostgroup after we specificly add it"
+        host1.add_to_hostgroup(hostgroup_name)
+        self.assertEqual(True, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Host should not belong to hostgroup after we have removed it"
+        host1.remove_from_hostgroup(hostgroup_name)
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        # Lets try the same via the hostgroup:
+        message = "Host should belong to hostgroup after we have specifically added host to that hostgroup"
+        hostgroup.add_host(host_name)
+        host1 = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(True, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+        message = "Hostgroup should not have host after we specifically remove the host"
+        hostgroup.remove_host(host_name)
+        host1 = pynag.Model.Host.objects.get_by_shortname(host_name)
+        self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
+        self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
 
 class testsFromCommandLine(unittest.TestCase):
     """ Various commandline scripts
