@@ -548,9 +548,6 @@ class ObjectDefinition(object):
         # store the object_type (i.e. host,service,command, etc)
         self.object_type = item['meta']['object_type']
 
-        # self.objects is a convenient way to access more objects of the same type
-        self.objects = ObjectFetcher(self.object_type)
-
         # self.data -- This dict stores all effective attributes of this objects
         self._original_attributes = item
 
