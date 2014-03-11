@@ -1498,46 +1498,153 @@ class LayeredConfigCompiler(config):
         *hostgroup
             hostgroup_name
         """
-        if obj.get('register', None) == '0':
-            for pre_obj in self.pre_object_list:
-                if pre_obj.get('register', None) == '0':
-                    if pre_obj['name'] == obj['name']:
-                        return pre_obj
-        else:
-            obj_type = obj['meta']['object_type']
-            for pre_obj in self.pre_object_list:
-                if pre_obj['meta']['object_type'] == obj_type:
-                    if pre_obj.get('register', None) == '0':
-                        pass
+        obj_type = obj['meta'].get('object_type', None)
+        for pre_obj in self.pre_object_list:
+            if pre_obj['meta'].get('object_type', None) == obj_type:
 
-                    elif obj_type == 'host':
-                        if pre_obj['host_name'] == obj['host_name']:
+                if obj_type == 'host':
+
+                    prev_host_name = pre_obj.get('host_name', None)
+                    new_host_name = obj.get('host_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_host_name == new_host_name:
+                        if prev_host_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'service':
-                        if (pre_obj['host_name'] == obj['host_name'] and
-                            pre_obj['service_description'] == obj['service_description']):
+                if obj_type == 'service':
+
+                    prev_host_name = pre_obj.get('host_name', None)
+                    new_host_name = obj.get('host_name', None)
+                    prev_service_desc = pre_obj.get('service_description', None)
+                    new_service_desc = obj.get('service_description', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if (prev_host_name == new_host_name and
+                            prev_service_desc == new_service_desc):
+                        if prev_host_name != None and prev_service_desc != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'timeperiod':
-                        if pre_obj['timeperiod_name'] == obj['timeperiod_name']:
+                if obj_type == 'timeperiod':
+
+                    prev_timeperiod_name = pre_obj.get('timeperiod_name', None)
+                    new_timeperiod_name = obj.get('timeperiod_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_timeperiod_name == new_timeperiod_name:
+                        if prev_timeperiod_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'contact':
-                        if pre_obj['contact_name'] == obj['contact_name']:
+                if obj_type == 'contact':
+
+                    prev_contact_name = pre_obj.get('contact_name', None)
+                    new_contact_name = obj.get('contact_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_contact_name == new_contact_name:
+                        if prev_contact_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'command':
-                        if pre_obj['command_name'] == obj['command_name']:
+                if obj_type == 'command':
+
+                    prev_command_name = pre_obj.get('command_name', None)
+                    new_command_name = obj.get('command_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_command_name == new_command_name:
+                        if prev_command_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'servicegroup':
-                        if pre_obj['servicegroup_name'] == obj['servicegroup_name']:
+                if obj_type == 'servicegroup':
+
+                    prev_servicegroup_name = pre_obj.get('servicegroup_name', None)
+                    new_servicegroup_name = obj.get('servicegroup_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_servicegroup_name == new_servicegroup_name:
+                        if prev_servicegroup_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
                             return pre_obj
 
-                    elif obj_type == 'hostgroup':
-                        if pre_obj['hostgroup_name'] == obj['hostgroup_name']:
+                if obj_type == 'hostgroup':
+
+                    prev_hostgroup_name = pre_obj.get('hostgroup_name', None)
+                    new_hostgroup_name = obj.get('hostgroup_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_hostgroup_name == new_hostgroup_name:
+                        if prev_hostgroup_name != None:
                             return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+        # This needs to be reworked
+        # if obj.get('register', None) == '0':
+        #     for pre_obj in self.pre_object_list:
+        #         if pre_obj.get('register', None) == '0':
+        #             if pre_obj.get('name', None) == obj.get('name', None):
+        #             # if pre_obj['name'] == obj['name']:
+        #                 return pre_obj
+        # else:
+        #     obj_type = obj['meta']['object_type']
+        #     for pre_obj in self.pre_object_list:
+        #         if pre_obj['meta']['object_type'] == obj_type:
+        #             if pre_obj.get('register', None) == '0':
+        #                 pass
+
+        #             elif obj_type == 'host':
+        #                 if pre_obj['host_name'] == obj['host_name']:
+        #                     return pre_obj
+
+        #             elif obj_type == 'service':
+        #                 if (pre_obj['host_name'] == obj['host_name'] and
+        #                     pre_obj['service_description'] == obj['service_description']):
+        #                     return pre_obj
+
+        #             elif obj_type == 'timeperiod':
+        #                 if pre_obj['timeperiod_name'] == obj['timeperiod_name']:
+        #                     return pre_obj
+
+        #             elif obj_type == 'contact':
+        #                 if pre_obj['contact_name'] == obj['contact_name']:
+        #                     return pre_obj
+
+        #             elif obj_type == 'command':
+        #                 if pre_obj['command_name'] == obj['command_name']:
+        #                     return pre_obj
+
+        #             elif obj_type == 'servicegroup':
+        #                 if pre_obj['servicegroup_name'] == obj['servicegroup_name']:
+        #                     return pre_obj
+
+        #             elif obj_type == 'hostgroup':
+        #                 if pre_obj['hostgroup_name'] == obj['hostgroup_name']:
+        #                     return pre_obj
         return None
 
     def _resolve_conflict(self, previous, tweak):
