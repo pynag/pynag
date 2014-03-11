@@ -1603,48 +1603,6 @@ class LayeredConfigCompiler(config):
                         if prev_name != None:
                             return pre_obj
 
-        # This needs to be reworked
-        # if obj.get('register', None) == '0':
-        #     for pre_obj in self.pre_object_list:
-        #         if pre_obj.get('register', None) == '0':
-        #             if pre_obj.get('name', None) == obj.get('name', None):
-        #             # if pre_obj['name'] == obj['name']:
-        #                 return pre_obj
-        # else:
-        #     obj_type = obj['meta']['object_type']
-        #     for pre_obj in self.pre_object_list:
-        #         if pre_obj['meta']['object_type'] == obj_type:
-        #             if pre_obj.get('register', None) == '0':
-        #                 pass
-
-        #             elif obj_type == 'host':
-        #                 if pre_obj['host_name'] == obj['host_name']:
-        #                     return pre_obj
-
-        #             elif obj_type == 'service':
-        #                 if (pre_obj['host_name'] == obj['host_name'] and
-        #                     pre_obj['service_description'] == obj['service_description']):
-        #                     return pre_obj
-
-        #             elif obj_type == 'timeperiod':
-        #                 if pre_obj['timeperiod_name'] == obj['timeperiod_name']:
-        #                     return pre_obj
-
-        #             elif obj_type == 'contact':
-        #                 if pre_obj['contact_name'] == obj['contact_name']:
-        #                     return pre_obj
-
-        #             elif obj_type == 'command':
-        #                 if pre_obj['command_name'] == obj['command_name']:
-        #                     return pre_obj
-
-        #             elif obj_type == 'servicegroup':
-        #                 if pre_obj['servicegroup_name'] == obj['servicegroup_name']:
-        #                     return pre_obj
-
-        #             elif obj_type == 'hostgroup':
-        #                 if pre_obj['hostgroup_name'] == obj['hostgroup_name']:
-        #                     return pre_obj
         return None
 
     def _resolve_conflict(self, previous, tweak):
