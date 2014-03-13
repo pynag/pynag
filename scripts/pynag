@@ -581,7 +581,7 @@ def livestatus():
     # We will be working with args, here as the main source of queries.
     # Any options added should be appended to args
     if opts.get is not None:
-        args.append( "GET %s" % opts.get )
+        args.insert(0, "GET %s" % opts.get )
     if opts.limit is not None:
         args.append( 'Limit: %s' % opts.limit )
     for i in opts.filters:
