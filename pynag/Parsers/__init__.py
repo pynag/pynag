@@ -66,7 +66,7 @@ class config:
         """
         cfg_file = self.guess_cfg_file()
         if not cfg_file:
-            raise ParserError("Could not find nagios.cfg")
+            raise ConfigFileNotFound("Could not find nagios.cfg")
         return os.path.dirname(cfg_file)
 
     def guess_cfg_file(self):
@@ -1096,7 +1096,7 @@ class config:
         """
         # If nagios.cfg is not set, lets do some minor autodiscover.
         if self.cfg_file is None:
-            raise ParserError('Could not find nagios.cfg')
+            raise ConfigFileNotFound('Could not find nagios.cfg')
 
         self.maincfg_values = self._load_static_file(self.cfg_file)
 
@@ -1497,8 +1497,7 @@ class mk_livestatus:
         # We break query up into a list, of commands, then before sending command to the socket
         # We will write it one line per item in the array
         query = query.split('\n')
-        for i in args:
-            query.append(i)
+        query += pynag.Utils.grep_to_livestatus(*args, **kwargs)
 
         # If no response header was specified, we add fixed16
         response_header = None
@@ -1586,6 +1585,12 @@ class mk_livestatus:
             result.append(tmp)
         return result
 
+    def get(self, table, *args, **kwargs):
+        """ Same as self.query('GET %s' % (table,)) """
+        print "running get", locals()
+        return self.query('GET %s' % (table,), *args, **kwargs)
+        print "get done"
+
     def get_host(self, host_name):
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
 
@@ -1593,23 +1598,23 @@ class mk_livestatus:
         return self.query('GET services', 'Filter: host_name = %s' % host_name,
                           'Filter: description = %s' % service_description)[0]
 
-    def get_hosts(self, *args):
-        return self.query('GET hosts', *args)
+    def get_hosts(self, *args, **kwargs):
+        return self.query('GET hosts', *args, **kwargs)
 
-    def get_services(self, *args):
-        return self.query('GET services', *args)
+    def get_services(self, *args, **kwargs):
+        return self.query('GET services', *args, **kwargs)
 
-    def get_hostgroups(self, *args):
-        return self.query('GET hostgroups', *args)
+    def get_hostgroups(self, *args, **kwargs):
+        return self.query('GET hostgroups', *args, **kwargs)
 
-    def get_servicegroups(self, *args):
-        return self.query('GET servicegroups', *args)
+    def get_servicegroups(self, *args, **kwargs):
+        return self.query('GET servicegroups', *args, **kwargs)
 
-    def get_contactgroups(self, *args):
-        return self.query('GET contactgroups', *args)
+    def get_contactgroups(self, *args, **kwargs):
+        return self.query('GET contactgroups', *args, **kwargs)
 
-    def get_contacts(self, *args):
-        return self.query('GET contacts', *args)
+    def get_contacts(self, *args, **kwargs):
+        return self.query('GET contacts', *args, **kwargs)
 
     def get_contact(self, contact_name):
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
@@ -1843,6 +1848,11 @@ class ParserError(Exception):
         if self.filename and self.line_start:
             message = '%s in %s, line %s' % (message, self.filename, self.line_start)
         return repr(message)
+
+
+class ConfigFileNotFound(ParserError):
+    """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
+    pass
 
 
 class LogFiles(object):
