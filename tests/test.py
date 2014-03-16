@@ -27,6 +27,7 @@ import sys
 import string
 import random
 
+
 tests_dir = os.path.dirname(os.path.realpath(__file__))
 if tests_dir == '':
     tests_dir = '.'
@@ -42,6 +43,13 @@ import pynag.Plugins
 
 # Must run within test dir for relative paths to tests
 os.chdir(tests_dir)
+
+
+from tests.plugintest import testPlugin, testPluginHelper, testPluginNoThreshold, testPluginParams
+from tests.commandtest import testCommandsToCommandFile, testCommandsToLivestatus
+from tests.controltest import testControl
+from tests.test_defaultdict import TestDefaultDict
+
 
 
 class testDatasetParsing(unittest.TestCase):
@@ -1178,3 +1186,5 @@ if __name__ == '__main__':
     if state.failures or state.errors:
         sys.exit(1)
     sys.exit(0)
+
+
