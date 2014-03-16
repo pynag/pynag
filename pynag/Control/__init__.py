@@ -58,9 +58,6 @@ class daemon:
         Run nagios -v config_file to verify that the conf is working
         """
 
-        if not os.path.isfile(self.nagios_bin):
-            return None
-
         cmd = [self.nagios_bin, "-v", self.nagios_cfg]
         if self.sudo:
             cmd.insert(0, 'sudo')
