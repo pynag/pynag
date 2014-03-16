@@ -590,7 +590,7 @@ class ObjectDefinition(object):
 
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
-        return len(self._changes.keys()) == 0
+        return len(self._changes.keys()) != 0
 
     def is_registered(self):
         """ Returns true if object is enabled (registered)
