@@ -1,7 +1,7 @@
 import os
 
 import unittest2 as unittest
-from mock import MagicMock, patch
+from mock import MagicMock, patch, __version__
 
 try:
     # open_mock comes with mock 1.0.1
@@ -26,6 +26,14 @@ from pynag.Control import Command
 tests_dir = os.path.dirname( os.path.realpath(__file__) )
 if tests_dir == '':
     tests_dir = '.'
+
+
+def is_mock_to_old():
+    major, minor, patch = __version__.split('.')
+    if int(major) == 0 and int(minor) < 8:
+        return True
+    else:
+        return False
 
 
 class testCommandsToCommandFile(unittest.TestCase):
@@ -298,6 +306,7 @@ class testCommandsToCommandFile(unittest.TestCase):
         handle.write.assert_called_once_with(expected + '\n')
 
 
+@unittest.skipIf(is_mock_to_old(), "Our version of mock is to old to run this test")
 class testCommandsToLivestatus(unittest.TestCase):
     def setUp(self):
         self.command_file = '/tmp/cmdfile'
