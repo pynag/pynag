@@ -10,13 +10,17 @@ import pynag.Model
 from pynag.Utils import PynagError
 #from tests.test import tests_dir
 
+tests_dir = os.path.dirname( os.path.realpath(__file__) )
+if tests_dir == '':
+    tests_dir = '.'
+
 
 class testUtils(unittest.TestCase):
 
     def setUp(self):
         # Utils should work fine with just about any data, but lets use
         # testdata01
-        #os.chdir(tests_dir)
+        os.chdir(tests_dir)
         os.chdir('dataset01')
         pynag.Model.config = None
         pynag.Model.cfg_file = './nagios/nagios.cfg'
