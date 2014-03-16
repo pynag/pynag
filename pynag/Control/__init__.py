@@ -24,7 +24,10 @@ and the Command submodule wraps Nagios commands.
 
 import sys
 import os
+import pynag.Utils
+from subprocess import Popen, PIPE
 import re
+import warnings
 
 from pynag.Utils import PynagError
 
@@ -33,20 +36,35 @@ class daemon:
     Control the nagios daemon through python
     """
 
-    def __init__(self, nagios_bin = "/usr/bin/nagios", nagios_cfg = "/etc/nagios/nagios.cfg", nagios_init = "/etc/init.d/nagios"):
-
+    def __init__(self, 
+		 nagios_bin = "/usr/bin/nagios", 
+                 nagios_cfg = "/etc/nagios/nagios.cfg", 
+                 nagios_init = "/etc/init.d/nagios", 
+                 sudo=False, 
+                 shell=True):
+        """
+        Setup some variables
+        """
         self.nagios_bin = nagios_bin
         self.nagios_cfg = nagios_cfg
         self.nagios_init = nagios_init
+        self.sudo = sudo
+        self.stdout = ""
+        self.stderr = ""
+        self.shell = shell
 
     def verify_config(self):
         """
         Run nagios -v config_file to verify that the conf is working
         """
 
-        cmd = "%s -v %s" % (self.nagios_bin, self.nagios_cfg)
+        cmd = [self.nagios_bin, "-v", self.nagios_cfg]
+        if self.sudo:
+            cmd.insert(0, 'sudo')
 
-        result = os.system(cmd)
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
+        self.stdout, self.stderr = process.communicate()
+        result = os.WEXITSTATUS(process.wait())
 
         if result == 0:
             return True
