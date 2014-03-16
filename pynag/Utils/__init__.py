@@ -34,6 +34,7 @@ from getpass import getuser
 import datetime
 import pynag.Plugins
 import sys
+from functools import wraps
 
 rlock = threading.RLock()
 
@@ -773,6 +774,14 @@ def grep_to_livestatus(*args, **kwargs):
         elif k.endswith('__endswith'):
             k = k[:-len('__endswith')]
             my_string = "Filter: %s ~ %s$" % (k, v)
+        elif k == 'WaitObject':
+            my_string = "WaitObject: %s" % (v,)
+        elif k == 'WaitCondition':
+            my_string = "WaitCondition: %s" % (v,)
+        elif k == 'WaitTrigger':
+            my_string = "WaitTrigger: %s" % (v,)
+        elif k == 'WaitTimeout':
+            my_string = "WaitTimeout: %s" % (v,)
         else:
             my_string = "Filter: %s = %s" % (k, v)
         result.append(my_string)
@@ -1111,6 +1120,7 @@ def synchronized(lock):
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     """
     def wrap(f):
+        @wraps(f)
         def newFunction(*args, **kw):
             lock.acquire()
             try:
