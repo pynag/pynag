@@ -1437,6 +1437,7 @@ class mk_livestatus:
         if livestatus_socket_path is None:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
+            self.nagios_cfg_file = c.cfg_file
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
             for k, v in c.maincfg_values:
@@ -1473,6 +1474,9 @@ class mk_livestatus:
 
 
         """
+        if not self.livestatus_socket_path:
+            msg = "We could not find path to MK livestatus socket file. Make sure MK livestatus is installed and configured"
+            raise LivestatusNotConfiguredException(msg)
         try:
             # If livestatus_socket_path contains a colon, then we assume that it is tcp socket instead of a local filesocket
             if self.livestatus_socket_path.find(':') > 0:
@@ -1854,6 +1858,9 @@ class ConfigFileNotFound(ParserError):
     """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
     pass
 
+
+class LivestatusNotConfiguredException(ParserError):
+    """ This exception is raised if we tried to autodiscover path to livestatus and failed """
 
 class LogFiles(object):
     """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
