@@ -69,6 +69,31 @@ class config:
             raise ConfigFileNotFound("Could not find nagios.cfg")
         return os.path.dirname(cfg_file)
 
+    def guess_nagios_binary(self):
+        """ Returns a path to any nagios binary found on your system
+
+        Use this function if you don't want specify path to the nagios binary
+        in your code and you are confident that it is located in a common
+        location
+        """
+        possible_files = ('/usr/bin/nagios',
+                          '/usr/sbin/nagios',
+                          '/usr/local/nagios/bin/nagios',
+                          '/nagios/bin/nagios',
+                          '/usr/bin/icinga',
+                          '/usr/sbin/icinga',
+                          '/usr/bin/naemon',
+                          '/usr/sbin/naemon',
+                          '/usr/local/naemon/bin/naemon.cfg',
+                          '/usr/bin/shinken',
+                          '/usr/sbin/shinken')
+
+        for file_path in possible_files:
+            if os.access(file_path, os.X_OK):
+                return file_path
+        return None
+
+
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 

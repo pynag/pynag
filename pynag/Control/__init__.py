@@ -64,7 +64,7 @@ class daemon:
 
         process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
         self.stdout, self.stderr = process.communicate()
-        result = os.WEXITSTATUS(process.wait())
+        result = process.wait()
 
         if result == 0:
             return True
