@@ -474,13 +474,13 @@ class testModel(unittest.TestCase):
         self.assertEqual(host_name, host.host_name)
         self.assertEqual(use, host.use)
         self.assertEqual(origin_filename, host.get_filename())
-        self.assertTrue(host.is_dirty())
+        self.assertFalse(host.is_dirty())
 
         # Change host a little bit, and save to a new file:
         new_host_name = host_name + "2"
         new_filename = origin_filename + "-saveagain.cfg"
         host.host_name = new_host_name
-        self.assertFalse(host.is_dirty())
+        self.assertTrue(host.is_dirty())
         host.set_filename(new_filename)
         host.save()
 
