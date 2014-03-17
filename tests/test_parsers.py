@@ -13,12 +13,6 @@ from tests import tests_dir
 
 
 class testParsers(unittest.TestCase):
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
-    def testLivestatus(self):
-        """Test mk_livestatus integration"""
-        livestatus = pynag.Parsers.mk_livestatus()
-        requests = livestatus.query('GET status', 'Columns: requests')
-        self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
 
     def testConfig(self):
         """Test pynag.Parsers.config()"""
@@ -177,3 +171,11 @@ class testParsers(unittest.TestCase):
 
         # Using same config as above, test the getlist method
         self.assertEqual(['plugins.ini'], e.getlist('filename'))
+
+class Livestatus(unittest.TestCase):
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testLivestatus(self):
+        """Test mk_livestatus integration"""
+        livestatus = pynag.Parsers.mk_livestatus()
+        requests = livestatus.query('GET status', 'Columns: requests')
+        self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
