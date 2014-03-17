@@ -6,7 +6,7 @@ import sys
 
 tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
 os.chdir(tests_dir)
-#sys.path.insert(0, os.path.realpath("%s/%s" % (tests_dir, os.path.pardir)))
+sys.path.insert(0, os.path.realpath("%s/%s" % (tests_dir, os.path.pardir)))
 
 
 import pynag.Model
