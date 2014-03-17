@@ -1021,7 +1021,7 @@ class config:
         if new_value is None:
             new_line = ''
 
-        write_buffer = open(filename).readlines()
+        write_buffer = self.open(filename).readlines()
         is_dirty = False  # dirty if we make any changes
         for i, line in enumerate(write_buffer):
             ## Strip out new line characters
@@ -1216,6 +1216,9 @@ class config:
     def stat(self, *args, **kwargs):
         """ Wrapper around os.stat """
         return os.stat(*args, **kwargs)
+    def remove(self, *args, **kwargs):
+        """ Wrapper around os.remove """
+        return os.remove(*args, **kwargs)
 
     def access(self, *args, **kwargs):
         """ Wrapper around os.access
@@ -1457,7 +1460,7 @@ class config:
         """ Remove configuration files that have no configuration items"""
         for filename in self.cfg_files:
             if not self.parse_file(filename):  # parse_file returns empty list on empty files
-                os.remove(filename)
+                self.remove(filename)
                 # If nagios.cfg specifies this file directly via cfg_file directive then...
                 for k, v in self.maincfg_values:
                     if k == 'cfg_file' and v == filename:
