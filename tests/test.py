@@ -49,7 +49,7 @@ def setUpDocTests(doctest):
     # The parser needs a Nagios config environment
     # we'll use dataset01 in the tests directory
     os.chdir(os.path.join(tests_dir, 'dataset01'))
-    pynag.Model.cfg_file = "./nagios/nagios.cfg"
+    pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
 if __name__ == '__main__':
     unittest.main()
