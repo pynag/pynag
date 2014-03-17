@@ -10,10 +10,7 @@ import pynag.Model
 from pynag.Utils import PynagError
 #from tests.test import tests_dir
 
-tests_dir = os.path.dirname( os.path.realpath(__file__) )
-if tests_dir == '':
-    tests_dir = '.'
-
+from tests import tests_dir
 
 class testUtils(unittest.TestCase):
 
