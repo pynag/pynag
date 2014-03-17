@@ -1445,8 +1445,8 @@ class config:
 
             # Should return something like "/var/log/nagios/nagios.log"
         """
-        if self.maincfg_values == []:
-            self.maincfg_values = self._load_static_file(self.cfg_file)
+        if not self.maincfg_values:
+            self.parse_maincfg()
         for k, v in self.maincfg_values:
             if k == key:
                 return v
@@ -1927,6 +1927,7 @@ class LogFiles(object):
 
     def __init__(self, maincfg=None):
         self.config = config(maincfg)
+
         self.log_file = self.config.get_cfg_value('log_file')
         self.log_archive_path = self.config.get_cfg_value('log_archive_path')
 
