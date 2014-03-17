@@ -32,8 +32,8 @@ def load_tests(loader=None, tests=None, pattern=None):
 
     # Add all doctests to our suite
     suite.addTest(doctest.DocTestSuite(pynag.Model, setUp=setUpDocTests))
-    suite.addTest(doctest.DocTestSuite(pynag.Plugins))
     suite.addTest(doctest.DocTestSuite(pynag.Parsers, setUp=setUpDocTests))
+    suite.addTest(doctest.DocTestSuite(pynag.Plugins))
     suite.addTest(doctest.DocTestSuite(pynag.Control))
     suite.addTest(doctest.DocTestSuite(pynag.Model))
     suite.addTest(doctest.DocTestSuite(pynag.Utils))
@@ -46,13 +46,11 @@ def load_tests(loader=None, tests=None, pattern=None):
 
 
 def setUpDocTests(doctest):
-    # The parser needs a Nagios config environment
-    # we'll use dataset01 in the tests directory
+    """ For doctests that require a valid config to function, we point them
+        to dataset01
+    """
     os.chdir(os.path.join(tests_dir, 'dataset01'))
     pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
 if __name__ == '__main__':
-    state = unittest.TextTestRunner().run(load_tests())
-    if state.failures or state.errors:
-        sys.exit(1)
-    sys.exit(0)
+    unittest.main()
