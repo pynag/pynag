@@ -2,23 +2,28 @@
 import os
 import unittest
 import doctest
+import sys
+
+tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
+os.chdir(tests_dir)
+#sys.path.insert(0, os.path.realpath("%s/%s" % (tests_dir, os.path.pardir)))
+
+
 import pynag.Model
 import pynag.Parsers
 import pynag.Plugins
 import pynag.Control
 import pynag.Utils
 
-tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
-os.chdir(tests_dir)
 
-import tests.test_control
-import tests.test_command
-import tests.test_defaultdict
-import tests.test_model
-import tests.test_other
-import tests.test_parsers
-import tests.test_plugins
-import tests.test_utils
+import test_control
+import test_command
+import test_defaultdict
+import test_model
+import test_other
+import test_parsers
+import test_plugins
+import test_utils
 
 
 def load_tests(loader, tests, pattern):
