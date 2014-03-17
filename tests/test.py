@@ -8,7 +8,9 @@ import pynag.Plugins
 import pynag.Control
 import pynag.Utils
 
-from tests import tests_dir
+tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
+os.chdir(tests_dir)
+
 
 def load_tests(loader, tests, pattern):
     """ Discover and load all unit tests in all files named ``*_test.py`` in ``./src/`` """
