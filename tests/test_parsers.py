@@ -229,6 +229,31 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
+@unittest.skip("Not ready for production yet")
+class SshConfig(Config):
+    def setUp(self):
+        self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
+    def tearDown(self):
+        pass
+
+    def testParseMaincfg(self):
+        self.instance.parse_maincfg()
+
+    def testParse(self):
+        self.instance.parse()
+        host = self.instance.get_host('localhost')
+        print host['__test']
+        self.instance.item_edit_field(host, '__test', host['__test'] + '+')
+
+    def testOpenFile(self):
+        self.instance.open('/etc/nagios3/nagios.cfg').read()
+
+    def testPathWrappers(self):
+        """ Test our os.path wrappers
+        """
+        ftp = self.instance.ftp
+        i = ftp.stat('/')
+        self.assertTrue(self.instance.isdir('/'))
 
 
 

@@ -22,10 +22,10 @@ import re
 import time
 import sys
 import socket  # for mk_livestatus
+import stat
 
 import pynag.Plugins
 import pynag.Utils
-
 
 _sentinel = object()
 
@@ -1009,7 +1009,6 @@ class config:
         """
         if filename is None:
             filename = self.cfg_file
-
         # For some specific attributes, append should be implied
         if attribute in ('cfg_file', 'cfg_dir', 'broker_module'):
             append = True
@@ -2341,3 +2340,64 @@ class ExtraOptsParser(object):
 
             sections[section_name][key].append(value)
         return sections
+
+
+
+class SshConfig(config):
+    """ Parse object configuration files from remote host via ssh """
+    def __init__(self, host, username, password=None, cfg_file=None):
+        import paramiko
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
+        self.ssh.connect(host, username=username, password=password)
+        self.ftp = self.ssh.open_sftp()
+        pynag.Parsers.config.__init__(self, cfg_file=cfg_file)
+
+    def open(self, filename, *args, **kwargs):
+        return self.ftp.open(filename, *args, **kwargs)
+
+    def isfile(self, path):
+        """ Behaves like os.path.isfile """
+        try:
+            file_stat = self.ftp.stat(path)
+            return stat.S_ISREG(file_stat.st_mode)
+        except IOError:
+            return False
+
+    def isdir(self, path):
+        """ Behaves like os.path.isdir """
+        try:
+            file_stat = self.ftp.stat(path)
+            return stat.S_ISDIR(file_stat.st_mode)
+        except IOError:
+            return False
+
+    def islink(self, path):
+        """ Behaves like os.path.islink """
+        try:
+            file_stat = self.ftp.stat(path)
+            return stat.S_ISLNK(file_stat.st_mode)
+        except IOError:
+            return False
+
+    def readlink(selfself, path):
+        """ Behaves like os.readlink """
+        return self.ftp.readlink(path)
+
+    def stat(self, *args, **kwargs):
+        """ Wrapper around os.stat """
+        return self.ftp.stat(*args, **kwargs)
+
+    def access(self, *args, **kwargs):
+        """ Wrapper around os.access
+        """
+        return os.access(*args, **kwargs)
+
+    def exists(self, path):
+        """ Wrapper around os.path.exists
+        """
+        try:
+            self.ftp.stat(path)
+            return True
+        except IOError:
+            return False
