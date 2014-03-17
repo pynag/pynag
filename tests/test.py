@@ -11,6 +11,15 @@ import pynag.Utils
 tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
 os.chdir(tests_dir)
 
+import tests.test_control
+import tests.test_command
+import tests.test_defaultdict
+import tests.test_model
+import tests.test_other
+import tests.test_parsers
+import tests.test_plugins
+import tests.test_utils
+
 
 def load_tests(loader, tests, pattern):
     """ Discover and load all unit tests in all files named ``*_test.py`` in ``./src/`` """
