@@ -93,7 +93,6 @@ class config:
                 return file_path
         return None
 
-
     def guess_cfg_file(self):
         """ Returns a path to any nagios.cfg found on your system
 
@@ -118,7 +117,7 @@ class config:
         )
 
         for file_path in possible_files:
-            if os.path.isfile(file_path):
+            if self.isfile(file_path):
                 return file_path
         return None
 
@@ -163,7 +162,7 @@ class config:
         If the pid file does not exist, returns None.
         """
         try:
-            return open(self.get_cfg_value('lock_file'), "r").readline().strip()
+            return self.open(self.get_cfg_value('lock_file'), "r").readline().strip()
         except Exception:
             return None
 
@@ -301,7 +300,7 @@ class config:
          is useful.
         """
         try:
-            raw_string = open(filename, 'rb').read()
+            raw_string = self.open(filename, 'rb').read()
             return self.parse_string(raw_string, filename=filename)
         except IOError:
             t, e = sys.exc_info()[:2]
@@ -480,7 +479,7 @@ class config:
         # Caller of this method expects to be returned
         # several lists that describe the lines in our file.
         # The splitting logic starts here.
-        my_file = open(filename)
+        my_file = self.open(filename)
         all_lines = my_file.readlines()
         my_file.close()
 
@@ -574,13 +573,17 @@ class config:
         self.write(filename, str_buffer)
         return True
 
+    def open(self, filename, *args, **kwargs):
+        """ Wrapper around global open() """
+        return open(filename, *args, **kwargs)
+
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def write(self, filename, string):
         """ Wrapper around open(filename).write() """
-        fh = open(filename, 'w')
+        fh = self.open(filename, 'w')
         return_code = fh.write(string)
         fh.flush()
-        os.fsync(fh)
+        #os.fsync(fh)
         fh.close()
         self._is_dirty = True
         return return_code
@@ -673,11 +676,11 @@ class config:
 
         # Create directory if it does not already exist
         dirname = os.path.dirname(filename)
-        if not os.path.isdir(dirname):
+        if not self.isdir(dirname):
             os.makedirs(dirname)
 
         str_buffer = self.print_conf(item)
-        fh = open(filename, 'a')
+        fh = self.open(filename, 'a')
         fh.write(str_buffer)
         fh.close()
         return True
@@ -1084,7 +1087,7 @@ class config:
             return False
         if not object_cache_file:
             return True
-        if not os.path.isfile(object_cache_file):
+        if not self.isfile(object_cache_file):
             return True
         object_cache_timestamp = new_timestamps.get(object_cache_file, 0)
         # Reload not needed if no object_cache file
@@ -1193,16 +1196,41 @@ class config:
             files[i] = None
         # Now lets lets get timestamp of every file
         for k, v in files.items():
-            if not os.path.isfile(k):
+            if not self.isfile(k):
                 continue
-            files[k] = os.stat(k).st_mtime
+            files[k] = self.stat(k).st_mtime
         return files
 
+    def isfile(self, *args, **kwargs):
+        """ Wrapper around os.path.isfile """
+        return os.path.isfile(*args, **kwargs)
+    def isdir(self, *args, **kwargs):
+        """ Wrapper around os.path.isdir """
+        return os.path.isdir(*args, **kwargs)
+    def islink(self, *args, **kwargs):
+        """ Wrapper around os.path.islink """
+        return os.path.islink(*args, **kwargs)
+    def readlink(selfself, *args, **kwargs):
+        """ Wrapper around os.readlink """
+        return os.readlink(*args, **kwargs)
+    def stat(self, *args, **kwargs):
+        """ Wrapper around os.stat """
+        return os.stat(*args, **kwargs)
+
+    def access(self, *args, **kwargs):
+        """ Wrapper around os.access
+        """
+        return os.access(*args, **kwargs)
+
+    def exists(self, *args, **kwargs):
+        """ Wrapper around os.path.exists
+        """
+        return os.path.exists(*args, **kwargs)
     def get_resources(self):
         """Returns a list of every private resources from nagios.cfg"""
         resources = []
         for config_object, config_value in self.maincfg_values:
-            if config_object == 'resource_file' and os.path.isfile(config_value):
+            if config_object == 'resource_file' and self.isfile(config_value):
                 resources += self._load_static_file(config_value)
         return resources
 
@@ -1350,7 +1378,7 @@ class config:
             ## Add cfg_file objects to cfg file list
             if config_object == "cfg_file":
                 config_value = self.abspath(config_value)
-                if os.path.isfile(config_value):
+                if self.isfile(config_value):
                     cfg_files.append(config_value)
 
             ## Parse all files in a cfg directory
@@ -1363,20 +1391,20 @@ class config:
                 while directories:
                     current_directory = directories.pop(0)
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
-                    if not os.path.isdir(current_directory):
+                    if not self.isdir(current_directory):
                         continue
                     for item in os.listdir(current_directory):
                         # Append full path to file
                         item = "%s" % (os.path.join(current_directory, item.strip()))
-                        if os.path.islink(item):
+                        if self.islink(item):
                             item = os.readlink(item)
-                        if os.path.isdir(item):
+                        if self.isdir(item):
                             directories.append(item)
                         if raw_file_list.count(item) < 1:
                             raw_file_list.append(item)
                 for raw_file in raw_file_list:
                     if raw_file.endswith('.cfg'):
-                        if os.path.exists(raw_file) and not os.path.isdir(raw_file):
+                        if self.exists(raw_file) and not self.isdir(raw_file):
                             # Nagios doesnt care if cfg_file exists or not, so we will not throws errors
                             cfg_files.append(raw_file)
 
@@ -1481,7 +1509,7 @@ class mk_livestatus:
 
     def test(self):
         """ Raises ParserError if there are problems communicating with livestatus socket """
-        if not os.path.exists(self.livestatus_socket_path):
+        if not self.exists(self.livestatus_socket_path):
             raise ParserError(
                 "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
@@ -1886,6 +1914,7 @@ class ConfigFileNotFound(ParserError):
 
 class LivestatusNotConfiguredException(ParserError):
     """ This exception is raised if we tried to autodiscover path to livestatus and failed """
+
 
 class LogFiles(object):
     """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
