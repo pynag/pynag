@@ -26,7 +26,7 @@ import test_plugins
 import test_utils
 
 
-def load_tests(loader, tests, pattern):
+def load_tests(loader=None, tests=None, pattern=None):
     """ Discover and load all unit tests in all files named ``*_test.py`` in ``./src/`` """
     suite = unittest.TestSuite()
 
@@ -52,4 +52,7 @@ def setUpDocTests(doctest):
     pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
 if __name__ == '__main__':
-    unittest.main()
+    state = unittest.TextTestRunner().run(load_tests())
+    if state.failures or state.errors:
+        sys.exit(1)
+    sys.exit(0)
