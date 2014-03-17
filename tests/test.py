@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 import os
-import unittest2 as unittest
-import doctest
 import sys
+import unittest2
+import doctest
 
+# Make sure all tests run from a fixed path, this also makes sure
+# That pynag in local directory is imported before any system-wide
+# installs of pynag
 tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
 os.chdir(tests_dir)
 sys.path.insert(0, os.path.realpath("%s/%s" % (tests_dir, os.path.pardir)))
-
 
 import pynag.Model
 import pynag.Parsers
@@ -16,19 +18,9 @@ import pynag.Control
 import pynag.Utils
 
 
-import test_control
-import test_command
-import test_defaultdict
-import test_model
-import test_other
-import test_parsers
-import test_plugins
-import test_utils
-
-
 def load_tests(loader=None, tests=None, pattern=None):
     """ Discover and load all unit tests in all files named ``*_test.py`` in ``./src/`` """
-    suite = unittest.TestSuite()
+    suite = unittest2.TestSuite()
 
     # Add all doctests to our suite
     suite.addTest(doctest.DocTestSuite(pynag.Model, setUp=setUpDocTests))
@@ -53,4 +45,4 @@ def setUpDocTests(doctest):
     pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()
