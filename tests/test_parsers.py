@@ -108,6 +108,7 @@ class Config(unittest.TestCase):
 
         os.remove(filename)
 
+
 class ExtraOptsParser(unittest.TestCase):
     """ Test pynag.Parsers.ExtraOptsParser """
     def testExtraOptsParser(self):
@@ -132,6 +133,7 @@ class ExtraOptsParser(unittest.TestCase):
         # Using same config as above, test the getlist method
         self.assertEqual(['plugins.ini'], e.getlist('filename'))
 
+
 class Livestatus(unittest.TestCase):
     def setUp(self):
         cfg_file = None
@@ -143,6 +145,7 @@ class Livestatus(unittest.TestCase):
         requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
 
+
 class ObjectCache(unittest.TestCase):
     """ Tests for pynag.Parsers.objectcache
     """
@@ -152,6 +155,7 @@ class ObjectCache(unittest.TestCase):
         o = pynag.Parsers.object_cache()
         o.parse()
         self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+
 
 class LogFiles(unittest.TestCase):
     """ Test pynag.Parsers.LogFiles
@@ -193,26 +197,3 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
-
-class SshConfig(Config):
-    def setUp(self):
-        self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
-
-    def testParseMaincfg(self):
-        self.instance.parse_maincfg()
-
-    def testParse(self):
-        self.instance.parse()
-
-        host = self.instance.get_host('localhost')
-        print host['__test']
-        self.instance.item_edit_field(host, '__test', host['__test'] + '+')
-    def testOpenFile(self):
-        self.instance.open('/etc/nagios3/nagios.cfg').read()
-
-    def testPathWrappers(self):
-        """ Test our os.path wrappers
-        """
-        ftp = self.instance.ftp
-        i = ftp.stat('/')
-        self.assertTrue(self.instance.isdir('/'))
