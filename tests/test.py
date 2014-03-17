@@ -31,7 +31,7 @@ def load_tests(loader=None, tests=None, pattern=None):
     suite.addTest(doctest.DocTestSuite(pynag.Utils))
 
     # Load unit tests from all files starting with test_*
-    for all_test_suite in unittest.defaultTestLoader.discover('.', pattern='test_*.py'):
+    for all_test_suite in unittest2.defaultTestLoader.discover('.', pattern='test_*.py'):
         for test_suite in all_test_suite:
             suite.addTests(test_suite)
     return suite
