@@ -21,7 +21,7 @@ class PluginParams(unittest.TestCase):
         sys.stdout = StringIO()
 
     def tearDown(self):
-        sys.argv = self.argv_store
+        sys.argv = [sys.argv[0]]
         sys.stdout = original_stdout
 
     def create_params(self, *args):
@@ -50,7 +50,6 @@ class PluginParams(unittest.TestCase):
 
     def test_default_timeout(self):
         self.np.activate()
-        print self.np.data['timeout']
         self.assertEquals(self.np.data['timeout'], None)
 
     def test_shortname(self):
