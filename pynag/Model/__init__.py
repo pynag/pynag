@@ -28,15 +28,15 @@ Example:
 >>>
 >>> all_services = Service.objects.all
 >>> my_service = all_services[0]
->>> print my_service.host_name
+>>> print my_service.host_name # doctest: +SKIP
 localhost
 >>>
 >>> example_host = Host.objects.filter(host_name="host.example.com")
 >>> canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
 >>>
 >>> for i in canadian_hosts:
->>>    i.alias = "this host is located in Canada"
->>>    i.save()
+...     i.alias = "this host is located in Canada"
+...     i.save() # doctest: +SKIP
 """
 
 import os
@@ -488,33 +488,33 @@ class ObjectFetcher(object):
         Example:
 
         Get all services where host_name is examplehost.example.com
-         >>> Service.objects.filter(host_name='examplehost.example.com')
+         >>> Service.objects.filter(host_name='examplehost.example.com') # doctest: +SKIP
 
         Get service with host_name=examplehost.example.com 
         and service_description='Ping'
          >>> Service.objects.filter(host_name='examplehost.example.com',
-         ...                        service_description='Ping')
+         ...                        service_description='Ping') # doctest: +SKIP
 
         Get all services that are registered but without a host_name
-         >>> Service.objects.filter(host_name=None,register='1')
+         >>> Service.objects.filter(host_name=None,register='1') # doctest: +SKIP
 
         Get all hosts that start with 'exampleh'
-         >>> Host.objects.filter(host_name__startswith='exampleh')
+         >>> Host.objects.filter(host_name__startswith='exampleh') # doctest: +SKIP
 
         Get all hosts that end with 'example.com'
-         >>> Service.objects.filter(host_name__endswith='example.com')
+         >>> Service.objects.filter(host_name__endswith='example.com') # doctest: +SKIP
 
         Get all contactgroups that contain 'dba'
-         >>> Contactgroup.objects.filter(host_name__contains='dba')
+         >>> Contactgroup.objects.filter(host_name__contains='dba') # doctest: +SKIP
 
         Get all hosts that are not in the 'testservers' hostgroup
-         >>> Host.objects.filter(hostgroup_name__notcontains='testservers')
+         >>> Host.objects.filter(hostgroup_name__notcontains='testservers') # doctest: +SKIP
 
         Get all services with non-empty name
-         >>> Service.objects.filter(name__isnot=None)
+         >>> Service.objects.filter(name__isnot=None) # doctest: +SKIP
 
         Get all hosts that have an address:
-         >>> Host.objects.filter(address_exists=True)
+         >>> Host.objects.filter(address_exists=True) # doctest: +SKIP
 
         """
         return pynag.Utils.grep(self.all, **kwargs)
@@ -525,8 +525,8 @@ class ObjectDefinition(object):
     Holds one instance of one particular Object definition
 
     Example:
-        >>> objects = ObjectDefinition.objects.all
-        >>> my_object = ObjectDefinition( dict ) # dict = hash map of configuration attributes
+         >>> objects = ObjectDefinition.objects.all
+         >>> my_object = ObjectDefinition( dict ) # doctest: +SKIP
     """
     object_type = None
     objects = ObjectFetcher(None)
@@ -880,8 +880,8 @@ class ObjectDefinition(object):
         """Move this object definition to a new file. It will be deleted from current file.
 
         This is the same as running:
-         >>> self.copy(filename=filename)
-         >>> self.delete()
+         >>> self.copy(filename=filename) # doctest: +SKIP
+         >>> self.delete() # doctest: +SKIP
 
         :returns: The new object definition
         """
