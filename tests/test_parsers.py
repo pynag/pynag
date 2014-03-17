@@ -14,53 +14,30 @@ from tests import tests_dir
 
 class Config(unittest.TestCase):
     """ Test pynag.Parsers.config """
-    def testConfig(self):
-        """Test pynag.Parsers.config()"""
-        c = pynag.Parsers.config()
-        c.parse()
-        self.assertTrue(len(c.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
+    def setUp(self):
+        self.tempdir = t = tempfile.mkdtemp('nagios-unittests') + "/"
+        shutil.copytree(tests_dir + '/dataset01/', t + "/dataset01")
+        self.cfg_file = t + '/dataset01/nagios/nagios.cfg'
+        self.config = pynag.Parsers.config(cfg_file=self.cfg_file)
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
-    def testParseMaincfg(self):
-        """ Test parsing of different broker_module declarations """
-        path = "/var/lib/nagios/rw/livestatus"  # Path to the livestatus socket
+        # Create one empty file to write objects to
+        objects_file = os.path.join(t, 'dataset01/nagios/', "objects.cfg")
+        self.objects_file = objects_file
+        open(objects_file, 'w').write('')
+        self.config._edit_static_file(attribute='cfg_file', new_value=objects_file, append=True)
 
-        # Test plain setup with no weird arguments
-        fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
-        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
-        self.assertEqual(path, status.livestatus_socket_path)
-        os.close(fd)
+    def tearDown(self):
+        shutil.rmtree(self.tempdir, ignore_errors=True)
 
-        # Test what happens if arguments are provided
-        fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
-        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
-        self.assertEqual(path, status.livestatus_socket_path)
-        os.close(fd)
+    def test_parse(self):
+        """ Smoketest config.parse() """
+        self.config.parse()
+        self.assertTrue(len(self.config.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
 
-        # Test what happens if arguments are provided before and after file socket path
-        fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
-        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
-        self.assertEqual(path, status.livestatus_socket_path)
-        os.close(fd)
-
-        # Test what happens if livestatus socket path cannot be found
-        try:
-            fd, filename = tempfile.mkstemp()
-            os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20')
-            status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
-            self.assertEqual(path, status.livestatus_socket_path)
-            os.close(fd)
-            self.assertEqual(True, "Above could should have raised exception")
-        except pynag.Parsers.ParserError:
-            pass
-
-    def testConfig_backslash(self):
+    def test_parse_string_backslashes(self):
         """ Test parsing nagios object files with lines that end with backslash
         """
-        c = pynag.Parsers.config()
+        c = self.config
         str1 = "define service {\nhost_name testhost\n}\n"
         str2 = "define service {\nhost_na\\\nme testhost\n}\n"
 
@@ -73,7 +50,7 @@ class Config(unittest.TestCase):
 
         self.assertEqual(parse1, parse2)
 
-    def testConfig_edit_static_file(self):
+    def test_edit_static_file(self):
         """ Test pynag.Parsers.config._edit_static_file() """
         fd, filename = tempfile.mkstemp()
         c = pynag.Parsers.config(cfg_file=filename)
@@ -108,6 +85,25 @@ class Config(unittest.TestCase):
 
         os.remove(filename)
 
+    def test_item_add(self):
+        filename = self.objects_file
+        object_type = 'hostgroup'
+        object_name = object_type + "-" + filename
+        new_item = self.config.get_new_item(object_type, filename=filename)
+        new_item['hostgroup_name'] = object_name
+        self.config.item_add(new_item, filename=filename)
+        self.config.parse()
+        item_after_parse = self.config.get_hostgroup(object_name)
+        del item_after_parse['meta']
+        del new_item['meta']
+        self.assertEqual(new_item, item_after_parse)
+
+    def test_parse_string(self):
+        """ test config.parse_string()
+        """
+        items = self.config.parse_string(minimal_config)
+        self.assertEqual(items[11]['command_line'], '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$')
+        self.assertEqual(items[11]['command_name'], 'check_local_mrtgtraf')
 
 class ExtraOptsParser(unittest.TestCase):
     """ Test pynag.Parsers.ExtraOptsParser """
@@ -145,6 +141,42 @@ class Livestatus(unittest.TestCase):
         requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
 
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testParseMaincfg(self):
+        """ Test parsing of different broker_module declarations """
+        path = "/var/lib/nagios/rw/livestatus"  # Path to the livestatus socket
+
+        # Test plain setup with no weird arguments
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if arguments are provided
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if arguments are provided before and after file socket path
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
+        status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+        self.assertEqual(path, status.livestatus_socket_path)
+        os.close(fd)
+
+        # Test what happens if livestatus socket path cannot be found
+        try:
+            fd, filename = tempfile.mkstemp()
+            os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20')
+            status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
+            self.assertEqual(path, status.livestatus_socket_path)
+            os.close(fd)
+            self.assertEqual(True, "Above could should have raised exception")
+        except pynag.Parsers.ParserError:
+            pass
 
 class ObjectCache(unittest.TestCase):
     """ Tests for pynag.Parsers.objectcache
@@ -197,3 +229,351 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
+
+
+
+minimal_config = r"""
+define timeperiod {
+  alias                          24 Hours A Day, 7 Days A Week
+  friday          00:00-24:00
+  monday          00:00-24:00
+  saturday        00:00-24:00
+  sunday          00:00-24:00
+  thursday        00:00-24:00
+  timeperiod_name                24x7
+  tuesday         00:00-24:00
+  wednesday       00:00-24:00
+}
+
+define timeperiod {
+  alias                          24x7 Sans Holidays
+  friday          00:00-24:00
+  monday          00:00-24:00
+  saturday        00:00-24:00
+  sunday          00:00-24:00
+  thursday        00:00-24:00
+  timeperiod_name                24x7_sans_holidays
+  tuesday         00:00-24:00
+  use		us-holidays		; Get holiday exceptions from other timeperiod
+  wednesday       00:00-24:00
+}
+
+define contactgroup {
+  alias                          Nagios Administrators
+  contactgroup_name              admins
+  members                        nagiosadmin
+}
+
+define command {
+  command_line                   $USER1$/check_ping -H $HOSTADDRESS$ -w 3000.0,80% -c 5000.0,100% -p 5
+  command_name                   check-host-alive
+}
+
+define command {
+  command_line                   $USER1$/check_dhcp $ARG1$
+  command_name                   check_dhcp
+}
+
+define command {
+  command_line                   $USER1$/check_ftp -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_ftp
+}
+
+define command {
+  command_line                   $USER1$/check_hpjd -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_hpjd
+}
+
+define command {
+  command_line                   $USER1$/check_http -I $HOSTADDRESS$ $ARG1$
+  command_name                   check_http
+}
+
+define command {
+  command_line                   $USER1$/check_imap -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_imap
+}
+
+define command {
+  command_line                   $USER1$/check_disk -w $ARG1$ -c $ARG2$ -p $ARG3$
+  command_name                   check_local_disk
+}
+
+define command {
+  command_line                   $USER1$/check_load -w $ARG1$ -c $ARG2$
+  command_name                   check_local_load
+}
+
+define command {
+  command_line                   $USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$
+  command_name                   check_local_mrtgtraf
+}
+
+define command {
+  command_line                   $USER1$/check_procs -w $ARG1$ -c $ARG2$ -s $ARG3$
+  command_name                   check_local_procs
+}
+
+define command {
+  command_line                   $USER1$/check_swap -w $ARG1$ -c $ARG2$
+  command_name                   check_local_swap
+}
+
+define command {
+  command_line                   $USER1$/check_users -w $ARG1$ -c $ARG2$
+  command_name                   check_local_users
+}
+
+define command {
+  command_line                   $USER1$/check_nt -H $HOSTADDRESS$ -p 12489 -v $ARG1$ $ARG2$
+  command_name                   check_nt
+}
+
+define command {
+  command_line                   $USER1$/check_ping -H $HOSTADDRESS$ -w $ARG1$ -c $ARG2$ -p 5
+  command_name                   check_ping
+}
+
+define command {
+  command_line                   $USER1$/check_pop -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_pop
+}
+
+define command {
+  command_line                   $USER1$/check_smtp -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_smtp
+}
+
+define command {
+  command_line                   $USER1$/check_snmp -H $HOSTADDRESS$ $ARG1$
+  command_name                   check_snmp
+}
+
+define command {
+  command_line                   $USER1$/check_ssh $ARG1$ $HOSTADDRESS$
+  command_name                   check_ssh
+}
+
+define command {
+  command_line                   $USER1$/check_tcp -H $HOSTADDRESS$ -p $ARG1$ $ARG2$
+  command_name                   check_tcp
+}
+
+define command {
+  command_line                   $USER1$/check_udp -H $HOSTADDRESS$ -p $ARG1$ $ARG2$
+  command_name                   check_udp
+}
+
+define contact {
+  name                           generic-contact
+  host_notification_commands     notify-host-by-email
+  host_notification_options      d,u,r,f,s
+  host_notification_period       24x7
+  register                       0
+  service_notification_commands  notify-service-by-email
+  service_notification_options   w,u,c,r,f,s
+  service_notification_period    24x7
+}
+
+define host {
+  name                           generic-host
+  event_handler_enabled          1
+  failure_prediction_enabled     1
+  flap_detection_enabled         1
+  notification_period            24x7
+  notifications_enabled          1
+  process_perf_data              1
+  register                       0
+  retain_nonstatus_information   1
+  retain_status_information      1
+}
+
+define host {
+  name                           generic-printer
+  use                            generic-host
+  check_command                  check-host-alive
+  check_interval                 5
+  check_period                   24x7
+  contact_groups                 admins
+  max_check_attempts             10
+  notification_interval          30
+  notification_options           d,r
+  notification_period            workhours
+  register                       0
+  retry_interval                 1
+  statusmap_image                printer.png
+}
+
+define host {
+  name                           generic-router
+  use                            generic-switch
+  register                       0
+  statusmap_image                router.png
+}
+
+define service {
+  name                           generic-service
+  action_url                     /pnp4nagios/graph?host=$HOSTNAME$&srv=$SERVICEDESC$
+  active_checks_enabled          1
+  check_freshness                0
+  check_period                   24x7
+  event_handler_enabled          1
+  failure_prediction_enabled     1
+  flap_detection_enabled         1
+  icon_image                     unknown.gif
+  is_volatile                    0
+  max_check_attempts             3
+  normal_check_interval          10
+  notes_url                      /adagios/objectbrowser/edit_object/object_type=service/shortname=$HOSTNAME$/$SERVICEDESC$
+  notification_interval          60
+  notification_options           w,u,c,r
+  notification_period            24x7
+  notifications_enabled          1
+  obsess_over_service            1
+  parallelize_check              1
+  passive_checks_enabled         1
+  process_perf_data              1
+  register                       0
+  retain_nonstatus_information   1
+  retain_status_information      1
+  retry_check_interval           2
+}
+
+define host {
+  name                           generic-switch
+  use                            generic-host
+  check_command                  check-host-alive
+  check_interval                 5
+  check_period                   24x7
+  contact_groups                 admins
+  max_check_attempts             10
+  notification_interval          30
+  notification_options           d,r
+  notification_period            24x7
+  register                       0
+  retry_interval                 1
+  statusmap_image                switch.png
+}
+
+define host {
+  name                           linux-server
+  use                            generic-host
+  check_command                  check-host-alive
+  check_interval                 5
+  check_period                   24x7
+  contact_groups                 admins
+  max_check_attempts             10
+  notification_interval          120
+  notification_options           d,u,r
+  notification_period            workhours
+  register                       0
+  retry_interval                 1
+}
+
+define service {
+  name                           local-service
+  use                            generic-service
+  max_check_attempts             4
+  normal_check_interval          5
+  register                       0
+  retry_check_interval           1
+}
+
+define contact {
+  use                            generic-contact
+  alias                          Nagios Admin
+  contact_name                   nagiosadmin
+  email                          nagios@localhost
+}
+
+define timeperiod {
+  alias                          No Time Is A Good Time
+  timeperiod_name                none
+}
+
+define command {
+  command_line                   /usr/bin/printf "%b" "***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\nHost: $HOSTNAME$\nState: $HOSTSTATE$\nAddress: $HOSTADDRESS$\nInfo: $HOSTOUTPUT$\n\nDate/Time: $LONGDATETIME$\n" | /bin/mail -s "** $NOTIFICATIONTYPE$ Host Alert: $HOSTNAME$ is $HOSTSTATE$ **" $CONTACTEMAIL$
+  command_name                   notify-host-by-email
+}
+
+define command {
+  command_line                   /usr/bin/printf "%b" "***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\n\nService: $SERVICEDESC$\nHost: $HOSTALIAS$\nAddress: $HOSTADDRESS$\nState: $SERVICESTATE$\n\nDate/Time: $LONGDATETIME$\n\nAdditional Info:\n\n$SERVICEOUTPUT$\n" | /bin/mail -s "** $NOTIFICATIONTYPE$ Service Alert: $HOSTALIAS$/$SERVICEDESC$ is $SERVICESTATE$ **" $CONTACTEMAIL$
+  command_name                   notify-service-by-email
+}
+
+define command {
+  command_line                   /usr/bin/printf "%b" "$LASTHOSTCHECK$\t$HOSTNAME$\t$HOSTSTATE$\t$HOSTATTEMPT$\t$HOSTSTATETYPE$\t$HOSTEXECUTIONTIME$\t$HOSTOUTPUT$\t$HOSTPERFDATA$\n" >> /var/log/nagios/host-perfdata.out
+  command_name                   process-host-perfdata
+}
+
+define command {
+  command_line                   /usr/bin/printf "%b" "$LASTSERVICECHECK$\t$HOSTNAME$\t$SERVICEDESC$\t$SERVICESTATE$\t$SERVICEATTEMPT$\t$SERVICESTATETYPE$\t$SERVICEEXECUTIONTIME$\t$SERVICELATENCY$\t$SERVICEOUTPUT$\t$SERVICEPERFDATA$\n" >> /var/log/nagios/service-perfdata.out
+  command_name                   process-service-perfdata
+}
+
+define timeperiod {
+  alias                          U.S. Holidays
+  december 25             00:00-00:00     ; Christmas
+  january 1               00:00-00:00     ; New Years
+  july 4                  00:00-00:00     ; Independence Day
+  monday -1 may           00:00-00:00     ; Memorial Day (last Monday in May)
+  monday 1 september      00:00-00:00     ; Labor Day (first Monday in September)
+  name			us-holidays
+  thursday 4 november     00:00-00:00     ; Thanksgiving (4th Thursday in November)
+  timeperiod_name                us-holidays
+}
+
+define host {
+  name                           windows-server
+  use                            generic-host
+  check_command                  check-host-alive
+  check_interval                 5
+  check_period                   24x7
+  contact_groups                 admins
+  hostgroups
+  max_check_attempts             10
+  notification_interval          30
+  notification_options           d,r
+  notification_period            24x7
+  register                       0
+  retry_interval                 1
+}
+
+define hostgroup {
+  alias                          Windows Servers
+  hostgroup_name                 windows-servers
+}
+
+define timeperiod {
+  alias                          Normal Work Hours
+  friday		09:00-17:00
+  monday		09:00-17:00
+  thursday	09:00-17:00
+  timeperiod_name                workhours
+  tuesday		09:00-17:00
+  wednesday	09:00-17:00
+}
+
+define command {
+	command_name	check_dummy
+	command_line	$USER1$/check_dummy!$ARG1$!$ARG2$
+}
+
+
+define host {
+	host_name		ok_host
+	use			generic-host
+	address			ok_host
+	max_check_attempts	1
+	check_command		check_dummy!0!Everything seems to be okay
+}
+
+
+define service {
+	host_name		ok_host
+	use			generic-service
+	service_description	ok service 1
+	check_command		check_dummy!0!Everything seems to be okay
+}
+
+"""
