@@ -173,9 +173,12 @@ class testParsers(unittest.TestCase):
         self.assertEqual(['plugins.ini'], e.getlist('filename'))
 
 class Livestatus(unittest.TestCase):
+    def setUp(self):
+        cfg_file = None
+        self.livestatus = pynag.Parsers.mk_livestatus(nagios_cfg_file=cfg_file)
+
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testLivestatus(self):
-        """Test mk_livestatus integration"""
-        livestatus = pynag.Parsers.mk_livestatus()
-        requests = livestatus.query('GET status', 'Columns: requests')
+        """ Smoketest livestatus integration """
+        requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
