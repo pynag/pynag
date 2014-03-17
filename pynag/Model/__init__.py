@@ -59,11 +59,14 @@ cfg_file = None  # '/etc/nagios/nagios.cfg'
 # Were new objects are written by default
 pynag_directory = None
 
+# This section holds values for possible multi-layered parsing
+multilayered_parsing = False
+layers = None
+adagios_layer = None
+
 # This is the config parser that we use internally, if cfg_file is changed, then config
 # will be recreated whenever a parse is called.
 config = Parsers.config(cfg_file=cfg_file)
-
-
 
 #: eventhandlers -- A list of Model.EventHandlers object.
 # Event handler is responsible for passing notification whenever something

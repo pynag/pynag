@@ -22,6 +22,7 @@ import re
 import time
 import sys
 import socket  # for mk_livestatus
+import copy
 
 import pynag.Plugins
 import pynag.Utils
@@ -1472,6 +1473,875 @@ class config:
     def __getitem__(self, key):
         return self.data[key]
 
+class LayeredConfigCompiler(config):
+    """
+    This class extends the Parser.config to enable multi-layered
+    configuration compatibility. It reads all the layers and redefines
+    the objects accordingly. The configuration is done in the adagios.conf file.
+
+    This class is used to compile the actual config read by shinken or nagios and adagios.
+    """
+
+    def __init__(self, cfg_file=None, layers=None, destination_directory=None, strict=False):
+        """
+        Arguments:
+          cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
+          layers -- Full path to layers.cfg configuration files
+                               Configuration layers to apply one on top of the other.
+                               First can be redefined by Second and by Third...
+          destination_directory -- Output location for the compiled configuration files
+          strict   -- if True, use stricter parsing which is more prone to raising exceptions
+        """
+
+        self.cfg_file = cfg_file  # Main configuration file
+        self.additional_layers = layers  # Ordered List of additional layers
+        self.destination_directory = destination_directory  # Output folder
+        self.strict = strict  # Use strict parsing or not
+
+        # If nagios.cfg is not set, lets do some minor autodiscover.
+        if self.cfg_file is None:
+            self.cfg_file = self.guess_cfg_file()
+
+        self.data = {}
+        self.maincfg_values = []
+        self.layercfg_values = []
+        self._is_dirty = False
+
+    def _load_file(self, filename):
+        """ Parses filename with self.parse_filename and append results in self._pre_object_list
+
+            This function is mostly here for backwards compatibility
+
+            Arguments:
+                filename -- the file to be parsed. This is supposed to a nagios object definition file
+
+            Returns:
+                None
+        """
+
+        for i in self.parse_file(filename):
+            # Here a conflict means ~redefinition. If an object already has its "unique key" defined,
+            # it will be considered a conflict and will acutally tweak the already defined object.
+            conflict = self._check_for_conflict(i)
+            if conflict:
+                self.pre_object_list.remove(conflict)  # Remove the previous version of the definition object
+                conflict = self._resolve_conflict(conflict, i)  # Actually tweak the item accordingly
+                self.pre_object_list.append(conflict)  # This is the default behavior
+                self._output_to_normal_dir(conflict)  # Fixes the object's output to the destination_directory
+            else:
+                self._output_to_normal_dir(i)
+                self.pre_object_list.append(i)
+
+    def _check_for_conflict(self, obj):
+        """
+        Here we compare an object to already defined objects to see if there is a "unique key" collision.
+        If there is, a conflict is returned.
+
+        The considered "unique keys" are as follows:
+        *host
+            host_name
+        *service
+            host_name
+            service_description
+        *timeperiod
+            timeperiod_name
+        *contact
+            contact_name
+        *command
+            command_name
+        *servicegroup
+            servicegroup_name
+        *hostgroup
+            hostgroup_name
+        """
+        obj_type = obj['meta'].get('object_type', None)
+        for pre_obj in self.pre_object_list:
+            if pre_obj['meta'].get('object_type', None) == obj_type:
+
+                if obj_type == 'host':
+
+                    prev_host_name = pre_obj.get('host_name', None)
+                    new_host_name = obj.get('host_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_host_name == new_host_name:
+                        if prev_host_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'service':
+
+                    prev_host_name = pre_obj.get('host_name', None)
+                    new_host_name = obj.get('host_name', None)
+                    prev_service_desc = pre_obj.get('service_description', None)
+                    new_service_desc = obj.get('service_description', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if (prev_host_name == new_host_name and
+                            prev_service_desc == new_service_desc):
+                        if prev_host_name != None and prev_service_desc != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'timeperiod':
+
+                    prev_timeperiod_name = pre_obj.get('timeperiod_name', None)
+                    new_timeperiod_name = obj.get('timeperiod_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_timeperiod_name == new_timeperiod_name:
+                        if prev_timeperiod_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'contact':
+
+                    prev_contact_name = pre_obj.get('contact_name', None)
+                    new_contact_name = obj.get('contact_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_contact_name == new_contact_name:
+                        if prev_contact_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'command':
+
+                    prev_command_name = pre_obj.get('command_name', None)
+                    new_command_name = obj.get('command_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_command_name == new_command_name:
+                        if prev_command_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'servicegroup':
+
+                    prev_servicegroup_name = pre_obj.get('servicegroup_name', None)
+                    new_servicegroup_name = obj.get('servicegroup_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_servicegroup_name == new_servicegroup_name:
+                        if prev_servicegroup_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+                if obj_type == 'hostgroup':
+
+                    prev_hostgroup_name = pre_obj.get('hostgroup_name', None)
+                    new_hostgroup_name = obj.get('hostgroup_name', None)
+                    prev_name = pre_obj.get('name', None)
+                    new_name = obj.get('name', None)
+
+                    if prev_hostgroup_name == new_hostgroup_name:
+                        if prev_hostgroup_name != None:
+                            return pre_obj
+                    if prev_name == new_name:
+                        if prev_name != None:
+                            return pre_obj
+
+        return None
+
+    def _resolve_conflict(self, previous, tweak):
+        """ Updates the values in the previous dict with the ones defined in the tweak dict """
+
+        return dict(previous.items() + tweak.items())
+
+    def _output_to_normal_dir(self, item):
+        """
+        This modifies the object to update the filename to the output layer.
+        Kind of looks a bit messy but should do something like this:
+        before -- /etc/shinken/layers/nmap/hosts/localhost.cfg
+        after --  /etc/shinken/hosts/localhost.cfg
+        """
+
+        layercfg_file = ""
+
+        for layercfg in self.additional_layers:
+            if item['meta']['filename'].find(os.path.dirname(layercfg)) > -1:
+                layercfg_file = layercfg
+
+        new_dir = os.path.dirname(self.cfg_file)
+        new_filename = os.path.join(new_dir, os.path.basename(layercfg_file))
+        if item['meta']['object_type'] == 'host':
+            new_filename = os.path.join(self.destination_directory, 'hosts',
+                    os.path.basename(item['meta']['filename']))
+        else:
+            new_filename = os.path.join(self.destination_directory,
+                    os.path.basename(item['meta']['filename']))
+
+        item['meta']['filename'] = new_filename
+
+    def dump_all_config_to_output(self):
+
+        files_to_rm = [i['meta']['filename'] for i in self.pre_object_list]
+        files_to_rm = list(set(files_to_rm))
+
+        for f_rm in files_to_rm:
+            try:
+                os.remove(f_rm)
+            except OSError as e:
+                # I think it's fine to pass here. If someone thinks it's better not... don't hesitate
+                pass
+
+        for item in self.pre_object_list:
+            self.item_add(item, item['meta']['filename'])
+
+    def get_cfg_files(self):
+        """
+        Return a list of all cfg files used in this configuration
+
+        Filenames are normalised so that if nagios.cfg specifies relative filenames
+        we will convert it to fully qualified filename before returning.
+
+        Example:
+        print get_cfg_files()
+        ['/etc/nagios/hosts/host1.cfg','/etc/nagios/hosts/host2.cfg',...]
+
+        PLEASE NOTE: The default behavior is to grab all the cfg_file and cfg_dir calls in
+        shinken/nagios.cfg. This is not the case here. It walks and grabs all *.cfg files in
+        all the layers. You will therefore not have to manually map every config file in each
+        layer (easier if they are generated)
+        """
+        cfg_files = []
+        for direc in self.additional_layers:
+            for base, subfolders, files in os.walk(direc):
+                for fiter in files:
+                    if fiter.endswith('.cfg'):
+                        cfg_files.append(os.path.join(base, fiter))
+
+        return cfg_files
+
+    def layer_abspath(self, path, layercfg_file):
+        """ Return the absolute path of a given relative path.
+
+         The current working directory is assumed to be the dirname of nagios.cfg
+
+         Example:
+         >>> c = config(cfg_file="/etc/nagios/nagios.cfg")
+         >>> c.abspath('nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+         >>> c.abspath('/etc/nagios/nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+        """
+        if not isinstance(path, str):
+            return ValueError("Path must be a string got %s instead" % type(path))
+        if path.startswith('/'):
+            return path
+        nagiosdir = os.path.dirname(layercfg_file)
+        normpath = os.path.abspath(os.path.join(nagiosdir, path))
+        return normpath
+
+    def abspath(self, path):
+        """ Return the absolute path of a given relative path.
+
+         The current working directory is assumed to be the dirname of nagios.cfg
+
+         Example:
+         >>> c = config(cfg_file="/etc/nagios/nagios.cfg")
+         >>> c.abspath('nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+         >>> c.abspath('/etc/nagios/nagios.cfg')
+         '/etc/nagios/nagios.cfg'
+        """
+        if not isinstance(path, str):
+            return ValueError("Path must be a string got %s instead" % type(path))
+        if path.startswith('/'):
+            return path
+        nagiosdir = os.path.dirname(self.cfg_file)
+        normpath = os.path.abspath(os.path.join(nagiosdir, path))
+        return normpath
+
+    @pynag.Utils.synchronized(pynag.Utils.rlock)
+    def parse(self):
+        """ Parse all objects in your nagios configuration
+
+        This functions starts by loading up your nagios.cfg ( parse_maincfg() ) then moving on to
+        your object configuration files (as defined via cfg_file and cfg_dir) and and your resource_file
+        as well
+
+        Returns:
+          None
+
+        Raises:
+          IOError if unable to read any file due to permission problems
+        """
+
+        # reset
+        self.reset()
+
+        self.parse_maincfg()
+
+        self.cfg_files = self.get_cfg_files()
+
+        # When parsing config, we will softly fail if permission denied
+        # comes on resource files. If later someone tries to get them via
+        # get_resource, we will fail hard
+        try:
+            self._resource_values = self.get_resources()
+        except IOError, e:
+            self.errors.append(str(e))
+
+        self.timestamps = self.get_timestamps()
+
+        # This loads everything into
+        for cfg_file in self.cfg_files:
+            self._load_file(cfg_file)
+
+        # The will generate the config files used by shinken/nagios/adagios
+        self.dump_all_config_to_output()
+
+        self._post_parse()
+
+        self._is_dirty = False
+
+    def _locate_item(self, item):
+        """
+        This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
+        file which is configured in, and locates exactly the lines which contain that definition.
+
+        Returns tuple:
+        (everything_before, object_definition, everything_after, filename)
+        everything_before (list of lines) - Every line in filename before object was defined
+        everything_after (list of lines) - Every line in "filename" after object was defined
+        object_definition (list of lines) - Every line used to define our item in "filename"
+        filename (string) - file in which the object was written to
+        Raises:
+        ValueError if object was not found in "filename"
+        """
+        if "filename" in item['meta']:
+            filename = item['meta']['filename']
+        else:
+            raise ValueError("item does not have a filename")
+
+        # Look for our item, store it as my_item
+        for i in self.parse_file(filename):
+            if self.compareObjects(item, i):
+                my_item = i
+                break
+        else:
+            # raise ValueError("We could not find object in %s\n%s" % (filename, item))
+            item['meta']['line_start'] = -1
+            item['meta']['line_stop'] = -1
+            my_item = item
+
+        # Caller of this method expects to be returned
+        # several lists that describe the lines in our file.
+        # The splitting logic starts here.
+        if not os.access(filename, os.F_OK):
+            try:
+                os.utime(filename, None)
+            except:
+                open(filename, 'a').close()
+        my_file = open(filename)
+        all_lines = my_file.readlines()
+        my_file.close()
+
+        start = my_item['meta']['line_start'] - 1
+        end = my_item['meta']['line_end']
+        everything_before = all_lines[:start]
+        object_definition = all_lines[start:end]
+        everything_after = all_lines[end:]
+        return everything_before, object_definition, everything_after, filename
+
+    def item_edit_field(self, item, field_name, new_value):
+        """ Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+
+        Example usage:
+            edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+        IOError if save fails
+        """
+        return self._modify_object(item, field_name=field_name, new_value=new_value)
+
+
+class LayeredConfig(config):
+    """
+    This class extends config. It reads the shinken configuration and behaves like the config class.
+    The only real difference is that this class forks modifications and writes minimal object definitions
+    to the Adagios layer. This way, when the layers are re-parsed, Adagios' modifications are kept.
+    """
+
+    def __init__(self, cfg_file=None, adagios_layer=None, strict=False):
+        """
+
+        Arguments:
+          cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
+          adagios_layer -- Full path to layers.cfg configuration files
+                               Configuration layers to apply one on top of the other.
+                               First can be redefined by Second and by Third...
+          strict   -- if True, use stricter parsing which is more prone to raising exceptions
+        """
+
+        self.cfg_file = cfg_file  # Main configuration file
+        self.adagios_layer = adagios_layer  # Layer to output adagios modifications (minimal obj defs)
+        self.strict = strict  # Use strict parsing or not
+
+        # If nagios.cfg is not set, lets do some minor autodiscover.
+        if self.cfg_file is None:
+            self.cfg_file = self.guess_cfg_file()
+
+        self.data = {}
+        self.maincfg_values = []
+        self.layercfg_values = []
+        self._is_dirty = False
+
+    def _soft_locate_item(self, item):
+        """
+        This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
+        file which is configured in, and locates exactly the lines which contain that definition.
+
+        PLEASE NOTE: This method has been altered from its original behavior (config._locate_item())
+        It now uses _soft_compare_objects instead of compare objects. This allows redefinition of an object
+        in its original relative path in the adagios_layer.
+
+        Returns tuple:
+            (everything_before, object_definition, everything_after, filename)
+            everything_before (list of lines) - Every line in filename before object was defined
+            everything_after (list of lines) - Every line in "filename" after object was defined
+            object_definition (list of lines) - Every line used to define our item in "filename"
+            filename (string) - file in which the object was written to
+        Raises:
+            ValueError if object was not found in "filename"
+        """
+        if "filename" in item['meta']:
+            filename = item['meta']['filename']
+        else:
+            raise ValueError("item does not have a filename")
+
+        # Look for our item, store it as my_item
+        for i in self.parse_file(filename):
+            if self.soft_compare_objects(item, i):
+                my_item = i
+                break
+        else:
+            if os.access(filename, os.F_OK):
+                #object not in file
+                my_file = open(filename)
+                everything_before = my_file.readlines()
+                everything_after = ''
+                object_definition = None
+                return False, everything_before, object_definition, everything_after, filename
+            else:
+                raise ValueError("We could not find file %s" % (filename))
+
+        # Caller of this method expects to be returned
+        # several lists that describe the lines in our file.
+        # The splitting logic starts here.
+        my_file = open(filename)
+        all_lines = my_file.readlines()
+        my_file.close()
+
+        start = my_item['meta']['line_start'] - 1
+        end = my_item['meta']['line_end']
+        everything_before = all_lines[:start]
+        object_definition = all_lines[start:end]
+        everything_after = all_lines[end:]
+        return True, everything_before, object_definition, everything_after, filename
+
+    def soft_compare_objects(self, item1, item2):
+        """ Compares two items. Returns true if they are equal
+        PLEASE NOTE: This method has been modified from config.compareObjects()
+        It now returns true if we are addressing the same object (by "unique key")
+
+        The unique keys used are the following:
+        *host
+            host_name
+        *service
+            host_name
+            service_description
+        *timeperiod
+            timeperiod_name
+        *contact
+            contact_name
+        *command
+            command_name
+        *servicegroup
+            servicegroup_name
+        *hostgroup
+            hostgroup_name
+        """
+
+        result = True
+        if item1.get('register', '1') != item2.get('register', '1'):
+            result = False
+        elif item1.get('register', '1') == '1':
+            if item1['meta']['object_type'] != item2['meta']['object_type']:
+                return False
+            else:
+                if item1.get('name', None) != item2.get('name', None):
+                    result = False
+
+        else:
+            if item1['meta']['object_type'] != item2['meta']['object_type']:
+                result = False
+            else:
+                object_type = item1['meta']['object_type']
+                if object_type == 'host':
+                    if item1.get('host_name', None) != item2.get('host_name', None):
+                        result = False
+
+                elif object_type == 'hostgroup':
+                    if item1.get('hostgroup_name', None) != item2.get('hostgroup_name', None):
+                        result = False
+
+                elif object_type == 'service':
+                    if item1.get('host_name', None) != item2.get('host_name', None):
+                        result = False
+                    elif item1.get('service_description', None) != item2.get('service_description', None):
+                        result = False
+
+                elif object_type == 'servicegroup':
+                    if item1.get('servicegroup_name', None) != item2.get('servicegroup_name', None):
+                        result = False
+
+                elif object_type == 'contact':
+                    if item1.get('contact_name', None) != item2.get('contact_name', None):
+                        result = False
+
+                elif object_type == 'contactgroup':
+                    if item1.get('contactgroup_name', None) != item2.get('contactgroup_name', None):
+                        result = False
+
+                elif object_type == 'command':
+                    if item1.get('command_name', None) != item2.get('command_name', None):
+                        result = False
+
+                elif object_type == 'timeperiod':
+                    if item1.get('timeperiod_name', None) != item2.get('timeperiod_name', None):
+                        result = False
+        return result
+
+    def _change_filename_to_adagios_layer(self, filename):
+        """ This generates the appropriate filename to save the item in the adagios layer. """
+
+        original_directory = os.path.dirname(filename)
+        original_base_directory = os.path.join(os.path.dirname(self.cfg_file), 'adagios')
+        original_name = os.path.basename(filename)
+        output_base_directory = self.adagios_layer
+
+        output_directory = original_directory.replace(
+                original_base_directory,
+                output_base_directory
+        )
+
+        new_filename = os.path.join(output_directory, original_name)
+
+        return new_filename
+
+    def _create_minimal_item(self, src_item):
+        """
+        This creates an item with only the item's unique key and its redefined attributes.
+        """
+
+        new_item = {}
+        new_item['meta'] = {}
+        new_item['meta']['filename'] = src_item['meta']['filename']
+        new_item['meta']['object_type'] = src_item['meta']['object_type']
+        new_item['meta']['template_fields'] = []
+        if src_item.get('register', '1') == 0:
+            new_item['register'] = src_item.get('register', '1')
+            new_item['name'] = src_item.get('name', 'New Template')
+
+        elif src_item['meta']['object_type'] == 'host':
+            new_item['host_name'] = src_item['host_name']
+
+        elif src_item['meta']['object_type'] == 'hostgroup':
+            new_item['hostgroup_name'] = src_item['hostgroup_name']
+
+        elif src_item['meta']['object_type'] == 'service':
+            new_item['service_description'] = src_item['service_description']
+            new_item['host_name'] = src_item['host_name']
+
+        elif src_item['meta']['object_type'] == 'servicegroup':
+            new_item['servicegroup_name'] = src_item['servicegroup_name']
+
+        elif src_item['meta']['object_type'] == 'contact':
+            new_item['contact_name'] = src_item['contact_name']
+
+        elif src_item['meta']['object_type'] == 'contactgroup':
+            new_item['contactgroup_name'] = src_item['contactgroup_name']
+
+        elif src_item['meta']['object_type'] == 'command':
+            new_item['command_name'] = src_item['command_name']
+
+        elif src_item['meta']['object_type'] == 'timeperiod':
+            new_item['timeperiod_name'] = src_item['timeperiod_name']
+
+        return new_item
+
+    def _modify_object_to_layer(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
+                       make_comments=False):
+        """
+        Helper function for object_* functions. Locates "item" and changes the line which contains field_name.
+        If new_value and new_field_name are both None, the attribute is removed.
+
+        Arguments:
+            item(dict) -- The item to be modified
+            field_name(str) -- The field_name to modify (if any)
+            new_field_name(str) -- If set, field_name will be renamed
+            new_value(str) -- If set the value of field_name will be changed
+            new_item(str) -- If set, whole object will be replaced with this string
+            make_comments -- If set, put pynag-branded comments where changes have been made
+        Returns:
+            True on success
+        Raises:
+            ValueError if object or field_name is not found
+            IOError is save is unsuccessful.
+        """
+
+        if item is None:
+            return
+        if field_name is None and new_item is None:
+            raise ValueError("either field_name or new_item must be set")
+
+        # Set filename to point to adagios_layer
+        item['meta']['filename'] = self._change_filename_to_adagios_layer(
+                item['meta']['filename']
+        )
+
+        while True:
+            try:
+                found, everything_before, object_definition, everything_after,\
+                filename = self._soft_locate_item(item)
+                if not found:
+                    tmp = self._create_minimal_item(item)
+                    if field_name != None:
+                        tmp[field_name] = new_value
+                    if new_field_name != None:
+                        tmp[field_name] = new_value
+                    new_item = self.print_conf(tmp)
+
+                break
+            except ValueError as ve:
+                if ve.message.find('could not find'):
+                    # Create the dir if doesn't exist
+                    if not os.access(item['meta']['filename'], os.F_OK):
+                        if not os.path.exists(os.path.dirname(item['meta']['filename'])):
+                            os.mkdir(os.path.dirname(item['meta']['filename']))
+                        open(item['meta']['filename'], 'w').close()
+                else:
+                    raise ve
+
+        if new_item is not None:
+            # We have instruction on how to write new object, so we dont need to parse it
+            object_definition = [new_item]
+        else:
+            change = None
+            value = None
+            i = 0
+            for i in range(len(object_definition)):
+                tmp = object_definition[i].split(None, 1)
+                if len(tmp) == 0:
+                    continue
+                # Hack for timeperiods, they dont work like other objects
+                elif (item['meta']['object_type'] == 'timeperiod' and
+                        field_name not in ('alias', 'timeperiod_name')):
+                    tmp = [object_definition[i]]
+                    # we can't change timeperiod, so we fake a field rename
+                    if new_value is not None:
+                        new_field_name = new_value
+                        new_value = None
+                        value = ''
+                elif len(tmp) == 1:
+                    value = ''
+                else:
+                    value = tmp[1]
+                k = tmp[0].strip()
+                if k == field_name:
+                    # Attribute was found, lets change this line
+                    if new_field_name is None and new_value is None:
+                        # We take it that we are supposed to remove this attribute
+                        change = object_definition.pop(i)
+                        break
+                    elif new_field_name:
+                        # Field name has changed
+                        k = new_field_name
+                    if new_value is not None:
+                        # value has changed
+                        value = new_value
+                        # Here we do the actual change
+                    change = "\t%-30s%s\n" % (k, value)
+                    if (item['meta']['object_type'] == 'timeperiod' and
+                            field_name not in ('alias', 'timeperiod_name')):
+                        change = "\t%s\n" % new_field_name
+                    object_definition[i] = change
+                    break
+            if not change and new_value is not None:
+                # Attribute was not found. Lets add it
+                change = "\t%-30s%s\n" % (field_name, new_value)
+                object_definition.insert(i, change)
+            # Lets put a banner in front of our item
+        if make_comments:
+            comment = '# Edited by PyNag on %s\n' % time.ctime()
+            if len(everything_before) > 0:
+                last_line_before = everything_before[-1]
+                if last_line_before.startswith('# Edited by PyNag on'):
+                    everything_before.pop()  # remove this line
+            object_definition.insert(0, comment)
+            # Here we overwrite the config-file, hoping not to ruin anything
+        str_buffer = "%s%s%s" % (''.join(everything_before), ''.join(object_definition), ''.join(everything_after))
+        self.write(filename, str_buffer)
+        return True
+
+    def item_rewrite(self, item, str_new_item):
+        """ Completely rewrites item with string provided.
+
+        Arguments:
+            item -- Item that is to be rewritten
+            str_new_item -- str representation of the new item
+        Examples:
+            item_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+            IOError if save fails
+        """
+        # Fork to the adagios layer
+        adagios_fork = copy.deepcopy(item)  # Clone the item
+        self._modify_object_to_layer(item=adagios_fork, new_item=str_new_item)  # Write the modifications
+        del adagios_fork  # Delete the useless item from memory
+
+        return self._modify_object(item=item, new_item=str_new_item)
+
+    def item_remove(self, item):
+        """ Delete one specific item from its configuration files
+
+        Arguments:
+            item -- Item that is to be rewritten
+            str_new_item -- str representation of the new item
+        Examples:
+            item_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+            IOError if save fails
+        """
+        return self._modify_object(item=item, new_item="")
+
+    def item_edit_field(self, item, field_name, new_value):
+        """ Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+
+        Example usage:
+            edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+            IOError if save fails
+        """
+        # Fork to the adagios layer
+        adagios_fork = copy.deepcopy(item)  # Clone the item
+        # Write the modifications
+        self._modify_object_to_layer(adagios_fork, field_name=field_name, new_value=new_value)
+        del adagios_fork  # Delete the useless item from memory
+
+        return self._modify_object(item, field_name=field_name, new_value=new_value)
+
+    def item_remove_field(self, item, field_name):
+        """ Removes one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
+
+        Example usage:
+            item_remove_field( item, field_name="contactgroups" )
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+            IOError if save fails
+        """
+        # Fork to the adagios layer
+        adagios_fork = copy.deepcopy(item)  # Clone the item
+        # Write the modifications
+        self._modify_object_to_layer(
+                item=adagios_fork,
+                field_name=field_name,
+                new_value=None,
+                new_field_name=None
+                )
+        del adagios_fork  # Delete the useless item from memory
+
+        return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
+
+    def item_rename_field(self, item, old_field_name, new_field_name):
+        """ Renames a field of a (currently existing) item. Changes are immediate (i.e. there is no commit).
+
+        Example usage:
+            item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
+        Returns:
+            True on success
+        Raises:
+            ValueError if object is not found
+            IOError if save fails
+        """
+        # Fork to the adagios layer
+        adagios_fork = copy.deepcopy(item)  # Clone the item
+        # Write the modifications to the Adagios layer
+        self._modify_object_to_layer(item=adagios_fork, field_name=old_field_name, new_field_name=new_field_name)
+        del adagios_fork  # Delete the useless item from memory
+
+        return self._modify_object(item=item, field_name=old_field_name, new_field_name=new_field_name)
+
+    def item_add(self, item, filename):
+        """ Adds a new object to a specified config file
+
+        Arguments:
+            item -- Item to be created
+            filename -- Filename that we are supposed to write to
+        Returns:
+            True on success
+        Raises:
+            IOError on failed save
+        """
+        if not 'meta' in item:
+            item['meta'] = {}
+        item['meta']['filename'] = filename
+        item_layer = copy.deepcopy(item)
+        item_layer['meta']['filename'] = self._change_filename_to_adagios_layer(item_layer['meta']['filename'])
+
+        # Create directory if it does not already exist
+        dirname = os.path.dirname(item['meta']['filename'])
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+
+        dirname = os.path.dirname(item_layer['meta']['filename'])
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+
+        str_buffer = self.print_conf(item)
+        fh = open(item['meta']['filename'], 'a')
+        fh.write(str_buffer)
+        fh.close()
+
+        str_buffer = self.print_conf(item)
+        fh = open(item_layer['meta']['filename'], 'a')
+        fh.write(str_buffer)
+        fh.close()
+
+        return True
 
 class mk_livestatus:
     """ Wrapper around MK-Livestatus
@@ -1497,7 +2367,7 @@ class mk_livestatus:
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
             for k, v in c.maincfg_values:
-                if k == 'broker_module' and "livestatus.o" in v:
+                if k == 'broker_module' and "live" in v:
                     for arg in v.split()[1:]:
                         if arg.startswith('/') or '=' not in arg:
                             livestatus_socket_path = arg
