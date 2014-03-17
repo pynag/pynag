@@ -22,20 +22,21 @@
 This module provides a high level Object-Oriented wrapper
 around pynag.Parsers.config.
 
-example usage:
+Example:
 
-from pynag.Parsers import Service,Host
-
-all_services = Service.objects.all
-my_service=all_service[0]
-print my_service.host_name
-
-example_host = Host.objects.filter(host_name="host.example.com")
-canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
-
-for i in canadian_hosts:
-    i.alias = "this host is located in Canada"
-    i.save()
+>>> from pynag.Model import Service, Host
+>>>
+>>> all_services = Service.objects.all
+>>> my_service = all_services[0]
+>>> print my_service.host_name
+localhost
+>>>
+>>> example_host = Host.objects.filter(host_name="host.example.com")
+>>> canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
+>>>
+>>> for i in canadian_hosts:
+>>>    i.alias = "this host is located in Canada"
+>>>    i.save()
 """
 
 import os
@@ -355,15 +356,16 @@ class ObjectRelations(object):
 
 class ObjectFetcher(object):
     """
-    This class is a wrapper around pynag.Parsers.config. Is responsible for fetching dict objects
-    from config.data and turning into high ObjectDefinition objects
+    This class is a wrapper around pynag.Parsers.config. Is responsible for
+    fetching dict objects from config.data and turning into high
+    ObjectDefinition objects
 
     Internal variables:
-     _cached_objects = List of every ObjectDefinition
-     _cached_id[o.get_id()] = o
-     _cached_shortnames[o.object_type][o.get_shortname()] = o
-     _cached_names[o.object_type][o.name] = o
-     _cached_object_type[o.object_type].append( o )
+     * _cached_objects = List of every ObjectDefinition
+     * _cached_id[o.get_id()] = o
+     * _cached_shortnames[o.object_type][o.get_shortname()] = o
+     * _cached_names[o.object_type][o.name] = o
+     * _cached_object_type[o.object_type].append( o )
     """
     _cached_objects = []
     _cached_ids = {}
@@ -439,10 +441,8 @@ class ObjectFetcher(object):
     def get_by_id(self, id):
         """ Get one specific object
 
-        Returns:
-            ObjectDefinition
-        Raises:
-            ValueError if object is not found
+        :returns: ObjectDefinition
+        :raises:  ValueError if object is not found
         """
         if self.needs_reload():
             self.reload_cache()
@@ -452,14 +452,12 @@ class ObjectFetcher(object):
     def get_by_shortname(self, shortname, cache_only=False):
         """ Get one specific object by its shortname (i.e. host_name for host, etc)
 
-        Arguments:
-          shortname - shortname of the object. i.e. host_name, command_name, etc.
-          cache_only -- If True, dont check if configuration files have changed since last parse
+        :param shortname:  shortname of the object. i.e. host_name, command_name, etc.
+        :param cache_only: If True, dont check if configuration files have changed since last parse
 
-        Returns:
-            ObjectDefinition
-        Raises:
-            ValueError if object is not found
+        :returns: ObjectDefinition
+
+        :raises:  ValueError if object is not found
         """
         if cache_only is False and self.needs_reload():
             self.reload_cache()
@@ -469,10 +467,8 @@ class ObjectFetcher(object):
     def get_by_name(self, object_name):
         """ Get one specific object by its object_name (i.e. name attribute)
 
-        Returns:
-            ObjectDefinition
-        Raises:
-            ValueError if object is not found
+        :returns: ObjectDefinition
+        :raises:  ValueError if object is not found
         """
         if self.needs_reload():
             self.reload_cache()
@@ -489,33 +485,36 @@ class ObjectFetcher(object):
         """
         Returns all objects that match the selected filter
 
-        Examples:
-        # Get all services where host_name is examplehost.example.com
-        Service.objects.filter(host_name='examplehost.example.com')
+        Example:
 
-        # Get service with host_name=examplehost.example.com and service_description='Ping'
-        Service.objects.filter(host_name='examplehost.example.com',service_description='Ping')
+        Get all services where host_name is examplehost.example.com
+         >>> Service.objects.filter(host_name='examplehost.example.com')
 
-        # Get all services that are registered but without a host_name
-        Service.objects.filter(host_name=None,register='1')
+        Get service with host_name=examplehost.example.com 
+        and service_description='Ping'
+         >>> Service.objects.filter(host_name='examplehost.example.com',
+         ...                        service_description='Ping')
 
-        # Get all hosts that start with 'exampleh'
-        Host.objects.filter(host_name__startswith='exampleh')
+        Get all services that are registered but without a host_name
+         >>> Service.objects.filter(host_name=None,register='1')
 
-        # Get all hosts that end with 'example.com'
-        Service.objects.filter(host_name__endswith='example.com')
+        Get all hosts that start with 'exampleh'
+         >>> Host.objects.filter(host_name__startswith='exampleh')
 
-        # Get all contactgroups that contain 'dba'
-        Contactgroup.objects.filter(host_name__contains='dba')
+        Get all hosts that end with 'example.com'
+         >>> Service.objects.filter(host_name__endswith='example.com')
 
-        # Get all hosts that are not in the 'testservers' hostgroup
-        Host.objects.filter(hostgroup_name__notcontains='testservers')
+        Get all contactgroups that contain 'dba'
+         >>> Contactgroup.objects.filter(host_name__contains='dba')
 
-        # Get all services with non-empty name
-        Service.objects.filter(name__isnot=None)
+        Get all hosts that are not in the 'testservers' hostgroup
+         >>> Host.objects.filter(hostgroup_name__notcontains='testservers')
 
-        # Get all hosts that have an address:
-        Host.objects.filter(address_exists=True)
+        Get all services with non-empty name
+         >>> Service.objects.filter(name__isnot=None)
+
+        Get all hosts that have an address:
+         >>> Host.objects.filter(address_exists=True)
 
         """
         return pynag.Utils.grep(self.all, **kwargs)
@@ -524,9 +523,10 @@ class ObjectFetcher(object):
 class ObjectDefinition(object):
     """
     Holds one instance of one particular Object definition
-    Example usage:
-        objects = ObjectDefinition.objects.all
-        my_object ObjectDefinition( dict ) # dict = hash map of configuration attributes
+
+    Example:
+        >>> objects = ObjectDefinition.objects.all
+        >>> my_object = ObjectDefinition( dict ) # dict = hash map of configuration attributes
     """
     object_type = None
     objects = ObjectFetcher(None)
@@ -574,14 +574,27 @@ class ObjectDefinition(object):
             self[k] = v
 
     def get_attribute(self, attribute_name):
-        """Get one attribute from our object definition"""
+        """Get one attribute from our object definition
+
+        :param attribute_name: A attribute such as *host_name*
+        """
         return self[attribute_name]
 
     def set_attribute(self, attribute_name, attribute_value):
-        """Set (but does not save) one attribute in our object"""
+        """Set (but does not save) one attribute in our object
+
+	:param attribute_name:  A attribute such as *host_name*
+	:param attribute_value: The value you would like to set
+	"""
         self[attribute_name] = attribute_value
 
     def attribute_is_empty(self,attribute_name):
+        """Check if the attribute is empty
+
+        :param attribute_name: A attribute such as *host_name*
+
+	:returns: True or False
+        """
         attr = self.get_attribute(attribute_name)
         if attr == None or attr.strip() in (None,'','+','-','!'):
             return True
@@ -651,8 +664,7 @@ class ObjectDefinition(object):
         return False
 
     def has_key(self, key):
-        """ Same as key in self
-        """
+        """ Same as key in self """
         return key in self
 
     def keys(self):
@@ -694,9 +706,9 @@ class ObjectDefinition(object):
         return self.__object_id__
 
     def get_suggested_filename(self):
-        """Returns a suitable configuration filename to store this object in
+        """Get a suitable configuration filename to store this object in
 
-        Typical result value: str('/etc/nagios/pynag/templates/hosts.cfg')
+        :returns: filename, eg str('/etc/nagios/pynag/templates/hosts.cfg')
         """
         # Invalid characters that might potentially mess with our path
         # | / ' " are all invalid. So is any whitespace
@@ -736,13 +748,18 @@ class ObjectDefinition(object):
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def save(self, filename=None):
         """Saves any changes to the current object to its configuration file
-        Arguments:
-            filename -- If filename is provided, save a copy of this object in that file
-                        If filename is None, either save to current file (in case of existing objects)
-                        or let pynag guess a location for it in case of new objects.
-        Returns:
-            In case of existing objects, return number of attributes changed.
-            In case of new objects, return True
+
+        :param filename: 
+                  * If filename is provided, save a copy of this object 
+                    in that file.
+
+                  * If filename is None, either save to current file (in
+                    case of existing objects) or let pynag guess a
+                    location for it in case of new objects.
+
+        :returns: * In case of existing objects, return number of attributes
+                    changed.
+                  * In case of new objects, return True
         """
 
         # Let event-handlers know we are about to save an object
@@ -795,7 +812,7 @@ class ObjectDefinition(object):
         return number_of_changes
 
     def reload_object(self):
-        """ Re applies templates to this object (handy when you have changed the use attribute """
+        """ Re-applies templates to this object (handy when you have changed the use attribute """
         old_me = config.get_new_item(self.object_type, self.get_filename())
         old_me['meta']['defined_attributes'] = self._defined_attributes
         for k, v in self._defined_attributes.items():
@@ -812,13 +829,13 @@ class ObjectDefinition(object):
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def rewrite(self, str_new_definition=None):
-        """ Rewrites this Object Definition in its configuration files.
+        """Rewrites this Object Definition in its configuration files.
 
-        Arguments:
-            str_new_definition = the actual string that will be written in the configuration file
-            if str_new_definition is None, then we will use self.__str__()
-        Returns:
-            True on success
+        :param str_new_definition: 
+          The actual string that will be written in the configuration file. 
+          If str_new_definition is *None*, then we will use *self.__str__()*
+
+        :returns: True on success
         """
         self._event(level='pre_save', message="Object definition is being rewritten")
         if self.is_new is True:
@@ -842,11 +859,12 @@ class ObjectDefinition(object):
     def delete(self, recursive=False, cleanup_related_items=True):
         """ Deletes this object definition from its configuration files.
 
-        Arguments:
-            recursive: If True, look for items that depend on this object and delete them as well
+        :param recursive: 
+            If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
 
-            cleanup_related_items: If True, look for related items and remove references to this one.
+        :param cleanup_related_items:
+            If True, look for related items and remove references to this one.
             (for example, if you delete a host, remove its name from all hostgroup.members entries)
         """
         self._event(level="pre_save", message="%s '%s' will be deleted." % (self.object_type, self.get_shortname()))
@@ -859,14 +877,13 @@ class ObjectDefinition(object):
         return result
 
     def move(self, filename):
-        """ Move this object definition to a new file. It will be deleted from current file.
+        """Move this object definition to a new file. It will be deleted from current file.
 
-         This is the same as running:
-            self.copy(filename=filename)
-            self.delete()
+        This is the same as running:
+         >>> self.copy(filename=filename)
+         >>> self.delete()
 
-         Returns:
-          * the new object definition
+        :returns: The new object definition
         """
         new_me = self.copy(filename=filename)
         self.delete()
@@ -984,7 +1001,7 @@ class ObjectDefinition(object):
         return os.path.normpath(self._meta['filename'])
 
     def set_filename(self, filename):
-        """ set name of the config file which this object will be written to on next save. """
+        """ Set name of the config file which this object will be written to on next save. """
         if filename != self.get_filename():
             self._filename_has_changed = True
         if filename is None:
@@ -1107,11 +1124,13 @@ class ObjectDefinition(object):
         return self._resolve_macros(command.command_line, host_name=host_name)
 
     def get_effective_notification_command_line(self, host_name=None, contact_name=None):
-        """Return a string of this objects notifications with all macros (i.e. $HOSTADDR$) resolved
+        """Get this objects notifications with all macros (i.e. $HOSTADDR$) 
+        resolved
 
-        Arguments:
-            host_name    -- Simulate notification using this host. If None: Use first valid host (used for services)
-            contact_name -- Simulate notification for this contact. If None: use first valid contact for the service
+        :param host_name:    Simulate notification using this host. If None: Use first valid host (used for services)
+        :param contact_name: Simulate notification for this contact. If None: use first valid contact for the service
+
+	:returns: string of this objects notifications
         """
         if contact_name is None:
             contacts = self.get_effective_contacts()
@@ -1134,11 +1153,13 @@ class ObjectDefinition(object):
         return self._resolve_macros(command.command_line, host_name=host_name)
 
     def _resolve_macros(self, string, host_name=None):
-        """ Returns string with every $NAGIOSMACRO$ resolved to actual value.
+        """Resolves every $NAGIOSMACRO$ within the string
 
-        Arguments:
-            string    -- Arbitary string that contains macros
-            host_name -- Optionally supply host_name if this service does not define it
+        :param string:    Arbitary string that contains macros
+        :param host_name: Optionally supply host_name if this service does not define it
+
+        :returns: string with every $NAGIOSMACRO$ resolved to actual value
+
         Example:
         >>> host = Host()
         >>> host.address = "127.0.0.1"
@@ -1240,10 +1261,9 @@ class ObjectDefinition(object):
     def get_effective_children(self, recursive=False):
         """ Get a list of all objects that inherit this object via "use" attribute
 
-        Arguments:
-            recursive - If true, include grandchildren as well
-        Returns:
-            A list of ObjectDefinition objects
+        :param recursive: If true, include grandchildren as well
+
+        :returns: A list of ObjectDefinition objects
         """
         if not self.name:
             return []
