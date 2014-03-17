@@ -12,30 +12,14 @@ import pynag.Parsers
 from tests import tests_dir
 
 
-class testParsers(unittest.TestCase):
-
+class Config(unittest.TestCase):
+    """ Test pynag.Parsers.config """
     def testConfig(self):
         """Test pynag.Parsers.config()"""
         c = pynag.Parsers.config()
         c.parse()
         self.assertTrue(len(c.data) > 0, "pynag.Parsers.config.parse() ran and afterwards we see no objects. Empty configuration?")
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
-    def testStatus(self):
-        """Unit test for pynag.Parsers.status()"""
-        s = pynag.Parsers.status()
-        try:
-            s.parse()
-        except IOError:
-            self.skipTest("IOError, probably no nagios running")
-        # Get info part from status.dat file
-        info = s.data['info']
-
-        # It only has one object so..
-        info = info[0]
-
-        # Try to get current version of nagios
-        version = info['version']
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testParseMaincfg(self):
         """ Test parsing of different broker_module declarations """
@@ -72,14 +56,6 @@ class testParsers(unittest.TestCase):
             self.assertEqual(True, "Above could should have raised exception")
         except pynag.Parsers.ParserError:
             pass
-
-
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
-    def testObjectCache(self):
-        """Test pynag.Parsers.object_cache"""
-        o = pynag.Parsers.object_cache()
-        o.parse()
-        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
 
     def testConfig_backslash(self):
         """ Test parsing nagios object files with lines that end with backslash
@@ -132,24 +108,8 @@ class testParsers(unittest.TestCase):
 
         os.remove(filename)
 
-    def testLogFileParsing(self):
-        expected_no_of_logentries = 63692
-        expected_no_for_app01 = 127
-        len_state_history = 14301
-        os.chdir(tests_dir)
-        os.chdir('dataset01')
-        cfg_file = "./nagios/nagios.cfg"
-        l = pynag.Parsers.LogFiles(maincfg=cfg_file)
-
-        log = l.get_log_entries(start_time=0)
-        self.assertEqual(expected_no_of_logentries, len(log))
-
-        app01 = l.get_log_entries(start_time=0, host_name='app01.acme.com')
-        self.assertEqual(expected_no_for_app01, len(app01))
-
-        state_history = l.get_state_history(start_time=0)
-        self.assertEqual(len_state_history, len(state_history))
-
+class ExtraOptsParser(unittest.TestCase):
+    """ Test pynag.Parsers.ExtraOptsParser """
     def testExtraOptsParser(self):
         """ Smoke-test Parsers.ExtraOptsParser """
         os.chdir(tests_dir)
@@ -182,3 +142,77 @@ class Livestatus(unittest.TestCase):
         """ Smoketest livestatus integration """
         requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
+
+class ObjectCache(unittest.TestCase):
+    """ Tests for pynag.Parsers.objectcache
+    """
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testObjectCache(self):
+        """Test pynag.Parsers.object_cache"""
+        o = pynag.Parsers.object_cache()
+        o.parse()
+        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+
+class LogFiles(unittest.TestCase):
+    """ Test pynag.Parsers.LogFiles
+    """
+    def testLogFileParsing(self):
+        expected_no_of_logentries = 63692
+        expected_no_for_app01 = 127
+        len_state_history = 14301
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        cfg_file = "./nagios/nagios.cfg"
+        l = pynag.Parsers.LogFiles(maincfg=cfg_file)
+
+        log = l.get_log_entries(start_time=0)
+        self.assertEqual(expected_no_of_logentries, len(log))
+
+        app01 = l.get_log_entries(start_time=0, host_name='app01.acme.com')
+        self.assertEqual(expected_no_for_app01, len(app01))
+
+        state_history = l.get_state_history(start_time=0)
+        self.assertEqual(len_state_history, len(state_history))
+
+
+class Status(unittest.TestCase):
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testStatus(self):
+        """Unit test for pynag.Parsers.status()"""
+        s = pynag.Parsers.status()
+        try:
+            s.parse()
+        except IOError:
+            self.skipTest("IOError, probably no nagios running")
+        # Get info part from status.dat file
+        info = s.data['info']
+
+        # It only has one object so..
+        info = info[0]
+
+        # Try to get current version of nagios
+        version = info['version']
+
+
+class SshConfig(Config):
+    def setUp(self):
+        self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
+
+    def testParseMaincfg(self):
+        self.instance.parse_maincfg()
+
+    def testParse(self):
+        self.instance.parse()
+
+        host = self.instance.get_host('localhost')
+        print host['__test']
+        self.instance.item_edit_field(host, '__test', host['__test'] + '+')
+    def testOpenFile(self):
+        self.instance.open('/etc/nagios3/nagios.cfg').read()
+
+    def testPathWrappers(self):
+        """ Test our os.path wrappers
+        """
+        ftp = self.instance.ftp
+        i = ftp.stat('/')
+        self.assertTrue(self.instance.isdir('/'))
