@@ -32,20 +32,20 @@ path_to_command_file = None
 
 def find_command_file(cfg_file=None):
     """ Returns path to nagios command_file by looking at what is defined in nagios.cfg """
+    global path_to_command_file
+
+    # If we have been called before, the path should be cached in a global variable
     if path_to_command_file:
         return path_to_command_file
 
+    # If we reach here, we have to parse nagios.cfg to find path
+    # to our command file
     c = config(cfg_file=cfg_file)
-    c.parse_maincfg()
-    command_file = None
-    for k,v in c.maincfg_values:
-        if k == 'command_file':
-            command_file = v
-            break
+    command_file = c.get_cfg_value('command_file')
+
     if not command_file:
-        if not command_file:
-            raise PynagError("command_file not found in your nagios.cfg (%s)" % c.cfg_file)
-    global path_to_command_file
+        raise PynagError("command_file not found in your nagios.cfg (%s)" % c.cfg_file)
+    
     path_to_command_file = command_file
     return command_file
 
