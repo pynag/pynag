@@ -34,7 +34,6 @@ from getpass import getuser
 import datetime
 import pynag.Plugins
 import sys
-from functools import wraps
 
 rlock = threading.RLock()
 
@@ -643,6 +642,16 @@ class PerfDataMetric(object):
             return '', ''
         return tmp[0]
 
+    def get_dict(self):
+        return {
+            'label': self.label,
+            'value': self.value,
+            'uom': self.uom,
+            'warn': self.warn,
+            'crit': self.crit,
+            'min': self.min,
+            'max': self.max,
+        }
 
 def grep(objects, **kwargs):
     """  Returns all the elements from array that match the keywords in **kwargs
@@ -1120,7 +1129,6 @@ def synchronized(lock):
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     """
     def wrap(f):
-        @wraps(f)
         def newFunction(*args, **kw):
             lock.acquire()
             try:
