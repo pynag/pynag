@@ -1551,7 +1551,7 @@ class mk_livestatus:
             msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
-    def query(self, query, *args, **kwargs):
+    def query(self, query, columns=None, *args, **kwargs):
 
         # We break query up into a list, of commands, then before sending command to the socket
         # We will write it one line per item in the array
