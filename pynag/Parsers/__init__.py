@@ -1551,7 +1551,10 @@ class mk_livestatus:
             msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
-    def query(self, query, columns=None, *args, **kwargs):
+    def query(self, query, *args, **kwargs):
+
+        # columns parameter is here for backwards compatibility only
+        kwargs.pop('columns', None)
 
         # We break query up into a list, of commands, then before sending command to the socket
         # We will write it one line per item in the array
@@ -1646,9 +1649,7 @@ class mk_livestatus:
 
     def get(self, table, *args, **kwargs):
         """ Same as self.query('GET %s' % (table,)) """
-        print "running get", locals()
         return self.query('GET %s' % (table,), *args, **kwargs)
-        print "get done"
 
     def get_host(self, host_name):
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
