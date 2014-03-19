@@ -1852,15 +1852,15 @@ class Service(ObjectDefinition):
         """ Moves a service from its original file to the same file as the
         first effective host """
 
-        host = None
-        eff_h = self.get_effective_hosts()
-        if len(eff_h) > 0:
-            host = eff_h.pop()
-        if host:
-            host_filename = host.get_filename()
-            new_serv = self.move(host_filename)
-            new_serv.save()
-
+        if not self.get('host_name', None):
+            pass
+        else:
+            host = Host.objects.get_by_shortname(self.host_name)
+            if host:
+                host_filename = host.get_filename()
+                if host_filename != self.get_filename():
+                    new_serv = self.move(host_filename)
+                    new_serv.save()
 
 class Command(ObjectDefinition):
     object_type = 'command'
