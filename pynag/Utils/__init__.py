@@ -791,6 +791,10 @@ def grep_to_livestatus(*args, **kwargs):
             my_string = "WaitTrigger: %s" % (v,)
         elif k == 'WaitTimeout':
             my_string = "WaitTimeout: %s" % (v,)
+        elif k in ('Limit', 'limit'):
+            my_string = "Limit: %s" % (v,)
+        elif k in ('Filter', 'filter'):
+            my_string = "Filter: %s" % (v,)
         else:
             my_string = "Filter: %s = %s" % (k, v)
         result.append(my_string)
