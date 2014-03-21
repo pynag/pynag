@@ -36,15 +36,12 @@ class daemon:
     Control the nagios daemon through python
     """
 
-    def __init__(self, 
-		 nagios_bin = "/usr/bin/nagios", 
-                 nagios_cfg = "/etc/nagios/nagios.cfg", 
-                 nagios_init = "/etc/init.d/nagios", 
+    def __init__(self,
+                 nagios_bin="/usr/bin/nagios",
+                 nagios_cfg="/etc/nagios/nagios.cfg",
+                 nagios_init="/etc/init.d/nagios",
                  sudo=False, 
                  shell=True):
-        """
-        Setup some variables
-        """
         self.nagios_bin = nagios_bin
         self.nagios_cfg = nagios_cfg
         self.nagios_init = nagios_init
