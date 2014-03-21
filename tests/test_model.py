@@ -4,9 +4,11 @@ import tempfile
 import os
 
 import pynag.Model
+import pynag.Model.EventHandlers
 import shutil
 import string
 import random
+import mock
 
 os.chdir(tests_dir)
 
@@ -782,3 +784,18 @@ class Model(unittest.TestCase):
         host1 = pynag.Model.Host.objects.get_by_shortname(host_name)
         self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
         self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
+
+
+class NagiosReloadHandler(unittest.TestCase):
+    """ Test Eventhandler NagiosReloadHandler
+    """
+    def setUp(self):
+        self.handler = pynag.Model.EventHandlers.NagiosReloadHandler(nagios_init="/bin/ls")
+        self.handler._reload = mock.MagicMock()
+
+    def test_write(self):
+        self.handler.write(None, None)
+
+    def test_save(self):
+        self.handler.pre_save(None, None)
+        self.handler.save(None, None)

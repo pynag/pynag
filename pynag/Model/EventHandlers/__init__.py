@@ -234,6 +234,39 @@ class GitEventHandler(BaseEventHandler):
         self.messages.append( " * %s" % message )
 
 
+class NagiosReloadHandler(BaseEventHandler):
+    """ This handler reloads nagios every time that a change is made. This is only meant for small environments
+    """
+    def __init__(self, nagios_init, *args, **kwargs):
+        import pynag.Control
+        BaseEventHandler.__init__(self, *args, **kwargs)
+        self.daemon = pynag.Control.daemon(nagios_init=nagios_init)
+        self.in_transaction = False
+
+    def _reload(self):
+        """ Reload nagios
+
+        """
+        self.daemon.reload()
+
+    def debug(self, object_definition, message):
+        """Used for any particual debug notifications"""
+        pass
+
+    def write(self, object_definition, message):
+        """Called whenever a modification has been written to file"""
+        if not self.in_transaction:
+            self._reload()
+
+    def pre_save(self, object_definition, message):
+        """ Called at the beginning of save() """
+        self.in_transaction = True
+
+    def save(self, object_definition, message):
+        """Called when objectdefinition.save() has finished"""
+        self.in_transaction = False
+        self._reload()
+
 class EventHandlerError(Exception):
 
     def __init__(self, message, errorcode=None, errorstring=None):
@@ -243,3 +276,4 @@ class EventHandlerError(Exception):
 
     def __str__(self):
         return self.errorstring
+
