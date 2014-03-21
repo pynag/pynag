@@ -1,3 +1,18 @@
+Changes in 0.8.2 (Mar 21 2014)
+New Features:
+    - Utils.AttributeList() - now aware of "null" values
+    - Notable performance tweaks in parsing
+    - Experimental Config Parser over ssh
+    - New EventHandler: NagiosReloadHandler
+    - Better shinken compatiblity
+    - New method: guess_nagios_binary()
+    - Major improvements in grep_to_livestatus
+Bug Fixes:
+    - Code is more python3 compatible
+    - Performance tweaks in external commands
+    - Fixed Macro resolving for hosts
+    - Bugfixes in "Pynag livestatus" subcommand
+
 Changes in 0.8.1 (Feb 19 2014)
 New Features:
     - Support setting of custom host variables
