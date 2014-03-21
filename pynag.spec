@@ -14,11 +14,13 @@
 %define unittest2 1
 %endif
 
+%define release 1
+
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
 Version: 0.8.1
-Release: 1%{?dist}
+Release: %{release}%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
