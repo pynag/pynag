@@ -16,7 +16,7 @@ fi
 # pypi upload?
 echo -n "### Upload to pypi [Yn] "
 read pypy_upload
-if ! [[ $update_changes =~ ^n.* ]]; then
+if ! [[ $pypy_upload =~ ^n.* ]]; then
     pypy_upload=1
 else
     pypy_upload=0
