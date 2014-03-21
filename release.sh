@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Use this script to release a new version of pynag
 
 
@@ -6,149 +6,162 @@
 current_version=$(grep ^Version: pynag.spec | awk '{ print $2 }')
 current_release=$(grep "define release" pynag.spec | awk '{ print $3 }')
 
-# Edit CHANGES
-echo -n "### Update CHANGES? [yN] "
-read update_changes
-if [[ $update_changes =~ ^y.* ]]; then
-    ${EDITOR} CHANGES
+UPDATE_INFO_FILE=$(mktemp)
+freecode_file=$(mktemp)
+trap "rm -f ${UPDATE_INFO_FILE} ${freecode_file}" EXIT
+
+if [ -z "$EDITOR" ]; then
+    EDITOR=vi
 fi
 
-# pypi upload?
-echo -n "### Upload to pypi [Yn] "
-read pypy_upload
-if ! [[ $pypy_upload =~ ^n.* ]]; then
-    pypy_upload=1
-else
-    pypy_upload=0
+if [ -z $BASH ]; then
+    echo "You need /bin/bash to run this script"
+    exit 1
 fi
 
-# git-autopush 
-echo -n "### Push to github [Yn] "
-read git_autopush
-if ! [[ $git_autopush =~ ^n.* ]]; then
-    git_autopush=1
-else
-    git_autopush=0
-fi
+main() {
+    enter_release_info || echo FAIL
 
-# debian-version
-echo -n "### Update debian version [Yn] "
-read debian_version
-if ! [[ $debian_version =~ ^n.* ]]; then
-    debian_version=1
-else
-    debian_version=0
-fi
+    update_changes || echo FAI
 
-# Optionally submit to freecode
-echo -n "### Submit release to freecode? [Yn] "
-read freecode_submit
-if ! [[ $freecode_submit =~ ^n ]]; then
+    update_version_number || echo FAIL
+
+    git_commit || echo FAIL
+
+    git_push || echo FAIL
+
+    upload_to_pypi || echo FAIL
+
+    upload_to_freecode || echo FAIL
+
+    echo "### All Done"
+}
+
+
+
+update_changes() {
+    ask "Update Changelog?" || return 0
+    ${EDITOR} CHANGES || return 1
+}
+
+
+upload_to_pypi() {
+    ask "Upload to pypi?" || return 0
+    python setup.py build sdist upload || return 1
+}
+
+git_push() {
+    ask "Upload to github?" || return 0
+    git push origin master || return 1
+    git push --tags origin master || return 1
+}
+
+update_debian_changelog() {
+    ask "Update Debian Changelog?" || return 0
+    DATE=$(LANG=C date -R)
+    NAME=$(git config --global --get user.name)
+    MAIL=$(git config --global --get user.email)
+    changelog=$(mktemp)
+    echo "pynag (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
+    echo "  " >> ${changelog}
+    echo "  * New upstream version" >> ${changelog}
+    echo "  " >> ${changelog}
+    echo "  -- ${NAME} <${MAIL}>  ${DATE}" >> ${changelog}
+    echo "" >> ${changelog}
+    cat debian.upstream/changelog >> ${changelog}
+    cp -f ${changelog} debian.upstream/changelog
+}
+
+upload_to_freecode() {
+    ask "Upload to freecode?" || return 0
     error=0
     which freecode-submit &> /dev/null || error=1
     grep freecode ~/.netrc &> /dev/null || error=1
-    
+
     if [ $error -gt 0 ]; then
-    cat <<EO && exit
-freecode-submit missing, please install and update .netrc appropriately
+        echo freecode-submit missing, please install and update .netrc appropriately
+        echo
+        echo use yum install freecode-submit or equivilent for your distribution
+        echo
+        echo Next you have to find your API key on freecode.com and put it into ~/.netrc
+        echo
+        echo 'echo "machine freecode account <apikey> password none" >> ~/.netrc'
+        return 1
+    fi
 
-  use yum install freecode-submit or equivilent for your distribution
+    echo "Project: pynag" > ${freecode_file}
+    echo "Version: ${new_version}" >> ${freecode_file}
+    echo "Hide: N" >> ${freecode_file}
+    echo "Website-URL: http://pynag.org/" >> ${freecode_file}
+    echo "Tar/GZ-URL: https://pypi.python.org/packages/source/p/pynag/pynag-${new_version}.tar.gz" >> ${freecode_file}
 
-Next you have to find your API key on freecode.com and put it into ~/.netrc
+    grep -A24 '^$' ${UPDATE_INFO_FILE} >> ${freecode_file}
+    freecode-submit < ${freecode_file}
 
-  echo "machine freecode account <apikey> password none" >> ~/.netrc
+}
 
-Done
-EO
+
+
+enter_release_info() {
+    echo "Current version is: $current_version" > ${UPDATE_INFO_FILE}
+    echo "New version number: " >> ${UPDATE_INFO_FILE}
+    echo 'Summary: <one line summary>' >> ${UPDATE_INFO_FILE}
+    echo '' >> ${UPDATE_INFO_FILE}
+    echo '<full description>' >> ${UPDATE_INFO_FILE}
+    ${EDITOR} ${UPDATE_INFO_FILE}
+
+    new_version=$(grep '^New version number:' ${UPDATE_INFO_FILE} | sed 's/^New version number: *//' | sed 's/ *$//')
+    short_desc=$(grep '^Summary:' ${UPDATE_INFO_FILE} | sed 's/^Summary: *//')
+
+    # Some sanity checking
+    if [ -z "${new_version}" ]; then
+        echo "New version is required"
         exit 1
     fi
-    freecode_submit=1
-else
-    freecode_submit=0
-fi
+    if [ -z "${short_desc}" ]; then
+        echo "Summary is required"
+        exit 1
+    fi
+
+}
 
 
-UPDATE_INFO_FILE=$(mktemp)
-
-cat <<EO > ${UPDATE_INFO_FILE}
-Current version is: $current_version
-New version number: 
-Summary: <one line summary>
-
-<full description>
-EO
-
-# Edit the update template file
-${EDITOR} ${UPDATE_INFO_FILE}
-
-new_version=$(grep '^New version number:' ${UPDATE_INFO_FILE} | \
-	sed 's/^New version number: *//')
-short_desc=$(grep '^Summary:' ${UPDATE_INFO_FILE} | \
-	sed 's/^Summary: *//')
 
 
-# Some sanity checking
-if [ -z "${new_version}" ]; then
-    echo "New version is required"
-    exit 1
-fi
-if [ -z "${short_desc}" ]; then
-    echo "Summary is required"
-    exit 1
-fi
+update_version_number() {
+    ask "Update version number?" || return 0
+    echo
+    echo "### Updating Makefile"
+    sed -i "s/^VERSION.*= ${current_version}/VERSION		= ${new_version}/" Makefile
+    echo "### Updating pynag/__init__.py"
+    sed -i "s/^__version__ =.*/__version__ = '${new_version}'/" pynag/__init__.py
+    echo "### Updating pynag.spec"
+    sed -i "s/^Version: ${current_version}/Version: ${new_version}/" pynag.spec
+    echo "### Updating rel-eng/packages/pynag"
+    echo "${new_version}-${current_release} /" > rel-eng/packages/pynag
 
-# Create the freecode-submit update file
-if [[ $freecode_submit == 1 ]]; then
-    freecode_file=$(mktemp)
-    cat << EO > ${freecode_file}
-Project: pynag
-Version: ${new_version}
-Hide: N
-Website-URL: http://pynag.org/
-Tar/GZ-URL: https://pypi.python.org/packages/source/p/pynag/pynag-${new_version}.tar.gz
-EO
-    grep -A24 '^$' ${UPDATE_INFO_FILE} >> ${freecode_file}
-fi
+    echo "### Updating debian.upstream/changelog"
+    update_debian_changelog
 
-rm -f ${UPDATE_INFO_FILE}
-
-echo "### Updating Makefile"
-sed -i "s/^VERSION.*= ${current_version}/VERSION		= ${new_version}/" Makefile
-echo "### Updating pynag/__init__.py"
-sed -i "s/^__version__ =.*/__version__ = '${new_version}'/" pynag/__init__.py
-echo "### Updating pynag.spec"
-sed -i "s/^Version: ${current_version}/Version: ${new_version}/" pynag.spec
-echo "### Updating rel-eng/packages/pynag"
-echo "${new_version}-${current_release} /" > rel-eng/packages/pynag
+}
 
 
-if [[ $debian_version == 1 ]]; then
-    echo "### Updating debian version"
-    dch -v "${new_version}" --distribution unstable "New Upstream release"
-fi
+git_commit() {
+    ask "Commit changes to git and tag release ?" || return 0
+    git commit Makefile pynag/__init__.py rel-eng/packages/pynag pynag.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
+    git tag pynag-${new_version}-${current_release} -a -m "Bumped version number to $new_version"
+}
 
-echo "### commiting and tagging current git repo"
-git commit Makefile pynag/__init__.py rel-eng/packages/pynag pynag.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
-git tag pynag-${new_version}-${current_release} -a -m "Bumped version number to $new_version" 
+ask() {
+    read -n 1 -p "### $@ [Yn] "
+    echo
+    if [[ $REPLY =~ n ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
 
-# The following 2 require access to git repositories and pypi
-if [[ $git_autopush == 1 ]]; then
-    echo "### Pushing commit to github"
-    git push origin master || exit 1
-    git push --tags origin master || exit 1
-fi
-
-if [[ $pypy_upload == 1 ]]; then
-    echo "### Building package and uploading to pypi"
-    python setup.py build sdist upload || exit 1
-fi
-
-if [[ $freecode_submit == 1 ]]; then
-    echo "### Submit version to freecode"
-    freecode-submit < ${freecode_file}
-    rm -f ${freecode_file}
-fi
-
-echo "### DONE ###"
+#main;
 
 # vim: sts=4 expandtab autoindent
