@@ -1956,23 +1956,17 @@ class LogFiles(object):
         start_time = int(start_time)
         end_time = int(end_time)
 
-        # Create an array of all logfiles, newest logfiles go to front of array
-        logfiles = []
-        for filename in os.listdir(self.log_archive_path):
-            full_path = "%s/%s" % (self.log_archive_path, filename)
-            logfiles.append(full_path)
-        logfiles.append(self.log_file)
-        logfiles.reverse()
-
-        result = []
+        logfiles = self.get_logfiles()
         if 'filename' in kwargs:
             logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
+
+        result = []
         for log_file in logfiles:
             entries = self._parse_log_file(filename=log_file)
             if len(entries) == 0:
                 continue
             first_entry = entries[0]
-            last_entry = entries[len(entries) - 1]
+            last_entry = entries[-1]
 
             if first_entry['time'] > end_time:
                 continue
@@ -1990,6 +1984,28 @@ class LogFiles(object):
                 break
         return result
 
+    def get_logfiles(self):
+        """ get_logfiles() -> list_of_strings
+
+         Returns a list with full path to every logfile used by nagios, sorted by modification time
+
+         Newest logfile is at the front of the list so usually nagios.log comes first, followed by archivelogs
+        """
+        logfiles = []
+
+        for filename in os.listdir(self.log_archive_path):
+            full_path = "%s/%s" % (self.log_archive_path, filename)
+            logfiles.append(full_path)
+        logfiles.append(self.log_file)
+
+        # Sort the logfiles by modification time, newest file at the front
+        compare_mtime = lambda a, b: os.stat(a).st_mtime < os.stat(b).st_mtime
+        logfiles.sort(key=lambda x: int(os.stat(x).st_mtime))
+
+        # Newest logfiles go to the front of the list
+        logfiles.reverse()
+
+        return logfiles
     def get_flap_alerts(self, **kwargs):
         """ Same as self.get_log_entries, except return timeperiod transitions. Takes same parameters.
         """
@@ -2402,3 +2418,5 @@ class SshConfig(config):
             return True
         except IOError:
             return False
+
+

@@ -105,6 +105,7 @@ class Config(unittest.TestCase):
         self.assertEqual(items[11]['command_line'], '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$')
         self.assertEqual(items[11]['command_name'], 'check_local_mrtgtraf')
 
+
 class ExtraOptsParser(unittest.TestCase):
     """ Test pynag.Parsers.ExtraOptsParser """
     def testExtraOptsParser(self):
@@ -178,6 +179,7 @@ class Livestatus(unittest.TestCase):
         except pynag.Parsers.ParserError:
             pass
 
+
 class ObjectCache(unittest.TestCase):
     """ Tests for pynag.Parsers.objectcache
     """
@@ -192,24 +194,31 @@ class ObjectCache(unittest.TestCase):
 class LogFiles(unittest.TestCase):
     """ Test pynag.Parsers.LogFiles
     """
+    def setUp(self):
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        cfg_file = "./nagios/nagios.cfg"
+        self.log = pynag.Parsers.LogFiles(maincfg=cfg_file)
+
     def testLogFileParsing(self):
         expected_no_of_logentries = 63692
         expected_no_for_app01 = 127
         len_state_history = 14301
-        os.chdir(tests_dir)
-        os.chdir('dataset01')
-        cfg_file = "./nagios/nagios.cfg"
-        l = pynag.Parsers.LogFiles(maincfg=cfg_file)
 
-        log = l.get_log_entries(start_time=0)
+        log = self.log.get_log_entries(start_time=0)
         self.assertEqual(expected_no_of_logentries, len(log))
 
-        app01 = l.get_log_entries(start_time=0, host_name='app01.acme.com')
+        app01 = self.log.get_log_entries(start_time=0, host_name='app01.acme.com')
         self.assertEqual(expected_no_for_app01, len(app01))
 
-        state_history = l.get_state_history(start_time=0)
+        state_history = self.log.get_state_history(start_time=0)
         self.assertEqual(len_state_history, len(state_history))
 
+    def testGetLogFiles(self):
+        logfiles = self.log.get_logfiles()
+        self.assertEqual(2, len(logfiles))
+        self.assertEqual('./nagios/log/nagios.log', logfiles[0])
+        self.assertEqual('./nagios/log/archives/archivelog1.log', logfiles[1])
 
 class Status(unittest.TestCase):
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
