@@ -195,12 +195,6 @@ class Model(unittest.TestCase):
         self.assertEqual(new_new_filename, new_host.get_filename())
         self.assertEqual(new_new_host_name, new_host.host_name)
 
-
-
-
-
-
-
     def testMoveObject(self):
         """ Test ObjectDefinition.move() """
 
@@ -294,7 +288,30 @@ class Model(unittest.TestCase):
 
     def test_rewrite(self):
         """ Test usage on ObjectDefinition.rewrite() """
-        pass
+        h = pynag.Model.Host()
+        expect_new_host = 'define host {\n}\n'
+        self.assertEqual(str(h), expect_new_host)
+
+        raw_definition2 = 'define host {\nhost_name brand_new_host\n}\n'
+        h.rewrite(raw_definition2)
+        h2 = pynag.Model.Host.objects.get_by_shortname('brand_new_host')
+        self.assertEqual(h2, h)
+
+        raw_definition3 = 'define host {\nhost_name brand_new_host3\n}\n'
+        h2.rewrite(raw_definition3)
+        h3 = pynag.Model.Host.objects.get_by_shortname('brand_new_host3')
+        self.assertEqual(h3, h2)
+
+    def test_get_related_objects(self):
+        """ Test objectdefinition.get_related_objects()
+        """
+        host1 = pynag.Model.Host(name='a-host-template', use='generic-host')
+        host1.save()
+
+        host2 = pynag.Model.Host(host_name='server', use='a-host-template')
+        host2.save()
+
+        self.assertEqual(host1.get_related_objects(), [host2])
 
     def test_attribute_is_empty(self):
         """Test if pynag properly determines if an attribute is empty"""
@@ -799,3 +816,19 @@ class NagiosReloadHandler(unittest.TestCase):
     def test_save(self):
         self.handler.pre_save(None, None)
         self.handler.save(None, None)
+
+
+class ObjectRelations(unittest.TestCase):
+    """ Test pynag.Model.ObjectRelations """
+    def setUp(self):
+        pass
+    def test_get_subgroups(self):
+        c = pynag.Utils.defaultdict(set)
+        c['everything'] = {'admins', 'nonadmins', 'operators', 'users'}
+        c['nonadmins'] = {'users'}
+        c['users'] = set()
+        c['admins'] = {'sysadmins', 'network-admins', 'database-admins'}
+        c['nonadmins'] = {'users'}
+        members_of_everything_actual = pynag.Model.ObjectRelations._get_subgroups('everything', c)
+        members_of_everything_expected = {'users', 'operators', 'sysadmins', 'network-admins', 'admins', 'nonadmins', 'database-admins'}
+        self.assertEqual(members_of_everything_actual, members_of_everything_expected)
