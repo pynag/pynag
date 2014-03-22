@@ -56,21 +56,6 @@ git_push() {
     git push --tags origin master || return 1
 }
 
-update_debian_changelog() {
-    ask "Update Debian Changelog?" || return 0
-    DATE=$(LANG=C date -R)
-    NAME=$(git config --global --get user.name)
-    MAIL=$(git config --global --get user.email)
-    changelog=$(mktemp)
-    echo "pynag (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
-    echo "  " >> ${changelog}
-    echo "  * New upstream version" >> ${changelog}
-    echo "  " >> ${changelog}
-    echo "  -- ${NAME} <${MAIL}>  ${DATE}" >> ${changelog}
-    echo "" >> ${changelog}
-    cat debian.upstream/changelog >> ${changelog}
-    cp -f ${changelog} debian.upstream/changelog
-}
 
 upload_to_freecode() {
     ask "Upload to freecode?" || return 0
@@ -126,8 +111,6 @@ enter_release_info() {
 }
 
 
-
-
 update_version_number() {
     ask "Update version number?" || return 0
     echo
@@ -143,6 +126,21 @@ update_version_number() {
     echo "### Updating debian.upstream/changelog"
     update_debian_changelog
 
+}
+
+update_debian_changelog() {
+    DATE=$(LANG=C date -R)
+    NAME=$(git config --global --get user.name)
+    MAIL=$(git config --global --get user.email)
+    changelog=$(mktemp)
+    echo "pynag (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
+    echo "  " >> ${changelog}
+    echo "  * New upstream version" >> ${changelog}
+    echo "  " >> ${changelog}
+    echo "  -- ${NAME} <${MAIL}>  ${DATE}" >> ${changelog}
+    echo "" >> ${changelog}
+    cat debian.upstream/changelog >> ${changelog}
+    cp -f ${changelog} debian.upstream/changelog
 }
 
 
