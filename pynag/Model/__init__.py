@@ -2313,34 +2313,6 @@ class Timeperiod(ObjectDefinition):
     objects = ObjectFetcher('timeperiod')
 
 
-class Status(object):
-    """ Contains current status info (i.e. status.dat) for one specific Host or Service """
-    plugin_output = ''
-    perfdata = ''
-    long_plugin_output = ''
-    current_state = ''
-    perfdatalist = []
-
-    def __init__(self, host_name, service_description=None):
-        self.host_name = host_name
-        s = Parsers.status()
-        s.parse()
-        try:
-            if not service_description:
-                # This is a host status
-                self.status = s.get_hoststatus(host_name)
-            else:
-                # This is a service status
-                self.status = s.get_servicestatus(host_name, service_description)
-        except ValueError:
-            self.status = None
-        self.plugin_output = self.status['plugin_output']
-        self.perfdata = self.status['performance_data']
-        self.long_plugin_output = self.status['long_plugin_output']
-        self.current_state = self.status['current_state']
-        self.perfdatalist = pynag.Utils.PerfData(self.perfdata)
-
-
 def _add_object_to_group(my_object, my_group):
     """ Add one specific object to a specified objectgroup
 
@@ -2446,76 +2418,6 @@ def _remove_from_contactgroup(my_object, contactgroup):
         return True
     else:
         return False
-
-
-class HostStatus(Status):
-    """ Contains Status info (i.e. status.dat) for one specific Host """
-
-    def __init__(self, data):
-        self.data = data
-        self.plugin_output = self.data['plugin_output']
-        self.perfdata = self.data['performance_data']
-        self.long_plugin_output = self.data['long_plugin_output']
-        self.current_state = self.data['current_state']
-        self.perfdatalist = pynag.Utils.PerfData(self.perfdata)
-
-    def get_shortname(self):
-        return self.data['host_name']
-
-    def __str__(self):
-        return "%s - %s" % (self.get_shortname(), self.get_state())
-
-    def get_state(self):
-        return self.data['current_state']
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class StatusFetcher(object):
-    """ Responsible for fetching multiple Status objects (from status.dat, mk-livestatus, etc) """
-    _cached_objects = []
-    _cached_shortnames = defaultdict(dict)
-    _cached_object_type = defaultdict(list)
-    object_type = None
-
-    def __init__(self, object_type):
-        """
-        """
-        self.object_type = object_type
-
-    def get_all(self):
-        """ Return all object definitions of specified type"""
-        if self.needs_reload():
-            self.reload_cache()
-        if self.object_type is not None:
-            return StatusFetcher._cached_object_type[self.object_type]
-        else:
-            return StatusFetcher._cached_objects
-
-    all = property(get_all)
-
-    def needs_reload(self):
-        """ Returns True if cached status data is out of date """
-        return True
-
-    def reload_cache(self):
-        """Reload status cache"""
-        status = Parsers.status()
-        status.parse()
-
-        # Fetch all objects from Parsers.config
-        for object_type, objects in status.data.items():
-            for i in objects:
-                if object_type == 'hoststatus':
-                    item = HostStatus(data=i)
-                else:
-                    continue
-                    #item = Status(data=i)
-                StatusFetcher._cached_objects.append(item)
-                StatusFetcher._cached_object_type[object_type].append(item)
-                StatusFetcher._cached_shortnames[object_type][item.get_shortname()] = item
-        return True
 
 
 string_to_class = {}
