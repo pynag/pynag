@@ -66,7 +66,7 @@ class testsFromCommandLine(unittest.TestCase):
 
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
-        pynag_script = pynagbase + '/scripts/pynag'
+        pynag_script = "python " + pynagbase + '/scripts/pynag'
         # ok commands, bunch of commandline commands that we execute just to see
         # if an unhandled exception appears,
         # Ideally none of these commands should modify any configuration
@@ -77,5 +77,6 @@ class testsFromCommandLine(unittest.TestCase):
             "%s config --get cfg_dir" % pynag_script,
         ]
         for i in ok_commands:
-            exit_code, stdout, stderr = pynag.Utils.runCommand(i)
+            exit_code, stdout, stderr = pynag.Utils.runCommand(i,
+                                            env={'PYTHONPATH': pynagbase})
             self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i, exit_code, stdout, stderr))

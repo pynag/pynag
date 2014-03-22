@@ -22,7 +22,7 @@ fi
 main() {
     enter_release_info || echo FAIL
 
-    update_changes || echo FAI
+    update_changes || echo FAIL
 
     update_version_number || echo FAIL
 
@@ -160,6 +160,6 @@ ask() {
     fi
 }
 
-#main;
+main;
 
 # vim: sts=4 expandtab autoindent
