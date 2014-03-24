@@ -115,8 +115,8 @@ update_freecode_info() {
 
 update_version_number() {
     ask "Update version number?" || return 0
-    echo "Current version number is: ${current_version}"
-    read -p "Enter new version number : " new_version
+    echo    "Current version is: ${current_version}"
+    read -p "New version number: " new_version
     
     echo
     echo "### Updating Makefile"
