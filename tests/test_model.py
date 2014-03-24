@@ -810,6 +810,30 @@ class Model(unittest.TestCase):
         self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
         self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
 
+    def test_effective_hostgroups(self):
+        """ Test get_effective_hostgroups() against stuff in dataset01 """
+        production_servers = pynag.Model.Hostgroup.objects.get_by_shortname('production_servers')
+        production_server1 = pynag.Model.Host.objects.get_by_shortname('production_server1')
+
+        development_servers = pynag.Model.Hostgroup.objects.get_by_shortname('development_servers')
+        development_server1 = pynag.Model.Host.objects.get_by_shortname('development_server1')
+
+        prod_and_dev = pynag.Model.Hostgroup.objects.get_by_shortname('prod_and_dev')
+
+        groups_for_production_server1 = production_server1.get_effective_hostgroups()
+        groups_for_development_server1 = development_server1.get_effective_hostgroups()
+
+        self.assertEqual([prod_and_dev, production_servers], groups_for_production_server1)
+        self.assertEqual([development_servers, prod_and_dev], groups_for_development_server1)
+
+        self.assertEqual([], development_servers.get_effective_hostgroups())
+        self.assertEqual([], production_servers.get_effective_hostgroups())
+        self.assertEqual([development_servers, production_servers], prod_and_dev.get_effective_hostgroups())
+
+        self.assertEqual([development_server1], development_servers.get_effective_hosts())
+        self.assertEqual([production_server1], production_servers.get_effective_hosts())
+        self.assertEqual([development_server1, production_server1], prod_and_dev.get_effective_hosts())
+
 
 class NagiosReloadHandler(unittest.TestCase):
     """ Test Eventhandler NagiosReloadHandler
