@@ -66,7 +66,7 @@ class testsFromCommandLine(unittest.TestCase):
 
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
-        pynag_script = "python " + pynagbase + '/scripts/pynag'
+        pynag_script = pynagbase + '/scripts/pynag'
         # ok commands, bunch of commandline commands that we execute just to see
         # if an unhandled exception appears,
         # Ideally none of these commands should modify any configuration
