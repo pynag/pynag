@@ -1,5 +1,11 @@
 import os
+import sys
 
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
+from tests import tests_dir
 import unittest2 as unittest
 from mock import MagicMock, patch, __version__
 
@@ -22,11 +28,6 @@ except ImportError:
         return mock
 
 from pynag.Control import Command
-
-tests_dir = os.path.dirname( os.path.realpath(__file__) )
-if tests_dir == '':
-    tests_dir = '.'
-
 
 def is_mock_to_old():
     major, minor, patch = __version__.split('.')
@@ -635,3 +636,9 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] PROCESS_FILE;%s;%s' % (self.timestamp, file_name, delete)
         sock = self.livestatus_socket()
         sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

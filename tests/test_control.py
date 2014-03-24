@@ -1,10 +1,15 @@
+import os
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
 import unittest2 as unittest
 from mock import MagicMock, patch, Mock
 
-import os
 import pynag.Control
 from pynag.Parsers import config
-
 
 class testControl(unittest.TestCase):
     def setUp(self):

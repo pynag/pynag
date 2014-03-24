@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 import os
 import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
 import unittest2
 import doctest
 import mock
@@ -8,9 +13,7 @@ import mock
 # Make sure all tests run from a fixed path, this also makes sure
 # That pynag in local directory is imported before any system-wide
 # installs of pynag
-tests_dir = os.path.dirname(os.path.realpath(__file__)) or '.'
-os.chdir(tests_dir)
-sys.path.insert(0, os.path.realpath("%s/%s" % (tests_dir, os.path.pardir)))
+from tests import tests_dir
 
 import pynag.Model
 import pynag.Parsers
@@ -45,6 +48,7 @@ def setUpDocTests(doctest):
     os.chdir(os.path.join(tests_dir, 'dataset01'))
     pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest2.main()
 
+# vim: sts=4 expandtab autoindent

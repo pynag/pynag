@@ -1,15 +1,18 @@
+import os
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
 import unittest2 as unittest
 from mock import MagicMock, patch
-
-import sys
-import os
 import shutil
 import tempfile
+
 import pynag.Utils as utils
 import pynag.Model
 from pynag.Utils import PynagError
-#from tests.test import tests_dir
-
 from tests import tests_dir
 
 class testUtils(unittest.TestCase):
@@ -351,3 +354,8 @@ class testUtils(unittest.TestCase):
             code=0, message="match", nscahost="nomatch", hostname="test", service=None, nscabin="/bin/grep", nscaconf="-")
         self.assertEqual(1, result[0])
         self.assertEqual('(standard input):0\n', result[1])
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

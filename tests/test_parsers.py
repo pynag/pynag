@@ -1,16 +1,21 @@
 __author__ = 'palli'
+
+import os
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
 import unittest2 as unittest
 import doctest
 import tempfile
 import shutil
-import os
-import sys
 import string
 import random
 
-import pynag.Parsers
 from tests import tests_dir
-
+import pynag.Parsers
 
 class Config(unittest.TestCase):
     """ Test pynag.Parsers.config """
@@ -611,3 +616,9 @@ define service {
 }
 
 """
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

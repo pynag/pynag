@@ -1,5 +1,11 @@
-import unittest2 as unittest
+import os
 import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
+import unittest2 as unittest
 import time
 
 import pynag.Utils
@@ -607,3 +613,8 @@ class NewPluginThresholdSyntax(unittest.TestCase):
         self.assertRaises(PynagError, parse_threshold, '')
         self.assertRaises(AttributeError, parse_threshold, None)
         self.assertRaises(PynagError, parse_threshold, 'string')
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

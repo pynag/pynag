@@ -1,14 +1,22 @@
+import os
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
 import unittest2 as unittest
-from tests import tests_dir
 import tempfile
 import os
-
-import pynag.Model
-import pynag.Model.EventHandlers
 import shutil
 import string
 import random
 import mock
+import sys
+
+import pynag.Model
+import pynag.Model.EventHandlers
+from tests import tests_dir
 
 os.chdir(tests_dir)
 
@@ -833,3 +841,8 @@ class ObjectRelations(unittest.TestCase):
         members_of_everything_expected = set(['users', 'operators', 'sysadmins', 'network-admins', 'admins', 'nonadmins', 'database-admins'])
         self.assertEqual(members_of_everything_actual, members_of_everything_expected)
 
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

@@ -1,6 +1,13 @@
 """Unit tests for collections.defaultdict."""
 
 import os
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
+
 import copy
 import tempfile
 import unittest2 as unittest
@@ -171,8 +178,7 @@ class TestDefaultDict(unittest.TestCase):
         finally:
             os.remove(tfn)
 
-def test_main():
-    test_support.run_unittest(TestDefaultDict)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent

@@ -1,12 +1,21 @@
-import unittest2 as unittest
 import os
-from tests import tests_dir
+import sys
+
+# Make sure we import from working tree
+pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
+sys.path.insert(0, pynagbase)
+
+import unittest2 as unittest
 import tempfile
-import pynag.Model
 import shutil
 
-pynagbase = os.path.realpath("%s/%s" % (tests_dir, os.path.pardir))
+from tests import tests_dir
 
+os.chdir(tests_dir)
+import pynag.Model
+
+# Exported to pynag command
+pynagbase = os.path.realpath("%s/%s" % (tests_dir, os.path.pardir))
 
 class testDatasetParsing(unittest.TestCase):
     """ Parse any dataset in the tests directory starting with "testdata" """
@@ -66,7 +75,7 @@ class testsFromCommandLine(unittest.TestCase):
 
     def testCommandPynag(self):
         """ Various command line tests on the pynag command  """
-        pynag_script = "python " + pynagbase + '/scripts/pynag'
+        pynag_script = pynagbase + '/scripts/pynag'
         # ok commands, bunch of commandline commands that we execute just to see
         # if an unhandled exception appears,
         # Ideally none of these commands should modify any configuration
@@ -80,3 +89,8 @@ class testsFromCommandLine(unittest.TestCase):
             exit_code, stdout, stderr = pynag.Utils.runCommand(i,
                                             env={'PYTHONPATH': pynagbase})
             self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i, exit_code, stdout, stderr))
+
+if __name__ == "__main__":
+    unittest.main()
+
+# vim: sts=4 expandtab autoindent
