@@ -824,11 +824,12 @@ class ObjectRelations(unittest.TestCase):
         pass
     def test_get_subgroups(self):
         c = pynag.Utils.defaultdict(set)
-        c['everything'] = {'admins', 'nonadmins', 'operators', 'users'}
-        c['nonadmins'] = {'users'}
+        c['everything'] = set(['admins', 'nonadmins', 'operators', 'users'])
+        c['nonadmins'] = set(['users'])
         c['users'] = set()
-        c['admins'] = {'sysadmins', 'network-admins', 'database-admins'}
-        c['nonadmins'] = {'users'}
+        c['admins'] = set(['sysadmins', 'network-admins', 'database-admins'])
+        c['nonadmins'] = set(['users'])
         members_of_everything_actual = pynag.Model.ObjectRelations._get_subgroups('everything', c)
-        members_of_everything_expected = {'users', 'operators', 'sysadmins', 'network-admins', 'admins', 'nonadmins', 'database-admins'}
+        members_of_everything_expected = set(['users', 'operators', 'sysadmins', 'network-admins', 'admins', 'nonadmins', 'database-admins'])
         self.assertEqual(members_of_everything_actual, members_of_everything_expected)
+
