@@ -3,6 +3,7 @@ import os
 import sys
 import unittest2
 import doctest
+import mock
 
 # Make sure all tests run from a fixed path, this also makes sure
 # That pynag in local directory is imported before any system-wide
@@ -46,3 +47,4 @@ def setUpDocTests(doctest):
 
 if __name__ == '__main__':
     unittest2.main()
+
