@@ -820,6 +820,8 @@ class Model(unittest.TestCase):
 
         prod_and_dev = pynag.Model.Hostgroup.objects.get_by_shortname('prod_and_dev')
 
+        production_service = pynag.Model.Service.objects.get_by_shortname('prod_service')
+
         groups_for_production_server1 = production_server1.get_effective_hostgroups()
         groups_for_development_server1 = development_server1.get_effective_hostgroups()
 
@@ -833,6 +835,10 @@ class Model(unittest.TestCase):
         self.assertEqual([development_server1], development_servers.get_effective_hosts())
         self.assertEqual([production_server1], production_servers.get_effective_hosts())
         self.assertEqual([development_server1, production_server1], prod_and_dev.get_effective_hosts())
+
+        self.assertEqual(production_servers.get_effective_services(), [production_service])
+        self.assertEqual(prod_and_dev.get_effective_services(), [production_service])
+        self.assertEqual(development_servers.get_effective_services(), [])
 
 
 class NagiosReloadHandler(unittest.TestCase):
