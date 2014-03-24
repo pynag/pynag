@@ -308,10 +308,7 @@ class ObjectRelations(object):
             for subgroup in subgroups:
                 for i in ObjectRelations.hostgroup_hosts[subgroup]:
                     ObjectRelations.host_hostgroups[i].add(group)
-                for i in ObjectRelations.hostgroup_services[subgroup]:
-                    ObjectRelations.service_hostgroups[i].add(group)
                 ObjectRelations.hostgroup_hosts[group].update(ObjectRelations.hostgroup_hosts[subgroup])
-                ObjectRelations.hostgroup_services[group].update(ObjectRelations.hostgroup_services[subgroup])
 
     @staticmethod
     def resolve_servicegroups():

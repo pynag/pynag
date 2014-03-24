@@ -837,9 +837,10 @@ class Model(unittest.TestCase):
         self.assertEqual([development_server1, production_server1], prod_and_dev.get_effective_hosts())
 
         self.assertEqual(production_servers.get_effective_services(), [production_service])
-        self.assertEqual(prod_and_dev.get_effective_services(), [production_service])
+        self.assertEqual(prod_and_dev.get_effective_services(), [])
         self.assertEqual(development_servers.get_effective_services(), [])
 
+        self.assertEqual(production_service.get_effective_hostgroups(), [production_servers])
 
 class NagiosReloadHandler(unittest.TestCase):
     """ Test Eventhandler NagiosReloadHandler
