@@ -1,3 +1,9 @@
+Changes in 0.8.3 (Mar 24 2014)
+New Features:
+    - Utils.runCommand() supports new env parameter
+Bug Fixes:
+    - Parsers.LogFiles() now orders archivelogs by last modified time
+
 Changes in 0.8.2 (Mar 21 2014)
 New Features:
     - Utils.AttributeList() - now aware of "null" values
