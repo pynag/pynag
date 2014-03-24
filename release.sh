@@ -1,10 +1,10 @@
 #!/bin/bash
-# Use this script to release a new version of pynag
-
+# Use this script to release a new version of ${project_name}
 
 # Extract current version information
-current_version=$(grep ^Version: pynag.spec | awk '{ print $2 }')
-current_release=$(grep "define release" pynag.spec | awk '{ print $3 }')
+project_name=$(ls *spec | sed 's/.spec$//')
+current_version=$(grep ^Version: $project_name.spec | awk '{ print $2 }')
+current_release=$(grep "define release" $project_name.spec | awk '{ print $3 }')
 
 UPDATE_INFO_FILE=$(mktemp)
 freecode_file=$(mktemp)
@@ -76,11 +76,11 @@ upload_to_freecode() {
         return 1
     fi
 
-    echo "Project: pynag" > ${freecode_file}
+    echo "Project: $project_name" > ${freecode_file}
     echo "Version: ${new_version}" >> ${freecode_file}
     echo "Hide: N" >> ${freecode_file}
-    echo "Website-URL: http://pynag.org/" >> ${freecode_file}
-    echo "Tar/GZ-URL: https://pypi.python.org/packages/source/p/pynag/pynag-${new_version}.tar.gz" >> ${freecode_file}
+    echo "Website-URL: http://${project_name}/" >> ${freecode_file}
+    echo "Tar/GZ-URL: https://pypi.python.org/packages/source/p/${project_name}/${project_name}-${new_version}.tar.gz" >> ${freecode_file}
 
     grep -A24 '^$' ${UPDATE_INFO_FILE} >> ${freecode_file}
     freecode-submit < ${freecode_file}
@@ -120,13 +120,13 @@ update_version_number() {
     
     echo
     echo "### Updating Makefile"
-    sed -i "s/^VERSION.*= ${current_version}/VERSION		= ${new_version}/" Makefile
-    echo "### Updating pynag/__init__.py"
-    sed -i "s/^__version__ =.*/__version__ = '${new_version}'/" pynag/__init__.py
-    echo "### Updating pynag.spec"
-    sed -i "s/^Version: ${current_version}/Version: ${new_version}/" pynag.spec
-    echo "### Updating rel-eng/packages/pynag"
-    echo "${new_version}-${current_release} /" > rel-eng/packages/pynag
+    sed -i "s/^VERSION.*=.*/VERSION		= ${new_version}/" Makefile
+    echo "### Updating ${project_name}/__init__.py"
+    sed -i "s/^__version__.*/__version__ = '${new_version}'/" ${project_name}/__init__.py
+    echo "### Updating ${project_name}.spec"
+    sed -i "s/^Version: ${current_version}/Version: ${new_version}/" ${project_name}.spec
+    echo "### Updating rel-eng/packages/${project_name}"
+    echo "${new_version}-${current_release} /" > rel-eng/packages/${project_name}
 
     echo "### Updating debian.upstream/changelog"
     update_debian_changelog
@@ -138,7 +138,7 @@ update_debian_changelog() {
     NAME=$(git config --global --get user.name)
     MAIL=$(git config --global --get user.email)
     changelog=$(mktemp)
-    echo "pynag (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
+    echo "${project_name} (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
     echo "  " >> ${changelog}
     echo "  * New upstream version" >> ${changelog}
     echo "  " >> ${changelog}
@@ -151,8 +151,8 @@ update_debian_changelog() {
 
 git_commit() {
     ask "Commit changes to git and tag release ?" || return 0
-    git commit Makefile pynag/__init__.py rel-eng/packages/pynag pynag.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
-    git tag pynag-${new_version}-${current_release} -a -m "Bumped version number to $new_version"
+    git commit Makefile ${project_name}/__init__.py rel-eng/packages/${project_name} ${project_name}.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
+    git tag ${project_name}-${new_version}-${current_release} -a -m "Bumped version number to $new_version"
 }
 
 ask() {
