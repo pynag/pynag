@@ -20,11 +20,12 @@ if [ -z $BASH ]; then
 fi
 
 main() {
-    enter_release_info || echo FAIL
 
     update_changes || echo FAIL
 
     update_version_number || echo FAIL
+    
+    new_version=$(grep ^VERSION Makefile | awk '{ print $3 }')
 
     git_commit || echo FAIL
 
@@ -59,6 +60,7 @@ git_push() {
 
 upload_to_freecode() {
     ask "Upload to freecode?" || return 0
+    update_freecode_info
     error=0
     which freecode-submit &> /dev/null || error=1
     grep freecode ~/.netrc &> /dev/null || error=1
@@ -87,9 +89,9 @@ upload_to_freecode() {
 
 
 
-enter_release_info() {
+update_freecode_info() {
     echo "Current version is: $current_version" > ${UPDATE_INFO_FILE}
-    echo "New version number: " >> ${UPDATE_INFO_FILE}
+    echo "New version number: ${new_version}" >> ${UPDATE_INFO_FILE}
     echo 'Summary: <one line summary>' >> ${UPDATE_INFO_FILE}
     echo '' >> ${UPDATE_INFO_FILE}
     echo '<full description>' >> ${UPDATE_INFO_FILE}
@@ -113,6 +115,9 @@ enter_release_info() {
 
 update_version_number() {
     ask "Update version number?" || return 0
+    echo "Current version number is: ${current_version}"
+    read -p "Enter new version number : " new_version
+    
     echo
     echo "### Updating Makefile"
     sed -i "s/^VERSION.*= ${current_version}/VERSION		= ${new_version}/" Makefile
