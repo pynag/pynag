@@ -109,6 +109,31 @@ class Config(unittest.TestCase):
         items = self.config.parse_string(minimal_config)
         self.assertEqual(items[11]['command_line'], '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$')
         self.assertEqual(items[11]['command_name'], 'check_local_mrtgtraf')
+    
+    def test_invalid_chars_in_item_edit(self):
+        """ Test what happens when a user enters invalid characters attribute value """
+        field_name = "test_field"
+        field_value = "test_value"
+        host_name = "macrohost"
+
+        # Change field_name of our host
+        self.config.parse()
+        host = self.config.get_host(host_name)
+        self.config.item_edit_field(host, field_name, field_value)
+
+        # check if field_name matches what we saved it as
+        self.config.parse()
+        host = self.config.get_host(host_name)
+        self.assertEqual(host.get(field_name), field_value)
+
+        # Try to put new line as an attribute value:
+        try:
+            self.config.item_edit_field(host, field_name, "value with \n line breaks")
+            self.assertEqual(False, True, "item_edit_field() should have raised an exception")
+        except ValueError:
+            self.assertEqual(True, True)
+
+
 
 
 class ExtraOptsParser(unittest.TestCase):

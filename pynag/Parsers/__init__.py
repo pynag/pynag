@@ -513,6 +513,8 @@ class config:
             return
         if field_name is None and new_item is None:
             raise ValueError("either field_name or new_item must be set")
+        if '\n' in str(new_value):
+            raise ValueError("Invalid character \\n used as an attribute value.")
         everything_before, object_definition, everything_after, filename = self._locate_item(item)
         if new_item is not None:
             # We have instruction on how to write new object, so we dont need to parse it
