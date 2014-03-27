@@ -21,13 +21,3 @@
 
 # Varios test that must be passed in order for build process to complete
 
-import test
-import unittest
-suite = unittest.TestSuite()
-import sys
-
-if __name__ == '__main__':
-    state = unittest.TextTestRunner().run( suite )
-    if state.failures or state.errors:
-        sys.exit(1)
-    sys.exit(0)
