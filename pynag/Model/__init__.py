@@ -435,7 +435,6 @@ class ObjectFetcher(object):
             return True
         if ObjectFetcher._cache_only:
             return False
-        print "checking for reparse"
         return config.needs_reparse()
 
     def get_by_id(self, id):
