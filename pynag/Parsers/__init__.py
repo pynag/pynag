@@ -1978,26 +1978,8 @@ class LayeredConfig(config):
                         result = False
         return result
 
-#    def _change_filename_to_adagios_layer(self, filename):
-#        """ This generates the appropriate filename to save the item in the adagios layer. """
-#
-#        import pdb; pdb.set_trace()
-#        original_directory = os.path.dirname(filename) #tmp1/hosts
-#        original_base_directory = os.path.join(os.path.dirname(self.cfg_file), 'adagios')
-#        #shinken/adagios
-#        original_name = os.path.basename(filename) # hostname.cfg
-#        output_base_directory = self.adagios_layer # tmp2
-#
-#        output_directory = original_directory.replace(
-#                original_base_directory,
-#                output_base_directory
-#        ) #tmp1/hosts
-#
-#        new_filename = os.path.join(output_directory, original_name) #tmp1/hosts/hostname.cfg
-#
-#        return new_filename
-
     def _change_filename_to_adagios_layer(self, filename):
+        """ This generates the appropriate filename to save the item in the adagios layer. """
 
         original_dir = os.path.dirname(filename)
         if original_dir.split('/')[-1] == 'hosts':
