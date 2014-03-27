@@ -1854,7 +1854,7 @@ class LayeredConfig(config):
 
     def _soft_locate_item(self, item):
         """
-        This is a helper function for anyone who wishes to modify objects. It takes "item", locates the
+        This is a helper function for anyone who wishes to modify objects. It takes "item", locates th
         file which is configured in, and locates exactly the lines which contain that definition.
 
         PLEASE NOTE: This method has been altered from its original behavior (config._locate_item())
@@ -1978,21 +1978,39 @@ class LayeredConfig(config):
                         result = False
         return result
 
+#    def _change_filename_to_adagios_layer(self, filename):
+#        """ This generates the appropriate filename to save the item in the adagios layer. """
+#
+#        import pdb; pdb.set_trace()
+#        original_directory = os.path.dirname(filename) #tmp1/hosts
+#        original_base_directory = os.path.join(os.path.dirname(self.cfg_file), 'adagios')
+#        #shinken/adagios
+#        original_name = os.path.basename(filename) # hostname.cfg
+#        output_base_directory = self.adagios_layer # tmp2
+#
+#        output_directory = original_directory.replace(
+#                original_base_directory,
+#                output_base_directory
+#        ) #tmp1/hosts
+#
+#        new_filename = os.path.join(output_directory, original_name) #tmp1/hosts/hostname.cfg
+#
+#        return new_filename
+
     def _change_filename_to_adagios_layer(self, filename):
-        """ This generates the appropriate filename to save the item in the adagios layer. """
 
-        original_directory = os.path.dirname(filename)
-        original_base_directory = os.path.join(os.path.dirname(self.cfg_file), 'adagios')
-        original_name = os.path.basename(filename)
-        output_base_directory = self.adagios_layer
-
-        output_directory = original_directory.replace(
-                original_base_directory,
-                output_base_directory
-        )
-
-        new_filename = os.path.join(output_directory, original_name)
-
+        original_dir = os.path.dirname(filename)
+        if original_dir.split('/')[-1] == 'hosts':
+            new_filename = os.path.join(
+                    self.adagios_layer,
+                    'hosts',
+                    os.path.basename(filename)
+                    )
+        else:
+            new_filename = os.path.join(
+                    self.adagios_layer,
+                    os.path.basename(filename)
+                    )
         return new_filename
 
     def _create_minimal_item(self, src_item):
