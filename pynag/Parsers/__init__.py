@@ -1437,19 +1437,9 @@ class LayeredConfigCompiler(config):
           strict   -- if True, use stricter parsing which is more prone to raising exceptions
         """
 
-        self.cfg_file = cfg_file  # Main configuration file
+        config.__init__(self, cfg_file=cfg_file, strict=strict)
         self.additional_layers = layers  # Ordered List of additional layers
         self.destination_directory = destination_directory  # Output folder
-        self.strict = strict  # Use strict parsing or not
-
-        # If nagios.cfg is not set, lets do some minor autodiscover.
-        if self.cfg_file is None:
-            self.cfg_file = self.guess_cfg_file()
-
-        self.data = {}
-        self.maincfg_values = []
-        self.layercfg_values = []
-        self._is_dirty = False
 
     def _load_file(self, filename):
         """ Parses filename with self.parse_filename and append results in self._pre_object_list
@@ -1717,46 +1707,9 @@ class LayeredConfigCompiler(config):
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def parse(self):
-        """ Parse all objects in your nagios configuration
 
-        This functions starts by loading up your nagios.cfg ( parse_maincfg() ) then moving on to
-        your object configuration files (as defined via cfg_file and cfg_dir) and and your resource_file
-        as well
-
-        Returns:
-          None
-
-        Raises:
-          IOError if unable to read any file due to permission problems
-        """
-
-        # reset
-        self.reset()
-
-        self.parse_maincfg()
-
-        self.cfg_files = self.get_cfg_files()
-
-        # When parsing config, we will softly fail if permission denied
-        # comes on resource files. If later someone tries to get them via
-        # get_resource, we will fail hard
-        try:
-            self._resource_values = self.get_resources()
-        except IOError, e:
-            self.errors.append(str(e))
-
-        self.timestamps = self.get_timestamps()
-
-        # This loads everything into
-        for cfg_file in self.cfg_files:
-            self._load_file(cfg_file)
-
-        # The will generate the config files used by shinken/nagios/adagios
+        config.parse(self)
         self.dump_all_config_to_output()
-
-        self._post_parse()
-
-        self._is_dirty = False
 
     def _locate_item(self, item):
         """
@@ -1818,7 +1771,8 @@ class LayeredConfigCompiler(config):
             ValueError if object is not found
         IOError if save fails
         """
-        return self._modify_object(item, field_name=field_name, new_value=new_value)
+
+        return config._modify_object(self, item, field_name=field_name, new_value=new_value)
 
 
 class LayeredConfig(config):
@@ -1839,18 +1793,8 @@ class LayeredConfig(config):
           strict   -- if True, use stricter parsing which is more prone to raising exceptions
         """
 
-        self.cfg_file = cfg_file  # Main configuration file
+        config.__init__(self, cfg_file=cfg_file, strict=strict)
         self.adagios_layer = adagios_layer  # Layer to output adagios modifications (minimal obj defs)
-        self.strict = strict  # Use strict parsing or not
-
-        # If nagios.cfg is not set, lets do some minor autodiscover.
-        if self.cfg_file is None:
-            self.cfg_file = self.guess_cfg_file()
-
-        self.data = {}
-        self.maincfg_values = []
-        self.layercfg_values = []
-        self._is_dirty = False
 
     def _soft_locate_item(self, item):
         """
@@ -2170,22 +2114,6 @@ class LayeredConfig(config):
         del adagios_fork  # Delete the useless item from memory
 
         return self._modify_object(item=item, new_item=str_new_item)
-
-    def item_remove(self, item):
-        """ Delete one specific item from its configuration files
-
-        Arguments:
-            item -- Item that is to be rewritten
-            str_new_item -- str representation of the new item
-        Examples:
-            item_rewrite( item, "define service {\n name example-service \n register 0 \n }\n" )
-        Returns:
-            True on success
-        Raises:
-            ValueError if object is not found
-            IOError if save fails
-        """
-        return self._modify_object(item=item, new_item="")
 
     def item_edit_field(self, item, field_name, new_value):
         """ Modifies one field of a (currently existing) object. Changes are immediate (i.e. there is no commit)
