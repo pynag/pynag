@@ -64,7 +64,6 @@ pynag_directory = None
 config = Parsers.config(cfg_file=cfg_file)
 
 
-
 #: eventhandlers -- A list of Model.EventHandlers object.
 # Event handler is responsible for passing notification whenever something
 # important happens in the model.
@@ -487,8 +486,7 @@ class ObjectFetcher(object):
         Get all services where host_name is examplehost.example.com
          >>> Service.objects.filter(host_name='examplehost.example.com') # doctest: +SKIP
 
-        Get service with host_name=examplehost.example.com 
-        and service_description='Ping'
+        Get service with host_name=examplehost.example.com and service_description='Ping'
          >>> Service.objects.filter(host_name='examplehost.example.com',
          ...                        service_description='Ping') # doctest: +SKIP
 
@@ -578,22 +576,22 @@ class ObjectDefinition(object):
         return self[attribute_name]
 
     def set_attribute(self, attribute_name, attribute_value):
-        """Set (but does not save) one attribute in our object
+        """ Set (but does not save) one attribute in our object
 
-	:param attribute_name:  A attribute such as *host_name*
-	:param attribute_value: The value you would like to set
-	"""
+            :param attribute_name:  A attribute such as *host_name*
+            :param attribute_value: The value you would like to set
+        """
         self[attribute_name] = attribute_value
 
-    def attribute_is_empty(self,attribute_name):
-        """Check if the attribute is empty
+    def attribute_is_empty(self, attribute_name):
+        """ Check if the attribute is empty
 
-        :param attribute_name: A attribute such as *host_name*
+            :param attribute_name: A attribute such as *host_name*
 
-	:returns: True or False
+            :returns: True or False
         """
         attr = self.get_attribute(attribute_name)
-        if attr == None or attr.strip() in (None,'','+','-','!'):
+        if not attr or attr.strip() in '+-!':
             return True
         else:
             return False
@@ -739,15 +737,14 @@ class ObjectDefinition(object):
             filename = re.sub(invalid_chars, '', filename)
             path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, filename)
 
-
         return path
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def save(self, filename=None):
         """Saves any changes to the current object to its configuration file
 
-        :param filename: 
-                  * If filename is provided, save a copy of this object 
+        :param filename:
+                  * If filename is provided, save a copy of this object
                     in that file.
 
                   * If filename is None, either save to current file (in
@@ -828,8 +825,8 @@ class ObjectDefinition(object):
     def rewrite(self, str_new_definition=None):
         """Rewrites this Object Definition in its configuration files.
 
-        :param str_new_definition: 
-          The actual string that will be written in the configuration file. 
+        :param str_new_definition:
+          The actual string that will be written in the configuration file.
           If str_new_definition is *None*, then we will use *self.__str__()*
 
         :returns: True on success
@@ -856,7 +853,7 @@ class ObjectDefinition(object):
     def delete(self, recursive=False, cleanup_related_items=True):
         """ Deletes this object definition from its configuration files.
 
-        :param recursive: 
+        :param recursive:
             If True, look for items that depend on this object and delete them as well
             (for example, if you delete a host, delete all its services as well)
 
@@ -1121,13 +1118,12 @@ class ObjectDefinition(object):
         return self._resolve_macros(command.command_line, host_name=host_name)
 
     def get_effective_notification_command_line(self, host_name=None, contact_name=None):
-        """Get this objects notifications with all macros (i.e. $HOSTADDR$) 
-        resolved
+        """Get this objects notifications with all macros (i.e. $HOSTADDR$) resolved
 
-        :param host_name:    Simulate notification using this host. If None: Use first valid host (used for services)
-        :param contact_name: Simulate notification for this contact. If None: use first valid contact for the service
+            :param host_name:    Simulate notification using this host. If None: Use first valid host (used for services)
+            :param contact_name: Simulate notification for this contact. If None: use first valid contact for the service
 
-	:returns: string of this objects notifications
+            :returns: string of this objects notifications
         """
         if contact_name is None:
             contacts = self.get_effective_contacts()
@@ -1610,11 +1606,11 @@ class Host(ObjectDefinition):
                 if (i.get_attribute('object_type').endswith("dependency")
                   and recursive is True and i.attribute_is_empty("dependent_host_name")
                   and i.attribute_is_empty("dependent_hostgroup_name")):
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
         # Call parent to get delete myself
-        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
 
     def get_related_objects(self):
         result = super(self.__class__, self).get_related_objects()
@@ -1961,11 +1957,11 @@ class Contact(ObjectDefinition):
                   and recursive is True and i.attribute_is_empty("contacts")
                   and i.attribute_is_empty("contact_groups")):
                     # no contacts or contact_groups defined for this escalation
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
         # Call parent to get delete myself
-        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
 
 
 class ServiceDependency(ObjectDefinition):
@@ -1977,13 +1973,16 @@ class HostDependency(ObjectDefinition):
     object_type = 'hostdependency'
     objects = ObjectFetcher('hostdependency')
 
+
 class HostEscalation(ObjectDefinition):
     object_type = 'hostescalation'
     objects = ObjectFetcher('hostescalation')
 
+
 class ServiceEscalation(ObjectDefinition):
     object_type = 'serviceescalation'
     objects = ObjectFetcher('serviceescalation')
+
 
 class Contactgroup(ObjectDefinition):
     object_type = 'contactgroup'
@@ -2050,7 +2049,7 @@ class Contactgroup(ObjectDefinition):
             pass
         if cleanup_related_items is True and self.contactgroup_name:
             contactgroups = Contactgroup.objects.filter(contactgroup_members__has_field=self.contactgroup_name)
-            contacts      = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name) 
+            contacts = Contact.objects.filter(contactgroups__has_field=self.contactgroup_name)
             # nagios is inconsistent with the attribute names - notice the missing _ in contactgroups attribute name
             hostSvcAndEscalations = ObjectDefinition.objects.filter(contact_groups__has_field=self.contactgroup_name)
             # will find references in Hosts, Services as well as Host/Service-escalations
@@ -2147,9 +2146,9 @@ class Hostgroup(ObjectDefinition):
                 # remove from host/service escalations/dependencies
                 i.attribute_removefield('hostgroup_name', self.hostgroup_name)
                 if ((i.get_attribute('object_type').endswith("escalation") or
-                     i.get_attribute('object_type').endswith("dependency")) 
-                  and recursive is True and i.attribute_is_empty("host_name")  
-                  and i.attribute_is_empty("hostgroup_name")): 
+                     i.get_attribute('object_type').endswith("dependency"))
+                  and recursive is True and i.attribute_is_empty("host_name")
+                  and i.attribute_is_empty("hostgroup_name")):
                     i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
@@ -2161,12 +2160,11 @@ class Hostgroup(ObjectDefinition):
                 if (i.get_attribute('object_type').endswith("dependency")
                   and recursive is True and i.attribute_is_empty("dependent_host_name")
                   and i.attribute_is_empty("dependent_hostgroup_name")):
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
         # Call parent to get delete myself
-        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
-
+        return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
 
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
