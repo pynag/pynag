@@ -434,13 +434,13 @@ class ObjectFetcher(object):
             return True
         return False
 
-    def get_by_id(self, id):
+    def get_by_id(self, id, cache_only=False):
         """ Get one specific object
 
         :returns: ObjectDefinition
         :raises:  ValueError if object is not found
         """
-        if self.needs_reload():
+        if not cache_only and self.needs_reload():
             self.reload_cache()
         str_id = str(id).strip()
         return ObjectFetcher._cached_ids[str_id]
@@ -460,13 +460,13 @@ class ObjectFetcher(object):
         shortname = str(shortname).strip()
         return ObjectFetcher._cached_shortnames[self.object_type][shortname]
 
-    def get_by_name(self, object_name):
+    def get_by_name(self, object_name, cache_only=False):
         """ Get one specific object by its object_name (i.e. name attribute)
 
         :returns: ObjectDefinition
         :raises:  ValueError if object is not found
         """
-        if self.needs_reload():
+        if not cache_only and self.needs_reload():
             self.reload_cache()
         object_name = str(object_name).strip()
         return ObjectFetcher._cached_names[self.object_type][object_name]
@@ -1112,7 +1112,7 @@ class ObjectDefinition(object):
         c = self._split_check_command_and_arguments(c)
         command_name = c.pop(0)
         try:
-            command = Command.objects.get_by_shortname(command_name)
+            command = Command.objects.get_by_shortname(command_name, cache_only=True)
         except ValueError:
             return None
         return self._resolve_macros(command.command_line, host_name=host_name)
@@ -1504,7 +1504,7 @@ class Host(ObjectDefinition):
 
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Host """
-        get_object = lambda x: Service.objects.get_by_id(x)
+        get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_services[self.host_name])
         services = map(get_object, list_of_shortnames)
         # Look for services that define hostgroup_name that we belong to
@@ -1514,19 +1514,19 @@ class Host(ObjectDefinition):
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Host """
-        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contacts[self.host_name])
         return map(get_object, list_of_shortnames)
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Host """
-        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contact_groups[self.host_name])
         return map(get_object, list_of_shortnames)
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Host """
-        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_hostgroups[self.host_name])
         return map(get_object, list_of_shortnames)
 
@@ -1543,7 +1543,7 @@ class Host(ObjectDefinition):
         results = []
         parents = self['parents'].split(',')
         for parent_name in parents:
-            results.append(self.objects.get_by_name(parent_name))
+            results.append(self.objects.get_by_name(parent_name, cache_only=True))
         if recursive is True:
             grandparents = []
             for i in results:
@@ -1629,7 +1629,7 @@ class Host(ObjectDefinition):
         if not c or c == '':
             raise KeyError(None)
         check_command = c.split('!')[0]
-        return Command.objects.get_by_shortname(check_command)
+        return Command.objects.get_by_shortname(check_command, cache_only=True)
 
     def get_current_status(self):
         """ Same as Service.get_current_status() """
@@ -1798,7 +1798,7 @@ class Service(ObjectDefinition):
 
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this Service """
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hosts[self.get_id()])
         hosts = map(get_object, list_of_shortnames)
         for hg in self.get_effective_hostgroups():
@@ -1807,25 +1807,25 @@ class Service(ObjectDefinition):
 
     def get_effective_contacts(self):
         """ Returns a list of all Contact that belong to this Service """
-        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contacts[self.get_id()])
         return map(get_object, list_of_shortnames)
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Service """
-        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contact_groups[self.get_id()])
         return map(get_object, list_of_shortnames)
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Service """
-        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hostgroups[self.get_id()])
         return map(get_object, list_of_shortnames)
 
     def get_effective_servicegroups(self):
         """ Returns a list of all Servicegroup that belong to this Service """
-        get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
+        get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_servicegroups[self.get_id()])
         return map(get_object, list_of_shortnames)
 
@@ -1838,7 +1838,7 @@ class Service(ObjectDefinition):
         if not c or c == '':
             raise KeyError(None)
         check_command = c.split('!')[0]
-        return Command.objects.get_by_shortname(check_command)
+        return Command.objects.get_by_shortname(check_command, cache_only=True)
 
     def get_current_status(self):
         """ Returns a Status object, reflecting this object status (i.e. status.dat)
@@ -1875,7 +1875,7 @@ class Contact(ObjectDefinition):
 
     def get_effective_contactgroups(self):
         """ Get a list of all Contactgroup that are hooked to this contact """
-        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_contactgroups[self.contact_name])
         return map(get_object, list_of_shortnames)
 
@@ -1883,7 +1883,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Host that are hooked to this Contact """
         result = set()
         # First add all hosts that name this contact specifically
-        get_object = lambda x: Host.objects.get_by_id(x)
+        get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_hosts[self.contact_name])
         result.update(map(get_object, list_of_shortnames))
 
@@ -1896,7 +1896,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Service that are hooked to this Contact """
         result = set()
         # First add all services that name this contact specifically
-        get_object = lambda x: Service.objects.get_by_id(x)
+        get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_services[self.contact_name])
         result.update(map(get_object, list_of_shortnames))
         return result
@@ -1990,24 +1990,25 @@ class Contactgroup(ObjectDefinition):
 
     def get_effective_contactgroups(self):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
-        get_object = lambda x: Contactgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_subgroups[self.contactgroup_name])
         return map(get_object, list_of_shortnames)
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
-        get_object = lambda x: Contact.objects.get_by_shortname(x)
+        get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_contacts[self.contactgroup_name])
         return map(get_object, list_of_shortnames)
 
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = sorted(ObjectRelations.contactgroup_hosts[self.contactgroup_name])
-        get_object = lambda x: Host.objects.get_by_id(x)
+        get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
         return map(get_object, list_of_shortnames)
 
     def get_effective_services(self):
         """ Return every Host that belongs to this contactgroup """
+        # TODO: review this method
         services = {}
         for i in Service.objects.all:
             services[i.get_id()] = i
@@ -2081,18 +2082,18 @@ class Hostgroup(ObjectDefinition):
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_services[self.hostgroup_name])
-        get_object = lambda x: Service.objects.get_by_id(x)
+        get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         return map(get_object, list_of_shortnames)
 
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_hosts[self.hostgroup_name])
-        get_object = lambda x: Host.objects.get_by_shortname(x)
+        get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
         return map(get_object, list_of_shortnames)
 
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
-        get_object = lambda x: Hostgroup.objects.get_by_shortname(x)
+        get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.hostgroup_subgroups[self.hostgroup_name])
         return map(get_object, list_of_shortnames)
 
@@ -2221,12 +2222,12 @@ class Servicegroup(ObjectDefinition):
     def get_effective_services(self):
         """ Returns a list of all Service that belong to this Servicegroup """
         list_of_shortnames = sorted(ObjectRelations.servicegroup_services[self.servicegroup_name])
-        get_object = lambda x: Service.objects.get_by_id(x)
+        get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         return map(get_object, list_of_shortnames)
 
     def get_effective_servicegroups(self):
         """ Returns a list of every Servicegroup that is a member of this Servicegroup """
-        get_object = lambda x: Servicegroup.objects.get_by_shortname(x)
+        get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.servicegroup_subgroups[self.servicegroup_name])
         return map(get_object, list_of_shortnames)
 
