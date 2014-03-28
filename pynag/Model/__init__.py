@@ -2534,6 +2534,21 @@ def _add_property(ClassType, name):
     fdoc = "This is the %s attribute for object definition"
     setattr(ClassType, name, property(fget, fset, fdel, fdoc))
 
+def compile_layers():
+    """ Parses all the layers and generates complete config to use in 
+    adagios 
+    """
+    if multilayered_parsing:
+        config = pynag.Parsers.LayeredConfigCompiler(
+                cfg_file=cfg_file,
+                layers=layers,
+                destination_directory=pynag_directory
+                )
+        config.parse()
+        config = pynag.Parsers.LayeredConfig(
+                cfg_file=cfg_file,
+                adagios_layer = adagios_layer
+                )
 
 # Add register, name and use to all objects
 _add_property(ObjectDefinition, 'register')
