@@ -1491,7 +1491,7 @@ class mk_livestatus:
           nagios_cfg_file -- Path to your nagios.cfg. If None then try to auto-detect
           authuser -- If specified. Every data pulled is with the access rights of that contact.
         """
-        if livestatus_socket_path is None:
+        if not livestatus_socket_path:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
             self.nagios_cfg_file = c.cfg_file
