@@ -368,14 +368,15 @@ class ObjectFetcher(object):
     _cached_shortnames = defaultdict(dict)
     _cached_names = defaultdict(dict)
     _cached_object_type = defaultdict(list)
+    _cache_only = False
 
     def __init__(self, object_type):
         self.object_type = object_type
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
-    def get_all(self):
+    def get_all(self, cache_only=False):
         """ Return all object definitions of specified type"""
-        if self.needs_reload():
+        if not cache_only and self.needs_reload():
             self.reload_cache()
         if self.object_type is not None:
             return ObjectFetcher._cached_object_type[self.object_type]
@@ -427,12 +428,13 @@ class ObjectFetcher(object):
     def needs_reload(self):
         """ Returns true if configuration files need to be reloaded/reparsed """
         if not ObjectFetcher._cached_objects:
-            # we get here on first run
             return True
-        elif config is None or config.needs_reparse():
-            # We get here if any configuration file has changed
+        if config is None:
             return True
-        return False
+        if self._cache_only:
+            return False
+
+        return config.needs_reparse()
 
     def get_by_id(self, id, cache_only=False):
         """ Get one specific object
@@ -1270,7 +1272,7 @@ class ObjectDefinition(object):
                         children.append(grandchild)
         return children
 
-    def get_effective_parents(self, recursive=False):
+    def get_effective_parents(self, recursive=False, cache_only=False):
         """ Get all objects that this one inherits via "use" attribute
 
         Arguments:
@@ -1283,12 +1285,12 @@ class ObjectDefinition(object):
         results = []
         use = pynag.Utils.AttributeList(self.use)
         for parent_name in use:
-            parent = self.objects.get_by_name(parent_name)
+            parent = self.objects.get_by_name(parent_name, cache_only=cache_only)
             if parent not in results:
                 results.append(parent)
         if recursive is True:
             for i in results:
-                grandparents = i.get_effective_parents(recursive=True)
+                grandparents = i.get_effective_parents(recursive=True, cache_only=cache_only)
                 for gp in grandparents:
                     if gp not in results:
                         results.append(gp)
