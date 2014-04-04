@@ -62,6 +62,7 @@ pynag_directory = None
 multilayered_parsing = False
 layers = None
 adagios_layer = None
+source_tracker = None
 
 # This is the config parser that we use internally, if cfg_file is changed, then config
 # will be recreated whenever a parse is called.
@@ -2542,12 +2543,14 @@ def compile_layers():
         config = pynag.Parsers.LayeredConfigCompiler(
                 cfg_file=cfg_file,
                 layers=layers,
-                destination_directory=pynag_directory
+                destination_directory=pynag_directory,
+                source_tracker=source_tracker
                 )
         config.parse()
         config = pynag.Parsers.LayeredConfig(
                 cfg_file=cfg_file,
-                adagios_layer = adagios_layer
+                adagios_layer = adagios_layer,
+                source_tracker=source_tracker
                 )
 
 # Add register, name and use to all objects

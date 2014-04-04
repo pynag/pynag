@@ -1426,7 +1426,7 @@ class LayeredConfigCompiler(config):
     This class is used to compile the actual config read by shinken or nagios and adagios.
     """
 
-    def __init__(self, cfg_file=None, layers=None, destination_directory=None, strict=False):
+    def __init__(self, cfg_file=None, layers=None, destination_directory=None, strict=False, source_tracker=None):
         """
         Arguments:
           cfg_file -- Full path to nagios.cfg. If None, try to auto-discover location
@@ -1440,6 +1440,7 @@ class LayeredConfigCompiler(config):
         config.__init__(self, cfg_file=cfg_file, strict=strict)
         self.additional_layers = layers  # Ordered List of additional layers
         self.destination_directory = destination_directory  # Output folder
+        self.source_tracker = source_tracker
 
     def _load_file(self, filename):
         """ Parses filename with self.parse_filename and append results in self._pre_object_list
@@ -1460,9 +1461,13 @@ class LayeredConfigCompiler(config):
             if conflict:
                 self.pre_object_list.remove(conflict)  # Remove the previous version of the definition object
                 conflict = self._resolve_conflict(conflict, i)  # Actually tweak the item accordingly
+                if self.source_tracker:
+                    self.source_tracker.set_all_attr_src(i, filename)
                 self.pre_object_list.append(conflict)  # This is the default behavior
                 self._output_to_normal_dir(conflict)  # Fixes the object's output to the destination_directory
             else:
+                if self.source_tracker:
+                    self.source_tracker.set_all_attr_src(i, filename)
                 self._output_to_normal_dir(i)
                 self.pre_object_list.append(i)
 
@@ -1782,7 +1787,7 @@ class LayeredConfig(config):
     to the Adagios layer. This way, when the layers are re-parsed, Adagios' modifications are kept.
     """
 
-    def __init__(self, cfg_file=None, adagios_layer=None, strict=False):
+    def __init__(self, cfg_file=None, adagios_layer=None, strict=False, source_tracker=None):
         """
 
         Arguments:
@@ -1795,6 +1800,7 @@ class LayeredConfig(config):
 
         config.__init__(self, cfg_file=cfg_file, strict=strict)
         self.adagios_layer = adagios_layer  # Layer to output adagios modifications (minimal obj defs)
+        self.source_tracker = source_tracker
 
     def _soft_locate_item(self, item):
         """
@@ -2031,7 +2037,7 @@ class LayeredConfig(config):
                             os.mkdir(os.path.dirname(item['meta']['filename']))
                         open(item['meta']['filename'], 'w').close()
                 else:
-                    raise ve
+                   raise ve
 
         if new_item is not None:
             # We have instruction on how to write new object, so we dont need to parse it
@@ -2212,6 +2218,9 @@ class LayeredConfig(config):
         fh = open(item_layer['meta']['filename'], 'a')
         fh.write(str_buffer)
         fh.close()
+        
+        if self.source_tracker:
+            self.source_tracker.set_all_attr_src(item_layer, filename)
 
         return True
 
@@ -3064,3 +3073,73 @@ class ExtraOptsParser(object):
 
             sections[section_name][key].append(value)
         return sections
+
+class SourceTracker:
+    
+    trackable_objects = (
+            'host',
+            'hostgroup',
+            'service',
+            'servicegroup',
+            'timeperiod',
+            'contact',
+            'contactgroup',
+            'command',
+            )
+
+    def __init__(self):
+        self.sources = []
+
+    def get_all_src(self, item):
+        return self.locate_item(item)
+
+    def get_src(self, item, attr):
+        return self.locate_item(item).get(attr, 'Unable to find source for this attribute')
+
+    def set_attr_src(self, item, attr, src):
+
+        modified_item = self.locate_item(item)
+        if not modified_item:
+            self.sources.append(item)
+            modified_item = self.locate_item(item)
+        modified_item[attr] = src
+
+    def set_all_attr_src(self, item, src):
+
+        st_item = self.create_srctracker_item(item)
+        modified_item = self.locate_item(st_item)
+        if not modified_item:
+            self.sources.append(st_item)
+            modified_item = self.locate_item(st_item)
+        
+        for attr in item['meta']['defined_attributes']:
+            modified_item[attr] = src
+
+    def create_srctracker_item(self, item):
+
+        new_item = {}
+        meta = {}
+
+        object_type = item['meta'].get('object_type', None)
+        if object_type in self.trackable_objects:
+            meta['object_type'] = object_type
+            meta[object_type + '_name'] = item.get(object_type+'_name')
+            if object_type == 'service':
+                meta['service_description'] = item['meta'].get('service_description')
+        new_item['meta'] = meta
+
+        return new_item
+
+    def locate_item(self, item):
+
+        found = None
+        item_meta = item.get('meta', None)
+        for iter_item in self.sources:
+            iter_meta = iter_item.get('meta', None)
+            if iter_meta == None:
+                continue
+            if iter_meta == item_meta:
+                found = iter_item
+                break
+
+        return found
