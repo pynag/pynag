@@ -187,7 +187,10 @@ class daemon(object):
 
     def _guess_method(self):
         """
-        Guesses whether to run via SYSV INIT script og via systemd
+        Guesses whether to run via SYSV INIT script og via systemd.
+
+        Will also modify nagios_init="service nagios" and set
+        service_name=nagios and method to SYSV_INIT_SCRIPT
         """
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
