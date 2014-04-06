@@ -60,7 +60,6 @@ class daemon:
         self.sudo = sudo
         self.stdout = ""
         self.stderr = ""
-        self.nagios_lock_file = None
         self.nagios_config = nagios_config
 
         self._deprecate_sudo()
