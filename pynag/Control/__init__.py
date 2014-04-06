@@ -22,11 +22,8 @@ The Control module includes classes to control the Nagios service
 and the Command submodule wraps Nagios commands.
 """
 
-import sys
 import os
 import pynag.Utils
-from subprocess import Popen, PIPE
-import re
 from warnings import warn
 
 from pynag.Utils import PynagError, runCommand
