@@ -11,6 +11,8 @@ from mock import MagicMock, patch, Mock
 import pynag.Control
 from pynag.Parsers import config
 
+import warnings
+
 class testControl(unittest.TestCase):
     def setUp(self):
         """
@@ -19,33 +21,24 @@ class testControl(unittest.TestCase):
         """
         self.config = config()
 
+        # Ignore futurewarnings for nagios_init
+        warnings.simplefilter("ignore", FutureWarning)
+
         self.nagios_bin=self.config.guess_nagios_binary()
         self.nagios_cfg='/etc/nagios/nagios.cfg'
-        self.nagios_init = '/etc/init.d/nagios'
+        self.service_name = 'nagios'
+        self.nagios_init = "service nagios"
 
         self.control = pynag.Control.daemon(
                 nagios_bin=self.nagios_bin,
                 nagios_cfg=self.nagios_cfg,
-                nagios_init=self.nagios_init)
-
-    def fake_popen(self, stdout=None, stderr=None, return_value=0):
-        # Patch popen
-        self.popen_patcher = patch('pynag.Control.Popen')
-        self.mock_popen = self.popen_patcher.start()
-
-        # Set defaults for popen patching
-        self.mock_rv = Mock()
-        self.mock_rv.communicate.return_value = [stdout, stderr]
-        self.mock_rv.wait.return_value = return_value
-
-        self.mock_popen.return_value = self.mock_rv
-
-    def fake_popen_stop(self):
-        self.popen_patcher.stop()
+                nagios_init=self.nagios_init,
+                service_name=self.service_name)
 
     def test_verify_config_success(self):
         # Patch all calls to Popen
-        self.fake_popen()
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
 
         # Run the actual daemon.verify_config
         result = self.control.verify_config()
@@ -53,19 +46,15 @@ class testControl(unittest.TestCase):
         # Should verify correctly
         self.assertTrue(result)
 
-        # Make sure popen is called correctly
-        self.mock_popen.assert_called_once_with([self.nagios_bin, "-v", self.nagios_cfg],
-            shell=False,
-            stdout=pynag.Control.PIPE,
-            stderr=pynag.Control.PIPE
+        # Make sure runCommand is called correctly
+        pynag.Control.runCommand.assert_called_once_with(["sudo", self.nagios_bin, "-v", self.nagios_cfg],
+            shell=False
             )
-
-        # End patching of Popen
-        self.fake_popen_stop()
 
     def test_verify_config_failure(self):
         # Patch all calls to Popen, make calls return exit code 1
-        self.fake_popen(return_value=1)
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [2, "", "Permission denied"]
 
         # Run the actual daemon.verify_config
         result = self.control.verify_config()
@@ -73,39 +62,202 @@ class testControl(unittest.TestCase):
         # Should return None on verify error
         self.assertEqual(result, None)
 
-        # Make sure popen is called correctly
-        self.mock_popen.assert_called_once_with([self.nagios_bin, "-v", self.nagios_cfg],
-            shell=False,
-            stdout=pynag.Control.PIPE,
-            stderr=pynag.Control.PIPE
-            )
+        # Make sure runCommand is called correctly
+        pynag.Control.runCommand.assert_called_once()
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_bin, "-v", self.nagios_cfg],
+            shell=False)
 
-        # End patching of Popen
-        self.fake_popen_stop()
+    def test_restart_script(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Restarted", ""]
 
-    def test_restart(self):
-        os.system = MagicMock()
-        os.system.return_value = 0
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        result = self.control.restart()
 
-        self.control.restart()
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_init, "restart"], shell=False)
 
-        os.system.assert_called_once_with("%s restart" % self.nagios_init)
+    def test_restart_service(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Restarted", ""]
 
-    def test_status(self):
-        os.system = MagicMock()
-        os.system.return_value = 0
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        result = self.control.restart()
 
-        self.control.status()
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "restart"], shell=False)
 
-        os.system.assert_called_once_with("%s status" % self.nagios_init)
+    def test_restart_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
 
-    def test_reload(self):
-        os.system = MagicMock()
-        os.system.return_value = 0
+        self.control.method = self.control.SYSTEMD
+        result = self.control.restart()
 
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "restart"], shell=False)
+
+    def test_status_script(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Running just fine", ""]
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        result = self.control.status()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_init, "status"], shell=False)
+
+    def test_status_service(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Running just fine", ""]
+
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        result = self.control.status()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "status"], shell=False)
+
+    def test_status_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
+
+        self.control.method = self.control.SYSTEMD
+        result = self.control.status()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "status"], shell=False)
+
+    def test_reload_script(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Reloaded just fine", ""]
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
         self.control.reload()
 
-        os.system.assert_called_once_with("%s reload" % self.nagios_init)
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_init, "reload"], shell=False)
+
+    def test_reload_service(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Reloaded just fine", ""]
+
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        self.control.reload()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "reload"], shell=False)
+
+    def test_reload_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
+
+        self.control.method = self.control.SYSTEMD
+        self.control.reload()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "reload"], shell=False)
+
+    def test_stop_script(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Stopped service", ""]
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        self.control.stop()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_init, "stop"], shell=False)
+
+    def test_stop_service(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Stopped service", ""]
+
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        self.control.stop()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "stop"], shell=False)
+
+    def test_stop_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
+
+        self.control.method = self.control.SYSTEMD
+        self.control.stop()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "stop"], shell=False)
+
+    def test_start_script(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Started service", ""]
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        self.control.start()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", self.nagios_init, "start"], shell=False)
+
+    def test_start_service(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "OK Started service", ""]
+
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        self.control.start()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "start"], shell=False)
+
+    def test_start_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
+
+        self.control.method = self.control.SYSTEMD
+        self.control.start()
+
+        pynag.Control.runCommand.assert_called_once_with(
+            ["sudo", "service", self.service_name, "start"], shell=False)
+
+    def test_running_script(self):
+        pynag.Parsers.config._get_pid = MagicMock()
+        pynag.Parsers.config._get_pid.return_value = 1024
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        running = self.control.running()
+
+        self.assertEqual(running, True)
+        pynag.Parsers.config._get_pid.assert_called_once_with()
+
+    def test_running_service(self):
+        pynag.Parsers.config._get_pid = MagicMock()
+        pynag.Parsers.config._get_pid.return_value = 1024
+
+        self.control.method = self.control.SYSV_INIT_SERVICE
+        running = self.control.running()
+
+        self.assertEqual(running, True)
+        pynag.Parsers.config._get_pid.assert_called_once_with()
+
+    def test_running_systemd(self):
+        pynag.Control.runCommand = MagicMock()
+        pynag.Control.runCommand.return_value = [0, "", ""]
+
+        self.control.method = self.control.SYSTEMD
+        running = self.control.running()
+
+        self.assertEqual(running, True)
+        pynag.Control.runCommand.assert_called_once_with(
+            ["systemctl", "is-active", self.service_name], shell=False)
+
+    def test_running_failed_script(self):
+        pynag.Parsers.config._get_pid = MagicMock()
+        pynag.Parsers.config._get_pid.return_value = None
+
+        self.control.method = self.control.SYSV_INIT_SCRIPT
+        running = self.control.running()
+
+        self.assertEqual(running, False)
+        pynag.Parsers.config._get_pid.assert_called_once_with()
 
 
 if __name__ == "__main__":
