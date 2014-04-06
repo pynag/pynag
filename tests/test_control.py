@@ -31,14 +31,22 @@ class testControl(unittest.TestCase):
         self.service_name = 'nagios'
         self.nagios_init = "service nagios"
 
+        # Save reference to mocked functions
+        self.runCommand = pynag.Control.runCommand
+        self.osexists = os.path.exists
+
         self.control = pynag.Control.daemon(
                 nagios_bin=self.nagios_bin,
                 nagios_cfg=self.nagios_cfg,
                 nagios_init=self.nagios_init,
                 service_name=self.service_name)
 
+    def tearDown(self):
+        # Restore potentially mocked functions
+        pynag.Control.runCommand = self.runCommand
+        os.path.exists = self.osexists
+
     def test_verify_config_success(self):
-        # Patch all calls to Popen
         pynag.Control.runCommand = MagicMock()
         pynag.Control.runCommand.return_value = [0, "", ""]
 
@@ -260,6 +268,56 @@ class testControl(unittest.TestCase):
 
         self.assertEqual(running, False)
         pynag.Parsers.config._get_pid.assert_called_once_with()
+
+    def test_method_initscript_sudo(self):
+        os.path.exists = MagicMock()
+        os.path.exists.return_value = True
+
+        self.control.nagios_init = "sudo /etc/init.d/nagios"
+        self.control.sudo = False
+
+        self.control._deprecate_sudo()
+        method = self.control._guess_method()
+
+        self.assertEqual(method, self.control.SYSV_INIT_SCRIPT)
+        self.assertEqual(self.control.nagios_init, "/etc/init.d/nagios")
+        self.assertEqual(self.control.sudo, True)
+
+    def test_method_initscript_nosudo(self):
+        os.path.exists = MagicMock()
+        os.path.exists.return_value = True
+
+        self.control.nagios_init = "/etc/init.d/nagios"
+        self.control.sudo = False
+
+        self.control._deprecate_sudo()
+        method = self.control._guess_method()
+
+        self.assertEqual(method, self.control.SYSV_INIT_SCRIPT)
+        self.assertEqual(self.control.nagios_init, "/etc/init.d/nagios")
+        self.assertEqual(self.control.sudo, False)
+
+    def test_method_init_service_sudo(self):
+        self.control.nagios_init = "sudo service nagios"
+        self.control.sudo = False
+
+        self.control._deprecate_sudo()
+        method = self.control._guess_method()
+
+        self.assertEqual(method, self.control.SYSV_INIT_SERVICE)
+        self.assertEqual(self.control.service_name, "nagios")
+        self.assertEqual(self.control.sudo, True)
+
+    def test_method_init_fullpath_service_sudo(self):
+        self.control.nagios_init = "/usr/bin/sudo /sbin/service nagios"
+        self.control.sudo = False
+
+        self.control._deprecate_sudo()
+        method = self.control._guess_method()
+
+        self.assertEqual(method, self.control.SYSV_INIT_SERVICE)
+        self.assertEqual(self.control.service_name, "nagios")
+        self.assertEqual(self.control.sudo, True)
 
 
 if __name__ == "__main__":
