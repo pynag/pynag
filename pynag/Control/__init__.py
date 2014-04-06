@@ -37,8 +37,8 @@ class daemon:
 
     >>> from pynag.Control import daemon
     >>>
-    >>> d = daemon()
-    >>> d.restart() # doctest: +SKIP
+    >>> d = daemon()   # doctest: +SKIP
+    >>> d.restart()    # doctest: +SKIP
     """
 
     SYSV_INIT_SCRIPT = 1

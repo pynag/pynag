@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 
@@ -28,10 +30,6 @@ class testControl(unittest.TestCase):
         self.nagios_cfg='/etc/nagios/nagios.cfg'
         self.service_name = 'nagios'
         self.nagios_init = "service nagios"
-
-        # Bypass since Travis has no nagios_init
-        if os.getenv('TRAVIS', None) == 'true':
-            self.nagios_init = "/"
 
         self.control = pynag.Control.daemon(
                 nagios_bin=self.nagios_bin,
