@@ -1847,20 +1847,19 @@ class Service(ObjectDefinition):
     def remove_from_contactgroup(self, contactgroup):
         return _remove_from_contactgroup(self, contactgroup)
 
-    def merge_service_to_host(self):
+    def merge_with_host(self):
 
         """ Moves a service from its original file to the same file as the
         first effective host """
 
-        if not self.get('host_name', None):
-            pass
+        if not self.host_name:
+            return
         else:
             host = Host.objects.get_by_shortname(self.host_name)
-            if host:
-                host_filename = host.get_filename()
-                if host_filename != self.get_filename():
-                    new_serv = self.move(host_filename)
-                    new_serv.save()
+            host_filename = host.get_filename()
+            if host_filename != self.get_filename():
+                new_serv = self.move(host_filename)
+                new_serv.save()
 
 class Command(ObjectDefinition):
     object_type = 'command'
