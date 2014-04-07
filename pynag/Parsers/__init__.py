@@ -1441,6 +1441,7 @@ class LayeredConfigCompiler(config):
         self.additional_layers = layers  # Ordered List of additional layers
         self.destination_directory = destination_directory  # Output folder
         self.source_tracker = source_tracker
+        self.layer_names = [os.path.basename(x.strip(os.path.sep)) for x in layers]
 
     def _load_file(self, filename):
         """ Parses filename with self.parse_filename and append results in self._pre_object_list
@@ -1462,12 +1463,12 @@ class LayeredConfigCompiler(config):
                 self.pre_object_list.remove(conflict)  # Remove the previous version of the definition object
                 conflict = self._resolve_conflict(conflict, i)  # Actually tweak the item accordingly
                 if self.source_tracker:
-                    self.source_tracker.set_all_attr_src(i, filename)
+                    self.source_tracker.set_all_attr_src(i, self.get_layer_name(filename))
                 self.pre_object_list.append(conflict)  # This is the default behavior
                 self._output_to_normal_dir(conflict)  # Fixes the object's output to the destination_directory
             else:
                 if self.source_tracker:
-                    self.source_tracker.set_all_attr_src(i, filename)
+                    self.source_tracker.set_all_attr_src(i, self.get_layer_name(filename))
                 self._output_to_normal_dir(i)
                 self.pre_object_list.append(i)
 
@@ -1779,6 +1780,13 @@ class LayeredConfigCompiler(config):
 
         return config._modify_object(self, item, field_name=field_name, new_value=new_value)
 
+    def get_layer_name(self, filename):
+
+        for idx, lay in enumerate(self.additional_layers):
+            if filename.find(lay) != -1:
+                return self.layer_names[idx]
+                
+
 
 class LayeredConfig(config):
     """
@@ -1801,6 +1809,7 @@ class LayeredConfig(config):
         config.__init__(self, cfg_file=cfg_file, strict=strict)
         self.adagios_layer = adagios_layer  # Layer to output adagios modifications (minimal obj defs)
         self.source_tracker = source_tracker
+        self.layer_name = "Adagios"
 
     def _soft_locate_item(self, item):
         """
@@ -2220,7 +2229,7 @@ class LayeredConfig(config):
         fh.close()
         
         if self.source_tracker:
-            self.source_tracker.set_all_attr_src(item_layer, filename)
+            self.source_tracker.set_all_attr_src(item_layer, self.layer_name)
 
         return True
 
