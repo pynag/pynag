@@ -26,6 +26,7 @@ License: GPLv2
 Group: System Environment/Libraries
 BuildRequires: python-devel
 BuildRequires: python-setuptools
+BuildRequires: python-sphinx
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch
@@ -68,6 +69,7 @@ install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins
 install -m 755 examples/Model/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model/
 install -m 755 examples/Parsers/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers/
 install -m 755 examples/Plugins/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins/
+gzip $RPM_BUILD_ROOT/%{_mandir}/man1/pynag.1
 
 
 %clean

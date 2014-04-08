@@ -2,16 +2,46 @@
 
 ## setup.py ###
 from distutils.core import setup, Command
+from distutils.command.build_py import build_py as _build_py
 from pynag import __version__
+from subprocess import call, PIPE, Popen
+import sys
 
 NAME = "pynag"
-SHORT_DESC = "Python modules for Nagios plugins and configuration" 
+SHORT_DESC = "Python modules for Nagios plugins and configuration"
 LONG_DESC = """
 Python modules and utilities for pragmatically handling Nagios configuration
 file maintenance, status information, log file parsing and plug-in development.
 """
 
+def build_man():
+    """Builds the man page using sphinx"""
+    cmd = "sphinx-build -b man docs man"
+    try:
+        sphinx_proc = Popen(cmd.split(),
+                            stdout=PIPE,
+                            stderr=PIPE)
+        stdout, stderr = sphinx_proc.communicate()
+        return_code = sphinx_proc.wait()
+        if return_code:
+            print "Warning: Build of manpage failed \"%s\":\n%s\n%s" % (
+                      cmd,
+                      stdout,
+                      stderr)
+    except OSError, error:
+        print "Warning: Build of manpage failed \"%s\" you probably dont " \
+              "have sphinx installed: %s" % (cmd, error)
+
+
+class build_py(_build_py):
+    """Overwrite build_py to install man building into the chain"""
+    def run(self):
+        build_man()
+        _build_py.run(self)
+
+
 class PynagTest(Command):
+    """Runs the build-test.py testing suite"""
     user_options = []
 
     def initialize_options(self):
@@ -21,8 +51,7 @@ class PynagTest(Command):
         pass
 
     def run(self):
-        import sys,subprocess
-        errno = subprocess.call([sys.executable, 'tests/build-test.py'])
+        errno = call([sys.executable, 'tests/build-test.py'])
         raise SystemExit(errno)
 
 if __name__ == "__main__":
@@ -54,6 +83,10 @@ if __name__ == "__main__":
             'pynag.Control',
             'pynag.Control.Command',
         ],
-        data_files=[(manpath, ['docs/pynag.1.gz',]),],
-        cmdclass={'test': PynagTest}, requires=['unittest2'],
+        data_files=[(manpath, ['man/pynag.1',]),],
+        cmdclass={
+            'test': PynagTest,
+            'build_py': build_py,
+        },
+        requires=['unittest2'],
     )
