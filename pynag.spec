@@ -26,7 +26,6 @@ License: GPLv2
 Group: System Environment/Libraries
 BuildRequires: python-devel
 BuildRequires: python-setuptools
-BuildRequires: python-sphinx
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch

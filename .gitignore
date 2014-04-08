@@ -8,4 +8,4 @@ build
 dist
 .idea
 .coverage
-man
+man/.doctrees
