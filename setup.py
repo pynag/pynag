@@ -14,10 +14,13 @@ Python modules and utilities for pragmatically handling Nagios configuration
 file maintenance, status information, log file parsing and plug-in development.
 """
 
-def build_man():
+class BuildMan(Command):
     """Builds the man page using sphinx"""
-    cmd = "sphinx-build -b man docs man"
-    try:
+    user_options = []
+
+
+    def run(self):
+        cmd = "sphinx-build -b man docs man"
         sphinx_proc = Popen(cmd.split(),
                             stdout=PIPE,
                             stderr=PIPE)
@@ -28,16 +31,11 @@ def build_man():
                       cmd,
                       stdout,
                       stderr)
-    except OSError, error:
-        print "Warning: Build of manpage failed \"%s\" you probably dont " \
-              "have sphinx installed: %s" % (cmd, error)
+    def initialize_options(self):
+        pass
 
-
-class build_py(_build_py):
-    """Overwrite build_py to install man building into the chain"""
-    def run(self):
-        build_man()
-        _build_py.run(self)
+    def finalize_options(self):
+        pass
 
 
 class PynagTest(Command):
@@ -86,7 +84,7 @@ if __name__ == "__main__":
         data_files=[(manpath, ['man/pynag.1',]),],
         cmdclass={
             'test': PynagTest,
-            'build_py': build_py,
+            'build_man': BuildMan,
         },
         requires=['unittest2'],
     )

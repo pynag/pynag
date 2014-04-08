@@ -1,0 +1,317 @@
+.\" Man page generated from reStructuredText.
+.
+.TH "PYNAG" "1" "April 08, 2014" "0.8.4" "pynag"
+.SH NAME
+pynag \- command line front for manipulating nagios configuration
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH SYNOPSIS
+.sp
+pynag <sub\-command> [options] [arguments]
+.SH DESCRIPTION
+.sp
+pynag is a command\-line utility that can be used to view or change current
+nagios configuration.
+.SH SUB-COMMANDS
+.sp
+\fIlist\fP
+.INDENT 0.0
+.INDENT 3.5
+print to screen nagios configuration objects as specified by a WHERE
+clause
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag list [attribute1] [attribute2] [WHERE ...]
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIupdate\fP
+.INDENT 0.0
+.INDENT 3.5
+modify specific attributes of nagios objects as specified by a WHERE
+and SET clause
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag update set attr1=value WHERE attr=value and attr=value
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIdelete\fP
+.INDENT 0.0
+.INDENT 3.5
+Delete objects from nagios configuration as specified by a WHERE clause
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag delete delete <WHERE ...>
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIadd\fP
+.INDENT 0.0
+.INDENT 3.5
+Add a new object definition
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag add <object_type> <attr1=value1> [attr2=value2]
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIcopy\fP
+.INDENT 0.0
+.INDENT 3.5
+Copy objects, specifiying which attributes to change
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag copy <WHERE ...> <SET attr1=value1 [attr2=value2] ...>
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIexecute\fP
+.INDENT 0.0
+.INDENT 3.5
+Executes the currently configured check command for a host or a service
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag execute <host_name> [service_description]
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.sp
+\fIconfig\fP
+.INDENT 0.0
+.INDENT 3.5
+modify values in main nagios configuration file (nagios.cfg)
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag config [\-\-set <attribute=value>] [\-\-old_value=attribute]
+pynag config [\-\-append <attribute=value>] [\-\-old_value=attribute]
+pynag config [\-\-remove <attribute>] [\-\-old_value=attribute]
+pynag config [\-\-get <attribute>]
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH WHERE STATEMENTS
+.sp
+Some Subcommands use WHERE statements to filter which objects to work
+with.  Where has certain similarity with SQL syntax.
+.INDENT 0.0
+.TP
+.B Syntax:
+.nf
+WHERE <attr=value> [AND attr=value] [OR attr=value] 
+.in +2
+[another where statement]
+.in -2
+.fi
+.sp
+.sp
+where "attr" is any nagios attribute (i.e. host_name or
+service_description).
+.TP
+.B Example:
+.nf
+pynag list WHERE host_name=localhost and object_type=service
+pynag list WHERE object_type=host or object_type=service
+.fi
+.sp
+.UNINDENT
+.sp
+Any search attributes have the same syntax as the pynag filter. For example
+these work just fine:
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag list WHERE host_name__contains=production
+pynag list WHERE host_name__startswith=prod
+pynag list WHERE host_name__notcontains=test
+pynag list host_name address WHERE address__exists=True
+pynag list host_name WHERE register__isnot=0
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.sp
+The pynag filter supports few parameters that are not just attributes.
+.sp
+Example:
+.INDENT 0.0
+.IP \(bu 2
+filename                 \-\- The filename which the object belongs
+.IP \(bu 2
+id                       \-\- pynag unique identifier for the object
+.IP \(bu 2
+effective_command_line   \-\- command which nagios will execute
+.UNINDENT
+.sp
+Of course these can be combined with the pynag filter syntax:
+.INDENT 0.0
+.INDENT 3.5
+.nf
+pynag list where filename__startswith=/etc/nagios/conf.d/
+pynag list host_name service_description effective_command_line
+.fi
+.sp
+.UNINDENT
+.UNINDENT
+.sp
+For detailed description of the filter see pydoc for
+pynag.Model.ObjectDefintion.filter()
+.SH SET STATEMENTS
+.sp
+Subcommands that use SET statements (like update or copy) use them a list of
+attributes change for a specific object.
+.INDENT 0.0
+.TP
+.B Syntax:
+.nf
+SET <attr1=value1> [attr2=value2] [...]
+.fi
+.sp
+.TP
+.B Example:
+.nf
+pynag update SET address=127.0.0.1 WHERE host_name=localhost and object_type=host
+.fi
+.sp
+.UNINDENT
+.SH EXAMPLES
+.SS List all services that have "myhost" as a host_name
+.nf
+pynag list host_name service_description WHERE host_name=myhost and object_type=service
+.fi
+.sp
+.SS Set check_period to 24x7 on all services that belong to host "myhost"
+.nf
+pynag update set check_period=24x7 WHERE host_name=myhost
+.fi
+.sp
+.SS list examples
+.nf
+pynag list host_name address WHERE object_type=host
+pynag list host_name service_description WHERE host_name=examplehost and object_type=service
+.fi
+.sp
+.SS update examples
+.nf
+pynag update SET host_name=newhostname WHERE host_name=oldhostname
+pynag update SET address=127.0.0.1 WHERE host_name=\(aqexamplehost.example.com\(aq and object_type=host
+.fi
+.sp
+.SS copy examples
+.nf
+pynag copy SET host_name=newhostname WHERE  host_name=oldhostname
+pynag copy SET address=127.0.0.1 WHERE host_name=\(aqexamplehost.example.com\(aq and object_type=host
+.fi
+.sp
+.SS add examples
+.nf
+pynag add host host_name=examplehost use=generic\-host address=127.0.0.1
+pynag add service service_description="Test Service" use="check_nrpe" host_name="localhost"
+.fi
+.sp
+.SS delete examples
+.nf
+pynag delete where object_type=service and host_name=\(aqmydeprecated_host\(aq
+pynag delete where filename__startswith=\(aq/etc/nagios/myoldhosts\(aq
+.fi
+.sp
+.SS execute examples
+.nf
+pynag execute localhost
+pynag execute localhost "Disk Space
+.fi
+.sp
+.SH ADDITIONAL RESOURCES
+.sp
+See \fI\%http://github.com/pynag/pynag.git\fP for more information.
+.SH AUTHOR
+Pall Sigurdsson and Tomas Edwardsson
+.SH COPYRIGHT
+2014, Pall Sigurdsson and Tomas Edwardsson
+.\" Generated by docutils manpage writer.
+.
