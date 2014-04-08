@@ -8,3 +8,4 @@ include README.md
 include CHANGES
 include pynag.spec
 include Makefile
+include man/pynag.1
