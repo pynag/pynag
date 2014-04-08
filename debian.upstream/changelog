@@ -1,3 +1,9 @@
+pynag (0.8.5-1) unstable; urgency=low
+
+ * New upstream version
+
+ -- Pall Sigurdsson <palli@opensource.is>  Tue, 08 Apr 2014 14:17:12 +0000
+
 pynag (0.8.4-1) unstable; urgency=low
 
  * New upstream version
