@@ -88,5 +88,5 @@ if __name__ == "__main__":
             'test': PynagTest,
             'build_py': build_py,
         },
-        requires=['unittest2'],
+        requires=['unittest2', 'sphinx'],
     )
