@@ -1,3 +1,16 @@
+Changes in 0.8.5 (Apr 8 2014)
+Bug Fixes:
+    - Fix broken build due to manpage requirements
+
+Changes in 0.8.4 (Apr 8 2014)
+New Features:
+    - get_effective_* is now faster
+    - New decorator Utils.cache_only()
+    - New method Service.merge_with_host()
+
+Bug Fixes:
+    - Fix hostgroup/service relationships
+
 Changes in 0.8.3 (Mar 24 2014)
 New Features:
     - Utils.runCommand() supports new env parameter
