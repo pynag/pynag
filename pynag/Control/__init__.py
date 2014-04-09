@@ -75,6 +75,8 @@ class daemon(object):
     def verify_config(self):
         """
         Run nagios -v config_file to verify that the conf is working
+
+        :returns:   True -- if pynag.Utils.runCommand() returns 0, else None
         """
         cmd = [self.nagios_bin, "-v", self.nagios_cfg]
         if self.sudo:
@@ -90,6 +92,9 @@ class daemon(object):
     def running(self):
         """
         Checks if the daemon is running
+
+        :returns: Whether or not the daemon is running
+        :rtype: bool
         """
         if self.method == daemon.SYSV_INIT_SCRIPT or \
            self.method == daemon.SYSV_INIT_SERVICE:
@@ -108,6 +113,9 @@ class daemon(object):
     def restart(self):
         """
         Restarts Nagios via it's init script.
+
+        :returns: Return code of the restart command ran by pynag.Utils.runCommand()
+        :rtype: int
         """
         if self.method == daemon.SYSV_INIT_SCRIPT:
             cmd = [self.nagios_init, "restart"]
@@ -123,7 +131,10 @@ class daemon(object):
 
     def status(self):
         """
-        Returns the status of the Nagios service.
+        Obtain the status of the Nagios service.
+
+        :returns: Return code of the status command ran by pynag.Utils.runCommand()
+        :rtype: int
         """
         if self.method == daemon.SYSV_INIT_SCRIPT:
             cmd = [self.nagios_init, "status"]
@@ -140,6 +151,9 @@ class daemon(object):
     def start(self):
         """
         Start the Nagios service.
+
+        :returns: Return code of the start command ran by pynag.Utils.runCommand()
+        :rtype: int
         """
         if self.method == daemon.SYSV_INIT_SCRIPT:
             cmd = [self.nagios_init, "start"]
@@ -156,6 +170,9 @@ class daemon(object):
     def stop(self):
         """
         Stop the Nagios service.
+
+        :returns: Return code of the stop command ran by pynag.Utils.runCommand()
+        :rtype: int
         """
         if self.method == daemon.SYSV_INIT_SCRIPT:
             cmd = [self.nagios_init, "stop"]
@@ -172,6 +189,9 @@ class daemon(object):
     def reload(self):
         """
         Reloads Nagios.
+
+        :returns: Return code of the reload command ran by pynag.Utils.runCommand()
+        :rtype: int
         """
         if self.method == daemon.SYSV_INIT_SCRIPT:
             cmd = [self.nagios_init, "reload"]
@@ -191,6 +211,9 @@ class daemon(object):
 
         Will also modify nagios_init="service nagios" and set
         service_name=nagios and method to SYSV_INIT_SCRIPT
+
+        :returns: ``deamon.SYSTEMD``
+        :rtype: int
         """
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
