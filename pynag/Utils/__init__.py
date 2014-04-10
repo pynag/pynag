@@ -101,11 +101,14 @@ class GitRepo(object):
         Python Wrapper around Git command line.
 
         Arguments:
-            Directory (str): Path to the directory does the git repo reside in (i.e. '/etc/nagios')
-            auto_init (bool): If True and directory does not contain a git repo, create it automatically
-            author_name (str): Full name of the author making changes
-            author_email (str): Email used for commit messages, if None, then use username@hostname
 
+            Directory (str): Path to the directory does the git repo reside in (i.e. '/etc/nagios')
+
+            auto_init (bool): If True and directory does not contain a git repo, create it automatically
+
+            author_name (str): Full name of the author making changes
+
+            author_email (str): Email used for commit messages, if None, then use username@hostname
         """
 
         self.directory = directory
@@ -176,7 +179,9 @@ class GitRepo(object):
         
         Returns:
             bool. Git repo is up-to-date
+
                 True -- All files are commited
+
                 False -- At least one file is not commited
         """
         return len(self.get_uncommited_files()) == 0
@@ -321,7 +326,9 @@ class GitRepo(object):
         calling :py:meth:`pynag.Utils.GitRepo.save`
         
         Arguments:
+
             object_definition (pynag.Model.ObjectDefinition): object to commit changes
+
             message (str): git commit message as specified in  ``git commit -m``
 
         A message from the authors:
@@ -342,7 +349,9 @@ class GitRepo(object):
         function is called by :py:class:`pynag.Model.EventHandlers`
 
         Arguments:
+
             object_definition (pynag.Model.ObjectDefinition): object to commit changes
+
             message (str): git commit message as specified in  ``git commit -m``
 
         """
@@ -360,6 +369,7 @@ class GitRepo(object):
         Returns True if filename needs to be committed to git 
 
         Arguments: 
+
             filename (str): file to check
         """
         command = "git status --porcelain '%s'" % filename
@@ -373,8 +383,9 @@ class GitRepo(object):
         is called.
 
         Arguments
+
             object_definition (pynag.Model.ObjectDefinition): Object to write to file.
-            
+
             message (str): git commit message as specified in  ``git commit -m``
 
         """
@@ -392,11 +403,17 @@ class GitRepo(object):
         """ Commit files with "git commit"
 
         Arguments:
+
             message (str): Message used for the git commit
-            filelist (list of strings): List of filenames to commit (if None, then commit all files in the repo)
-            author (str): Author to use for git commit. If any is specified, overwrite self.author_name and self.author_email
+
+            filelist (list of strings): List of filenames to commit (if None, 
+                then commit all files in the repo)
+            author (str): Author to use for git commit. If any is specified, 
+                overwrite self.author_name and self.author_email
+
         Returns:
-            Returns stdout from the "git commit" shell command.
+
+            stdout from the "git commit" shell command.
 
         """
 
@@ -468,6 +485,7 @@ class PerfData(object):
     """ Data Structure for a nagios perfdata string with multiple perfdata metric
 
     Example string:
+
     >>> perf = PerfData("load1=10 load2=10 load3=20 'label with spaces'=5")
     >>> perf.metrics
     ['load1'=10;;;;, 'load2'=10;;;;, 'load3'=20;;;;, 'label with spaces'=5;;;;]
@@ -501,6 +519,7 @@ class PerfData(object):
         """ Returns True if the every metric in the string is valid
 
         Example usage:
+
         >>> PerfData("load1=10 load2=10 load3=20").is_valid()
         True
         >>> PerfData("10b").is_valid()
@@ -937,25 +956,18 @@ def grep_to_livestatus(*args, **kwargs):
 
         >>> grep_to_livestatus(host_name='test')
         ['Filter: host_name = test']
-
         >>> grep_to_livestatus(service_description__contains='serv')
         ['Filter: service_description ~ serv']
-
         >>> grep_to_livestatus(service_description__isnot='serv')
         ['Filter: service_description != serv']
-
         >>> grep_to_livestatus(service_description__contains=['serv','check'])
         ['Filter: service_description ~ serv']
-
         >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
         ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
-
         >>> grep_to_livestatus(service_description__has_field='foo')
         ['Filter: service_description >= foo']
-
         >>> grep_to_livestatus(service_description__startswith='foo')
         ['Filter: service_description ~ ^foo']
-
         >>> grep_to_livestatus(service_description__endswith='foo')
         ['Filter: service_description ~ foo$']
     """
