@@ -2032,10 +2032,10 @@ class LogFiles(object):
         """
         return self.get_log_entries(class_name="notification", **kwargs)
 
-    def get_state_history(self, start_time=None, end_time=None, host_name=None, service_description=None):
+    def get_state_history(self, start_time=None, end_time=None, host_name=None, strict=True, service_description=None):
         """ Returns a list of dicts, with the state history of hosts and services. Parameters behaves similar to get_log_entries """
 
-        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
+        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=strict, class_name='alerts')
         result = []
         last_state = {}
         now = time.time()
@@ -2059,10 +2059,11 @@ class LogFiles(object):
                 line['previous_state'] = last['state']
             last_state[short_name] = line
 
-            if start_time is not None and int(start_time) > int(line.get('time')):
-                continue
-            if end_time is not None and int(end_time) < int(line.get('time')):
-                continue
+            if strict is True:
+                if start_time is not None and int(start_time) > int(line.get('time')):
+                    continue
+                if end_time is not None and int(end_time) < int(line.get('time')):
+                    continue
 
             result.append(line)
         return result
