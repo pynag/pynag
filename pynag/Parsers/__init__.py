@@ -2361,7 +2361,6 @@ class ExtraOptsParser(object):
         return sections
 
 
-
 class SshConfig(config):
     """ Parse object configuration files from remote host via ssh """
     def __init__(self, host, username, password=None, cfg_file=None):
@@ -2422,3 +2421,52 @@ class SshConfig(config):
             return False
 
 
+class MultiSite(mk_livestatus):
+    """ Wrapps around multiple mk_livestatus instances and aggregates the results
+        of queries.
+
+        Example:
+            m = MultiSite()
+            m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
+            m.add_backend(path='127.0.0.1:5992', name='remote')
+    """
+    def __init__(self, *args, **kwargs):
+        mk_livestatus.__init__(self, *args, **kwargs)
+        self.backends = {}
+
+    def add_backend(self, path, name):
+        """ Add a new livestatus backend to this instance.
+
+         Arguments:
+            path    -- Path to file socket or remote address
+            name    -- Friendly shortname for this backend
+        """
+        backend = mk_livestatus(
+            livestatus_socket_path=path,
+            nagios_cfg_file=self.nagios_cfg_file,
+            authuser=self.authuser
+        )
+        self.backends[name] = backend
+
+    def get_backends(self):
+        """ Returns a list of mk_livestatus instances """
+        return self.backends
+
+    def query(self, query, backend=None, *args, **kwargs):
+        """ Behaves like mk_livestatus.query() except results are aggregated from multiple backends
+
+        Arguments:
+            backend     -- If specified, fetch only data from this backend (see add_backend())
+            *args       -- Passed directly to mk_livestatus.query()
+            **kwargs    -- Passed directly to mk_livestatus.query()
+        """
+        result = []
+        for name, backend_instance in self.backends.items():
+            # Skip if a specific backend was requested and this is not it
+            if backend and backend != name:
+                continue
+
+            for i in backend_instance.query(query, *args, **kwargs):
+                i['backend'] = name
+                result.append(i)
+        return result
