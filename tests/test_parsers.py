@@ -269,7 +269,7 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
-
+@unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
 class MultiSite(Livestatus):
     """ Tests for pynag.Parsers.MultiSite
     """
