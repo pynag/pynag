@@ -1026,20 +1026,22 @@ class AttributeList(object):
     Example::
 
         >>> i = AttributeList('+group1,group2,group3')
-        >>> print("Operator is: %s" % i.operator)
-        Operator is: +
-        >>> print(i.fields)
+        >>> i.operator
+        '+'
+        >>> i.fields
         ['group1', 'group2', 'group3']
 
         # if your data is already in a list format you can use it directly:
         >>> i = AttributeList(['group1', 'group2', 'group3'])
-        >>> print(i.fields)
+        >>> i.fields
         ['group1', 'group2', 'group3']
 
         # white spaces will be stripped from all fields
         >>> i = AttributeList('+group1, group2')
-        >>> print(i)
+        >>> i
         +group1,group2
+        >>> i.fields
+        ['group1', 'group2']
 
     """
 
@@ -1081,59 +1083,82 @@ class AttributeList(object):
         return self.__str__()
 
     def insert(self, index, object):
-        """ 
-        Same as list.insert()
+        """  Same as list.insert()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.insert(1, 'group4')
-        >>> print(i.fields)
-        ['group1', 'group4', 'group2', 'group3']
+        Args:
+            object: Any object that will be inserted into self.fields (usually a string)
+
+        Example:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.insert(1, 'group4')
+            >>> i.fields
+            ['group1', 'group4', 'group2', 'group3']
         """
 
         return self.fields.insert(index, object)
 
     def append(self, object):
-        """
-        Same as list.append()::
+        """ Same as list.append():
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.append('group5')
-        >>> print(i.fields)
-        ['group1', 'group2', 'group3', 'group5']
+        Args:
+            object: Item to append into self.fields (typically a string)
+
+        Example:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.append('group5')
+            >>> i.fields
+            ['group1', 'group2', 'group3', 'group5']
         """
         return self.fields.append(object)
 
     def count(self, value):
-        """ 
-        Same as list.count()
+        """  Same as list.count()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.count('group3')
-        1
+        Args:
+            value: Any object that might exist in self.fields (string)
+
+        Returns:
+            The number of occurances that 'value' has in self.fields
+
+        Example:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.count('group3')
+            1
         """
 
         return self.fields.count(value)
 
     def extend(self, iterable):
-        """ 
-        Same as list.extend()
+        """ Same as list.extend()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.extend(['group4', 'group5'])
-        >>> print(i.fields)
-        ['group1', 'group2', 'group3', 'group4', 'group5']
+        Args:
+            iterable:   Any iterable that list.extend() supports
+
+        Example:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.extend(['group4', 'group5'])
+            >>> i.fields
+            ['group1', 'group2', 'group3', 'group4', 'group5']
         """
         return self.fields.extend(iterable)
 
     def index(self, value, start=0, stop=None):
-        """
-        Same as list.index()
+        """ Same as list.index()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.index('group2')
-        1
-        >>> i.index('group3', 2, 5)
-        2
+        Args:
+            value:  object to look for in self.fields
+            start:  start at this index point
+            stop:   stop at this index point
+
+        Returns:
+            The index of 'value' (integer)
+
+        Examples:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.index('group2')
+            1
+            >>> i.index('group3', 2, 5)
+            2
         """
 
         if stop is None:
@@ -1141,37 +1166,40 @@ class AttributeList(object):
         return self.fields.index(value, start, stop)
 
     def reverse(self):
-        """ 
-        Same as list.reverse()
+        """  Same as list.reverse()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.reverse()
-        >>> print(i.fields)
-        ['group3', 'group2', 'group1']
+        Examples:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.reverse()
+            >>> i.fields
+            ['group3', 'group2', 'group1']
         """
 
         return self.fields.reverse()
 
     def sort(self):
-        """ 
-        Same as list.sort()
+        """ Same as list.sort()
 
-        >>> i = AttributeList('group3,group1,group2')
-        >>> i.sort()
-        >>> print(i.fields)
-        ['group1', 'group2', 'group3']
+        Examples:
+            >>> i = AttributeList('group3,group1,group2')
+            >>> i.sort()
+            >>> print(i.fields)
+            ['group1', 'group2', 'group3']
         """
 
         return self.fields.sort()
 
     def remove(self, value):
-        """
-        Same as list.remove()
+        """ Same as list.remove()
 
-        >>> i = AttributeList('group1,group2,group3')
-        >>> i.remove('group3')
-        >>> print(i.fields)
-        ['group1', 'group2']
+        Args:
+            value:  The object that is to be removed
+
+        Examples:
+            >>> i = AttributeList('group1,group2,group3')
+            >>> i.remove('group3')
+            >>> i.fields
+            ['group1', 'group2']
         """
 
         return self.fields.remove(value)
