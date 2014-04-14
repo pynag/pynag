@@ -30,7 +30,7 @@ import pynag.Utils
 _sentinel = object()
 
 
-class Config:
+class Config(object):
     """
     Parse and write nagios config files
     """
@@ -1474,7 +1474,7 @@ class Config:
         return self.data[key]
 
 
-class Livestatus:
+class Livestatus(object):
     """ Wrapper around MK-Livestatus
 
     Example usage:
@@ -1491,6 +1491,7 @@ class Livestatus:
           nagios_cfg_file -- Path to your nagios.cfg. If None then try to auto-detect
           authuser -- If specified. Every data pulled is with the access rights of that contact.
         """
+        self.nagios_cfg_file = nagios_cfg_file
         if not livestatus_socket_path:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
@@ -1691,7 +1692,7 @@ class Livestatus:
         return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
-class RetentionDat:
+class RetentionDat(object):
     """ Easy way to parse the content of retention.dat
 
     After calling parse() contents of retention.dat are kept in self.data
@@ -2431,7 +2432,7 @@ class MultiSite(Livestatus):
             >>> m.add_backend(path='127.0.0.1:5992', name='remote')
     """
     def __init__(self, *args, **kwargs):
-        Livestatus.__init__(self, *args, **kwargs)
+        super(MultiSite, self).__init__(*args, **kwargs)
         self.backends = {}
 
     def add_backend(self, path, name):
