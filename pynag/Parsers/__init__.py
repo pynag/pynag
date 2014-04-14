@@ -17,6 +17,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""This module contains low-level Parsers for nagios configuration and status objects.
+
+Hint: If you are looking to parse some nagios configuration data, you probably
+want pynag.Model module instead.
+
+The highlights of this module are:
+
+class Config: For Parsing nagios local nagios configuration files
+class Livestatus: To connect to MK-Livestatus
+class StatusDat: To read info from status.dat (not used a lot, migrate to mk-livestatus)
+class LogFiles: To read nagios log-files
+class MultiSite: To talk with multiple Livestatus instances
+"""
 import os
 import re
 import time
