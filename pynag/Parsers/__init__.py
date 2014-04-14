@@ -2426,9 +2426,9 @@ class MultiSite(mk_livestatus):
         of queries.
 
         Example:
-            m = MultiSite()
-            m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
-            m.add_backend(path='127.0.0.1:5992', name='remote')
+            >>> m = MultiSite()
+            >>> m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
+            >>> m.add_backend(path='127.0.0.1:5992', name='remote')
     """
     def __init__(self, *args, **kwargs):
         mk_livestatus.__init__(self, *args, **kwargs)
@@ -2438,8 +2438,8 @@ class MultiSite(mk_livestatus):
         """ Add a new livestatus backend to this instance.
 
          Arguments:
-            path    -- Path to file socket or remote address
-            name    -- Friendly shortname for this backend
+            path (str):  Path to file socket or remote address
+            name (str):  Friendly shortname for this backend
         """
         backend = mk_livestatus(
             livestatus_socket_path=path,
@@ -2449,24 +2449,69 @@ class MultiSite(mk_livestatus):
         self.backends[name] = backend
 
     def get_backends(self):
-        """ Returns a list of mk_livestatus instances """
+        """ Returns a list of mk_livestatus instances
+
+        Returns:
+            list. List of mk_livestatus instances
+        """
         return self.backends
 
-    def query(self, query, backend=None, *args, **kwargs):
+    def query(self, query, *args, **kwargs):
         """ Behaves like mk_livestatus.query() except results are aggregated from multiple backends
 
         Arguments:
-            backend     -- If specified, fetch only data from this backend (see add_backend())
-            *args       -- Passed directly to mk_livestatus.query()
-            **kwargs    -- Passed directly to mk_livestatus.query()
+            backend (str): If specified, fetch only data from this backend (see add_backend())
+            *args:         Passed directly to mk_livestatus.query()
+            **kwargs:      Passed directly to mk_livestatus.query()
         """
         result = []
+        backend = kwargs.pop('backend', None)
+
+        # Special hack, if 'Stats' argument was provided to livestatus
+        # We have to maintain compatibility with old versions of livestatus
+        # and return single list with all results instead of a list of dicts
+        doing_stats = any(map(lambda x: x.startswith('Stats:'), args + (query,)))
+
+        # Iterate though all backends and run the query
+        # TODO: Make this multithreaded
         for name, backend_instance in self.backends.items():
             # Skip if a specific backend was requested and this is not it
             if backend and backend != name:
                 continue
 
-            for i in backend_instance.query(query, *args, **kwargs):
-                i['backend'] = name
-                result.append(i)
+            query_result = backend_instance.query(query, *args, **kwargs)
+            if doing_stats:
+                result = self._merge_statistics(result, query_result)
+            else:
+                for row in query_result:
+                    row['backend'] = name
+                    result.append(row)
+
+        return result
+
+    def _merge_statistics(self, list1, list2):
+        """ Merges multiple livestatus results into one result
+
+        Arguments:
+            list1 (list): List of integers
+            list2 (list): List of integers
+
+        Returns:
+            list. Aggregated results of list1 + list2
+        Example:
+            >>> result1 = [1,1,1,1]
+            >>> result2 = [2,2,2,2]
+            >>> MultiSite()._merge_statistics(result1, result2)
+            [3, 3, 3, 3]
+        """
+        if not list1:
+            return list2
+        if not list2:
+            return list1
+
+        number_of_columns = len(list1)
+        result = [0] * number_of_columns
+        for row in (list1, list2):
+            for i, column in enumerate(row):
+                result[i] += column
         return result
