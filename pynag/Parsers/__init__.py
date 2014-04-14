@@ -30,7 +30,7 @@ import pynag.Utils
 _sentinel = object()
 
 
-class config:
+class Config:
     """
     Parse and write nagios config files
     """
@@ -1474,17 +1474,17 @@ class config:
         return self.data[key]
 
 
-class mk_livestatus:
+class Livestatus:
     """ Wrapper around MK-Livestatus
 
     Example usage:
-    s = mk_livestatus()
+    s = Livestatus()
     for hostgroup s.get_hostgroups():
         print(hostgroup['name'], hostgroup['num_hosts'])
     """
 
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
-        """ Initilize a new instance of mk_livestatus
+        """ Initilize a new instance of Livestatus
 
         Arguments:
           livestatus_socket_path -- Path to livestatus socket (if none specified, use one specified in nagios.cfg)
@@ -1691,7 +1691,7 @@ class mk_livestatus:
         return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
-class retention:
+class RetentionDat:
     """ Easy way to parse the content of retention.dat
 
     After calling parse() contents of retention.dat are kept in self.data
@@ -1791,7 +1791,7 @@ class retention:
         return str_buffer
 
 
-class status(retention):
+class StatusDat(RetentionDat):
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
@@ -1879,7 +1879,7 @@ class status(retention):
         raise ValueError(host_name, service_description)
 
 
-class object_cache(config):
+class ObjectCache(Config):
     """ Loads the configuration as it appears in objects.cache file """
 
     def get_cfg_files(self):
@@ -1924,7 +1924,7 @@ class LivestatusNotConfiguredException(ParserError):
 class LogFiles(object):
     """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
         python-friendly arrays of dicts. Output should be more or less compatible with
-        mk_livestatus log output
+        Livestatus log output
     """
 
     def __init__(self, maincfg=None):
@@ -2361,7 +2361,7 @@ class ExtraOptsParser(object):
         return sections
 
 
-class SshConfig(config):
+class SshConfig(Config):
     """ Parse object configuration files from remote host via ssh """
     def __init__(self, host, username, password=None, cfg_file=None):
         import paramiko
@@ -2421,8 +2421,8 @@ class SshConfig(config):
             return False
 
 
-class MultiSite(mk_livestatus):
-    """ Wrapps around multiple mk_livestatus instances and aggregates the results
+class MultiSite(Livestatus):
+    """ Wrapps around multiple Livesatus instances and aggregates the results
         of queries.
 
         Example:
@@ -2431,7 +2431,7 @@ class MultiSite(mk_livestatus):
             >>> m.add_backend(path='127.0.0.1:5992', name='remote')
     """
     def __init__(self, *args, **kwargs):
-        mk_livestatus.__init__(self, *args, **kwargs)
+        Livestatus.__init__(self, *args, **kwargs)
         self.backends = {}
 
     def add_backend(self, path, name):
@@ -2441,7 +2441,7 @@ class MultiSite(mk_livestatus):
             path (str):  Path to file socket or remote address
             name (str):  Friendly shortname for this backend
         """
-        backend = mk_livestatus(
+        backend = Livestatus(
             livestatus_socket_path=path,
             nagios_cfg_file=self.nagios_cfg_file,
             authuser=self.authuser
@@ -2515,3 +2515,23 @@ class MultiSite(mk_livestatus):
             for i, column in enumerate(row):
                 result[i] += column
         return result
+
+
+class config(Config):
+    """ This class is here only for backwards compatibility. Use Config instead. """
+
+
+class mk_livestatus(Livestatus):
+    """ This class is here only for backwards compatibility. Use Livestatus instead. """
+
+
+class object_cache(ObjectCache):
+    """ This class is here only for backwards compatibility. Use ObjectCache instead. """
+
+
+class status(StatusDat):
+    """ This class is here only for backwards compatibility. Use StatusDat instead. """
+
+
+class retention(RetentionDat):
+    """ This class is here only for backwards compatibility. Use RetentionDat instead. """
