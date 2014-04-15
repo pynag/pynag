@@ -81,7 +81,7 @@ if __name__ == "__main__":
             'pynag.Control',
             'pynag.Control.Command',
         ],
-        data_files=[(manpath, ['man/pynag.1',]),],
+        data_files=[(manpath, ['man/pynag.1.gz',]),],
         cmdclass={
             'test': PynagTest,
             'build_man': BuildMan,
