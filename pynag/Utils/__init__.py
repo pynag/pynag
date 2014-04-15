@@ -1143,11 +1143,7 @@ class AttributeList(object):
         return self.fields.index(value, start, stop)
 
     def reverse(self):
-<<<<<<< HEAD
         """ Same as list.reverse()
-=======
-        """  Same as list.reverse()
->>>>>>> f648a4b... pynag.Utils - Update docstrings for AttributeList
 
         Examples:
             >>> i = AttributeList('group1,group2,group3')
