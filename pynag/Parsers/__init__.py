@@ -88,22 +88,17 @@ class Config(object):
         Use this function if you don't want specify path to the nagios binary
         in your code and you are confident that it is located in a common
         location
-        """
-        possible_files = ('/usr/bin/nagios',
-                          '/usr/sbin/nagios',
-                          '/usr/local/nagios/bin/nagios',
-                          '/nagios/bin/nagios',
-                          '/usr/bin/icinga',
-                          '/usr/sbin/icinga',
-                          '/usr/bin/naemon',
-                          '/usr/sbin/naemon',
-                          '/usr/local/naemon/bin/naemon.cfg',
-                          '/usr/bin/shinken',
-                          '/usr/sbin/shinken')
 
-        for file_path in possible_files:
-            if os.access(file_path, os.X_OK):
-                return file_path
+        Returns:
+            None if nagios binary was not found
+        """
+        possible_binaries = ('nagios', 'nagios3', 'naemon', 'icinga', 'shinken')
+        for i in possible_binaries:
+            command = ['which', i]
+            code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
+            if code == 0:
+                return stdout.splitlines()[0].strip()
+
         return None
 
     def guess_cfg_file(self):
@@ -2471,6 +2466,15 @@ class MultiSite(Livestatus):
         """
         return self.backends
 
+    def get_backend(self, backend_name):
+        """ Return one specific backend that has previously been added
+        """
+        if not backend_name:
+            return self.backends.values()[0]
+        try:
+            return self.backends[backend_name]
+        except KeyError:
+            raise ParserError("No backend found with name='%s'" % backend_name)
     def query(self, query, *args, **kwargs):
         """ Behaves like mk_livestatus.query() except results are aggregated from multiple backends
 
@@ -2504,6 +2508,7 @@ class MultiSite(Livestatus):
 
         return result
 
+
     def _merge_statistics(self, list1, list2):
         """ Merges multiple livestatus results into one result
 
@@ -2530,6 +2535,36 @@ class MultiSite(Livestatus):
             for i, column in enumerate(row):
                 result[i] += column
         return result
+
+    def get_host(self, host_name, backend):
+        """ Same as Livestatus.get_host() """
+        backend = self.get_backend(backend)
+        return backend.get_host(host_name)
+
+    def get_service(self, host_name, service_description, backend):
+        """ Same as Livestatus.get_service() """
+        backend = self.get_backend(backend)
+        return backend.get_service(host_name, service_description)
+
+    def get_contact(self, contact_name, backend):
+        """ Same as Livestatus.get_contact() """
+        backend = self.get_backend(backend)
+        return backend.get_contact(contact_name)
+
+    def get_contactgroup(self, contactgroup_name, backend):
+        """ Same as Livestatus.get_contact() """
+        backend = self.get_backend(backend)
+        return backend.get_contactgroup(contactgroup_name)
+
+    def get_servicegroup(self, servicegroup_name, backend):
+        """ Same as Livestatus.get_servicegroup() """
+        backend = self.get_backend(backend)
+        return backend.get_servicegroup(servicegroup_name)
+
+    def get_hostgroup(self, hostgroup_name, backend):
+        """ Same as Livestatus.get_hostgroup() """
+        backend = self.get_backend(backend)
+        return backend.get_hostgroup(hostgroup_name)
 
 
 class config(Config):
