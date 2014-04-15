@@ -1,3 +1,7 @@
+Changes in 0.8.9 (Apr 15 2014)
+Bug Fixes:
+    - Deploy gzipped version of manpage with setup.py
+
 Changes in 0.8.8 (Apr 15 2014)
 Bug Fixes:
     - MANIFEST fixes in the build process
