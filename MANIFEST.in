@@ -9,3 +9,4 @@ include CHANGES
 include pynag.spec
 include Makefile
 include man/pynag.1
+include man/pynag.1.gz
