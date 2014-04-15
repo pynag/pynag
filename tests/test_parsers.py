@@ -26,6 +26,7 @@ class Config(unittest.TestCase):
 
         self.tempdir = self.environment.tempdir
         self.config = self.environment.get_config()
+        self.objects_file = self.environment.objects_dir + "/new_objects.cfg"
 
 
     def tearDown(self):
