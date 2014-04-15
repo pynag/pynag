@@ -57,15 +57,14 @@ class PynagError(Exception):
 
 
 def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
-    """ 
-    Run command from the shell prompt. Wrapper around subprocess.
+    """ Run command from the shell prompt. Wrapper around subprocess.
 
-    Arguments:
+    Args:
         command (str): string containing the command line to run
         raise_error_on_fail (bool): Raise PynagError if returncode > 0
 
     Returns:
-        string: stdout/stderr of the command run
+        str: stdout/stderr of the command run
 
     Raises:
         PynagError if returncode > 0
@@ -97,17 +96,12 @@ def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
 class GitRepo(object):
 
     def __init__(self, directory, auto_init=True, author_name="Pynag User", author_email=None):
-        """
-        Python Wrapper around Git command line.
+        """ Python Wrapper around Git command line.
 
-        Arguments:
-
+        Args:
             Directory (str): Path to the directory does the git repo reside in (i.e. '/etc/nagios')
-
             auto_init (bool): If True and directory does not contain a git repo, create it automatically
-
             author_name (str): Full name of the author making changes
-
             author_email (str): Email used for commit messages, if None, then use username@hostname
         """
 
@@ -142,8 +136,7 @@ class GitRepo(object):
         self._is_dirty = self.is_dirty  # Backwards compatibility
 
     def _update_author(self):
-        """ 
-        Updates environment variables GIT_AUTHOR_NAME and EMAIL
+        """ Updates environment variables GIT_AUTHOR_NAME and EMAIL
 
         Returns:
             None
@@ -152,10 +145,9 @@ class GitRepo(object):
         environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
 
     def _run_command(self, command):
-        """ 
-        Run a specified command from the command line. Return stdout 
+        """ Run a specified command from the command line. Return stdout 
         
-        Arguments:
+        Args:
             command (str): command to execute
 
         Returns:
@@ -174,21 +166,18 @@ class GitRepo(object):
         return stdout
 
     def is_up_to_date(self):
-        """ 
-        Returns True if all files in git repo are fully commited 
+        """ Returns True if all files in git repo are fully commited 
         
         Returns:
             bool. Git repo is up-to-date
-
                 True -- All files are commited
-
+                
                 False -- At least one file is not commited
         """
         return len(self.get_uncommited_files()) == 0
 
     def get_valid_commits(self):
-        """ 
-        Returns a list of all commit ids from git log
+        """ Returns a list of all commit ids from git log
 
         Returns:
             List of all valid commit hashes
@@ -196,8 +185,7 @@ class GitRepo(object):
         return map(lambda x: x.get('hash'), self.log())
 
     def get_uncommited_files(self):
-        """ 
-        Returns a list of files that are have unstaged changes 
+        """ Returns a list of files that are have unstaged changes 
         
         Returns:
             List. All files that have unstaged changes.
@@ -228,7 +216,7 @@ class GitRepo(object):
 
         Any arguments provided will be passed directly to pynag.Utils.grep() to filter the results.
 
-        Arguments:
+        Args:
             kwargs: Arguments passed to pynag.Utils.grep()
 
         Returns:
@@ -236,6 +224,7 @@ class GitRepo(object):
 
         Examples:
           self.log(author_name='nagiosadmin')
+
           self.log(comment__contains='localhost')
         """
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
@@ -253,12 +242,11 @@ class GitRepo(object):
         return grep(result, **kwargs)
 
     def diff(self, commit_id_or_filename=None):
-        """ 
-        Returns diff (as outputted by "git diff") for filename or commit id.
+        """ Returns diff (as outputted by "git diff") for filename or commit id.
 
         If commit_id_or_filename is not specified. show diff against all uncommited files.
 
-        Arguments:
+        Args:
             commit_id_or_filename (str): git commit id or file to diff with
 
         Returns:
@@ -281,10 +269,9 @@ class GitRepo(object):
         return self._run_command(command)
 
     def show(self, commit_id,):
-        """ 
-        Returns output from "git show" for a specified commit_id
+        """ Returns output from "git show" for a specified commit_id
 
-        Arguments:
+        Args:
             commit_id (str): Commit id of the commit to display (``git show``)
 
         Returns:
@@ -320,12 +307,12 @@ class GitRepo(object):
         return self.commit(message=message, filelist=filelist)
 
     def pre_save(self, object_definition, message):
-        """ 
-        Commits object_definition.get_filename() if it has any changes. This
-        function is called by :py:class:`pynag.Model.EventHandlers` before
+        """ Commits object_definition.get_filename() if it has any changes. 
+
+        This function is called by :py:class:`pynag.Model.EventHandlers` before
         calling :py:meth:`pynag.Utils.GitRepo.save`
         
-        Arguments:
+        Args:
 
             object_definition (pynag.Model.ObjectDefinition): object to commit changes
 
@@ -344,11 +331,10 @@ class GitRepo(object):
                             (object_definition.object_type, object_definition.get_shortname()))
 
     def save(self, object_definition, message):
-        """
-        Commits object_definition.get_filename() if it has any changes. This
-        function is called by :py:class:`pynag.Model.EventHandlers`
+        """ Commits object_definition.get_filename() if it has any changes. 
+        This function is called by :py:class:`pynag.Model.EventHandlers`
 
-        Arguments:
+        Args:
 
             object_definition (pynag.Model.ObjectDefinition): object to commit changes
 
@@ -365,10 +351,9 @@ class GitRepo(object):
         self.messages = []
 
     def is_dirty(self, filename):
-        """
-        Returns True if filename needs to be committed to git 
+        """ Returns True if filename needs to be committed to git 
 
-        Arguments: 
+        Args: 
 
             filename (str): file to check
         """
@@ -378,16 +363,14 @@ class GitRepo(object):
         return len(output) > 0
 
     def write(self, object_definition, message):
-        """
-        This method is called whenever :py:class:`pynag.Model.EventHandlers`
+        """ This method is called whenever :py:class:`pynag.Model.EventHandlers`
         is called.
 
-        Arguments
+        Args:
 
             object_definition (pynag.Model.ObjectDefinition): Object to write to file.
 
             message (str): git commit message as specified in  ``git commit -m``
-
         """
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
@@ -402,7 +385,7 @@ class GitRepo(object):
     def commit(self, message='commited by pynag', filelist=None, author=None):
         """ Commit files with "git commit"
 
-        Arguments:
+        Args:
 
             message (str): Message used for the git commit
 
@@ -466,11 +449,12 @@ class GitRepo(object):
     def add(self, filename):
         """ Run git add on filename
 
-            Arguments:
-                filename (str): name of one file to add,
+        Args:
 
-            Returns:
-                str. The stdout from "git add" shell command.
+            filename (str): name of one file to add,
+
+        Returns:
+            str. The stdout from "git add" shell command.
         """
 
         # Escape all single quotes in filename:
@@ -537,10 +521,9 @@ class PerfData(object):
         return True
 
     def add_perfdatametric(self, perfdatastring="", label="", value="", warn="", crit="", min="", max="", uom=""):
-        """ 
-        Add a new perfdatametric to existing list of metrics.
+        """ Add a new perfdatametric to existing list of metrics.
 
-        Arguments:
+        Args:
 
             perfdatastring (str): Complete perfdata string
 
@@ -570,7 +553,7 @@ class PerfData(object):
     def get_perfdatametric(self, metric_name):
         """ Get one specific perfdatametric
 
-        Arguments:
+        Args:
             metric_name (str): Name of the metric to return
 
         Example:
@@ -596,8 +579,7 @@ class PerfData(object):
 
 class PerfDataMetric(object):
 
-    """
-    Data structure for one single Nagios Perfdata Metric 
+    """ Data structure for one single Nagios Perfdata Metric 
     
 
     Attributes:
@@ -710,8 +692,7 @@ class PerfDataMetric(object):
             self.max = tmp.pop(0)
 
     def get_status(self):
-        """ 
-        Return nagios-style exit code (int 0-3) by comparing
+        """ Return nagios-style exit code (int 0-3) by comparing
 
         Example: 
 
@@ -738,8 +719,7 @@ class PerfDataMetric(object):
         return status
 
     def is_valid(self):
-        """ 
-        Returns True if all Performance data is valid. Otherwise False
+        """ Returns True if all Performance data is valid. Otherwise False
 
         Example Usage:
 
@@ -789,8 +769,9 @@ class PerfDataMetric(object):
         return True
 
     def reconsile_thresholds(self):
-        """ 
-        Convert threshold from new threshold syntax to current one, for backwards compatibility 
+        """ Convert threshold from new threshold syntax to current one.
+        
+        For backwards compatibility 
         """
 
         self.warn = reconsile_threshold(self.warn)
@@ -830,8 +811,7 @@ class PerfDataMetric(object):
         return tmp[0]
 
     def get_dict(self):
-        """
-        Returns a dictionary which contains this class' attributes.
+        """ Returns a dictionary which contains this class' attributes.
 
         Returned dict example::
 
@@ -858,8 +838,7 @@ class PerfDataMetric(object):
 
 def grep(objects, **kwargs):
 
-    """
-    Returns all the elements from array that match the keywords in **kwargs
+    """ Returns all the elements from array that match the keywords in **kwargs
 
     See documentation for pynag.Model.ObjectDefinition.objects.filter() for 
     example how to use this.
@@ -949,8 +928,7 @@ def grep(objects, **kwargs):
 
 def grep_to_livestatus(*args, **kwargs):
 
-    """ 
-    Converts from pynag style grep syntax to livestatus filter syntax.
+    """ Converts from pynag style grep syntax to livestatus filter syntax.
 
     Example:
 
@@ -1011,9 +989,8 @@ def grep_to_livestatus(*args, **kwargs):
 
 class AttributeList(object):
 
-    """ 
-    Parse a list of nagios attributes (e. contact_groups) into a parsable 
-    format.
+    """ Parse a list of nagios attributes into a parsable format.
+    (e. contact_groups) 
 
     This makes it handy to mangle with nagios attribute values that are in a 
     comma seperated format.
@@ -1081,8 +1058,7 @@ class AttributeList(object):
         return self.__str__()
 
     def insert(self, index, object):
-        """ 
-        Same as list.insert()
+        """ Same as list.insert()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.insert(1, 'group4')
@@ -1093,8 +1069,7 @@ class AttributeList(object):
         return self.fields.insert(index, object)
 
     def append(self, object):
-        """
-        Same as list.append()::
+        """ Same as list.append()::
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.append('group5')
@@ -1104,8 +1079,7 @@ class AttributeList(object):
         return self.fields.append(object)
 
     def count(self, value):
-        """ 
-        Same as list.count()
+        """ Same as list.count()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.count('group3')
@@ -1115,8 +1089,7 @@ class AttributeList(object):
         return self.fields.count(value)
 
     def extend(self, iterable):
-        """ 
-        Same as list.extend()
+        """ Same as list.extend()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.extend(['group4', 'group5'])
@@ -1126,8 +1099,7 @@ class AttributeList(object):
         return self.fields.extend(iterable)
 
     def index(self, value, start=0, stop=None):
-        """
-        Same as list.index()
+        """ Same as list.index()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.index('group2')
@@ -1141,8 +1113,7 @@ class AttributeList(object):
         return self.fields.index(value, start, stop)
 
     def reverse(self):
-        """ 
-        Same as list.reverse()
+        """ Same as list.reverse()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.reverse()
@@ -1153,8 +1124,7 @@ class AttributeList(object):
         return self.fields.reverse()
 
     def sort(self):
-        """ 
-        Same as list.sort()
+        """ Same as list.sort()
 
         >>> i = AttributeList('group3,group1,group2')
         >>> i.sort()
@@ -1165,8 +1135,7 @@ class AttributeList(object):
         return self.fields.sort()
 
     def remove(self, value):
-        """
-        Same as list.remove()
+        """ Same as list.remove()
 
         >>> i = AttributeList('group1,group2,group3')
         >>> i.remove('group3')
@@ -1177,8 +1146,7 @@ class AttributeList(object):
         return self.fields.remove(value)
 
     def __iter__(self):
-        """ 
-        Same as list.__iter__()
+        """ Same as list.__iter__()
 
         >>> mylist = AttributeList('group1,group2,group3')
         >>> for i in mylist: print(i)
@@ -1253,8 +1221,7 @@ class PluginOutput:
 
 class defaultdict(dict):
 
-    """ 
-    This is an alternative implementation of collections.defaultdict.
+    """ This is an alternative implementation of collections.defaultdict.
 
     Used as a fallback if using python 2.4 or older.
 
@@ -1308,8 +1275,7 @@ class defaultdict(dict):
 
 
 def reconsile_threshold(threshold_range):
-    """ 
-    Take threshold string as and normalize it to the format supported by plugin 
+    """ Take threshold string as and normalize it to the format supported by plugin 
     development team
 
     The input (usually a string in the form of 'the new threshold syntax') is a 
@@ -1366,8 +1332,7 @@ def reconsile_threshold(threshold_range):
 
 
 def synchronized(lock):
-    """ 
-    Synchronization decorator
+    """ Synchronization decorator
 
     Use this to make a multi-threaded method synchronized and thread-safe.
 
@@ -1403,10 +1368,9 @@ def cache_only(func):
 
 
 def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="send_nsca", nscaconf=None):
-    """ 
-    Send data via send_nsca for passive service checks
+    """ Send data via send_nsca for passive service checks
 
-    Arguments:
+    Args:
 
         code (int): Return code of plugin.
 
