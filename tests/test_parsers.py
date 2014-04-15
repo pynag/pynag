@@ -16,23 +16,20 @@ import random
 
 from tests import tests_dir
 import pynag.Parsers
+import pynag.Utils.misc
 
 class Config(unittest.TestCase):
     """ Test pynag.Parsers.config """
     def setUp(self):
-        self.tempdir = t = tempfile.mkdtemp('nagios-unittests') + "/"
-        shutil.copytree(tests_dir + '/dataset01/', t + "/dataset01")
-        self.cfg_file = t + '/dataset01/nagios/nagios.cfg'
-        self.config = pynag.Parsers.config(cfg_file=self.cfg_file)
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
 
-        # Create one empty file to write objects to
-        objects_file = os.path.join(t, 'dataset01/nagios/', "objects.cfg")
-        self.objects_file = objects_file
-        open(objects_file, 'w').write('')
-        self.config._edit_static_file(attribute='cfg_file', new_value=objects_file, append=True)
+        self.tempdir = self.environment.tempdir
+        self.config = self.environment.get_config()
+
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir, ignore_errors=True)
+        self.environment.terminate()
 
     def test_parse(self):
         """ Smoketest config.parse() """
@@ -114,7 +111,7 @@ class Config(unittest.TestCase):
         """ Test what happens when a user enters invalid characters attribute value """
         field_name = "test_field"
         field_value = "test_value"
-        host_name = "macrohost"
+        host_name = "ok_host"
 
         # Change field_name of our host
         self.config.parse()
