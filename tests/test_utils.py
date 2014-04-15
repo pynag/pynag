@@ -6,7 +6,7 @@ pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
 import unittest2 as unittest
-from mock import MagicMock, patch
+from mock import patch
 import shutil
 import tempfile
 import pynag.Utils as utils
@@ -14,7 +14,7 @@ import pynag.Model
 from pynag.Utils import PynagError
 from tests import tests_dir
 import pynag.Utils.misc
-from pynag.Utils import PynagError
+
 
 class testUtils(unittest.TestCase):
 
@@ -25,7 +25,7 @@ class testUtils(unittest.TestCase):
         os.chdir('dataset01')
         pynag.Model.config = None
         pynag.Model.cfg_file = './nagios/nagios.cfg'
-        s = pynag.Model.ObjectDefinition.objects.all
+        pynag.Model.ObjectDefinition.objects.get_all()
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
 
     def tearDown(self):
@@ -233,7 +233,7 @@ class testUtils(unittest.TestCase):
         validcommitspatcher.stop()
 
         self.assertRaisesRegexp(
-            PynagError, '%s is not a valid commit id' %  initial_hash)
+            PynagError, '%s is not a valid commit id' % initial_hash)
         # Add file
         tempfile.mkstemp(dir=self.tmp_dir)
         self.assertEquals(len(repo.get_uncommited_files()), 1)
@@ -356,12 +356,16 @@ class testUtils(unittest.TestCase):
         self.assertEqual(1, result[0])
         self.assertEqual('(standard input):0\n', result[1])
 
+
 class testFakeNagiosEnvironment(unittest.TestCase):
+
     def setUp(self):
         self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
         self.environment.create_minimal_environment()
+
     def tearDown(self):
         self.environment.terminate()
+
     def testMinimal(self):
         """ Minimal Test of our FakeNagiosEnvironment """
         nagios = pynag.Utils.misc.FakeNagiosEnvironment()
@@ -415,10 +419,12 @@ class testFakeNagiosEnvironment(unittest.TestCase):
             self.assertTrue(False, "I was able to open a file outside my tempdir!")
         except PynagError:
             pass
+
     def testUpdateModel_NoRestore(self):
         self.environment.update_model()
+
     def testLivestatus(self):
-        host_name="localhost"
+        host_name = "localhost"
         self.environment.update_model()
         pynag.Model.Host(host_name=host_name, use="generic-host").save()
 

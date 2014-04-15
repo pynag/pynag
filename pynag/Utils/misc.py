@@ -14,17 +14,20 @@ import pynag.Parsers
 import pynag.Model
 from pynag.Utils import PynagError
 
+
 class FakeNagiosEnvironment(object):
     """ Creates a fake nagios environment with minimal configs in /tmp/
 
     Example:
         >>> nagios = FakeNagiosEnvironment()
+        >>> nagios.create_minimal_environment()  # Create temporary director with minimal config
         >>> nagios.update_model()  # Update the global variables in pynag.Model
-        >>> nagios.livestatus_broker_module_path = '/usr/lib/livestatus.o'
-        >>> nagios.start()  # Start up nagios
+        >>> nagios.configure_livestatus()  # Configure a livestatus socket
+        >>> result, stdout, stderr = nagios.start()  # Start up nagios
         >>> config = nagios.get_config()   # Returns Parsers.Config instance
         >>> livestatus = nagios.get_livestatus()  # Returns Parsers.Livestatus instance
-        >>> nagios.stop()  # Stop nagios
+        >>> result, stdout, sdterr = nagios.stop()  # Stop nagios
+        >>> nagios.terminate()  # Stops nagios and cleans up everything
     """
     def __init__(self, global_config_file=None, p1_file=None, livestatus=False):
         self.global_config_file = global_config_file
@@ -72,7 +75,6 @@ class FakeNagiosEnvironment(object):
         wrap.__module__ = func.__module__
         return wrap
 
-
     def restore_model(self):
         """ Restores the global variables in pynag.Model """
         pynag.Model.config = self.original_config
@@ -109,7 +111,7 @@ class FakeNagiosEnvironment(object):
 
     def clean_up(self):
         """ Clean up all temporary directories """
-        command = 'rm','-rf', self.tempdir
+        command = ['rm', '-rf', self.tempdir]
         pynag.Utils.runCommand(command=command, shell=False)
 
     def terminate(self):
@@ -537,4 +539,3 @@ minimal_config = r"""
     }
 
     """
-
