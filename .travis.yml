@@ -9,7 +9,7 @@ install:
   - python setup.py build
   - python setup.py install
   - sudo chmod 777 /etc/nagios3/nagios.cfg
-  - sudo chmod a+r '/var/cache/nagios3/status.dat'
+  - sudo chmod a+rx '/var/cache/nagios3/'
   - echo "broker_module=/usr/lib/check_mk/livestatus.o /var/lib/nagios3/rw/livestatus" >> /etc/nagios3/nagios.cfg
   - sudo service nagios3 reload
 before_script:
