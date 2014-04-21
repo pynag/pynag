@@ -8,7 +8,8 @@ install:
   - pip install coveralls --use-mirrors
   - python setup.py build
   - python setup.py install
-  - sudo python scripts/pynag config --append "broker_module=/usr/lib/check_mk/livestatus.o /var/lib/nagios3/rw/livestatus"
+  - sudo chmod 777 /etc/nagios3/nagios.cfg
+  - echo "broker_module=/usr/lib/check_mk/livestatus.o /var/lib/nagios3/rw/livestatus" > /etc/nagios3/nagios.cfg
   - sudo service nagios3 reload
 before_script:
   - env
