@@ -91,6 +91,8 @@ class FakeNagiosEnvironment(object):
         objects_dir = self.objects_dir = t + "/conf.d"
         os.mkdir(objects_dir)
 
+        check_result_path = os.path.join(self.tempdir, 'checkresults')
+        os.mkdir(check_result_path)
 
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
@@ -109,6 +111,7 @@ class FakeNagiosEnvironment(object):
         config._edit_static_file(attribute='enable_embedded_perl', new_value='0')
         config._edit_static_file(attribute='event_broker_options', new_value='-1')
         config._edit_static_file(attribute='illegal_macro_output_chars', new_value='''~$&|<>''')
+        config._edit_static_file(attribute='check_result_path', new_value=check_result_path)
 
     def clean_up(self):
         """ Clean up all temporary directories """
