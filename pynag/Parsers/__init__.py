@@ -1500,6 +1500,7 @@ class Livestatus(object):
           authuser -- If specified. Every data pulled is with the access rights of that contact.
         """
         self.nagios_cfg_file = nagios_cfg_file
+        self.error = None
         if not livestatus_socket_path:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
@@ -1520,16 +1521,27 @@ class Livestatus(object):
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
 
-    def test(self):
-        """ Raises ParserError if there are problems communicating with livestatus socket """
-        if not self.exists(self.livestatus_socket_path):
-            raise ParserError(
-                "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
+    def test(self, raise_error=True):
+        """ Test if connection to livestatus socket is working
+
+            Args:
+                raise_error: If set to True, raise exception if test fails,otherwise return False
+
+            Raises:
+                ParserError if raise_error == True and connection fails
+            Returns:
+                True if connection is OK, False if there are problems and raise_error==False
+
+         """
         try:
             self.query("GET hosts")
-        except KeyError:
+        except Exception:
             t, e = sys.exc_info()[:2]
-            raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
+            self.error = e
+            if raise_error:
+                raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
+            else:
+                return False
         return True
 
     def _get_socket(self):
