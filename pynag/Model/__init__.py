@@ -611,6 +611,9 @@ class ObjectDefinition(object):
             return True
         return False
 
+    def is_defined(self, attribute_name):
+        """ Returns True if attribute_name is defined in this object """
+        return attribute_name in self._defined_attributes
     def __cmp__(self, other):
         return cmp(self.get_description(), other.get_description())
 
@@ -917,6 +920,29 @@ class ObjectDefinition(object):
             new_object[k] = v
         new_object.save()
         return new_object
+
+    def rename(self, shortname):
+        """ Change the shortname of this object
+
+        Most objects that inherit this one, should also be responsible for
+        updating related objects about the rename.
+
+        Args:
+            shortname:        New name for this object
+
+        Returns:
+            None
+        """
+        if not self.object_type:
+            raise Exception("Don't use this object on ObjectDefinition. Only sub-classes")
+
+        if not shortname:
+            raise Exception("You must provide a valid shortname if you intend to rename this object")
+
+        attribute = '%s_name' % self.object_type
+
+        self.set_attribute(attribute, shortname)
+        self.save()
 
     def get_related_objects(self):
         """ Returns a list of ObjectDefinition that depend on this object
@@ -1681,6 +1707,17 @@ class Host(ObjectDefinition):
     def remove_from_contactgroup(self, contactgroup):
         return _remove_from_contactgroup(self, contactgroup)
 
+    def rename(self, shortname):
+        """ Rename this host, and modify related objects """
+        old_name = self.get_shortname()
+        super(Host, self).rename(shortname)
+
+        for i in Service.objects.filter(host_name__has_field=old_name):
+            i.attribute_replacefield('host_name', old_name, shortname)
+            i.save()
+        for i in Hostgroup.objects.filter(members__has_field=old_name):
+            i.attribute_replacefield('members', old_name, shortname)
+            i.save()
 
 class Service(ObjectDefinition):
     object_type = 'service'
@@ -1879,9 +1916,29 @@ class Service(ObjectDefinition):
                 new_serv = self.move(host_filename)
                 new_serv.save()
 
+    def rename(self, shortname):
+        """ Not implemented. Do not use. """
+        raise Exception("Not implemented for service.")
+
+
 class Command(ObjectDefinition):
     object_type = 'command'
     objects = ObjectFetcher('command')
+
+    def rename(self, shortname):
+        """ Rename this command, and reconfigure all related objects """
+        old_name = self.get_shortname()
+        super(Command, self).rename(shortname)
+        objects = ObjectDefinition.objects.filter(check_command=old_name)
+        # TODO: Do something with objects that have check_command!ARGS!ARGS
+        #objects += ObjectDefinition.objects.filter(check_command__startswith="%s!" % old_name)
+
+        for i in objects:
+            # Skip objects that are inheriting this from a template
+            if not i.is_defined("check_command"):
+                continue
+            i.check_command = shortname
+            i.save()
 
 
 class Contact(ObjectDefinition):
@@ -1977,6 +2034,28 @@ class Contact(ObjectDefinition):
                     i.save()
         # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
+
+    def rename(self, shortname):
+        """ Renames this object, and triggers a change in related items as well.
+
+        Args:
+            shortname:        New name for this object
+
+        Returns:
+            None
+        """
+        old_name = self.contact_name
+        super(Contact, self).rename(shortname)
+
+        for i in Host.objects.filter(contacts__has_field=old_name):
+            i.attribute_replacefield('contacts', old_name, shortname)
+            i.save()
+        for i in Service.objects.filter(contacts__has_field=old_name):
+            i.attribute_replacefield('contacts', old_name, shortname)
+            i.save()
+        for i in Contactgroup.objects.filter(members__has_field=old_name):
+            i.attribute_replacefield('members', old_name, shortname)
+            i.save()
 
 
 class ServiceDependency(ObjectDefinition):
@@ -2088,6 +2167,28 @@ class Contactgroup(ObjectDefinition):
                     i.save()
         # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+
+    def rename(self, shortname):
+        """ Renames this object, and triggers a change in related items as well.
+
+        Args:
+            shortname:        New name for this object
+
+        Returns:
+            None
+        """
+        old_name = self.get_shortname()
+        super(Contactgroup, self).rename(shortname)
+
+        for i in Host.objects.filter(contactgroups__has_field=old_name):
+            i.attribute_replacefield('contactgroups', old_name, shortname)
+            i.save()
+        for i in Service.objects.filter(contactgroups__has_field=old_name):
+            i.attribute_replacefield('contactgroups', old_name, shortname)
+            i.save()
+        for i in Contact.objects.filter(contactgroups__has_field=old_name):
+            i.attribute_replacefield('contactgroups', old_name, shortname)
+            i.save()
 
 
 class Hostgroup(ObjectDefinition):
@@ -2228,6 +2329,18 @@ class Hostgroup(ObjectDefinition):
         }
         pynag.Control.Command.schedule_hostgroup_host_downtime(**arguments)
         pynag.Control.Command.schedule_hostgroup_svc_downtime(**arguments)
+
+    def rename(self, shortname):
+        """ Rename this hostgroup, and modify hosts if required
+        """
+        old_name = self.get_shortname()
+        super(Hostgroup, self).rename(shortname)
+
+        for i in Host.objects.filter(hostgroups__has_field=old_name):
+            if not i.is_defined('hostgroups'):
+                continue
+            i.attribute_replacefield('hostgroups', old_name, shortname)
+            i.save()
 
 
 class Servicegroup(ObjectDefinition):
