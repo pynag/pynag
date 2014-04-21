@@ -159,10 +159,20 @@ class ExtraOptsParser(unittest.TestCase):
         self.assertEqual(['plugins.ini'], e.getlist('filename'))
 
 
+@unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
 class Livestatus(unittest.TestCase):
-    def setUp(self):
-        cfg_file = None
-        self.livestatus = pynag.Parsers.mk_livestatus(nagios_cfg_file=cfg_file)
+    @classmethod
+    def setUpClass(cls):
+        nagios = pynag.Utils.misc.FakeNagiosEnvironment()
+        nagios.create_minimal_environment()
+        nagios.configure_livestatus()
+        nagios.start()
+        cls.nagios = nagios
+        cls.livestatus = nagios.livestatus_object
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.nagios.terminate()
 
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testLivestatus(self):
@@ -207,6 +217,18 @@ class Livestatus(unittest.TestCase):
         except pynag.Parsers.ParserError:
             pass
 
+    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    def testConnection(self):
+        """ Test the livestatus.test() method """
+        # Check if our newly created nagios environment has a working livestatus test:
+        self.assertTrue(self.livestatus.test(), "Livestatus is supposed to work in FakeNagiosEnvironment")
+
+        # Create a dummy livestatus instance and test connection to that:
+        broken_livestatus = pynag.Parsers.Livestatus(livestatus_socket_path="does not exist")
+        self.assertFalse(
+            broken_livestatus.test(raise_error=False),
+            "Dummy livestatus instance was supposed to be nonfunctional"
+        )
 
 class ObjectCache(unittest.TestCase):
     """ Tests for pynag.Parsers.objectcache
