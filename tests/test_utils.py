@@ -435,6 +435,27 @@ class testFakeNagiosEnvironment(unittest.TestCase):
         hosts = livestatus.get_hosts(name=host_name)
         self.assertTrue(hosts, "Could not find a host called %s" % (host_name))
 
+    def testImports(self):
+        """ Test FakeNagiosEnvironment.import_config()  """
+        host1 = "host1"
+        host2 = "host2"
+        tempdir = tempfile.mkdtemp()
+        tempfile1 = tempfile.mktemp(suffix='.cfg')
+        tempfile2 = os.path.join(tempdir, 'file2.cfg')
+
+        with open(tempfile1, 'w') as f:
+            f.write("define host {\nname host1\n}")
+        with open(tempfile2, 'w') as f:
+            f.write("define host {\nname host2\n}")
+
+        self.environment.import_config(tempdir)
+        self.environment.import_config(tempfile1)
+
+        self.environment.update_model()
+        host1 = pynag.Model.Host.objects.filter(name=host1)
+        host2 = pynag.Model.Host.objects.filter(name=host2)
+        self.assertTrue(host1)
+        self.assertTrue(host2)
 
 if __name__ == "__main__":
     unittest.main()

@@ -91,6 +91,7 @@ class FakeNagiosEnvironment(object):
         objects_dir = self.objects_dir = t + "/conf.d"
         os.mkdir(objects_dir)
 
+
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
 
@@ -192,6 +193,20 @@ class FakeNagiosEnvironment(object):
             if k == 'broker_module' and 'livestatus' in v:
                 livestatus_module = v.split()[0]
                 return livestatus_module
+
+    def import_config(self, path):
+        """ Copies any file or directory into our environment and include it in object configuration
+
+        Args:
+            path:   full path to a nagios cfg file or a directory of cfg files
+
+        Raises:
+            Exception if path is not found
+        """
+        destination = self.objects_dir
+        command = "cp -r '{path}' '{destination}/'".format(**locals())
+        return os.system(command)
+
 
 minimal_config = r"""
     define timeperiod {
