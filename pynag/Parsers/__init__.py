@@ -2548,32 +2548,32 @@ class MultiSite(Livestatus):
                 result[i] += column
         return result
 
-    def get_host(self, host_name, backend):
+    def get_host(self, host_name, backend=None):
         """ Same as Livestatus.get_host() """
         backend = self.get_backend(backend)
         return backend.get_host(host_name)
 
-    def get_service(self, host_name, service_description, backend):
+    def get_service(self, host_name, service_description, backend=None):
         """ Same as Livestatus.get_service() """
         backend = self.get_backend(backend)
         return backend.get_service(host_name, service_description)
 
-    def get_contact(self, contact_name, backend):
+    def get_contact(self, contact_name, backend=None):
         """ Same as Livestatus.get_contact() """
         backend = self.get_backend(backend)
         return backend.get_contact(contact_name)
 
-    def get_contactgroup(self, contactgroup_name, backend):
+    def get_contactgroup(self, contactgroup_name, backend=None):
         """ Same as Livestatus.get_contact() """
         backend = self.get_backend(backend)
         return backend.get_contactgroup(contactgroup_name)
 
-    def get_servicegroup(self, servicegroup_name, backend):
+    def get_servicegroup(self, servicegroup_name, backend=None):
         """ Same as Livestatus.get_servicegroup() """
         backend = self.get_backend(backend)
         return backend.get_servicegroup(servicegroup_name)
 
-    def get_hostgroup(self, hostgroup_name, backend):
+    def get_hostgroup(self, hostgroup_name, backend=None):
         """ Same as Livestatus.get_hostgroup() """
         backend = self.get_backend(backend)
         return backend.get_hostgroup(hostgroup_name)
