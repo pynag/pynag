@@ -18,6 +18,7 @@ from tests import tests_dir
 import pynag.Parsers
 import pynag.Utils.misc
 
+
 class Config(unittest.TestCase):
     """ Test pynag.Parsers.config """
     def setUp(self):
@@ -27,7 +28,6 @@ class Config(unittest.TestCase):
         self.tempdir = self.environment.tempdir
         self.config = self.environment.get_config()
         self.objects_file = self.environment.objects_dir + "/new_objects.cfg"
-
 
     def tearDown(self):
         self.environment.terminate()
@@ -132,8 +132,6 @@ class Config(unittest.TestCase):
             self.assertEqual(True, True)
 
 
-
-
 class ExtraOptsParser(unittest.TestCase):
     """ Test pynag.Parsers.ExtraOptsParser """
     def testExtraOptsParser(self):
@@ -159,7 +157,6 @@ class ExtraOptsParser(unittest.TestCase):
         self.assertEqual(['plugins.ini'], e.getlist('filename'))
 
 
-@unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
 class Livestatus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -174,13 +171,11 @@ class Livestatus(unittest.TestCase):
     def tearDownClass(cls):
         cls.nagios.terminate()
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testLivestatus(self):
         """ Smoketest livestatus integration """
         requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testParseMaincfg(self):
         """ Test parsing of different broker_module declarations """
         path = "/var/lib/nagios/rw/livestatus"  # Path to the livestatus socket
@@ -217,7 +212,6 @@ class Livestatus(unittest.TestCase):
         except pynag.Parsers.ParserError:
             pass
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testConnection(self):
         """ Test the livestatus.test() method """
         # Check if our newly created nagios environment has a working livestatus test:
@@ -229,6 +223,7 @@ class Livestatus(unittest.TestCase):
             broken_livestatus.test(raise_error=False),
             "Dummy livestatus instance was supposed to be nonfunctional"
         )
+
 
 class ObjectCache(unittest.TestCase):
     """ Tests for pynag.Parsers.objectcache
@@ -275,6 +270,7 @@ class Status(unittest.TestCase):
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
+
         s = pynag.Parsers.status()
         try:
             s.parse()
@@ -289,7 +285,7 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
-@unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+
 class MultiSite(Livestatus):
     """ Tests for pynag.Parsers.MultiSite
     """
