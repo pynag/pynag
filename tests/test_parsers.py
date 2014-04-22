@@ -295,13 +295,13 @@ class MultiSite(Livestatus):
         backend2 = "local autodiscovered2"
 
         # Add a backend, and make sure we are getting hosts out of it
-        livestatus.add_backend(path=None, name=backend1)
+        livestatus.add_backend(path=self.nagios.livestatus_socket_path, name=backend1)
         hosts = livestatus.get_hosts()
         self.assertTrue(len(hosts) > 0)
 
         # Add the same backend under a new name, and check if number of hosts
         # doubles
-        livestatus.add_backend(path=None, name=backend2)
+        livestatus.add_backend(path=self.nagios.livestatus_socket_path, name=backend2)
         hosts2 = livestatus.get_hosts()
         self.assertEqual(len(hosts) * 2, len(hosts2))
 

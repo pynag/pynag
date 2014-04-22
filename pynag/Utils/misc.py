@@ -163,6 +163,7 @@ class FakeNagiosEnvironment(object):
         if not self.livestatus_path:
             self.livestatus_path = self.guess_livestatus_path()
         path_to_socket = self.tempdir + "/livestatus.socket"
+        self.livestatus_socket_path = path_to_socket
         line = "%s %s" % (self.livestatus_path, path_to_socket)
         config = self.get_config()
         config._edit_static_file(attribute="broker_module", new_value=line)
