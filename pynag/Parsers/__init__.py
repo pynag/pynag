@@ -43,9 +43,10 @@ class config:
         Args:
 
             cfg_file (str): Full path to nagios.cfg. If None, try to 
-                auto-discover location
+            auto-discover location
+
             strict (bool): if True, use stricter parsing which is more prone to 
-                raising exceptions
+            raising exceptions
         """
 
         self.cfg_file = cfg_file  # Main configuration file
@@ -373,7 +374,7 @@ class config:
 
         Returns:
 
-            A liste containing all the items in self.data that were defined in
+            A list containing all the items in self.data that were defined in
             filename
         """
         return_list = []
@@ -1969,7 +1970,11 @@ class config:
         return return_hosts
 
     def get_cfg_dirs(self):
-        """ Return a list of all cfg directories used in this configuration
+        """ Parses the main config file for configuration directories 
+        
+        Returns:
+
+            List of all cfg directories used in this configuration
 
         Example::
 
@@ -1986,8 +1991,12 @@ class config:
     def get_cfg_files(self):
         """ Return a list of all cfg files used in this configuration
 
-        Filenames are normalised so that if nagios.cfg specifies relative filenames
-        we will convert it to fully qualified filename before returning.
+        Filenames are normalised so that if nagios.cfg specifies relative 
+        filenames we will convert it to fully qualified filename before returning.
+
+        Returns:
+
+            List of all configurations files used in the configuration.
 
         Example:
 
@@ -2064,7 +2073,8 @@ class config:
         return normpath
 
     def get_cfg_value(self, key):
-        """ Returns one specific value from your nagios.cfg file, None if value is not found.
+        """ Returns one specific value from your nagios.cfg file, 
+        None if value is not found.
 
         Arguments:
 
@@ -2092,7 +2102,7 @@ class config:
         return map(lambda x: re.sub("all_", "", x), self.data.keys())
 
     def cleanup(self):
-        """ Remove configuration files that have no configuration items"""
+        """ Remove configuration files that have no configuration items """
         for filename in self.cfg_files:
             if not self.parse_file(filename):  # parse_file returns empty list on empty files
                 self.remove(filename)
@@ -2112,18 +2122,26 @@ class mk_livestatus:
     """ Wrapper around MK-Livestatus
 
     Example usage:
-    s = mk_livestatus()
-    for hostgroup s.get_hostgroups():
-        print(hostgroup['name'], hostgroup['num_hosts'])
+
+        s = mk_livestatus()
+        for hostgroup s.get_hostgroups():
+            print(hostgroup['name'], hostgroup['num_hosts'])
     """
 
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
         """ Initilize a new instance of mk_livestatus
 
         Arguments:
-          livestatus_socket_path -- Path to livestatus socket (if none specified, use one specified in nagios.cfg)
-          nagios_cfg_file -- Path to your nagios.cfg. If None then try to auto-detect
-          authuser -- If specified. Every data pulled is with the access rights of that contact.
+
+          livestatus_socket_path: Path to livestatus socket (if none specified, 
+          use one specified in nagios.cfg)
+
+          nagios_cfg_file: Path to your nagios.cfg. If None then try to 
+          auto-detect
+          
+          authuser: If specified. Every data pulled is with the access rights 
+          of that contact.
+
         """
         if not livestatus_socket_path:
             c = config(cfg_file=nagios_cfg_file)
@@ -2146,7 +2164,15 @@ class mk_livestatus:
         self.authuser = authuser
 
     def test(self):
-        """ Raises ParserError if there are problems communicating with livestatus socket """
+        """ Tests connection with the livestatus socket
+        
+        Raises:
+
+            :py:class:`ParserError` if there are problems communicating with 
+            livestatus socket 
+
+        """
+
         if not self.exists(self.livestatus_socket_path):
             raise ParserError(
                 "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
@@ -2158,12 +2184,22 @@ class mk_livestatus:
         return True
 
     def _get_socket(self):
-        """ Return a socket.socket() instance which we can use to communicate with livestatus
+        """ Returns a socket.socket() instance to communicate with livestatus
 
-         Socket might be either unix filesocket or a tcp socket depenging in the content of
-         self.livestatus_socket_path
+        Socket might be either unix filesocket or a tcp socket depenging in 
+        the content of :py:attr:`livestatus_socket_path`
 
+        Returns:
+            
+            Socket to livestatus instance (socket.socket)
+            
+        Raises:
 
+            :py:class:`LivestatusNotConfiguredException` on failed connection.
+
+            :py:class:`ParserError` If could not parse configured TCP address
+            correctly.
+            
         """
         if not self.livestatus_socket_path:
             msg = "We could not find path to MK livestatus socket file. Make sure MK livestatus is installed and configured"
@@ -2188,6 +2224,29 @@ class mk_livestatus:
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
     def query(self, query, *args, **kwargs):
+        """ Queries the livestatus socket 
+        
+        Queries are corrected and convienient default data are added to the
+        query before sending it to the socket.
+        
+        Args:
+
+            query: Query to be passed to the livestatus socket (string)
+
+            args, kwargs: Additionnal parameters that will be sent to
+            :py:meth:`pynag.Utils.grep_to_livestatus`. The result will be
+            appended to the query.
+
+        Returns:
+
+            Answer from livestatus. It will be in python format unless specified 
+            otherwise.
+        
+        Raises:
+
+            :py:class:`ParserError` if problems connecting to livestatus.
+
+        """
 
         # columns parameter is here for backwards compatibility only
         kwargs.pop('columns', None)
