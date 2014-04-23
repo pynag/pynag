@@ -944,7 +944,7 @@ class config:
             item: Item to be created
 
             filename: Filename that we are supposed to write the new item to.
-                This is the path to the file. (string)
+            This is the path to the file. (string)
                 
         Returns:
 
@@ -2121,7 +2121,7 @@ class config:
 class mk_livestatus:
     """ Wrapper around MK-Livestatus
 
-    Example usage:
+    Example usage::
 
         s = mk_livestatus()
         for hostgroup s.get_hostgroups():
@@ -2131,7 +2131,7 @@ class mk_livestatus:
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
         """ Initilize a new instance of mk_livestatus
 
-        Arguments:
+        Args:
 
           livestatus_socket_path: Path to livestatus socket (if none specified, 
           use one specified in nagios.cfg)
@@ -2224,7 +2224,7 @@ class mk_livestatus:
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
     def query(self, query, *args, **kwargs):
-        """ Queries the livestatus socket 
+        """ Performs LQL queries the livestatus socket 
         
         Queries are corrected and convienient default data are added to the
         query before sending it to the socket.
@@ -2343,44 +2343,264 @@ class mk_livestatus:
         return result
 
     def get(self, table, *args, **kwargs):
-        """ Same as self.query('GET %s' % (table,)) """
+        """ Same as self.query('GET %s' % (table,)) 
+        
+        Extra arguments will be appended to the query.
+
+        Args:
+
+            table: Table from which the data will be retrieved
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Example::
+
+            >>> get('contacts', 'Columns: name alias')
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET %s' % (table,), *args, **kwargs)
 
     def get_host(self, host_name):
+        """ Performs a GET query for a particular host 
+
+        This performs::
+            
+            '''GET hosts
+            Filter: host_name = %s''' % host_name
+
+        Args:
+
+            host_name: name of the host to obtain livestatus data from
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
 
     def get_service(self, host_name, service_description):
+        """ Performs a GET query for a particular service 
+
+        This performs::
+            
+            '''GET services
+            Filter: host_name = %s
+            Filter: service_description = %s''' % (host_name, service_description)
+
+        Args:
+
+            host_name: name of the host the target service is attached to.
+
+            service_description: Description of the service to obtain livestatus
+            data from.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET services', 'Filter: host_name = %s' % host_name,
                           'Filter: description = %s' % service_description)[0]
 
     def get_hosts(self, *args, **kwargs):
+        """ Performs a GET query for all hosts
+
+        This performs::
+            
+            '''GET hosts %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET hosts', *args, **kwargs)
 
     def get_services(self, *args, **kwargs):
+        """ Performs a GET query for all services
+
+        This performs::
+            
+            '''GET services
+            %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET services', *args, **kwargs)
 
     def get_hostgroups(self, *args, **kwargs):
+        """ Performs a GET query for all hostgroups
+
+        This performs::
+            
+            '''GET hostgroups
+            %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET hostgroups', *args, **kwargs)
 
     def get_servicegroups(self, *args, **kwargs):
+        """ Performs a GET query for all servicegroups
+
+        This performs::
+            
+            '''GET servicegroups
+            %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET servicegroups', *args, **kwargs)
 
     def get_contactgroups(self, *args, **kwargs):
+        """ Performs a GET query for all contactgroups
+
+        This performs::
+            
+            '''GET contactgroups
+            %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET contactgroups', *args, **kwargs)
 
     def get_contacts(self, *args, **kwargs):
+        """ Performs a GET query for all contacts
+
+        This performs::
+            
+            '''GET contacts
+            %s %s''' % (*args, **kwargs)
+
+        Args:
+
+            args, kwargs: These will be appendend to the end of the query to
+            perform additionnal instructions.
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET contacts', *args, **kwargs)
 
     def get_contact(self, contact_name):
+        """ Performs a GET query for a particular contact 
+
+        This performs::
+            
+            '''GET contacts
+            Filter: contact_name = %s''' % contact_name
+
+        Args:
+
+            contact_name: name of the contact to obtain livestatus data from
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
     def get_servicegroup(self, name):
+        """ Performs a GET query for a particular servicegroup 
+
+        This performs::
+            
+            '''GET servicegroups
+            Filter: servicegroup_name = %s''' % servicegroup_name
+
+        Args:
+
+            servicegroup_name: name of the servicegroup to obtain livestatus data from
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET servicegroups', 'Filter: name = %s' % name)[0]
 
     def get_hostgroup(self, name):
+        """ Performs a GET query for a particular hostgroup 
+
+        This performs::
+            
+            '''GET hostgroups
+            Filter: hostgroup_name = %s''' % hostgroup_name
+
+        Args:
+
+            hostgroup_name: name of the hostgroup to obtain livestatus data from
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET hostgroups', 'Filter: name = %s' % name)[0]
 
     def get_contactgroup(self, name):
+        """ Performs a GET query for a particular contactgroup 
+
+        This performs::
+            
+            '''GET contactgroups
+            Filter: contactgroup_name = %s''' % contactgroup_name
+
+        Args:
+
+            contactgroup_name: name of the contactgroup to obtain livestatus data from
+
+        Returns:
+
+            Answer from livestatus in python format.
+        
+        """
         return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
@@ -2389,20 +2609,24 @@ class retention:
 
     After calling parse() contents of retention.dat are kept in self.data
 
-    Example Usage:
-    >>> #r = retention()
-    >>> #r.parse()
-    >>> #print r
-    >>> #print r.data['info']
+    Example Usage::
+
+        >>> r = retention()
+        >>> r.parse()
+        >>> print r
+        >>> print r.data['info']
     """
 
     def __init__(self, filename=None, cfg_file=None):
         """ Initilize a new instance of retention.dat
 
-        Arguments (you only need to provide one of these):
-            filename -- path to your retention.dat file
-            cfg_file -- path to your nagios.cfg file, path to retention.dat
-              will be looked up in this file
+        Args (you only need to provide one of these):
+
+            filename: path to your retention.dat file
+
+            cfg_file: path to your nagios.cfg file, path to retention.dat will 
+            be looked up in this file
+
         """
         # If filename is not provided, lets try to discover it from
         # nagios.cfg
@@ -2419,11 +2643,16 @@ class retention:
         """ Parses your status.dat file and stores in a dictionary under self.data
 
         Returns:
+        
             None
+
         Raises:
-            ParserError -- if problem arises while reading status.dat
-            ParserError -- if status.dat is not found
-            IOError -- if status.dat cannot be read
+
+            :py:class:`ParserError`: if problem arises while reading status.dat
+
+            :py:class:`ParserError`: if status.dat is not found
+            
+            :py:class:`IOError`: if status.dat cannot be read
         """
         self.data = {}
         status = {}  # Holds all attributes of a single item
@@ -2488,26 +2717,31 @@ class status(retention):
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
-    Example usage:
-    >>> s = status()
-    >>> s.parse()
-    >>> keys = s.data.keys()
-    >>> 'info' in keys
-    True
-    >>> 'programstatus' in keys
-    True
-    >>> for service in s.data.get('servicestatus',[]):
-    ...     host_name=service.get('host_name', None)
-    ...     description=service.get('service_description',None)
+    Example usage::
+
+        >>> s = status()
+        >>> s.parse()
+        >>> keys = s.data.keys()
+        >>> 'info' in keys
+        True
+        >>> 'programstatus' in keys
+        True
+        >>> for service in s.data.get('servicestatus',[]):
+        ...     host_name=service.get('host_name', None)
+        ...     description=service.get('service_description',None)
+
     """
 
     def __init__(self, filename=None, cfg_file=None):
         """ Initilize a new instance of status
 
-        Arguments (you only need to provide one of these):
-            filename -- path to your status.dat file
-            cfg_file -- path to your nagios.cfg file, path to status.dat
-              will be looked up in this file
+        Args (you only need to provide one of these):
+
+            filename: path to your status.dat file
+
+            cfg_file: path to your nagios.cfg file, path to status.dat will be 
+            looked up in this file
+
         """
         # If filename is not provided, lets try to discover it from
         # nagios.cfg
@@ -2523,16 +2757,27 @@ class status(retention):
     def get_contactstatus(self, contact_name):
         """ Returns a dictionary derived from status.dat for one particular contact
 
+        Args:
+
+            contact_name: `contact_name` field of the contact's status.dat data 
+            to parse and return as a dict.
+
         Returns:
-            dict
+
+            dict derived from status.dat for the contact.
+            
         Raises:
+
             ValueError if object is not found
-        >>> s = status()
-        >>> s.get_contactstatus(contact_name='invalid_contact')
-        ValueError('invalid_contact',)
-        >>> first_contact = s.data['contactstatus'][0]['contact_name']
-        >>> s.get_contactstatus(first_contact)['contact_name'] == first_contact
-        True
+
+        Example:
+
+            >>> s = status()
+            >>> s.get_contactstatus(contact_name='invalid_contact')
+            ValueError('invalid_contact',)
+            >>> first_contact = s.data['contactstatus'][0]['contact_name']
+            >>> s.get_contactstatus(first_contact)['contact_name'] == first_contact
+            True
         """
         if self.data is None:
             self.parse()
@@ -2544,9 +2789,17 @@ class status(retention):
     def get_hoststatus(self, host_name):
         """ Returns a dictionary derived from status.dat for one particular contact
 
+        Args:
+
+            host_name: `host_name` field of the host's status.dat data 
+            to parse and return as a dict.
+
         Returns:
-            dict
+
+            dict derived from status.dat for the host.
+
         Raises:
+
             ValueError if object is not found
         """
         if self.data is None:
@@ -2558,9 +2811,18 @@ class status(retention):
 
     def get_servicestatus(self, host_name, service_description):
         """ Returns a dictionary derived from status.dat for one particular service
+
+        Args:
+
+            service_name: `service_name` field of the host's status.dat data 
+            to parse and return as a dict.
+
         Returns:
-            dict
+
+            dict derived from status.dat for the service.
+            
         Raises:
+
             ValueError if object is not found
         """
         if self.data is None:
@@ -2591,6 +2853,15 @@ class ParserError(Exception):
     message = None
 
     def __init__(self, message, item=None):
+        """ Creates an instance of ParserError
+
+        Args:
+
+            message: Message to be printed by the error
+
+            item: Pynag item who caused the error
+
+        """
         self.message = message
         if item is None:
             return
@@ -2615,9 +2886,10 @@ class LivestatusNotConfiguredException(ParserError):
 
 
 class LogFiles(object):
-    """ Parses Logfiles defined in nagios.cfg and allows easy access to its content in
-        python-friendly arrays of dicts. Output should be more or less compatible with
-        mk_livestatus log output
+    """ Parses Logfiles defined in nagios.cfg and allows easy access to its content
+    
+    Content is stored in python-friendly arrays of dicts. Output should be more
+    or less compatible with mk_livestatus log output
     """
 
     def __init__(self, maincfg=None):
@@ -2628,14 +2900,25 @@ class LogFiles(object):
 
     def get_log_entries(self, start_time=None, end_time=None, strict=True, search=None, **kwargs):
         """ Get Parsed log entries for given timeperiod.
+
          Args:
-            start_time -- unix timestamp. if None, return all entries from today
-            end_time -- If specified, only fetch log entries older than this (unix timestamp)
-            strict   -- If True, only return entries between start_time and end_time, if False,
-                     -- then return entries that belong to same log files as given timeset
-            search   -- If provided, only return log entries that contain this string (case insensitive)
-            kwargs   -- All extra arguments are provided as filter on the log entries. f.e. host_name="localhost"
+            start_time: unix timestamp. if None, return all entries from today
+
+            end_time: If specified, only fetch log entries older than this (unix
+            timestamp)
+
+            strict: If True, only return entries between start_time and 
+            end_time, if False, then return entries that belong to same log 
+            files as given timeset
+
+            search: If provided, only return log entries that contain this 
+            string (case insensitive)
+
+            kwargs: All extra arguments are provided as filter on the log 
+            entries. f.e. host_name="localhost"
+
          Returns:
+
             List of dicts
         """
         now = time.time()
@@ -2680,11 +2963,15 @@ class LogFiles(object):
         return result
 
     def get_logfiles(self):
-        """ get_logfiles() -> list_of_strings
+        """ Returns a list with the fullpath to every log file used by nagios.
+        
+        Lists are sorted by modification times. Newest logfile is at the front
+        of the list so usually nagios.log comes first, followed by archivelogs
 
-         Returns a list with full path to every logfile used by nagios, sorted by modification time
+        Returns:
 
-         Newest logfile is at the front of the list so usually nagios.log comes first, followed by archivelogs
+            List of strings
+           
         """
         logfiles = []
 
@@ -2702,17 +2989,38 @@ class LogFiles(object):
 
         return logfiles
     def get_flap_alerts(self, **kwargs):
-        """ Same as self.get_log_entries, except return timeperiod transitions. Takes same parameters.
+        """ Same as :py:meth:`get_log_entries`, except return timeperiod transitions.
+        
+        Takes same parameters.
         """
         return self.get_log_entries(class_name="timeperiod transition", **kwargs)
 
     def get_notifications(self, **kwargs):
-        """ Same as self.get_log_entries, except return only notifications. Takes same parameters.
+        """ Same as :py:meth:`get_log_entries`, except return only notifications.
+        Takes same parameters.
         """
         return self.get_log_entries(class_name="notification", **kwargs)
 
     def get_state_history(self, start_time=None, end_time=None, host_name=None, service_description=None):
-        """ Returns a list of dicts, with the state history of hosts and services. Parameters behaves similar to get_log_entries """
+        """ Returns a list of dicts, with the state history of hosts and services. 
+        
+        Args:
+
+           start_time: unix timestamp. if None, return all entries from today
+
+           end_time: If specified, only fetch log entries older than this (unix
+           timestamp)
+
+           host_name: If provided, only return log entries that contain this 
+           string (case insensitive)
+
+           service_description: If provided, only return log entries that contain this 
+           string (case insensitive)
+
+        Returns:
+
+            List of dicts with state history of hosts and services
+        """
 
         log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
         result = []
@@ -2749,7 +3057,14 @@ class LogFiles(object):
     def _parse_log_file(self, filename=None):
         """ Parses one particular nagios logfile into arrays of dicts.
 
-            if filename is None, then log_file from nagios.cfg is used.
+        Args:
+
+            filename: Log file to be parsed. If is None, then log_file from 
+            nagios.cfg is used.
+
+        Returns:
+
+            A list of dicts containing all data from the log file
         """
         if filename is None:
             filename = self.log_file
@@ -2762,7 +3077,16 @@ class LogFiles(object):
         return result
 
     def _parse_log_line(self, line):
-        """ Parse one particular line in nagios logfile and return a dict. """
+        """ Parse one particular line in nagios logfile and return a dict.
+
+        Args:
+
+            line: Line of the log file to be parsed.
+
+        Returns:
+
+            dict containing the information from the log file line.
+        """
         host = None
         service_description = None
         state = None
@@ -2877,12 +3201,12 @@ class LogFiles(object):
 class ExtraOptsParser(object):
     """ Get Nagios Extra-Opts from a config file as specified by http://nagiosplugins.org/extra-opts
 
-        We could ALMOST use pythons ConfParser but nagios plugin team thought it would be a
-        good idea to support multiple values per key, so a dict datatype no longer works.
+    We could ALMOST use pythons ConfParser but nagios plugin team thought it would be a
+    good idea to support multiple values per key, so a dict datatype no longer works.
 
-        Its a shame because we have to make our own "ini" parser as a result
+    Its a shame because we have to make our own "ini" parser as a result
 
-        Usage:
+    Usage::
 
         # cat /etc/nagios/plugins.ini
         [main]
@@ -2895,8 +3219,6 @@ class ExtraOptsParser(object):
         e.get('host_name')  # returns "localhost"
         e.get_values()  # Returns a dict of all the extra opts
         e.getlist('host_name')  # returns all values of host_name (if more than one were specified) in a list
-
-
 
     """
     standard_locations = [
@@ -2921,10 +3243,11 @@ class ExtraOptsParser(object):
     def get_values(self):
         """ Returns a dict with all extra-options with the granted section_name and config_file
 
-        Results are in the form of:
-         {
-           'key': ["possible","values"]
-         }
+        Results are in the form of::
+
+            {
+              'key': ["possible","values"]
+            }
         """
         return self._all_options.get(self.section_name, {})
 
@@ -2935,19 +3258,20 @@ class ExtraOptsParser(object):
     def get_default_config_file(self):
         """ Return path to first readable extra-opt config-file found
 
-        According to the nagiosplugins extra-opts spec the search method is as follows
+        According to the nagiosplugins extra-opts spec the search method is as follows:
 
-        1) Search for nagios.ini or nagios-plugins.ini in : splitted variable NAGIOS_CONFIG_PATH
-        2) Search in a predefined list of files
-        3) Return None if no config file is found
+            1. Search for nagios.ini or nagios-plugins.ini in : splitted variable NAGIOS_CONFIG_PATH
+            2. Search in a predefined list of files
+            3. Return None if no config file is found
 
         The method works as follows:
 
         To quote the spec on NAGIOS_CONFIG_PATH:
-            "To use a custom location, set a NAGIOS_CONFIG_PATH environment
+
+            *"To use a custom location, set a NAGIOS_CONFIG_PATH environment
             variable to the set of directories that should be checked (this is a
             colon-separated list just like PATH). The first plugins.ini or
-            nagios-plugins.ini file found in these directories will be used."
+            nagios-plugins.ini file found in these directories will be used."*
 
         """
         search_path = []
@@ -2964,7 +3288,21 @@ class ExtraOptsParser(object):
         return None
 
     def get(self, option_name, default=_sentinel):
-        """ Return the value of one specific option """
+        """ Return the value of one specific option 
+        
+        Args:
+
+            option_name: The value set to this option will be returned
+
+        Returns:
+
+            The value of `option_name`
+
+        Raises:
+
+            :py:class:`ValueError` when `option_name` cannot be found in options
+
+        """
         result = self.getlist(option_name, default)
 
         # If option was not found, raise error
@@ -2979,7 +3317,21 @@ class ExtraOptsParser(object):
             return result[0]
 
     def getlist(self, option_name, default=_sentinel):
-        """ Return a list of all values for option_name """
+        """ Return a list of all values for option_name 
+        
+        Args:
+        
+            option_name: All the values set to this option will be returned
+
+        Returns:
+
+            List containing all the options set to `option_name`
+
+        Raises:
+
+            :py:class:`ValueError` when `option_name` cannot be found in options
+
+        """
         result = self.get_values().get(option_name, default)
         if result == _sentinel:
             raise ValueError("Option named %s was not found" % (option_name))
@@ -2988,23 +3340,29 @@ class ExtraOptsParser(object):
     def parse_file(self, filename):
         """ Parses an ini-file and returns a dict of the ini values.
 
+        The datatype returned is a list of sections where each section is a 
+        dict of values.
 
-         The datatype returned is a list of sections where each section is a dict of values.
+        Args:
 
-         Example the following the file:
+            filename: Full path to the ini-file to be parsed.
+
+        Example the following the file::
+
             [main]
             name = this is a name
             key = value
             key = value2
 
-         Would return:
-           [
-            {'main':
+        Would return::
+
+            [
+              {'main':
                 {
-                    'name': ['this is a name'],
-                    'key': [value, value2]
+                  'name': ['this is a name'],
+                  'key': [value, value2]
                 }
-            },
+              },
             ]
 
         """
@@ -3019,7 +3377,23 @@ class ExtraOptsParser(object):
             f.close()
 
     def parse_string(self, string):
-        """ Parsers a string that is supposed to be ini-style format. See parse_file() for more ifno
+        """ Parses a string that is supposed to be ini-style format. 
+        
+        See :py:meth:`parse_file` for more info
+
+        Args:
+
+            string: String to be parsed. Should be in ini-file format.
+
+        Returns: 
+
+            Dictionnary containing all the sections of the ini-file and their
+            respective data.
+
+        Raises:
+
+            :py:class:`ParserError` when line does not follow the ini format.
+
         """
         sections = {}
         # When parsing inside a section, the name of it stored here.
@@ -3056,8 +3430,23 @@ class ExtraOptsParser(object):
 
 
 class SshConfig(config):
-    """ Parse object configuration files from remote host via ssh """
+    """ Parse object configuration files from remote host via ssh 
+    
+    Uses python-paramiko for ssh connections.
+    """
     def __init__(self, host, username, password=None, cfg_file=None):
+        """ Creates a SshConfig instance
+
+        Args:
+
+            host: Host to connect to
+
+            username: User to connect with
+
+            password: Password for `username`
+
+            cfg_file: Nagios main cfg file
+        """
         import paramiko
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
@@ -3066,10 +3455,11 @@ class SshConfig(config):
         pynag.Parsers.config.__init__(self, cfg_file=cfg_file)
 
     def open(self, filename, *args, **kwargs):
+        """ Behaves like file.open only, via ssh connection """
         return self.ftp.open(filename, *args, **kwargs)
 
     def isfile(self, path):
-        """ Behaves like os.path.isfile """
+        """ Behaves like os.path.isfile only, via ssh connection """
         try:
             file_stat = self.ftp.stat(path)
             return stat.S_ISREG(file_stat.st_mode)
@@ -3077,7 +3467,7 @@ class SshConfig(config):
             return False
 
     def isdir(self, path):
-        """ Behaves like os.path.isdir """
+        """ Behaves like os.path.isdir only, via ssh connection """
         try:
             file_stat = self.ftp.stat(path)
             return stat.S_ISDIR(file_stat.st_mode)
@@ -3085,7 +3475,7 @@ class SshConfig(config):
             return False
 
     def islink(self, path):
-        """ Behaves like os.path.islink """
+        """ Behaves like os.path.islink only, via ssh connection """
         try:
             file_stat = self.ftp.stat(path)
             return stat.S_ISLNK(file_stat.st_mode)
@@ -3093,25 +3483,21 @@ class SshConfig(config):
             return False
 
     def readlink(selfself, path):
-        """ Behaves like os.readlink """
+        """ Behaves like os.readlink only, via ssh connection """
         return self.ftp.readlink(path)
 
     def stat(self, *args, **kwargs):
-        """ Wrapper around os.stat """
+        """ Wrapper around os.stat only, via ssh connection """
         return self.ftp.stat(*args, **kwargs)
 
     def access(self, *args, **kwargs):
-        """ Wrapper around os.access
-        """
+        """ Wrapper around os.access only, via ssh connection """
         return os.access(*args, **kwargs)
 
     def exists(self, path):
-        """ Wrapper around os.path.exists
-        """
+        """ Wrapper around os.path.exists only, via ssh connection """
         try:
             self.ftp.stat(path)
             return True
         except IOError:
             return False
-
-
