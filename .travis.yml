@@ -3,10 +3,15 @@ python:
   - "2.6"
   - "2.7"
 install:
+  - sudo apt-get install nagios3 check-mk-livestatus 
   - pip install unittest2==0.5.1 --use-mirrors
   - pip install coveralls --use-mirrors
   - python setup.py build
   - python setup.py install
+  - sudo chmod 777 /etc/nagios3/nagios.cfg
+  - sudo chmod a+rx '/var/cache/nagios3/'
+  - echo "broker_module=/usr/lib/check_mk/livestatus.o /var/lib/nagios3/rw/livestatus" >> /etc/nagios3/nagios.cfg
+  - sudo service nagios3 reload
 before_script:
   - env
   - git config --global user.email "noreply@travis-ci.org"

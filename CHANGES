@@ -1,3 +1,28 @@
+Changes in 0.8.9 (Apr 15 2014)
+Bug Fixes:
+    - Deploy gzipped version of manpage with setup.py
+
+Changes in 0.8.8 (Apr 15 2014)
+Bug Fixes:
+    - MANIFEST fixes in the build process
+New Features:
+    - Utils.misc.FakeNagiosEnvironment()
+    - Parsers.MultiSite now has backend aware get_host, get_contact, etc
+    - Incremental updates to unit tests
+
+Changes in 0.8.7 (Apr 14 2014)
+Bug Fixes:
+    - Ship a gzipped version of manpage with release
+
+Changes in 0.8.6 (Apr 14 2014)
+Bug Fixes:
+    - manpage is now delivered with the tarball (not generated on build itme)
+    - Docstring updates
+New Features:
+    - Support for systemd init scripts
+    - New Module Parsers.MultiSite
+    - All classes in Parsers are now new-style
+
 Changes in 0.8.5 (Apr 8 2014)
 Bug Fixes:
     - Fix broken build due to manpage requirements

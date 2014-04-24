@@ -17,6 +17,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""This module contains low-level Parsers for nagios configuration and status objects.
+
+Hint: If you are looking to parse some nagios configuration data, you probably
+want pynag.Model module instead.
+
+The highlights of this module are:
+
+class Config: For Parsing nagios local nagios configuration files
+class Livestatus: To connect to MK-Livestatus
+class StatusDat: To read info from status.dat (not used a lot, migrate to mk-livestatus)
+class LogFiles: To read nagios log-files
+class MultiSite: To talk with multiple Livestatus instances
+"""
 import os
 import re
 import time
@@ -29,8 +42,7 @@ import pynag.Utils
 
 _sentinel = object()
 
-
-class config:
+class Config(object):
     """ Parse and write nagios config files """
     # Regex for beginning of object definition
     # We want everything that matches:
@@ -121,9 +133,13 @@ class config:
                           '/usr/bin/shinken',
                           '/usr/sbin/shinken')
 
-        for file_path in possible_files:
-            if os.access(file_path, os.X_OK):
-                return file_path
+        possible_binaries = ('nagios', 'nagios3', 'naemon', 'icinga', 'shinken')
+        for i in possible_binaries:
+            command = ['which', i]
+            code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
+            if code == 0:
+                return stdout.splitlines()[0].strip()
+
         return None
 
     def guess_cfg_file(self):
@@ -654,8 +670,38 @@ class config:
         everything_before = all_lines[:start]
         object_definition = all_lines[start:end]
         everything_after = all_lines[end:]
-        return everything_before, object_definition, everything_after, filename
 
+        # If there happen to be line continuations in the object we will edit
+        # We will remove them from object_definition
+        object_definition = self._clean_backslashes(object_definition)
+        return everything_before, object_definition, everything_after, filename
+    def _clean_backslashes(self, list_of_strings):
+        """ Returns list_of_strings with all all strings joined that ended with backslashes
+
+            Args:
+                list_of_strings: List of strings to join
+            Returns:
+                Another list of strings, which lines ending with \ joined together.
+
+            Examples:
+            >>> c = Config()
+            >>> mylist = ['line 1', r'line \\\\', '2', 'line 3']
+            >>> result = c._clean_backslashes(mylist)
+            >>> result
+            ['line 1', 'line 2', 'line 3']
+            >>> result2 = c._clean_backslashes(result)
+            >>> result2
+            ['line 1', 'line 2', 'line 3']
+        """
+        tmp_buffer = ''
+        result = []
+        for i in list_of_strings:
+            if i.endswith('\\\n'):
+                tmp_buffer += i.strip('\\\n')
+            else:
+                result.append(tmp_buffer + i)
+                tmp_buffer = ''
+        return result
     def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
                        make_comments=False):
         """ Locates "item" and changes the line which contains field_name.
@@ -2118,18 +2164,18 @@ class config:
         return self.data[key]
 
 
-class mk_livestatus:
+class Livestatus(object):
     """ Wrapper around MK-Livestatus
 
     Example usage::
 
-        s = mk_livestatus()
+        s = Livestatus()
         for hostgroup s.get_hostgroups():
             print(hostgroup['name'], hostgroup['num_hosts'])
     """
 
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
-        """ Initilize a new instance of mk_livestatus
+        """ Initilize a new instance of Livestatus
 
         Args:
 
@@ -2143,6 +2189,8 @@ class mk_livestatus:
           of that contact.
 
         """
+        self.nagios_cfg_file = nagios_cfg_file
+        self.error = None
         if not livestatus_socket_path:
             c = config(cfg_file=nagios_cfg_file)
             c.parse_maincfg()
@@ -2163,24 +2211,32 @@ class mk_livestatus:
         self.livestatus_socket_path = livestatus_socket_path
         self.authuser = authuser
 
-    def test(self):
-        """ Tests connection with the livestatus socket
-        
+    def test(self, raise_error=True):
+        """ Test if connection to livestatus socket is working
+
+        Args:
+
+            raise_error: If set to True, raise exception if test fails,otherwise return False
+
         Raises:
 
-            :py:class:`ParserError` if there are problems communicating with 
-            livestatus socket 
+            ParserError if raise_error == True and connection fails
+
+        Returns:
+
+            True -- Connection is OK
+            False -- there are problems and raise_error==False
 
         """
-
-        if not self.exists(self.livestatus_socket_path):
-            raise ParserError(
-                "Livestatus socket file not found or permission denied (%s)" % self.livestatus_socket_path)
         try:
             self.query("GET hosts")
-        except KeyError:
+        except Exception:
             t, e = sys.exc_info()[:2]
-            raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
+            self.error = e
+            if raise_error:
+                raise ParserError("got '%s' when testing livestatus socket. error was: '%s'" % (type(e), e))
+            else:
+                return False
         return True
 
     def _get_socket(self):
@@ -2604,7 +2660,7 @@ class mk_livestatus:
         return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
-class retention:
+class RetentionDat(object):
     """ Easy way to parse the content of retention.dat
 
     After calling parse() contents of retention.dat are kept in self.data
@@ -2713,7 +2769,7 @@ class retention:
         return str_buffer
 
 
-class status(retention):
+class StatusDat(RetentionDat):
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
@@ -2834,7 +2890,7 @@ class status(retention):
         raise ValueError(host_name, service_description)
 
 
-class object_cache(config):
+class ObjectCache(Config):
     """ Loads the configuration as it appears in objects.cache file """
 
     def get_cfg_files(self):
@@ -3001,7 +3057,7 @@ class LogFiles(object):
         """
         return self.get_log_entries(class_name="notification", **kwargs)
 
-    def get_state_history(self, start_time=None, end_time=None, host_name=None, service_description=None):
+    def get_state_history(self, start_time=None, end_time=None, host_name=None, strict=True, service_description=None):
         """ Returns a list of dicts, with the state history of hosts and services. 
         
         Args:
@@ -3022,7 +3078,7 @@ class LogFiles(object):
             List of dicts with state history of hosts and services
         """
 
-        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=False, class_name='alerts')
+        log_entries = self.get_log_entries(start_time=start_time, end_time=end_time, strict=strict, class_name='alerts')
         result = []
         last_state = {}
         now = time.time()
@@ -3046,10 +3102,11 @@ class LogFiles(object):
                 line['previous_state'] = last['state']
             last_state[short_name] = line
 
-            if start_time is not None and int(start_time) > int(line.get('time')):
-                continue
-            if end_time is not None and int(end_time) < int(line.get('time')):
-                continue
+            if strict is True:
+                if start_time is not None and int(start_time) > int(line.get('time')):
+                    continue
+                if end_time is not None and int(end_time) < int(line.get('time')):
+                    continue
 
             result.append(line)
         return result
@@ -3427,13 +3484,12 @@ class ExtraOptsParser(object):
             sections[section_name][key].append(value)
         return sections
 
-
-
-class SshConfig(config):
+class SshConfig(Config):
     """ Parse object configuration files from remote host via ssh 
     
     Uses python-paramiko for ssh connections.
     """
+
     def __init__(self, host, username, password=None, cfg_file=None):
         """ Creates a SshConfig instance
 
@@ -3501,3 +3557,158 @@ class SshConfig(config):
             return True
         except IOError:
             return False
+
+class MultiSite(Livestatus):
+    """ Wrapps around multiple Livesatus instances and aggregates the results
+        of queries.
+
+        Example:
+            >>> m = MultiSite()
+            >>> m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
+            >>> m.add_backend(path='127.0.0.1:5992', name='remote')
+    """
+    def __init__(self, *args, **kwargs):
+        super(MultiSite, self).__init__(*args, **kwargs)
+        self.backends = {}
+
+    def add_backend(self, path, name):
+        """ Add a new livestatus backend to this instance.
+
+         Arguments:
+            path (str):  Path to file socket or remote address
+            name (str):  Friendly shortname for this backend
+        """
+        backend = Livestatus(
+            livestatus_socket_path=path,
+            nagios_cfg_file=self.nagios_cfg_file,
+            authuser=self.authuser
+        )
+        self.backends[name] = backend
+
+    def get_backends(self):
+        """ Returns a list of mk_livestatus instances
+
+        Returns:
+            list. List of mk_livestatus instances
+        """
+        return self.backends
+
+    def get_backend(self, backend_name):
+        """ Return one specific backend that has previously been added
+        """
+        if not backend_name:
+            return self.backends.values()[0]
+        try:
+            return self.backends[backend_name]
+        except KeyError:
+            raise ParserError("No backend found with name='%s'" % backend_name)
+    def query(self, query, *args, **kwargs):
+        """ Behaves like mk_livestatus.query() except results are aggregated from multiple backends
+
+        Arguments:
+            backend (str): If specified, fetch only data from this backend (see add_backend())
+            *args:         Passed directly to mk_livestatus.query()
+            **kwargs:      Passed directly to mk_livestatus.query()
+        """
+        result = []
+        backend = kwargs.pop('backend', None)
+
+        # Special hack, if 'Stats' argument was provided to livestatus
+        # We have to maintain compatibility with old versions of livestatus
+        # and return single list with all results instead of a list of dicts
+        doing_stats = any(map(lambda x: x.startswith('Stats:'), args + (query,)))
+
+        # Iterate though all backends and run the query
+        # TODO: Make this multithreaded
+        for name, backend_instance in self.backends.items():
+            # Skip if a specific backend was requested and this is not it
+            if backend and backend != name:
+                continue
+
+            query_result = backend_instance.query(query, *args, **kwargs)
+            if doing_stats:
+                result = self._merge_statistics(result, query_result)
+            else:
+                for row in query_result:
+                    row['backend'] = name
+                    result.append(row)
+
+        return result
+
+
+    def _merge_statistics(self, list1, list2):
+        """ Merges multiple livestatus results into one result
+
+        Arguments:
+            list1 (list): List of integers
+            list2 (list): List of integers
+
+        Returns:
+            list. Aggregated results of list1 + list2
+        Example:
+            >>> result1 = [1,1,1,1]
+            >>> result2 = [2,2,2,2]
+            >>> MultiSite()._merge_statistics(result1, result2)
+            [3, 3, 3, 3]
+        """
+        if not list1:
+            return list2
+        if not list2:
+            return list1
+
+        number_of_columns = len(list1)
+        result = [0] * number_of_columns
+        for row in (list1, list2):
+            for i, column in enumerate(row):
+                result[i] += column
+        return result
+
+    def get_host(self, host_name, backend=None):
+        """ Same as Livestatus.get_host() """
+        backend = self.get_backend(backend)
+        return backend.get_host(host_name)
+
+    def get_service(self, host_name, service_description, backend=None):
+        """ Same as Livestatus.get_service() """
+        backend = self.get_backend(backend)
+        return backend.get_service(host_name, service_description)
+
+    def get_contact(self, contact_name, backend=None):
+        """ Same as Livestatus.get_contact() """
+        backend = self.get_backend(backend)
+        return backend.get_contact(contact_name)
+
+    def get_contactgroup(self, contactgroup_name, backend=None):
+        """ Same as Livestatus.get_contact() """
+        backend = self.get_backend(backend)
+        return backend.get_contactgroup(contactgroup_name)
+
+    def get_servicegroup(self, servicegroup_name, backend=None):
+        """ Same as Livestatus.get_servicegroup() """
+        backend = self.get_backend(backend)
+        return backend.get_servicegroup(servicegroup_name)
+
+    def get_hostgroup(self, hostgroup_name, backend=None):
+        """ Same as Livestatus.get_hostgroup() """
+        backend = self.get_backend(backend)
+        return backend.get_hostgroup(hostgroup_name)
+
+
+class config(Config):
+    """ This class is here only for backwards compatibility. Use Config instead. """
+
+
+class mk_livestatus(Livestatus):
+    """ This class is here only for backwards compatibility. Use Livestatus instead. """
+
+
+class object_cache(ObjectCache):
+    """ This class is here only for backwards compatibility. Use ObjectCache instead. """
+
+
+class status(StatusDat):
+    """ This class is here only for backwards compatibility. Use StatusDat instead. """
+
+
+class retention(RetentionDat):
+    """ This class is here only for backwards compatibility. Use RetentionDat instead. """

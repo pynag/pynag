@@ -60,13 +60,17 @@ def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
     """ Run command from the shell prompt. Wrapper around subprocess.
 
     Args:
+
         command (str): string containing the command line to run
+
         raise_error_on_fail (bool): Raise PynagError if returncode > 0
 
     Returns:
+
         str: stdout/stderr of the command run
 
     Raises:
+
         PynagError if returncode > 0
     """
     run_env = environ.copy()
@@ -99,9 +103,13 @@ class GitRepo(object):
         """ Python Wrapper around Git command line.
 
         Args:
+
             Directory (str): Path to the directory does the git repo reside in (i.e. '/etc/nagios')
+
             auto_init (bool): If True and directory does not contain a git repo, create it automatically
+
             author_name (str): Full name of the author making changes
+
             author_email (str): Email used for commit messages, if None, then use username@hostname
         """
 
@@ -390,12 +398,12 @@ class GitRepo(object):
             message (str): Message used for the git commit
 
             filelist (list of strings): List of filenames to commit (if None, 
-                then commit all files in the repo)
+            then commit all files in the repo)
+
             author (str): Author to use for git commit. If any is specified, 
-                overwrite self.author_name and self.author_email
+            overwrite self.author_name and self.author_email
 
         Returns:
-
             stdout from the "git commit" shell command.
 
         """
@@ -450,7 +458,6 @@ class GitRepo(object):
         """ Run git add on filename
 
         Args:
-
             filename (str): name of one file to add,
 
         Returns:
@@ -1063,9 +1070,11 @@ class AttributeList(object):
         """  Same as list.insert()
 
         Args:
+
             object: Any object that will be inserted into self.fields (usually a string)
 
-        Example:
+        Example::
+
             >>> i = AttributeList('group1,group2,group3')
             >>> i.insert(1, 'group4')
             >>> i.fields
@@ -1078,9 +1087,12 @@ class AttributeList(object):
         """ Same as list.append():
 
         Args:
+            
             object: Item to append into self.fields (typically a string)
 
+
         Example:
+
             >>> i = AttributeList('group1,group2,group3')
             >>> i.append('group5')
             >>> i.fields
@@ -1124,7 +1136,9 @@ class AttributeList(object):
 
         Args:
             value:  object to look for in self.fields
+
             start:  start at this index point
+
             stop:   stop at this index point
 
         Returns:
@@ -1143,7 +1157,7 @@ class AttributeList(object):
         return self.fields.index(value, start, stop)
 
     def reverse(self):
-        """ Same as list.reverse()
+        """  Same as list.reverse()
 
         Examples:
             >>> i = AttributeList('group1,group2,group3')
@@ -1419,7 +1433,7 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
         service (str): Service the check results apply to.
         
         nscabin (str): Location of send_nsca binary. If none specified whatever
-                       is in the path will be used.
+        is in the path will be used.
         
         nscaconf (str): Location of the NSCA configuration to use if any.
 

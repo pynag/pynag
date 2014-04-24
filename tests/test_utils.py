@@ -6,14 +6,15 @@ pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
 import unittest2 as unittest
-from mock import MagicMock, patch
+from mock import patch
 import shutil
 import tempfile
-
 import pynag.Utils as utils
 import pynag.Model
 from pynag.Utils import PynagError
 from tests import tests_dir
+import pynag.Utils.misc
+
 
 class testUtils(unittest.TestCase):
 
@@ -24,7 +25,7 @@ class testUtils(unittest.TestCase):
         os.chdir('dataset01')
         pynag.Model.config = None
         pynag.Model.cfg_file = './nagios/nagios.cfg'
-        s = pynag.Model.ObjectDefinition.objects.all
+        pynag.Model.ObjectDefinition.objects.get_all()
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
 
     def tearDown(self):
@@ -232,7 +233,7 @@ class testUtils(unittest.TestCase):
         validcommitspatcher.stop()
 
         self.assertRaisesRegexp(
-            PynagError, '%s is not a valid commit id' %  initial_hash)
+            PynagError, '%s is not a valid commit id' % initial_hash)
         # Add file
         tempfile.mkstemp(dir=self.tmp_dir)
         self.assertEquals(len(repo.get_uncommited_files()), 1)
@@ -354,6 +355,107 @@ class testUtils(unittest.TestCase):
             code=0, message="match", nscahost="nomatch", hostname="test", service=None, nscabin="/bin/grep", nscaconf="-")
         self.assertEqual(1, result[0])
         self.assertEqual('(standard input):0\n', result[1])
+
+
+class testFakeNagiosEnvironment(unittest.TestCase):
+
+    def setUp(self):
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
+
+    def tearDown(self):
+        self.environment.terminate()
+
+    def testMinimal(self):
+        """ Minimal Test of our FakeNagiosEnvironment """
+        nagios = pynag.Utils.misc.FakeNagiosEnvironment()
+        nagios.create_minimal_environment()
+        nagios.config.parse()
+        self.assertTrue(os.path.isfile(nagios.config.cfg_file))
+        self.assertTrue(os.path.isdir(nagios.objects_dir))
+
+    def testModelUpdates(self):
+        """ Test backup and restores of Model global variables """
+        nagios = self.environment
+        original_config = pynag.Model.config
+        original_cfg_file = pynag.Model.cfg_file
+        original_dir = pynag.Model.pynag_directory
+
+        # Update model, and check if updates succeeded
+        nagios.update_model()
+        self.assertEqual(pynag.Model.config, nagios.config)
+        self.assertEqual(pynag.Model.cfg_file, nagios.config.cfg_file)
+        self.assertEqual(pynag.Model.pynag_directory, nagios.objects_dir)
+
+        # See if we can restore our model
+        nagios.restore_model()
+        self.assertEqual(pynag.Model.config, original_config)
+        self.assertEqual(pynag.Model.cfg_file, original_cfg_file)
+        self.assertEqual(pynag.Model.pynag_directory, original_dir)
+
+    def testStartStop(self):
+        """ Try to start and stop our nagios environment  """
+        self.environment.start()
+        pid = open(self.environment.tempdir + "nagios.pid").read()
+        pid = int(pid)
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            self.assertTrue(False, "Did not find a running process with process_id=%s" % pid)
+        self.environment.stop()
+        try:
+            os.kill(pid, 0)
+            self.assertTrue(False, "Seems like process with process_id=%s is still running" % pid)
+        except OSError:
+            pass
+
+    def testOpenDecorator(self):
+        """ Makes sure the fake nagios environment cannot go outside its directory """
+        # Try to open a regular file
+        self.environment.config.open(self.environment.config.cfg_file).close()
+        self.assertTrue(True, "Successfully opened nagios.cfg")
+        try:
+            self.environment.config.open("/etc/passwd").close()
+            self.assertTrue(False, "I was able to open a file outside my tempdir!")
+        except PynagError:
+            pass
+
+    def testUpdateModel_NoRestore(self):
+        self.environment.update_model()
+
+    def testLivestatus(self):
+        host_name = "localhost"
+        self.environment.update_model()
+        pynag.Model.Host(host_name=host_name, use="generic-host").save()
+
+        self.environment.guess_livestatus_path()
+        self.environment.configure_livestatus()
+        self.environment.start()
+        livestatus = self.environment.get_livestatus()
+        hosts = livestatus.get_hosts(name=host_name)
+        self.assertTrue(hosts, "Could not find a host called %s" % (host_name))
+
+    def testImports(self):
+        """ Test FakeNagiosEnvironment.import_config()  """
+        host1 = "host1"
+        host2 = "host2"
+        tempdir = tempfile.mkdtemp()
+        tempfile1 = tempfile.mktemp(suffix='.cfg')
+        tempfile2 = os.path.join(tempdir, 'file2.cfg')
+
+        with open(tempfile1, 'w') as f:
+            f.write("define host {\nname host1\n}")
+        with open(tempfile2, 'w') as f:
+            f.write("define host {\nname host2\n}")
+
+        self.environment.import_config(tempdir)
+        self.environment.import_config(tempfile1)
+
+        self.environment.update_model()
+        host1 = pynag.Model.Host.objects.filter(name=host1)
+        host2 = pynag.Model.Host.objects.filter(name=host2)
+        self.assertTrue(host1)
+        self.assertTrue(host2)
 
 if __name__ == "__main__":
     unittest.main()

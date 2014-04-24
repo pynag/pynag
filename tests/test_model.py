@@ -16,6 +16,7 @@ import sys
 
 import pynag.Model
 import pynag.Model.EventHandlers
+import pynag.Utils.misc
 from tests import tests_dir
 
 os.chdir(tests_dir)
@@ -841,6 +842,57 @@ class Model(unittest.TestCase):
         self.assertEqual(development_servers.get_effective_services(), [])
 
         self.assertEqual(production_service.get_effective_hostgroups(), [production_servers])
+
+class Model2(unittest.TestCase):
+    """ Another class for testing pynag.Model. Should replace Model at some point.
+
+    The reason methods here are in a new class is because we are moving to a new set of tests
+    that use Utils.misc.FakeNagiosEnvironment. It's not a bad idea to migrate tests from the old
+    class into this one here, one at a time.
+    """
+    def setUp(self):
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
+        self.environment.update_model()
+    def tearDown(self):
+        self.environment.terminate()
+    def test_rename(self):
+        """ Generic test of Model.*.rename()
+        """
+        old = "host1"
+        new = "host2"
+        host = pynag.Model.Host(host_name=old)
+        host.save()
+
+        host = pynag.Model.Host.objects.get_by_shortname(old)
+        self.assertTrue(host.host_name == old)
+        host.rename(new)
+
+        host = pynag.Model.Host.objects.get_by_shortname(new)
+        self.assertTrue(host.host_name == new)
+
+        hosts_with_old_name = pynag.Model.Host.objects.filter(host_name=old)
+        self.assertFalse(hosts_with_old_name, "There should be no hosts with the old name")
+
+    def test_rename_contact(self):
+        """ test Model.*.rename() function """
+        # Create a contact, and contactgroup. Put the contact in the contactgroup
+        contact_name1 = "some contact"
+        contact_name2 = "new name for contact"
+        contactgroup_name = "contactgroup1"
+        contact = pynag.Model.Contact(contact_name=contact_name1)
+        contact.save()
+        contactgroup = pynag.Model.Contactgroup(contactgroup_name=contactgroup_name, members=contact_name1)
+        contactgroup.save()
+
+        # Verify the contact is in our contactgroup
+        c = pynag.Model.Contactgroup.objects.get_by_shortname(contactgroup_name)
+        self.assertTrue(c.members == contact_name1)
+
+        # Rename the contact, doublecheck that the contactgroup changed.
+        contact.rename(contact_name2)
+        c = pynag.Model.Contactgroup.objects.get_by_shortname(contactgroup_name)
+        self.assertTrue(c.members == contact_name2)
 
 class NagiosReloadHandler(unittest.TestCase):
     """ Test Eventhandler NagiosReloadHandler

@@ -19,7 +19,7 @@
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.8.5
+Version: 0.8.9
 Release: %{release}%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
@@ -68,7 +68,6 @@ install -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins
 install -m 755 examples/Model/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Model/
 install -m 755 examples/Parsers/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Parsers/
 install -m 755 examples/Plugins/* $RPM_BUILD_ROOT/%{_datadir}/%{name}/examples/Plugins/
-gzip $RPM_BUILD_ROOT/%{_mandir}/man1/pynag.1
 
 
 %clean

@@ -16,23 +16,21 @@ import random
 
 from tests import tests_dir
 import pynag.Parsers
+import pynag.Utils.misc
+
 
 class Config(unittest.TestCase):
     """ Test pynag.Parsers.config """
     def setUp(self):
-        self.tempdir = t = tempfile.mkdtemp('nagios-unittests') + "/"
-        shutil.copytree(tests_dir + '/dataset01/', t + "/dataset01")
-        self.cfg_file = t + '/dataset01/nagios/nagios.cfg'
-        self.config = pynag.Parsers.config(cfg_file=self.cfg_file)
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
 
-        # Create one empty file to write objects to
-        objects_file = os.path.join(t, 'dataset01/nagios/', "objects.cfg")
-        self.objects_file = objects_file
-        open(objects_file, 'w').write('')
-        self.config._edit_static_file(attribute='cfg_file', new_value=objects_file, append=True)
+        self.tempdir = self.environment.tempdir
+        self.config = self.environment.get_config()
+        self.objects_file = self.environment.objects_dir + "/new_objects.cfg"
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir, ignore_errors=True)
+        self.environment.terminate()
 
     def test_parse(self):
         """ Smoketest config.parse() """
@@ -114,7 +112,7 @@ class Config(unittest.TestCase):
         """ Test what happens when a user enters invalid characters attribute value """
         field_name = "test_field"
         field_value = "test_value"
-        host_name = "macrohost"
+        host_name = "ok_host"
 
         # Change field_name of our host
         self.config.parse()
@@ -132,8 +130,29 @@ class Config(unittest.TestCase):
             self.assertEqual(False, True, "item_edit_field() should have raised an exception")
         except ValueError:
             self.assertEqual(True, True)
+    def test_line_continuations(self):
+        """ More tests for configs that have \ at an end of a line """
+        definition = r"""
+            define contactgroup {
+            contactgroup_name portal-sms
+            members \
+            armin.gruner.sms, \
 
+            }
+            """
+        with open(self.objects_file, 'a') as f:
+            f.write(definition)
+        c = self.config
+        c.parse()
+        item = c.get_object('contactgroup', 'portal-sms')
+        self.assertTrue(item)
+        # Change the members variable of our group, make sure the changes look ok
+        c.item_edit_field(item, 'members', 'root')
+        c.parse()
+        item = c.get_object('contactgroup', 'portal-sms')
 
+        self.assertTrue(item['members'] == 'root')
+        self.assertFalse('armin.gruner.sms' in item['meta']['raw_definition'])
 
 
 class ExtraOptsParser(unittest.TestCase):
@@ -162,17 +181,24 @@ class ExtraOptsParser(unittest.TestCase):
 
 
 class Livestatus(unittest.TestCase):
-    def setUp(self):
-        cfg_file = None
-        self.livestatus = pynag.Parsers.mk_livestatus(nagios_cfg_file=cfg_file)
+    @classmethod
+    def setUpClass(cls):
+        nagios = pynag.Utils.misc.FakeNagiosEnvironment()
+        nagios.create_minimal_environment()
+        nagios.configure_livestatus()
+        nagios.start()
+        cls.nagios = nagios
+        cls.livestatus = nagios.livestatus_object
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
+    @classmethod
+    def tearDownClass(cls):
+        cls.nagios.terminate()
+
     def testLivestatus(self):
         """ Smoketest livestatus integration """
         requests = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
 
-    @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testParseMaincfg(self):
         """ Test parsing of different broker_module declarations """
         path = "/var/lib/nagios/rw/livestatus"  # Path to the livestatus socket
@@ -208,6 +234,18 @@ class Livestatus(unittest.TestCase):
             self.assertEqual(True, "Above could should have raised exception")
         except pynag.Parsers.ParserError:
             pass
+
+    def testConnection(self):
+        """ Test the livestatus.test() method """
+        # Check if our newly created nagios environment has a working livestatus test:
+        self.assertTrue(self.livestatus.test(), "Livestatus is supposed to work in FakeNagiosEnvironment")
+
+        # Create a dummy livestatus instance and test connection to that:
+        broken_livestatus = pynag.Parsers.Livestatus(livestatus_socket_path="does not exist")
+        self.assertFalse(
+            broken_livestatus.test(raise_error=False),
+            "Dummy livestatus instance was supposed to be nonfunctional"
+        )
 
 
 class ObjectCache(unittest.TestCase):
@@ -250,10 +288,12 @@ class LogFiles(unittest.TestCase):
         self.assertEqual('./nagios/log/nagios.log', logfiles[0])
         self.assertEqual('./nagios/log/archives/archivelog1.log', logfiles[1])
 
+
 class Status(unittest.TestCase):
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
+
         s = pynag.Parsers.status()
         try:
             s.parse()
@@ -268,10 +308,37 @@ class Status(unittest.TestCase):
         # Try to get current version of nagios
         version = info['version']
 
+
+class MultiSite(Livestatus):
+    """ Tests for pynag.Parsers.MultiSite
+    """
+    def testAddBackend(self):
+        livestatus = pynag.Parsers.MultiSite()
+        backend1 = "local autodiscovered"
+        backend2 = "local autodiscovered2"
+
+        # Add a backend, and make sure we are getting hosts out of it
+        livestatus.add_backend(path=self.nagios.livestatus_socket_path, name=backend1)
+        hosts = livestatus.get_hosts()
+        self.assertTrue(len(hosts) > 0)
+
+        # Add the same backend under a new name, and check if number of hosts
+        # doubles
+        livestatus.add_backend(path=self.nagios.livestatus_socket_path, name=backend2)
+        hosts2 = livestatus.get_hosts()
+        self.assertEqual(len(hosts) * 2, len(hosts2))
+
+        # Get hosts from one specific backend
+        hosts_backend1 = livestatus.get_hosts(backend=backend1)
+        hosts_backend2 = livestatus.get_hosts(backend=backend2)
+
+        self.assertEqual(len(hosts), len(hosts_backend1))
+
 @unittest.skip("Not ready for production yet")
 class SshConfig(Config):
     def setUp(self):
         self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
+
     def tearDown(self):
         pass
 
