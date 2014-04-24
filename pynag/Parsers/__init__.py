@@ -501,6 +501,7 @@ class Config(object):
         # We will remove them from object_definition
         object_definition = self._clean_backslashes(object_definition)
         return everything_before, object_definition, everything_after, filename
+
     def _clean_backslashes(self, list_of_strings):
         """ Returns list_of_strings with all all strings joined that ended with backslashes
 
@@ -509,15 +510,6 @@ class Config(object):
             Returns:
                 Another list of strings, which lines ending with \ joined together.
 
-            Examples:
-            >>> c = Config()
-            >>> mylist = ['line 1', r'line \\\\', '2', 'line 3']
-            >>> result = c._clean_backslashes(mylist)
-            >>> result
-            ['line 1', 'line 2', 'line 3']
-            >>> result2 = c._clean_backslashes(result)
-            >>> result2
-            ['line 1', 'line 2', 'line 3']
         """
         tmp_buffer = ''
         result = []
