@@ -130,6 +130,29 @@ class Config(unittest.TestCase):
             self.assertEqual(False, True, "item_edit_field() should have raised an exception")
         except ValueError:
             self.assertEqual(True, True)
+    def test_line_continuations(self):
+        """ More tests for configs that have \ at an end of a line """
+        definition = r"""
+            define contactgroup {
+            contactgroup_name portal-sms
+            members \
+            armin.gruner.sms, \
+
+            }
+            """
+        with open(self.objects_file, 'a') as f:
+            f.write(definition)
+        c = self.config
+        c.parse()
+        item = c.get_object('contactgroup', 'portal-sms')
+        self.assertTrue(item)
+        # Change the members variable of our group, make sure the changes look ok
+        c.item_edit_field(item, 'members', 'root')
+        c.parse()
+        item = c.get_object('contactgroup', 'portal-sms')
+
+        self.assertTrue(item['members'] == 'root')
+        self.assertFalse('armin.gruner.sms' in item['meta']['raw_definition'])
 
 
 class ExtraOptsParser(unittest.TestCase):
@@ -315,6 +338,7 @@ class MultiSite(Livestatus):
 class SshConfig(Config):
     def setUp(self):
         self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
+
     def tearDown(self):
         pass
 

@@ -496,8 +496,38 @@ class Config(object):
         everything_before = all_lines[:start]
         object_definition = all_lines[start:end]
         everything_after = all_lines[end:]
-        return everything_before, object_definition, everything_after, filename
 
+        # If there happen to be line continuations in the object we will edit
+        # We will remove them from object_definition
+        object_definition = self._clean_backslashes(object_definition)
+        return everything_before, object_definition, everything_after, filename
+    def _clean_backslashes(self, list_of_strings):
+        """ Returns list_of_strings with all all strings joined that ended with backslashes
+
+            Args:
+                list_of_strings: List of strings to join
+            Returns:
+                Another list of strings, which lines ending with \ joined together.
+
+            Examples:
+            >>> c = Config()
+            >>> mylist = ['line 1', r'line \\\\', '2', 'line 3']
+            >>> result = c._clean_backslashes(mylist)
+            >>> result
+            ['line 1', 'line 2', 'line 3']
+            >>> result2 = c._clean_backslashes(result)
+            >>> result2
+            ['line 1', 'line 2', 'line 3']
+        """
+        tmp_buffer = ''
+        result = []
+        for i in list_of_strings:
+            if i.endswith('\\\n'):
+                tmp_buffer += i.strip('\\\n')
+            else:
+                result.append(tmp_buffer + i)
+                tmp_buffer = ''
+        return result
     def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
                        make_comments=False):
         """
