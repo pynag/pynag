@@ -852,8 +852,7 @@ class Config(object):
             This is only a little patch for the generated documentation.
 
         Examples::
-
-            >>> item_rewrite( item, "define service {\\n name example-service \\n register 0 \\n }\\n" )
+            item_rewrite( item, "define service {\\n name example-service \\n register 0 \\n }\\n" )
 
         Returns:
 
@@ -880,9 +879,8 @@ class Config(object):
             In the following line, every "\\n" is actually a simple line break
             This is only a little patch for the generated documentation.
 
-        Examples:
-
-            >>> item_rewrite( item, "define service {\\n name example-service \\n register 0 \\n }\\n" )
+        Examples::
+            item_remove( item, "define service {\\n name example-service \\n register 0 \\n }\\n" )
 
         Returns:
 
@@ -910,12 +908,10 @@ class Config(object):
 
             new_value: Value to which will be set the field `field_name`. (str)
 
-        Example usage:
-
-           >>> edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+        Example usage::
+            edit_object( item, field_name="host_name", new_value="examplehost.example.com") # doctest: +SKIP
             
         Returns:
-        
             True on success
 
         Raises:
@@ -937,12 +933,10 @@ class Config(object):
 
             field_name: Field to remove. (string)
 
-        Example usage:
-
-            >>> item_remove_field( item, field_name="contactgroups" )
+        Example usage::
+            item_remove_field( item, field_name="contactgroups" )
 
         Returns:
-
             True on success
 
         Raises:
@@ -966,12 +960,10 @@ class Config(object):
 
             new_field_name: New name given to `old_field_name` (string)
 
-        Example usage:
-
-            >>> item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
+        Example usage::
+            item_rename_field(item, old_field_name="normal_check_interval", new_field_name="check_interval")
 
         Returns:
-
             True on success
 
         Raises:
@@ -1029,11 +1021,9 @@ class Config(object):
             new_value: Updated value of field `field_name`
 
         Example Usage: 
-
-            >>> edit_object( item, field_name="host_name", new_value="examplehost.example.com")
+            edit_object( item, field_name="host_name", new_value="examplehost.example.com")
 
         Returns:
-
             True on success
 
         .. WARNING::
@@ -1049,7 +1039,6 @@ class Config(object):
         the items will not be considered equal.
         
         Args:
-
             item1, item2: Items to be compared.
 
         Returns:
@@ -2132,8 +2121,8 @@ class Config(object):
 
         Example:
 
-            >>> c = config()
-            >>> log_file = c.get_cfg_value('log_file')
+            >>> c = Config() # doctest: +SKIP
+            >>> log_file = c.get_cfg_value('log_file') # doctest: +SKIP
             # Should return something like "/var/log/nagios/nagios.log"
         """
         if not self.maincfg_values:
@@ -2412,7 +2401,7 @@ class Livestatus(object):
 
         Example::
 
-            >>> get('contacts', 'Columns: name alias')
+            get('contacts', 'Columns: name alias')
 
         Returns:
 
@@ -2667,10 +2656,10 @@ class RetentionDat(object):
 
     Example Usage::
 
-        >>> r = retention()
-        >>> r.parse()
-        >>> print r
-        >>> print r.data['info']
+        r = retention()
+        r.parse()
+        print r
+        print r.data['info']
     """
 
     def __init__(self, filename=None, cfg_file=None):
