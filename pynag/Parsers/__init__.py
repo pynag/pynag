@@ -3519,7 +3519,7 @@ class SshConfig(Config):
         except IOError:
             return False
 
-    def readlink(selfself, path):
+    def readlink(self, path):
         """ Behaves like os.readlink only, via ssh connection """
         return self.ftp.readlink(path)
 
