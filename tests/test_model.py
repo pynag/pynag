@@ -12,6 +12,7 @@ import shutil
 import string
 import random
 import mock
+import time
 import sys
 
 import pynag.Model
@@ -893,6 +894,24 @@ class Model2(unittest.TestCase):
         contact.rename(contact_name2)
         c = pynag.Model.Contactgroup.objects.get_by_shortname(contactgroup_name)
         self.assertTrue(c.members == contact_name2)
+
+    def test_get_current_status(self):
+        """ Test Model.*.get_current_status """
+        self.environment.start()
+
+        # status.dat takes a while to get created, so we have to wait a little bit
+        time.sleep(0.5)
+        # Fetch host, and get its current status
+        host = pynag.Model.Host.objects.get_by_shortname("ok_host")
+        host_status = host.get_current_status()
+        self.assertTrue(host_status, "Trying to find host ok_host")
+        self.assertTrue('current_state' in host_status)
+
+        # Do the same for service
+        service = host.get_effective_services()[0]
+        service_status = service.get_current_status()
+        self.assertTrue(service_status)
+        self.assertTrue('current_state' in service_status)
 
 class NagiosReloadHandler(unittest.TestCase):
     """ Test Eventhandler NagiosReloadHandler
