@@ -46,7 +46,6 @@ import time
 import getpass
 
 from pynag import Parsers
-from pynag import Control
 import pynag.Control.Command
 import pynag.Utils
 from macros import _standard_macros
@@ -614,6 +613,7 @@ class ObjectDefinition(object):
     def is_defined(self, attribute_name):
         """ Returns True if attribute_name is defined in this object """
         return attribute_name in self._defined_attributes
+
     def __cmp__(self, other):
         return cmp(self.get_description(), other.get_description())
 
@@ -1607,7 +1607,7 @@ class Host(ObjectDefinition):
         if recursive is True and self.host_name:
             for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
                 # delete only services where only this host_name and no hostgroups are defined
-                i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
         if cleanup_related_items is True and self.host_name:
             hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
             dependenciesAndEscalations = ObjectDefinition.objects.filter(
@@ -1720,6 +1720,7 @@ class Host(ObjectDefinition):
         for i in Hostgroup.objects.filter(members__has_field=old_name):
             i.attribute_replacefield('members', old_name, shortname)
             i.save()
+
 
 class Service(ObjectDefinition):
     object_type = 'service'
