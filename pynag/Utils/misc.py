@@ -94,13 +94,19 @@ class FakeNagiosEnvironment(object):
         check_result_path = os.path.join(self.tempdir, 'checkresults')
         os.mkdir(check_result_path)
 
+        log_dir = os.path.join(self.tempdir, 'log')
+        archive_dir = os.path.join(log_dir, 'archive')
+        os.mkdir(log_dir)
+        os.mkdir(archive_dir)
+
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
 
         config = self.config = pynag.Parsers.config(cfg_file=cfg_file)
         self.config.open = self.open_decorator(self.config.open)
         config.parse()
-        config._edit_static_file(attribute='log_file', new_value=t + "/nagios.log")
+        config._edit_static_file(attribute='log_archive_path', new_value=t + "log/archive")
+        config._edit_static_file(attribute='log_file', new_value=t + "log/nagios.log")
         config._edit_static_file(attribute='object_cache_file', new_value=t + "objects.cache")
         config._edit_static_file(attribute='precached_object_file', new_value=t + "/objects.precache")
         config._edit_static_file(attribute='lock_file', new_value=t + "nagios.pid")
