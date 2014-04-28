@@ -33,9 +33,13 @@ class FakeNagiosEnvironment(object):
         self.global_config_file = global_config_file
         self.p1_file = p1_file
         self._model_is_dirty = False
-        self.livestatus_path = livestatus
+        self.livestatus_module_path = livestatus
         self.livestatus_object = None
         self.config = None
+
+        self.tempdir = tempfile.mkdtemp('nagios-environment') + "/"
+        path_to_socket = self.tempdir + "/livestatus.socket"
+        self.livestatus_socket_path = path_to_socket
 
     def get_config(self):
         if not self.config:
@@ -84,7 +88,7 @@ class FakeNagiosEnvironment(object):
 
     def create_minimal_environment(self):
         """ Starts a nagios server with empty config in an isolated environment """
-        self.tempdir = t = tempfile.mkdtemp('nagios-environment') + "/"
+        t = self.tempdir
         cfg_file = self.cfg_file = t + "/nagios.cfg"
         open(cfg_file, 'w').write('')
 
@@ -167,11 +171,9 @@ class FakeNagiosEnvironment(object):
         return result
 
     def configure_livestatus(self):
-        if not self.livestatus_path:
-            self.livestatus_path = self.guess_livestatus_path()
-        path_to_socket = self.tempdir + "/livestatus.socket"
-        self.livestatus_socket_path = path_to_socket
-        line = "%s %s" % (self.livestatus_path, path_to_socket)
+        if not self.livestatus_module_path:
+            self.livestatus_module_path = self.guess_livestatus_path()
+        line = "%s %s" % (self.livestatus_module_path, self.livestatus_socket_path)
         config = self.get_config()
         config._edit_static_file(attribute="broker_module", new_value=line)
         self.livestatus_object = pynag.Parsers.Livestatus(
