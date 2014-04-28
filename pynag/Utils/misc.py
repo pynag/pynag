@@ -106,6 +106,7 @@ class FakeNagiosEnvironment(object):
         config._edit_static_file(attribute='lock_file', new_value=t + "nagios.pid")
         config._edit_static_file(attribute='command_file', new_value=t + "nagios.cmd")
         config._edit_static_file(attribute='state_retention_file', new_value=t + "retention.dat")
+        config._edit_static_file(attribute='status_file', new_value=t + "status.dat")
         config._edit_static_file(attribute='cfg_dir', new_value=objects_dir)
         config._edit_static_file(attribute='log_initial_states', new_value="1")
         config._edit_static_file(attribute='enable_embedded_perl', new_value='0')
