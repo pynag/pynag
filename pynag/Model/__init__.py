@@ -1660,8 +1660,10 @@ class Host(ObjectDefinition):
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
     def get_current_status(self):
-        """ Same as Service.get_current_status() """
-        return Status(self.host_name)
+        """ Returns a dictionary with status data information for this object """
+        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        host = status.get_hoststatus(self.host_name)
+        return host
 
     def copy(self, recursive=False, filename=None, **args):
         """ Same as ObjectDefinition.copy() except can recursively copy services """
@@ -1880,9 +1882,10 @@ class Service(ObjectDefinition):
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
     def get_current_status(self):
-        """ Returns a Status object, reflecting this object status (i.e. status.dat)
-        """
-        return Status(self.host_name, self.service_description)
+        """ Returns a dictionary with status data information for this object """
+        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        service = status.get_servicestatus(self.host_name, service_description=self.service_description)
+        return service
 
     def add_to_servicegroup(self, servicegroup_name):
         """ Add this service to a specific servicegroup
@@ -2599,4 +2602,4 @@ for object_type, attributes in all_attributes.object_definitions.items():
         _add_property(Object, attribute)
 
 if __name__ == '__main__':
-    o = Hostgroup.objects.filter(shortname__contains='t')
+    pass
