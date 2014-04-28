@@ -900,7 +900,14 @@ class Model2(unittest.TestCase):
         self.environment.start()
 
         # status.dat takes a while to get created, so we have to wait a little bit
-        time.sleep(0.5)
+        time_start = time.time()
+        timeout = 10 # Give nagios 10sec to create a status.dat file
+        status_file = self.environment.config.get_cfg_value('status_file')
+        while not os.path.exists(status_file):
+            time.sleep(0.1)
+            time_elapsed = time.time() - time_start
+            if time_elapsed > timeout:
+                raise Exception("Timed out while waiting for nagios to create status.dat" % (status_file))
         # Fetch host, and get its current status
         host = pynag.Model.Host.objects.get_by_shortname("ok_host")
         host_status = host.get_current_status()
