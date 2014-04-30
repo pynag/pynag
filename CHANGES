@@ -1,3 +1,11 @@
+Changes in NEXT
+New Features:
+    - new method: Model.*.rename()
+    - 
+Bug Fixes:
+    - Bug fixes in Model.*.get_current_status()
+    - Fix Parsers.Livestatus.test() traceback
+
 Changes in 0.8.9 (Apr 15 2014)
 Bug Fixes:
     - Deploy gzipped version of manpage with setup.py
