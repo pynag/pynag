@@ -855,8 +855,10 @@ class Model2(unittest.TestCase):
         self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
         self.environment.create_minimal_environment()
         self.environment.update_model()
+
     def tearDown(self):
         self.environment.terminate()
+
     def test_rename(self):
         """ Generic test of Model.*.rename()
         """
@@ -939,6 +941,7 @@ class ObjectRelations(unittest.TestCase):
     """ Test pynag.Model.ObjectRelations """
     def setUp(self):
         pass
+
     def test_get_subgroups(self):
         c = pynag.Utils.defaultdict(set)
         c['everything'] = set(['admins', 'nonadmins', 'operators', 'users'])
