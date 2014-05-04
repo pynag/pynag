@@ -10,7 +10,7 @@ import time
 
 import pynag.Utils
 import pynag.Plugins
-
+import signal
 # Some of the methods here print directly to stdout but we
 # dont want to spam the output of the unittests. Lets do a temp
 # blocking of stdout and stderr
@@ -141,6 +141,8 @@ class PluginHelper(unittest.TestCase):
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
+        finally:
+            signal.alarm(0)
 
     """
     Critical if "stuff" is over 20, else warn if over 10
