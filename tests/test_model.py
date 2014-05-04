@@ -903,7 +903,7 @@ class Model2(unittest.TestCase):
 
         # status.dat takes a while to get created, so we have to wait a little bit
         time_start = time.time()
-        timeout = 10 # Give nagios 10sec to create a status.dat file
+        timeout = 30  # Give nagios 10sec to create a status.dat file
         status_file = self.environment.config.get_cfg_value('status_file')
         while not os.path.exists(status_file):
             time.sleep(0.1)
