@@ -557,9 +557,9 @@ class Config(object):
 
             elif line.startswith('define'):  # beginning of object definition
                 if in_definition:
-                    raise ParserError(
-                        "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (
-                            filename, line_num))
+                    msg = "Unexpected 'define' in {filename} on line {line_num}. was expecting '}}'."
+                    msg = msg.format(**locals())
+                    self.errors.append(ParserError(msg, item=current))
 
                 m = self.__beginning_of_object.search(line)
 
