@@ -903,11 +903,13 @@ class Model2(unittest.TestCase):
 
         # status.dat takes a while to get created, so we have to wait a little bit
         time_start = time.time()
-        timeout = 300  # Give nagios 10sec to create a status.dat file
+        timeout = 3000  # Give nagios 10sec to create a status.dat file
         status_file = self.environment.config.get_cfg_value('status_file')
         while not os.path.exists(status_file):
             time.sleep(0.1)
-            time_elapsed = time.time() - time_start
+            time_now = time.time()
+            print time_now
+            time_elapsed = time_now - time_start
             if time_elapsed > timeout:
                 raise Exception("Timed out while waiting for nagios to create status.dat" % (status_file))
         # Fetch host, and get its current status
