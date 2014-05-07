@@ -319,6 +319,9 @@ def delete_object():
                       default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+    
+    if opts.examples == True:
+        return print_examples()
 
     attributes,where_statement=split_where_and_set(args)
     objects = search_objects(search_statements=where_statement)
