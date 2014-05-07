@@ -39,6 +39,8 @@ import stat
 
 import pynag.Plugins
 import pynag.Utils
+import StringIO
+import tarfile
 
 _sentinel = object()
 
@@ -557,9 +559,9 @@ class Config(object):
 
             elif line.startswith('define'):  # beginning of object definition
                 if in_definition:
-                    raise ParserError(
-                        "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one." % (
-                            filename, line_num))
+                    msg = "Unexpected 'define' in {filename} on line {line_num}. was expecting '}}'."
+                    msg = msg.format(**locals())
+                    self.errors.append(ParserError(msg, item=current))
 
                 m = self.__beginning_of_object.search(line)
 
@@ -796,8 +798,8 @@ class Config(object):
         return True
 
     def open(self, filename, *args, **kwargs):
-        """ Wrapper around global open() 
-        
+        """ Wrapper around global open()
+
         Simply calls global open(filename, *args, **kwargs) and passes all arguments
         as they are received. See global open() function for more details.
         """
@@ -1577,7 +1579,7 @@ class Config(object):
         result = []
         if not filename:
             filename = self.cfg_file
-        for line in open(filename).readlines():
+        for line in self.open(filename).readlines():
             ## Strip out new line characters
             line = line.strip()
 
@@ -1844,28 +1846,40 @@ class Config(object):
     def isfile(self, *args, **kwargs):
         """ Wrapper around os.path.isfile """
         return os.path.isfile(*args, **kwargs)
+
     def isdir(self, *args, **kwargs):
         """ Wrapper around os.path.isdir """
         return os.path.isdir(*args, **kwargs)
+
     def islink(self, *args, **kwargs):
         """ Wrapper around os.path.islink """
         return os.path.islink(*args, **kwargs)
+
     def readlink(selfself, *args, **kwargs):
         """ Wrapper around os.readlink """
         return os.readlink(*args, **kwargs)
+
     def stat(self, *args, **kwargs):
         """ Wrapper around os.stat """
         return os.stat(*args, **kwargs)
+
     def remove(self, *args, **kwargs):
         """ Wrapper around os.remove """
         return os.remove(*args, **kwargs)
+
     def access(self, *args, **kwargs):
         """ Wrapper around os.access """
         return os.access(*args, **kwargs)
 
+    def listdir(self, *args, **kwargs):
+        """ Wrapper around os.listdir """
+
+        return os.listdir(*args, **kwargs)
+
     def exists(self, *args, **kwargs):
         """ Wrapper around os.path.exists """
         return os.path.exists(*args, **kwargs)
+
     def get_resources(self):
         """Returns a list of every private resources from nagios.cfg"""
         resources = []
@@ -2052,7 +2066,7 @@ class Config(object):
                     # Nagios doesnt care if cfg_dir exists or not, so why should we ?
                     if not self.isdir(current_directory):
                         continue
-                    for item in os.listdir(current_directory):
+                    for item in self.listdir(current_directory):
                         # Append full path to file
                         item = "%s" % (os.path.join(current_directory, item.strip()))
                         if self.islink(item):
@@ -3025,6 +3039,7 @@ class LogFiles(object):
         logfiles.reverse()
 
         return logfiles
+
     def get_flap_alerts(self, **kwargs):
         """ Same as :py:meth:`get_log_entries`, except return timeperiod transitions.
         
@@ -3465,6 +3480,7 @@ class ExtraOptsParser(object):
             sections[section_name][key].append(value)
         return sections
 
+
 class SshConfig(Config):
     """ Parse object configuration files from remote host via ssh 
     
@@ -3489,24 +3505,82 @@ class SshConfig(Config):
         self.ssh.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
         self.ssh.connect(host, username=username, password=password)
         self.ftp = self.ssh.open_sftp()
-        pynag.Parsers.config.__init__(self, cfg_file=cfg_file)
+
+        import cStringIO
+        c = cStringIO.StringIO()
+        self.tar = tarfile.open(mode='w', fileobj=c)
+
+        self.cached_stats = {}
+        super(SshConfig, self).__init__(cfg_file=cfg_file)
 
     def open(self, filename, *args, **kwargs):
         """ Behaves like file.open only, via ssh connection """
-        return self.ftp.open(filename, *args, **kwargs)
+        return self.tar.extractfile(filename)
+        tarinfo = self._get_file(filename)
+        string = tarinfo.tobuf()
+        print string
+        return StringIO.StringIO(string)
+        return self.tar.extractfile(tarinfo)
+
+    def add_to_tar(self, path):
+        """
+        """
+        print "Taring ", path
+        command = "find '{path}' -type f | tar -c -T - --to-stdout --absolute-names"
+        command = command.format(path=path)
+        print command
+        stdin, stdout, stderr = self.ssh.exec_command(command, bufsize=50000)
+        tar = tarfile.open(fileobj=stdout, mode='r|')
+        if not self.tar:
+            self.tar = tar
+            #return
+        else:
+            for i in tar:
+                self.tar.addfile(i)
+
+    def is_cached(self, filename):
+        if not self.tar:
+            return False
+        return filename in self.tar.getnames()
+
+    def _get_file(self, filename):
+        """ Download filename and return the TarInfo object """
+        if filename not in self.tar.getnames():
+            self.add_to_tar(filename)
+        return self.tar.getmember(filename)
+    def get_cfg_files(self):
+        cfg_files = []
+        for config_object, config_value in self.maincfg_values:
+
+            ## Add cfg_file objects to cfg file list
+            if config_object == "cfg_file":
+                config_value = self.abspath(config_value)
+                if self.isfile(config_value):
+                    cfg_files.append(config_value)
+            elif config_object == "cfg_dir":
+                absolut_path = self.abspath(config_value)
+                command = "find '%s' -type f -iname \*cfg" % (absolut_path)
+                stdin, stdout, stderr = self.ssh.exec_command(command)
+                raw_filelist = stdout.read().splitlines()
+                cfg_files += raw_filelist
+            else:
+                continue
+            if not self.is_cached(config_value):
+                self.add_to_tar(config_value)
+        return cfg_files
 
     def isfile(self, path):
         """ Behaves like os.path.isfile only, via ssh connection """
         try:
-            file_stat = self.ftp.stat(path)
-            return stat.S_ISREG(file_stat.st_mode)
+            copy = self._get_file(path)
+            return copy.isfile()
         except IOError:
             return False
 
     def isdir(self, path):
         """ Behaves like os.path.isdir only, via ssh connection """
         try:
-            file_stat = self.ftp.stat(path)
+            file_stat = self.stat(path)
             return stat.S_ISDIR(file_stat.st_mode)
         except IOError:
             return False
@@ -3514,7 +3588,7 @@ class SshConfig(Config):
     def islink(self, path):
         """ Behaves like os.path.islink only, via ssh connection """
         try:
-            file_stat = self.ftp.stat(path)
+            file_stat = self.stat(path)
             return stat.S_ISLNK(file_stat.st_mode)
         except IOError:
             return False
@@ -3525,7 +3599,15 @@ class SshConfig(Config):
 
     def stat(self, *args, **kwargs):
         """ Wrapper around os.stat only, via ssh connection """
-        return self.ftp.stat(*args, **kwargs)
+        path = args[0]
+        if not self.is_cached(path):
+            self.add_to_tar(path)
+        if path not in self.tar.getnames():
+            raise IOError("No such file or directory %s" % path)
+        member = self.tar.getmember(path)
+        member.st_mode = member.mode
+        member.st_mtime = member.mtime
+        return member
 
     def access(self, *args, **kwargs):
         """ Wrapper around os.access only, via ssh connection """
@@ -3538,6 +3620,15 @@ class SshConfig(Config):
             return True
         except IOError:
             return False
+
+    def listdir(self, *args, **kwargs):
+        """ Wrapper around os.listdir  but via ssh connection """
+        stats = self.ftp.listdir_attr(*args, **kwargs)
+        for i in stats:
+            self.cached_stats[args[0] + "/" + i.filename] = i
+        files = map(lambda x: x.filename, stats)
+        return files
+
 
 class MultiSite(Livestatus):
     """ Wrapps around multiple Livesatus instances and aggregates the results
@@ -3693,3 +3784,33 @@ class status(StatusDat):
 
 class retention(RetentionDat):
     """ This class is here only for backwards compatibility. Use RetentionDat instead. """
+
+
+
+if __name__ == '__main__':
+    import time
+    start = time.time()
+    ssh = SshConfig(host='status.adagios.org', username='palli')
+    ssh.ssh.get_transport().window_size = 3 * 1024 * 1024
+    ssh.ssh.get_transport().use_compression()
+
+    #ssh.add_to_tar('/etc/nagios')
+    #sys.exit()
+    #ssh.ssh.exec_command("/bin/ls")
+    print "before reset"
+    ssh.parse()
+    end = time.time()
+    print "duration=", end-start
+    bland = ssh.tar.getmember('/etc/nagios/okconfig/hosts/web-servers/bland.is-http.cfg')
+    print bland.tobuf()
+    sys.exit(0)
+    print "ssh up"
+    ssh_conn = FastTransport(('status.adagios.org', 22))
+    ssh_conn.connect(username='palli')
+    ftp = paramiko.SFTPClient.from_transport(ssh_conn)
+    print "connected" \
+          ""
+    ssh.ssh = ssh_conn
+    ssh.ftp = ftp
+    print "starting parse"
+    print "done parsing"

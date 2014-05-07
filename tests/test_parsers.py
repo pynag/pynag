@@ -130,6 +130,7 @@ class Config(unittest.TestCase):
             self.assertEqual(False, True, "item_edit_field() should have raised an exception")
         except ValueError:
             self.assertEqual(True, True)
+
     def test_line_continuations(self):
         """ More tests for configs that have \ at an end of a line """
         definition = r"""
@@ -153,6 +154,15 @@ class Config(unittest.TestCase):
 
         self.assertTrue(item['members'] == 'root')
         self.assertFalse('armin.gruner.sms' in item['meta']['raw_definition'])
+
+    def test_missing_end_of_object(self):
+        """ Test parsing of a config with missing '}'
+        """
+        os.chdir(tests_dir)
+        config = pynag.Parsers.Config()
+        items = config.parse_file('dataset01/nagios/conf.d/missing.end.of.object.cfg')
+        self.assertEqual(1, len(config.errors), "There should be exactly 1 config error")
+        self.assertEqual(1, len(items), "there should be exactly 1 parsed items")
 
 
 class ExtraOptsParser(unittest.TestCase):
