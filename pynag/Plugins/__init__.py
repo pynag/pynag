@@ -710,7 +710,7 @@ class PluginHelper:
           >>> p.add_long_output('* Temperature: OK')
           >>> p.add_long_output('* Humidity: OK')
           >>> p.get_long_output()
-          'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
+          u'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
         """
         self._long_output.append(message)
 
@@ -730,7 +730,7 @@ class PluginHelper:
         >>> s.add_long_output('first long output')
         >>> s.set_long_output('Fatal error')
         >>> s.get_long_output()
-        'Fatal error'
+        u'Fatal error'
         """
         self._long_output = [message]
 
@@ -746,7 +746,7 @@ class PluginHelper:
         >>> s.add_summary('first summary')
         >>> s.set_summary('Fatal error')
         >>> s.get_summary()
-        'Fatal error'
+        u'Fatal error'
         """
         self._summary = [message]
 
@@ -914,20 +914,20 @@ class PluginHelper:
         Examples of functionality:
         >>> p = PluginHelper()
         >>> p.get_plugin_output()
-        'Unknown -'
+        u'Unknown -'
 
         >>> p = PluginHelper()
         >>> p.add_summary('Testing')
         >>> p.add_long_output('Long testing output')
         >>> p.add_long_output('More output')
         >>> p.get_plugin_output(exit_code=0)
-        'OK - Testing\\nLong testing output\\nMore output'
+        u'OK - Testing\\nLong testing output\\nMore output'
 
         >>> p = PluginHelper()
         >>> p.add_summary('Testing')
         >>> p.add_status(0)
         >>> p.get_plugin_output()
-        'OK - Testing'
+        u'OK - Testing'
 
         >>> p = PluginHelper()
         >>> p.show_status_in_summary = False
@@ -936,7 +936,7 @@ class PluginHelper:
         >>> p.add_metric(label="load5", value="5")
         >>> p.add_metric(label="load15",value="2")
         >>> p.get_plugin_output(exit_code=0)
-        "Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
+        u"Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
 
         >>> p = PluginHelper()
         >>> p.show_status_in_summary = False
@@ -947,7 +947,7 @@ class PluginHelper:
         >>> p.add_metric(label="load5", value="5")
         >>> p.add_metric(label="load15",value="2")
         >>> p.get_plugin_output(exit_code=0)
-        "Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;\\nLong testing output\\nMore output"
+        u"Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;\\nLong testing output\\nMore output"
 
         """
         if summary is None:
@@ -1022,11 +1022,11 @@ class PluginHelper:
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
         >>> p.get_plugin_output()
-        'Unknown -'
+        u'Unknown -'
         >>> p.add_metric('load15', '3')
         >>> p.check_metric('load15',thresholds)
         >>> p.get_plugin_output()
-        "Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;"
+        u"Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;"
 
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
@@ -1034,18 +1034,18 @@ class PluginHelper:
         >>> p.verbose = True
         >>> p.check_metric('load15',thresholds)
         >>> p.get_plugin_output()
-        "Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;\\nWarning on load15"
+        u"Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;\\nWarning on load15"
 
         Invalid metric:
         >>> p = PluginHelper()
         >>> p.add_status(ok)
         >>> p.add_summary('Everythings fine!')
         >>> p.get_plugin_output()
-        'OK - Everythings fine!'
+        u'OK - Everythings fine!'
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
         >>> p.check_metric('never_added_metric', thresholds)
         >>> p.get_plugin_output()
-        'Unknown - Everythings fine!. Metric never_added_metric not found'
+        u'Unknown - Everythings fine!. Metric never_added_metric not found'
 
         Invalid threshold:
         >>> p = PluginHelper()
