@@ -21,6 +21,10 @@
 Python Nagios extensions
 """
 
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
 import sys
 import os
 import traceback
@@ -30,7 +34,7 @@ from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, PynagError, reconsile_threshold, runCommand
 from pynag.Parsers import ExtraOptsParser
 import pynag.Utils
-import new_threshold_syntax
+from . import new_threshold_syntax
 
 # Map the return codes
 OK = 0
@@ -372,9 +376,9 @@ class simple:
         """
 
         # If code_text is a string, convert to the int
-        if str(type(code_text)) == "<type 'str'>":
-            code = self.errors[code_text]
-        else:
+        try:
+            code = self.errors[str(code_text)]
+        except KeyError:
             code = code_text
 
         return code

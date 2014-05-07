@@ -28,6 +28,11 @@ Example:
   --treshold metric=load1,ok=0..5,warning=5..10,critical=10..inf
 
 """
+
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
 import pynag.Plugins
 from pynag.Utils import PynagError
 

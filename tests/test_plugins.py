@@ -1,5 +1,11 @@
+
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
 import os
 import sys
+
 
 # Make sure we import from working tree
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
@@ -354,7 +360,7 @@ class Plugin(unittest.TestCase):
             self.np.add_perfdata('fake', value, uom='fakes',
                                  warn=10, crit=20, minimum=-100, maximum=100)
             perfdata_string = self.np.perfdata_string()
-            print perfdata_string
+            print(perfdata_string)
             self.assertEquals(perfdata_string, "| '%s'=%s%s;%s;%s;%s;%s" % (
                               'fake', value, 'fakes', 10, 20, -100, 100))
             self.np.add_message('OK', 'Some message')
@@ -365,7 +371,7 @@ class Plugin(unittest.TestCase):
             self.assertEquals(e.code, expected_exit)
         except Exception, e:
             import traceback
-            print traceback.format_exc()
+            print(traceback.format_exc())
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
