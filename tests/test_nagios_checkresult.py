@@ -1,9 +1,9 @@
 #! /usr/bin/python
 
-import unittest
+import unittest2 as unittest
 import time
 import textwrap
-import nagios_checkresult
+from pynag.Utils import nagios_checkresult
 
 class TestNagiosCheckResult(unittest.TestCase):
     def setUp (self):
