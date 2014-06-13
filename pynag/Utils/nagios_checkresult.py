@@ -1,4 +1,4 @@
-#!/usr/bin/python
+# !/usr/bin/python
 #
 # NagiosCheckResult- Class that creates Nagios checkresult file and 
 # writes Passive Host and Service checks to it
@@ -20,73 +20,137 @@
 
 import os
 import tempfile
-import sys
+import time
+
+service_state = ['OK', 'WARNING', 'CRITICAL', 'UNKNOWN']
+host_state = ['UP', 'DOWN', 'DOWN', 'DOWN']
 
 
-class GenerateNagiosCheckResult:
-    
-    def __init__(self):
-	self.service_state = {0: 'OK', 1: 'WARNING', 2: 'CRITICAL', 3: 'UNKNOWN'}
-	self.host_state = {0: 'UP', 1: 'DOWN', 2: 'DOWN', 3: 'DOWN'}
+class CheckResult(object):
+    """
+    Methods for creating host and service checkresults for nagios processing
+    """
+    def __init__(self, nagios_result_dir, file_time=time.time()):
 
-    # Creates a checkresult file
-    def create(self, nagios_result_dir, file_time):
-	# Nagios is quite fussy about the filename, it must be
+        # Nagios is quite fussy about the filename, it must be
         # a 7 character name starting with 'c'
-	tmp_file = tempfile.mkstemp(prefix='c',dir=nagios_result_dir) # specifies name and directory, check tempfile thoroughly
-	self.fh = tmp_file[0]
-        self.cmd_file = tmp_file[1]
-        os.write(self.fh, "### Active Check Result File ###\n")
-        os.write(self.fh, "file_time=" + str(file_time) + "\n")
-        
-    # Accepts parameters required for the host checkresult
-    # Writes host checks to checkresult file
-    def build_host(self, checkresult_time, host, check_type, check_options, scheduled_check, reschedule_check, latency, start_time, finish_time, early_timeout, exited_ok, host_return_code, output_string):
-	os.write(self.fh, "\n### Nagios Host Check Result ###\n")
-        os.write(self.fh, "# Time: " + checkresult_time + "\n")
-        os.write(self.fh, "host_name=" + host + "\n")
-        os.write(self.fh, "check_type=" + str(check_type) + "\n")
-        os.write(self.fh, "check_options=" + str(check_options) + "\n")
-        os.write(self.fh, "scheduled_check=" + str(scheduled_check) + "\n")
-        os.write(self.fh, "reschedule_check=" + str(reschedule_check) + "\n")
-        os.write(self.fh, "latency=" + str(latency) + "\n")
-        os.write(self.fh, "start_time=" + str(start_time) + "\n")
-        os.write(self.fh, "finish_time=" + str(finish_time) + "\n")
-        os.write(self.fh, "early_timeout=" + str(early_timeout) + "\n")
-        os.write(self.fh, "exited_ok=" + str(exited_ok) + "\n")
-        os.write(self.fh, "return_code=" + str(host_return_code) + "\n")
-	if not output_string:
-            os.write(self.fh, "output=" + " " + "Host (" + host + ")" + " " + self.host_state[host_return_code] + "\\n\n")
-	else:
-            os.write(self.fh, "output=" + " " + output_string + "\\n\n")
-            
-    # Accepts parameters required for the service checkresult
-    # Writes service checks to the checkresult file 
-    def build_service(self, checkresult_time, host, service_name, check_type, check_options, scheduled_check, reschedule_check, latency, start_time, finish_time, early_timeout, exited_ok, service_return_code, metric_value, metric_units, output_string):
-	os.write(self.fh, "\n### Nagios Service Check Result ###\n")
-        os.write(self.fh, "# Time: " + checkresult_time + "\n")
-        os.write(self.fh, "host_name=" + host + "\n")
-        os.write(self.fh, "service_description=" + service_name + "\n")
-        os.write(self.fh, "check_type=" + str(check_type) + "\n")
-        os.write(self.fh, "check_options=" + str(check_options) + "\n")
-        os.write(self.fh, "scheduled_check=" + str(scheduled_check) + "\n")
-        os.write(self.fh, "reschedule_check=" + str(reschedule_check) + "\n")
-        os.write(self.fh, "latency=" + str(latency) + "\n")
-        os.write(self.fh, "start_time=" + str(start_time) + "\n")
-        os.write(self.fh, "finish_time=" + str(finish_time) + "\n")
-        os.write(self.fh, "early_timeout=" + str(early_timeout) + "\n")
-        os.write(self.fh, "exited_ok=" + str(exited_ok) + "\n")
-        os.write(self.fh, "return_code=" + str(service_return_code) + "\n")
-	if not output_string:
-            os.write(self.fh, "output=" + service_name + " " + self.service_state[service_return_code] + "- " + service_name + " " +  str(metric_value) + " " + metric_units + "\\n\n")
-	else:
-            os.write(self.fh, "output=" + " " + output_string + "\\n\n")
+        self.file_time = file_time
 
-    # Close the file handle and create an ok-to-go indicator file 
+        self.fh, self.cmd_file = tempfile.mkstemp(prefix='c',
+                                                  dir=nagios_result_dir)
+
+        os.write(self.fh, "### Active Check Result File ###\n")
+        os.write(self.fh, "file_time=" + str(self.file_time) + "\n")
+
+    def service_result(self, host_name, service_description, **kwargs):
+        """
+        Create a service checkresult
+
+        Any kwarg will be added to the checkresult
+
+        Args:
+            host_name (str)
+            service_descritpion (str)
+        Kwargs:
+            check_type (int): active(0) or passive(1)
+            check_options (int)
+            scheduled_check (int)
+            reschedule_check (int)
+            latency (float)
+            start_time (float)
+            finish_time (float)
+            early_timeout (int)
+            exited_ok (int)
+            return_code (int)
+            output (str): plugin output
+        """
+        kwargs.update({
+            'host_name': host_name,
+            'service_description': service_description
+        })
+        return self.__output_result(**kwargs)
+
+    def host_result(self, host_name, **kwargs):
+        """
+        Create a service checkresult
+
+        Any kwarg will be added to the checkresult
+
+        Args:
+            host_name (str)
+            service_descritpion (str)
+        Kwargs:
+            check_type (int): active(0) or passive(1)
+            check_options (int)
+            scheduled_check (int)
+            reschedule_check (int)
+            latency (float)
+            start_time (float)
+            finish_time (float)
+            early_timeout (int)
+            exited_ok (int)
+            return_code (int)
+            output (str): plugin output
+        """
+        kwargs.update({
+            'host_name': host_name,
+        })
+        return self.__output_result(**kwargs)
+
+    def __output_result(self, **kwargs):
+        """
+        Create a checkresult
+
+        Kwargs:
+            host_name (str)
+            service_descritpion (str)
+            check_type (int): active(0) or passive(1)
+            check_options (int)
+            scheduled_check (int)
+            reschedule_check (int)
+            latency (float)
+            start_time (float)
+            finish_time (float)
+            early_timeout (int)
+            exited_ok (int)
+            return_code (int)
+            output (str): plugin output
+        """
+        parms = {
+            'check_type': 0,  # Active
+            'check_options': 0,
+            'scheduled_check': 0,
+            'reschedule_check': 0,
+            'latency': 0.0,
+            'start_time': time.time(),
+            'finish_time': time.time(),
+            'early_timeout': 0,
+            'exited_ok': 0,
+            'return_code': 0
+        }
+        parms.update(**kwargs)
+
+        object_type = 'host'
+        if 'service_description' in parms:
+            object_type = 'service'
+
+        if 'output' not in parms:
+            if object_type == 'host':
+                parms['output'] = host_state[int(parms['return_code'])]
+            else:
+                parms['output'] = service_state[int(parms['return_code'])]
+
+        parms['output'].replace('\n', '\\n')
+        os.write(self.fh, """
+### Nagios {1} Check Result ###
+# Time: {0}\n""".format(self.file_time, object_type.capitalize()))
+        for key, value in parms.items():
+            os.write(self.fh, key + "=" + str(value) + "\n")
+
     def submit(self):
+        """Submits the results to nagios"""
         os.close(self.fh)
         ok_filename = self.cmd_file + ".ok"
         ok_fh = file(ok_filename, 'a')
         ok_fh.close()
-	return self.cmd_file
-
+        return self.cmd_file
