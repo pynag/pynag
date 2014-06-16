@@ -123,6 +123,8 @@ class FakeNagiosEnvironment(object):
         config._edit_static_file(attribute='event_broker_options', new_value='-1')
         config._edit_static_file(attribute='illegal_macro_output_chars', new_value='''~$&|<>''')
         config._edit_static_file(attribute='check_result_path', new_value=check_result_path)
+        config._edit_static_file(attribute='temp_path', new_value=log_dir)
+        config._edit_static_file(attribute='temp_file', new_value=t + "nagios.tmp")
 
     def clean_up(self):
         """ Clean up all temporary directories """
