@@ -859,6 +859,14 @@ class Model2(unittest.TestCase):
     def tearDown(self):
         self.environment.terminate()
 
+    def test_contactgroups_effective_services(self):
+        cfg_file = os.path.join(tests_dir, 'dataset01/nagios/conf.d/contactgroups.cfg')
+        self.environment.import_config(cfg_file)
+
+        contactgroup = pynag.Model.Contactgroup.objects.get_by_shortname('test_contactgroup_role_1')
+
+        self.assertEqual(len(contactgroup.get_effective_services()), 1)
+
     def test_rename(self):
         """ Generic test of Model.*.rename()
         """

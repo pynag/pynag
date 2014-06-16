@@ -286,13 +286,7 @@ class ObjectRelations(object):
             for subgroup in subgroups:
                 for i in ObjectRelations.contactgroup_contacts[subgroup]:
                     ObjectRelations.contact_contactgroups[i].add(group)
-                for i in ObjectRelations.contactgroup_hosts[subgroup]:
-                    ObjectRelations.host_contact_groups[i].add(group)
-                for i in ObjectRelations.contactgroup_services[subgroup]:
-                    ObjectRelations.service_contact_groups[i].add(group)
                 ObjectRelations.contactgroup_contacts[group].update(ObjectRelations.contactgroup_contacts[subgroup])
-                ObjectRelations.contactgroup_hosts[group].update(ObjectRelations.contactgroup_hosts[subgroup])
-                ObjectRelations.contactgroup_services[group].update(ObjectRelations.contactgroup_services[subgroup])
 
     @staticmethod
     def resolve_hostgroups():
