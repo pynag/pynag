@@ -37,8 +37,8 @@ class FakeNagiosEnvironment(object):
         self.livestatus_object = None
         self.config = None
 
-        self.tempdir = tempfile.mkdtemp('nagios-environment') + "/"
-        path_to_socket = self.tempdir + "/livestatus.socket"
+        self.tempdir = tempfile.mkdtemp('nagios-environment')
+        path_to_socket = os.path.join(self.tempdir, "livestatus.socket")
         self.livestatus_socket_path = path_to_socket
 
     def get_config(self):
@@ -89,10 +89,10 @@ class FakeNagiosEnvironment(object):
     def create_minimal_environment(self):
         """ Starts a nagios server with empty config in an isolated environment """
         t = self.tempdir
-        cfg_file = self.cfg_file = t + "/nagios.cfg"
+        cfg_file = self.cfg_file = os.path.join(t, "nagios.cfg")
         open(cfg_file, 'w').write('')
 
-        objects_dir = self.objects_dir = t + "/conf.d"
+        objects_dir = self.objects_dir = os.path.join(t, "conf.d")
         os.mkdir(objects_dir)
 
         check_result_path = os.path.join(self.tempdir, 'checkresults')
@@ -146,8 +146,8 @@ class FakeNagiosEnvironment(object):
         result = pynag.Utils.runCommand(command=start_command)
         code, stdout, stderr = result
         if result[0] != 0:
-            if os.path.exists(self.tempdir + "nagios.log"):
-                log_file_output = open(self.tempdir + "nagios.log").read()
+            if os.path.exists(os.path.join(self.tempdir, "nagios.log")):
+                log_file_output = open(os.path.join(self.tempdir, "nagios.log")).read()
             else:
                 log_file_output = "No log file found."
             message = "Failed to start Nagios."
@@ -161,7 +161,7 @@ class FakeNagiosEnvironment(object):
         return result
 
     def stop(self, stop_command=None):
-        pid_file = self.tempdir + "nagios.pid"
+        pid_file = os.path.join(self.tempdir, "nagios.pid")
         if not os.path.exists(pid_file):
             return
         pid = open(pid_file).read()
