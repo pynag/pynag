@@ -5,7 +5,11 @@ import sys
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 from mock import patch
 import shutil
 import tempfile
@@ -340,7 +344,7 @@ class testUtils(unittest.TestCase):
         # code somewhere
         try:
             pynag.Utils.send_nsca(code=0, message="test", nscahost="localhost")
-        except OSError, e:
+        except OSError as e:
             # We don't care about the result if we have error because send_nsca
             # is not installed
             if e.errno != 2:

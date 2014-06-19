@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 ## setup.py ###
 from distutils.core import setup, Command
 from distutils.command.build_py import build_py as _build_py
@@ -27,10 +29,10 @@ class BuildMan(Command):
         stdout, stderr = sphinx_proc.communicate()
         return_code = sphinx_proc.wait()
         if return_code:
-            print "Warning: Build of manpage failed \"%s\":\n%s\n%s" % (
+            print("Warning: Build of manpage failed \"%s\":\n%s\n%s" % (
                       cmd,
                       stdout,
-                      stderr)
+                      stderr))
     def initialize_options(self):
         pass
 

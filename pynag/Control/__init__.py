@@ -243,7 +243,7 @@ class daemon(object):
                  "use sudo=True for daemon()", FutureWarning)
 
         if self.nagios_bin and \
-           self.nagios_bin.split(None, 1)[0].endswith("sudo"):
+           str(self.nagios_bin.split(None, 1)[0]).endswith("sudo"):
             self.sudo = True
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "

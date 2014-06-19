@@ -7,7 +7,10 @@ import sys
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 from mock import MagicMock, patch, Mock
 
 import pynag.Control

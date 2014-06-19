@@ -1,4 +1,6 @@
 #!/usr/bin/python
+
+from __future__ import print_function
 #
 # This script will autogenerate python functions to communicate with the python command file.
 # input to the program is the documentation from nagios
@@ -57,4 +59,4 @@ def %s(%s):
     argSplitter = ', \n' + defSpaces
     strFunction = strFunction % (func.lower(), argSplitter.join(args), description, func, ', \n                        '.join(args[0:-2]))
     strFunction = strFunction.replace('(, ','(')
-    print strFunction
+    print(strFunction)

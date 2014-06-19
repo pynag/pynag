@@ -1,3 +1,6 @@
+
+from __future__ import print_function
+
 __author__ = 'palli'
 
 import os
@@ -7,7 +10,10 @@ import sys
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import doctest
 import tempfile
 import shutil
@@ -358,7 +364,7 @@ class SshConfig(Config):
     def testParse(self):
         self.instance.parse()
         host = self.instance.get_host('localhost')
-        print host['__test']
+        print(host['__test'])
         self.instance.item_edit_field(host, '__test', host['__test'] + '+')
 
     def testOpenFile(self):

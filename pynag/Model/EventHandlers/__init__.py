@@ -26,6 +26,7 @@ an ObjectDefinition instance.
 This enables you for example to log to file every time an object is rewritten.
 """
 
+from __future__ import print_function
 
 import time
 from platform import node
@@ -60,15 +61,15 @@ class PrintToScreenHandler(BaseEventHandler):
     def debug(self, object_definition, message):
         """Used for any particual debug notifications"""
         if self._debug:
-            print "%s: %s" % ( time.asctime(), message )
+            print("%s: %s" % ( time.asctime(), message ))
 
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
-        print "%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message )
+        print("%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message ))
 
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        print "%s: %s" % ( time.asctime(), message )
+        print("%s: %s" % ( time.asctime(), message ))
 
 
 class FileLogger(BaseEventHandler):
@@ -132,7 +133,7 @@ class GitEventHandler(BaseEventHandler):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except EventHandlerError, e:
+            except EventHandlerError as e:
                 if e.errorcode == 128:
                     self._git_init()
         #self._run_command('git status --short')

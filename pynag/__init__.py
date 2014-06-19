@@ -20,9 +20,8 @@
 import sys
 import os
 import re
-from optparse import OptionParser
+#from optparse import OptionParser
 from pynag import Plugins
-Plugin = Plugins.simple
-
+#Plugin = Plugins.simple
 
 __version__ = '0.8.9'

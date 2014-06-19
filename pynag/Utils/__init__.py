@@ -24,6 +24,8 @@ This module contains misc classes and conveninence functions
 that are used throughout the pynag library.
 
 """
+
+from __future__ import print_function
 import subprocess
 import re
 import shlex
@@ -1406,13 +1408,13 @@ def synchronized(lock):
 
 def cache_only(func):
     def wrap(*args, **kwargs):
-        print "aggressive caching on"
+        print("aggressive caching on")
         pynag.Model.ObjectFetcher._cache_only = True
         try:
             return func(*args, **kwargs)
         finally:
             pynag.Model.ObjectFetcher._cache_only = False
-            print "Aggressive caching off"
+            print("Aggressive caching off")
     wrap.__name__ = func.__name__
     wrap.__module__ = func.__module__
     return wrap

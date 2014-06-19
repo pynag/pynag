@@ -17,6 +17,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
 """This module contains low-level Parsers for nagios configuration and status objects.
 
 Hint: If you are looking to parse some nagios configuration data, you probably
@@ -39,7 +41,10 @@ import stat
 
 import pynag.Plugins
 import pynag.Utils
-import StringIO
+try:
+    from io import StringIO
+except ImportError:
+    import StringIO
 import tarfile
 
 _sentinel = object()
@@ -493,7 +498,7 @@ class Config(object):
             >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
             >>> c = config()
             >>> result = c.parse_string(test_string)
-            >>> for i in result: print i.get('host_name'), i.get('service_description', None)
+            >>> for i in result: print(i.get('host_name'), i.get('service_description', None))
             examplehost None
             examplehost example service
 
@@ -2324,7 +2329,7 @@ class Livestatus(object):
         #
         # We maintain consistency by clinging on to the old bug, and if there are Stats in the output
         # we will not ask for column headers
-        doing_stats = len(filter(lambda x: x.startswith('Stats:'), query)) > 0
+        doing_stats = len(list(filter(lambda x: x.startswith('Stats:'), query))) > 0
         if not filter(lambda x: x.startswith('Stats:'), query) and not filter(
                 lambda x: x.startswith('ColumnHeaders: on'), query):
             query.append("ColumnHeaders: on")
@@ -3518,17 +3523,17 @@ class SshConfig(Config):
         return self.tar.extractfile(filename)
         tarinfo = self._get_file(filename)
         string = tarinfo.tobuf()
-        print string
+        print(string)
         return StringIO.StringIO(string)
         return self.tar.extractfile(tarinfo)
 
     def add_to_tar(self, path):
         """
         """
-        print "Taring ", path
+        print("Taring ", path)
         command = "find '{path}' -type f | tar -c -T - --to-stdout --absolute-names"
         command = command.format(path=path)
-        print command
+        print(command)
         stdin, stdout, stderr = self.ssh.exec_command(command, bufsize=50000)
         tar = tarfile.open(fileobj=stdout, mode='r|')
         if not self.tar:
@@ -3797,20 +3802,20 @@ if __name__ == '__main__':
     #ssh.add_to_tar('/etc/nagios')
     #sys.exit()
     #ssh.ssh.exec_command("/bin/ls")
-    print "before reset"
+    print("before reset")
     ssh.parse()
     end = time.time()
-    print "duration=", end-start
+    print("duration=", end-start)
     bland = ssh.tar.getmember('/etc/nagios/okconfig/hosts/web-servers/bland.is-http.cfg')
-    print bland.tobuf()
+    print(bland.tobuf())
     sys.exit(0)
-    print "ssh up"
+    print("ssh up")
     ssh_conn = FastTransport(('status.adagios.org', 22))
     ssh_conn.connect(username='palli')
     ftp = paramiko.SFTPClient.from_transport(ssh_conn)
-    print "connected" \
-          ""
+    print("connected" \
+          "")
     ssh.ssh = ssh_conn
     ssh.ftp = ftp
-    print "starting parse"
-    print "done parsing"
+    print("starting parse")
+    print("done parsing")

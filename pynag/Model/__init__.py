@@ -48,8 +48,8 @@ import getpass
 from pynag import Parsers
 import pynag.Control.Command
 import pynag.Utils
-from macros import _standard_macros
-import all_attributes
+from . import macros
+from . import all_attributes
 
 
 # Path To Nagios configuration file
@@ -1048,8 +1048,8 @@ class ObjectDefinition(object):
             return self._get_service_macro(macroname)
         if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
             return self._get_contact_macro(macroname, contact_name=contact_name)
-        if macroname in _standard_macros:
-            attr = _standard_macros[macroname]
+        if macroname in macros._standard_macros:
+            attr = macros._standard_macros[macroname]
             return self[attr]
         return ''
 
@@ -1239,8 +1239,8 @@ class ObjectDefinition(object):
             # If this is a custom macro
             name = macroname[9:-1]
             return self["_%s" % name]
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
+        elif macroname in macros._standard_macros:
+            attr = macros._standard_macros[macroname]
             return self[attr]
         elif macroname.startswith('$SERVICE'):
             name = macroname[8:-1].lower()
@@ -1254,8 +1254,8 @@ class ObjectDefinition(object):
             return self["_%s" % name]
         elif macroname == '$HOSTADDRESS$' and not self.address:
             return self.get("host_name")
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
+        elif macroname in macros._standard_macros:
+            attr = macros._standard_macros[macroname]
             return self[attr]
         elif macroname.startswith('$HOST'):
             name = macroname[5:-1].lower()
@@ -1972,8 +1972,8 @@ class Contact(ObjectDefinition):
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
-        if macroname in _standard_macros:
-            attribute_name = _standard_macros.get(macroname)
+        if macroname in macros._standard_macros:
+            attribute_name = macros._standard_macros.get(macroname)
         elif macroname.startswith('$_CONTACT'):
             # if this is a custom macro
             name = macroname[len('$_CONTACT'):-1]
@@ -2506,6 +2506,12 @@ def _remove_object_from_group(my_object, my_group):
 def _add_to_contactgroup(my_object, contactgroup):
     """ add Host or Service to a contactgroup
     """
+    is_string = False
+    try:
+        is_string = isinstance(new_status, basestring)
+    except NameError:
+        is_string = isinstance(new_status, str)
+
     if isinstance(contactgroup, basestring):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 

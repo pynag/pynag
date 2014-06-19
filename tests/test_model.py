@@ -5,7 +5,11 @@ import sys
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
-import unittest2 as unittest
+try:
+    import unittest
+except ImportError:
+    unittest
+
 import tempfile
 import os
 import shutil

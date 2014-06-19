@@ -104,7 +104,13 @@ def check_range(value, range):
     False
     """
 
-    if not isinstance(range, basestring) or range == '':
+    is_string = False
+    try:
+        is_string = isinstance(range, basestring)
+    except NameError:
+        is_string = isinstance(range, str)
+
+    if not is_string or range == '':
         raise PynagError('range must be a string')
 
     # value must be numeric, so we try to convert it to float

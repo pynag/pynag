@@ -176,7 +176,7 @@ class simple:
 
         if self.must_threshold is True and not options.critical and not options.warning:
             self.parser.error(
-                "You must provide a WARNING and/or CRITICAL value")
+                u"You must provide a WARNING and/or CRITICAL value")
 
         # Set Critical; if the option is available in the plugin
         if hasattr(options, 'critical'):
@@ -349,7 +349,7 @@ class simple:
         """
         # Check for messages in unknown, critical, warning, ok to determine
         # code
-        keys = self.data['messages'].keys()
+        keys = list(self.data['messages'].keys())
         keys.sort(reverse=True)
         code = UNKNOWN
         for code in keys:
@@ -797,7 +797,12 @@ class PluginHelper:
 
         # If new status was entered as a human readable string (ok,warn,etc)
         # lets convert it to int:
-        if isinstance(new_status, basestring):
+        is_string = False
+        try:
+            is_string = isinstance(new_status, basestring)
+        except NameError:
+            is_string = isinstance(new_status, str)
+        if is_string:
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:
