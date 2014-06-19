@@ -138,19 +138,31 @@ class FakeNagiosEnvironment(object):
             self.restore_model()
         self.clean_up()
 
-    def start(self, start_command=None):
+    def start(self, start_command=None, timeout=10):
         self.configure_p1_file()
         if not start_command:
             nagios_binary = self.config.guess_nagios_binary()
             start_command = "%s -d %s" % (nagios_binary, self.config.cfg_file)
         result = pynag.Utils.runCommand(command=start_command)
         code, stdout, stderr = result
+
+        pid_file = os.path.join(self.tempdir, "nagios.pid")
+        while not os.path.exists(pid_file) and timeout:
+            timeout -= 1
+            time.sleep(1)
+
+        start_error = None
+        if not os.path.exists(pid_file):
+            start_error = "Nagios pid file did not materialize"
         if result[0] != 0:
+            start_error = "Nagios did not start, bad return code"
+
+        if start_error:
             if os.path.exists(os.path.join(self.tempdir, "nagios.log")):
                 log_file_output = open(os.path.join(self.tempdir, "nagios.log")).read()
             else:
                 log_file_output = "No log file found."
-            message = "Failed to start Nagios."
+            message = start_error
             message += "Command: {start_command}\n"
             message += "Exit Code: {code}\n"
             message += "============\nStandard out\n{stdout}\n"
