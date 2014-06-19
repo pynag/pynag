@@ -396,7 +396,7 @@ class testFakeNagiosEnvironment(unittest.TestCase):
     def testStartStop(self):
         """ Try to start and stop our nagios environment  """
         self.environment.start()
-        pid = open(self.environment.tempdir + "nagios.pid").read()
+        pid = open(os.path.join(self.environment.tempdir, "nagios.pid")).read()
         pid = int(pid)
         try:
             os.kill(pid, 0)

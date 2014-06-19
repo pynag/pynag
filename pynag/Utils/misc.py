@@ -109,22 +109,36 @@ class FakeNagiosEnvironment(object):
         config = self.config = pynag.Parsers.config(cfg_file=cfg_file)
         self.config.open = self.open_decorator(self.config.open)
         config.parse()
-        config._edit_static_file(attribute='log_archive_path', new_value=t + "log/archive")
-        config._edit_static_file(attribute='log_file', new_value=t + "log/nagios.log")
-        config._edit_static_file(attribute='object_cache_file', new_value=t + "objects.cache")
-        config._edit_static_file(attribute='precached_object_file', new_value=t + "/objects.precache")
-        config._edit_static_file(attribute='lock_file', new_value=t + "nagios.pid")
-        config._edit_static_file(attribute='command_file', new_value=t + "nagios.cmd")
-        config._edit_static_file(attribute='state_retention_file', new_value=t + "retention.dat")
-        config._edit_static_file(attribute='status_file', new_value=t + "status.dat")
+        config._edit_static_file(attribute='log_archive_path',
+                                 new_value=os.path.join(t, "log/archive"))
+        config._edit_static_file(attribute='log_file',
+                                 new_value=os.path.join(t, "log/nagios.log"))
+        config._edit_static_file(attribute='object_cache_file',
+                                 new_value=os.path.join(t, "objects.cache"))
+        config._edit_static_file(attribute='precached_object_file',
+                                 new_value=os.path.join(t, "/objects.precache"))
+        config._edit_static_file(attribute='lock_file',
+                                 new_value=os.path.join(t, "nagios.pid"))
+        config._edit_static_file(attribute='command_file',
+                                 new_value=os.path.join(t, "nagios.cmd"))
+        config._edit_static_file(attribute='state_retention_file',
+                                 new_value=os.path.join(t, "retention.dat"))
+        config._edit_static_file(attribute='status_file',
+                                 new_value=os.path.join(t, "status.dat"))
         config._edit_static_file(attribute='cfg_dir', new_value=objects_dir)
-        config._edit_static_file(attribute='log_initial_states', new_value="1")
-        config._edit_static_file(attribute='enable_embedded_perl', new_value='0')
-        config._edit_static_file(attribute='event_broker_options', new_value='-1')
-        config._edit_static_file(attribute='illegal_macro_output_chars', new_value='''~$&|<>''')
-        config._edit_static_file(attribute='check_result_path', new_value=check_result_path)
+        config._edit_static_file(attribute='log_initial_states',
+                                 new_value="1")
+        config._edit_static_file(attribute='enable_embedded_perl',
+                                 new_value='0')
+        config._edit_static_file(attribute='event_broker_options',
+                                 new_value='-1')
+        config._edit_static_file(attribute='illegal_macro_output_chars',
+                                 new_value='''~$&|<>''')
+        config._edit_static_file(attribute='check_result_path',
+                                 new_value=check_result_path)
         config._edit_static_file(attribute='temp_path', new_value=log_dir)
-        config._edit_static_file(attribute='temp_file', new_value=t + "nagios.tmp")
+        config._edit_static_file(attribute='temp_file',
+                                 new_value=os.path.join(t, "nagios.tmp"))
 
     def clean_up(self):
         """ Clean up all temporary directories """
