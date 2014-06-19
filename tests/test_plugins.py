@@ -24,9 +24,10 @@ import signal
 # dont want to spam the output of the unittests. Lets do a temp
 # blocking of stdout and stderr
 try:
-    from io import StringIO
-except ImportError:
+    # Default to python2 if available
     from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 original_stdout = sys.stdout
 original_stderr = sys.stderr
 
