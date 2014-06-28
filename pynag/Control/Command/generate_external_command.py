@@ -40,18 +40,24 @@ for filename in sys.argv[1:]:
     description = '\n'.join(['\n'.join(wrapper.wrap(block)) for block in description.splitlines()])
 
     strFunction = """
-def %s(%s):
+def {function_name_lower}({arguments}):
     \"\"\"
-%s
+{description}
     \"\"\"
-    return send_command("%s",
+    return send_command("{function_name}",
                         command_file,
                         timestamp,
-                        %s)"""
+                        {function_arguments_linebroken})"""
     args.extend(['command_file=None', 'timestamp=0'])
     defSpaces = ' ' * (5 + len(func))
     returnSpaces = ' ' * 24
     argSplitter = ', \n' + defSpaces
-    strFunction = strFunction % (func.lower(), argSplitter.join(args), description, func, ', \n                        '.join(args[0:-2]))
+    strFunction = strFunction.format(
+        function_name_lower=func.lower(),
+        arguments=argSplitter.join(args),
+        description=description,
+        function_name=func,
+        function_arguments_linebroken=', \n                        '.join(args[0:-2])
+    )
     strFunction = strFunction.replace('(, ', '(')
     print strFunction
