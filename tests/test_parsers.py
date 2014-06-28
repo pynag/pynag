@@ -20,7 +20,9 @@ import pynag.Utils.misc
 
 
 class Config(unittest.TestCase):
+
     """ Test pynag.Parsers.config """
+
     def setUp(self):
         self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
         self.environment.create_minimal_environment()
@@ -113,7 +115,7 @@ class Config(unittest.TestCase):
             items[11]['command_name'],
             'check_local_mrtgtraf'
         )
-    
+
     def test_invalid_chars_in_item_edit(self):
         """ Test what happens when a user enters invalid characters attribute value """
         field_name = "test_field"
@@ -172,7 +174,9 @@ class Config(unittest.TestCase):
 
 
 class ExtraOptsParser(unittest.TestCase):
+
     """ Test pynag.Parsers.ExtraOptsParser """
+
     def testExtraOptsParser(self):
         """ Smoke-test Parsers.ExtraOptsParser """
         os.chdir(tests_dir)
@@ -197,6 +201,7 @@ class ExtraOptsParser(unittest.TestCase):
 
 
 class Livestatus(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         nagios = pynag.Utils.misc.FakeNagiosEnvironment()
@@ -265,6 +270,7 @@ class Livestatus(unittest.TestCase):
 
 
 class ObjectCache(unittest.TestCase):
+
     """ Tests for pynag.Parsers.objectcache
     """
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
@@ -276,8 +282,10 @@ class ObjectCache(unittest.TestCase):
 
 
 class LogFiles(unittest.TestCase):
+
     """ Test pynag.Parsers.LogFiles
     """
+
     def setUp(self):
         os.chdir(tests_dir)
         os.chdir('dataset01')
@@ -306,6 +314,7 @@ class LogFiles(unittest.TestCase):
 
 
 class Status(unittest.TestCase):
+
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
@@ -326,8 +335,10 @@ class Status(unittest.TestCase):
 
 
 class MultiSite(Livestatus):
+
     """ Tests for pynag.Parsers.MultiSite
     """
+
     def testAddBackend(self):
         livestatus = pynag.Parsers.MultiSite()
         backend1 = "local autodiscovered"
@@ -353,6 +364,7 @@ class MultiSite(Livestatus):
 
 @unittest.skip("Not ready for production yet")
 class SshConfig(Config):
+
     def setUp(self):
         self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
 

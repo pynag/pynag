@@ -26,6 +26,7 @@ original_stderr = sys.stderr
 
 
 class PluginParams(unittest.TestCase):
+
     def setUp(self):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
@@ -71,6 +72,7 @@ class PluginParams(unittest.TestCase):
 
 
 class PluginNoThreshold(unittest.TestCase):
+
     def setUp(self):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
@@ -117,6 +119,7 @@ class PluginNoThreshold(unittest.TestCase):
 
 
 class PluginHelper(unittest.TestCase):
+
     def setUp(self):
         self.argv_store = sys.argv
         from pynag.Plugins import PluginHelper
@@ -325,6 +328,7 @@ class PluginHelper(unittest.TestCase):
 
 
 class Plugin(unittest.TestCase):
+
     def setUp(self):
         self.argv_store = sys.argv
         from pynag.Plugins import simple as Plugin
@@ -530,7 +534,9 @@ class Plugin(unittest.TestCase):
 
 
 class NewPluginThresholdSyntax(unittest.TestCase):
+
     """ Unit tests for pynag.Plugins.new_threshold_syntax """
+
     def test_check_threshold(self):
         """ Test check_threshold() with different parameters
 

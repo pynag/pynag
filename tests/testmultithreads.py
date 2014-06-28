@@ -14,7 +14,7 @@ def change(host):
     host.save()
     pynag.Model.ObjectDefinition.objects.get_all()
     print "Set address", host.address, "to", host.host_name
-    
+
 
 if __name__ == '__main__':
     hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")

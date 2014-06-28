@@ -11,7 +11,9 @@ import unittest2 as unittest
 from tempfile import mkdtemp
 from pynag.Utils import CheckResult
 
+
 class TestNagiosCheckResult(unittest.TestCase):
+
     def _findstr(self, file_name, string):
         """Returns true if string found in file"""
         fh = open(file_name)
@@ -19,7 +21,7 @@ class TestNagiosCheckResult(unittest.TestCase):
         fh.close()
         return string in output
 
-    def setUp (self):
+    def setUp(self):
         self.tempdir = mkdtemp()
         self.check_result = CheckResult(self.tempdir)
 
@@ -60,6 +62,7 @@ class TestNagiosCheckResult(unittest.TestCase):
             filename,
             '\nhost_name=testhost\n'
         ))
+
 
 def __findstr(self, file, string):
     """Returns true if string found in file"""

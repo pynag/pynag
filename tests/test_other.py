@@ -17,14 +17,17 @@ import pynag.Model
 # Exported to pynag command
 pynagbase = os.path.realpath("%s/%s" % (tests_dir, os.path.pardir))
 
+
 class testDatasetParsing(unittest.TestCase):
+
     """ Parse any dataset in the tests directory starting with "testdata" """
+
     def setUp(self):
         """ Basic setup before test suite starts
         """
         os.chdir(tests_dir)
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
-        #os.mkdir(self.tmp_dir)
+        # os.mkdir(self.tmp_dir)
         pynag.Model.pynag_directory = self.tmp_dir
 
     def tearDown(self):
@@ -56,8 +59,10 @@ class testDatasetParsing(unittest.TestCase):
 
 
 class testsFromCommandLine(unittest.TestCase):
+
     """ Various commandline scripts
     """
+
     def setUp(self):
         # Import pynag.Model so that at the end we can see if configuration changed at all
         pynag.Model.ObjectDefinition.objects.get_all()
@@ -87,7 +92,7 @@ class testsFromCommandLine(unittest.TestCase):
         ]
         for i in ok_commands:
             exit_code, stdout, stderr = pynag.Utils.runCommand(i,
-                                            env={'PYTHONPATH': pynagbase})
+                                                               env={'PYTHONPATH': pynagbase})
             self.assertEqual(0, exit_code, "Error when running command %s\nexit_code: %s\noutput: %s\nstderr: %s" % (i, exit_code, stdout, stderr))
 
 if __name__ == "__main__":
