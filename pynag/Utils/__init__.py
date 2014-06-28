@@ -34,7 +34,7 @@ from getpass import getuser
 import datetime
 import pynag.Plugins
 import sys
-from pynag.Utils.nagios_checkresult import CheckResult
+from pynag.Utils.checkresult import CheckResult
 
 rlock = threading.RLock()
 
