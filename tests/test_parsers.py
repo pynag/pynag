@@ -105,8 +105,14 @@ class Config(unittest.TestCase):
         """ test config.parse_string()
         """
         items = self.config.parse_string(minimal_config)
-        self.assertEqual(items[11]['command_line'], '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$')
-        self.assertEqual(items[11]['command_name'], 'check_local_mrtgtraf')
+        self.assertEqual(
+            items[11]['command_line'],
+            '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$'
+        )
+        self.assertEqual(
+            items[11]['command_name'],
+            'check_local_mrtgtraf'
+        )
     
     def test_invalid_chars_in_item_edit(self):
         """ Test what happens when a user enters invalid characters attribute value """
@@ -344,6 +350,7 @@ class MultiSite(Livestatus):
 
         self.assertEqual(len(hosts), len(hosts_backend1))
 
+
 @unittest.skip("Not ready for production yet")
 class SshConfig(Config):
     def setUp(self):
@@ -370,7 +377,6 @@ class SshConfig(Config):
         ftp = self.instance.ftp
         i = ftp.stat('/')
         self.assertTrue(self.instance.isdir('/'))
-
 
 
 minimal_config = r"""
@@ -696,25 +702,25 @@ define timeperiod {
 }
 
 define command {
-	command_name	check_dummy
-	command_line	$USER1$/check_dummy!$ARG1$!$ARG2$
+    command_name	check_dummy
+    command_line	$USER1$/check_dummy!$ARG1$!$ARG2$
 }
 
 
 define host {
-	host_name		ok_host
-	use			generic-host
-	address			ok_host
-	max_check_attempts	1
-	check_command		check_dummy!0!Everything seems to be okay
+    host_name		ok_host
+    use			generic-host
+    address			ok_host
+    max_check_attempts	1
+    check_command		check_dummy!0!Everything seems to be okay
 }
 
 
 define service {
-	host_name		ok_host
-	use			generic-service
-	service_description	ok service 1
-	check_command		check_dummy!0!Everything seems to be okay
+    host_name		ok_host
+    use			generic-service
+    service_description	ok service 1
+    check_command		check_dummy!0!Everything seems to be okay
 }
 
 """

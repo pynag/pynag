@@ -94,9 +94,7 @@ class PluginNoThreshold(unittest.TestCase):
         else:
             self.fail('SystemExit exception expected')
 
-    """
-    All tests return OK since thresholds are not required
-    """
+    # All tests return OK since thresholds are not required
     def test_number_1(self):
         case = ''
         self.run_expect(case, 0, -23)
@@ -127,6 +125,7 @@ class PluginHelper(unittest.TestCase):
                                          dest='fakedata',
                                          help='fake data to test thresholds')
         sys.stdout = StringIO()
+
     def tearDown(self):
         sys.argv = self.argv_store
         sys.stdout = original_stdout
@@ -150,10 +149,8 @@ class PluginHelper(unittest.TestCase):
         finally:
             signal.alarm(0)
 
-    """
-    Critical if "stuff" is over 20, else warn if over 10
-    (will be critical if "stuff" is less than 0)
-    """
+    # Critical if "stuff" is over 20, else warn if over 10
+    # (will be critical if "stuff" is less than 0)
     def test_number_1(self):
         case = '--th=metric=fakedata,ok=0..10,warn=10..20'
         self.run_expect(case, -23, 2)
@@ -170,9 +167,7 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,ok=0..10,warn=10..20'
         self.run_expect(case, 23, 2)
 
-    """
-    Same as above. Negative "stuff" is OK
-    """
+    # Same as above. Negative "stuff" is OK
     def test_number_5(self):
         case = '--th=metric=fakedata,ok=inf..10,warn=10..20'
         self.run_expect(case, '-23', 0)
@@ -189,10 +184,8 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,ok=inf..10,warn=10..20'
         self.run_expect(case, '23', 2)
 
-    """
-    Critical if "stuff" is over 20, else warn if "stuff" is below 10
-    (will be critical if "stuff" is less than 0)
-    """
+    # Critical if "stuff" is over 20, else warn if "stuff" is below 10
+    # (will be critical if "stuff" is less than 0)
     def test_number_9(self):
         case = '--th=metric=fakedata,warn=0..10,crit=20..inf'
         self.run_expect(case, '-23', 0)
@@ -209,9 +202,7 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,warn=0..10,crit=20..inf'
         self.run_expect(case, '23', 2)
 
-    """
-    Critical if "stuff" is less than 1
-    """
+    # Critical if "stuff" is less than 1
     def test_number_13(self):
         case = '--th=metric=fakedata,ok=1..inf'
         self.run_expect(case, '-23', 2)
@@ -228,9 +219,7 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,ok=1..inf'
         self.run_expect(case, '23', 0)
 
-    """
-    1-9 is warning, negative or above 10 is critical
-    """
+    # 1-9 is warning, negative or above 10 is critical
     def test_number_17(self):
         case = '--th=metric=fakedata,warn=1..9,crit=^0..10'
         self.run_expect(case, '-23', 2)
@@ -247,9 +236,7 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,warn=1..9,crit=^0..10'
         self.run_expect(case, '23', 2)
 
-    """
-    The only noncritical range is 5:6
-    """
+    # The only noncritical range is 5:6
     def test_number_21(self):
         case = '--th=metric=fakedata,ok=5..6'
         self.run_expect(case, '-23', 2)
@@ -274,9 +261,7 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,ok=5..6'
         self.run_expect(case, '7', 2)
 
-    """
-    Critical if "stuff" is 10 to 20
-    """
+    # Critical if "stuff" is 10 to 20
     def test_number_27(self):
         case = '--th=metric=fakedata,ok=^10..20'
         self.run_expect(case, '-23', 0)
@@ -305,10 +290,8 @@ class PluginHelper(unittest.TestCase):
         case = '--th=metric=fakedata,ok=^10..20'
         self.run_expect(case, '23', 0)
 
-    """
-    Cmdline thresholds pass but we insert a "hardcoded" metric with thresholds
-    which will also be evaluated
-    """
+    # Cmdline thresholds pass but we insert a "hardcoded" metric with thresholds
+    # which will also be evaluated
     def test_number_34(self):
         # Extra case with hardcoded thresholds
         self.my_plugin.add_metric('fakedata2', value='15',
@@ -341,8 +324,6 @@ class PluginHelper(unittest.TestCase):
         self.assertTrue(True, "Timeout occured in plugin, just like expected.")
 
 
-
-
 class Plugin(unittest.TestCase):
     def setUp(self):
         self.argv_store = sys.argv
@@ -350,6 +331,7 @@ class Plugin(unittest.TestCase):
         self.np = Plugin()
         sys.stdout = StringIO()
         sys.stderr = StringIO()
+
     def tearDown(self):
         sys.argv = self.argv_store
         sys.stdout = original_stdout
@@ -378,10 +360,7 @@ class Plugin(unittest.TestCase):
         else:
             self.fail('SystemExit exception expected')
 
-
-    """
-    Throws SystemExit, required parameter not set when activating
-    """
+    # Throws SystemExit, required parameter not set when activating
     def test_add_arg_req_missing(self):
         self.np.add_arg('F', 'fakedata',
                         'fake data to test thresholds', required=True)
@@ -412,10 +391,8 @@ class Plugin(unittest.TestCase):
         code = self.np.code_string2int('UNKNOWN')
         self.assertEquals(code, 3, "UNKNOWN did not map to 3")
 
-    """
-    Critical if "stuff" is over 20, else warn if over 10
-    (will be critical if "stuff" is less than 0)
-    """
+    # Critical if "stuff" is over 20, else warn if over 10
+    # (will be critical if "stuff" is less than 0)
     def test_number_1(self):
         case = '-w 10 -c 20'
         self.run_expect(case, 2, -23)
@@ -432,9 +409,7 @@ class Plugin(unittest.TestCase):
         case = '-w 10 -c 20'
         self.run_expect(case, 2, 23)
 
-    """
-    Same as above. Negative "stuff" is OK
-    """
+    # Same as above. Negative "stuff" is OK
     def test_number_5(self):
         case = '-w ~:10 -c ~:20'
         self.run_expect(case, 0, -23)
@@ -451,10 +426,8 @@ class Plugin(unittest.TestCase):
         case = '-w ~:10 -c ~:20'
         self.run_expect(case, 2, 23)
 
-    """
-    Critical if "stuff" is over 20, else warn if "stuff" is below 10
-    (will be critical if "stuff" is less than 0)
-    """
+    # Critical if "stuff" is over 20, else warn if "stuff" is below 10
+    # (will be critical if "stuff" is less than 0)
     def test_number_9(self):
         case = '-w 10: -c 20'
         self.run_expect(case, 2, -23)
@@ -471,9 +444,7 @@ class Plugin(unittest.TestCase):
         case = '-w 10: -c 20'
         self.run_expect(case, 2, 23)
 
-    """
-    Critical if "stuff" is less than 1
-    """
+    # Critical if "stuff" is less than 1
     def test_number_13(self):
         case = '-c 1:'
         self.run_expect(case, 2, -23)
@@ -490,9 +461,7 @@ class Plugin(unittest.TestCase):
         case = '-c 1:'
         self.run_expect(case, 0, 23)
 
-    """
-    1-9 is warning, negative or above 10 is critical
-    """
+    # 1-9 is warning, negative or above 10 is critical
     def test_number_17(self):
         case = '-w ~:0 -c 10'
         self.run_expect(case, 2, -23)
@@ -509,9 +478,7 @@ class Plugin(unittest.TestCase):
         case = '-w ~:0 -c 10'
         self.run_expect(case, 2, 23)
 
-    """
-    The only noncritical range is 5:6
-    """
+    # The only noncritical range is 5:6
     def test_number_21(self):
         case = '-c 5:6'
         self.run_expect(case, 2, -23)
@@ -532,9 +499,7 @@ class Plugin(unittest.TestCase):
         case = '-c 5:6'
         self.run_expect(case, 0, 6)
 
-    """
-    Critical if "stuff" is 10 to 20
-    """
+    # Critical if "stuff" is 10 to 20
     def test_number_26(self):
         case = '-c @10:20'
         self.run_expect(case, 0, -23)
