@@ -8,6 +8,7 @@ Bug Fixes:
     - Bug fixes in Model.*.get_current_status()
     - Fix Parsers.Livestatus.test() traceback
     - Fix Parsers line continuation
+    - Fix contactgroup/service and contactgroup/host relationships
 
 Changes in 0.8.9 (Apr 15 2014)
 Bug Fixes:
