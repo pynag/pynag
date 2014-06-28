@@ -100,7 +100,7 @@ class daemon(object):
         """
         if self.method == daemon.SYSV_INIT_SCRIPT or \
            self.method == daemon.SYSV_INIT_SERVICE:
-            if self.nagios_config == None:
+            if self.nagios_config is None:
                 self.nagios_config = pynag.Parsers.config()
             if self.nagios_config._get_pid():
                 return True
@@ -219,8 +219,7 @@ class daemon(object):
         """
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
-        elif self.nagios_init and \
-            self.nagios_init.split(None, 1)[0].endswith("service"):
+        elif self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
             self.service_name = self.nagios_init.split(None, 1)[1]
             return daemon.SYSV_INIT_SERVICE
         elif os.path.exists("%s/%s.service" % (daemon.systemd_service_path,
