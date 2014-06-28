@@ -842,6 +842,19 @@ def change_svc_check_timeperiod(host_name,
                         service_description, 
                         check_timeperiod)
 
+def change_host_check_timeperiod(host_name, 
+                                 timeperiod, 
+                                 command_file=None, 
+                                 timestamp=0):
+    """
+    Changes the valid check period for the specified host.
+    """
+    return send_command("CHANGE_HOST_CHECK_TIMEPERIOD",
+                        command_file,
+                        timestamp,
+                        host_name, 
+                        timeperiod)
+
 def change_custom_host_var(host_name, 
                            varname, 
                            varvalue, 
@@ -1607,7 +1620,7 @@ def acknowledge_host_problem(host_name,
     Allows you to acknowledge the current problem for the specified
     host.  By acknowledging the current problem, future
     notifications (for the same host state) are disabled.  If the
-    "sticky" option is set to one (1), the acknowledgement will
+    "sticky" option is set to two (2), the acknowledgement will
     remain until the host returns to an UP state.  Otherwise the
     acknowledgement will automatically be removed when the host
     changes state.  If the "notify" option is set to one (1), a
@@ -1653,7 +1666,7 @@ def acknowledge_svc_problem(host_name,
     Allows you to acknowledge the current problem for the specified
     service.  By acknowledging the current problem, future
     notifications (for the same servicestate) are disabled.  If the
-    "sticky" option is set to one (1), the acknowledgement will
+    "sticky" option is set to two (2), the acknowledgement will
     remain until the service returns to an OK state.  Otherwise the
     acknowledgement will automatically be removed when the service
     changes state.  If the "notify" option is set to one (1), a
