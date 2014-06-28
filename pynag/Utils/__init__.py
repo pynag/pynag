@@ -38,6 +38,7 @@ from pynag.Utils.checkresult import CheckResult
 
 rlock = threading.RLock()
 
+
 class PynagError(Exception):
 
     """ The default pynag exception.
@@ -165,13 +166,13 @@ class GitRepo(object):
         import subprocess
         import os
         cwd = self.directory
-        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors == False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
-            errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
-            raise PynagError( errorstring, errorcode=returncode, errorstring=stderr )
+            errorstring = errorstring % (command, returncode, stdout, stderr, getuser())
+            raise PynagError(errorstring, errorcode=returncode, errorstring=stderr)
         return stdout
 
     def is_up_to_date(self):
@@ -239,7 +240,7 @@ class GitRepo(object):
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
-            hash,author, authoremail, authortime, comment = line.split("\t", 4)
+            hash, author, authoremail, authortime, comment = line.split("\t", 4)
             result.append({
                 "hash": hash,
                 "author_name": author,
@@ -273,7 +274,7 @@ class GitRepo(object):
             commit_id_or_filename = commit_id_or_filename.replace("'", r"\'")
             command = "git diff '%s'" % commit_id_or_filename
         else:
-            raise  PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
+            raise PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
         # Clean single quotes from parameters:
         return self._run_command(command)
 
@@ -452,7 +453,7 @@ class GitRepo(object):
             return
         # Create a space seperated string with the filenames
         filestring = ' '.join(filelist)
-        command = "git commit -m '%s' --author='%s' -- %s" % (message, author,filestring)
+        command = "git commit -m '%s' --author='%s' -- %s" % (message, author, filestring)
         return self._run_command(command=command)
 
     def add(self, filename):
@@ -555,7 +556,7 @@ class PerfData(object):
         >>> s.add_perfdatametric("a=1")
         >>> s.add_perfdatametric(label="utilization",value="10",uom="%")
         """
-        metric=PerfDataMetric(perfdatastring=perfdatastring, label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
+        metric = PerfDataMetric(perfdatastring=perfdatastring, label=label, value=value, warn=warn, crit=crit, min=min, max=max, uom=uom)
         self.metrics.append(metric)
 
     def get_perfdatametric(self, metric_name):
@@ -610,13 +611,13 @@ class PerfDataMetric(object):
 
     """
 
-    label = "" #: str. Label section of the perfdata string
-    value = "" #: str. Value section of the perfdata string
-    warn = "" #: str. WARNING threshold
-    crit = "" #: str CRITICAL threshold
-    min = "" #: str. Minimal value of control
-    max = "" #: str. Maximal value of control
-    uom = "" #: str. Measure unit (octets, bits/s, volts, ...)
+    label = ""  # : str. Label section of the perfdata string
+    value = ""  # : str. Value section of the perfdata string
+    warn = ""  # : str. WARNING threshold
+    crit = ""  # : str CRITICAL threshold
+    min = ""  # : str. Minimal value of control
+    max = ""  # : str. Maximal value of control
+    uom = ""  # : str. Measure unit (octets, bits/s, volts, ...)
 
     def __repr__(self):
         return "'%s'=%s%s;%s;%s;%s;%s" % (
@@ -844,8 +845,8 @@ class PerfDataMetric(object):
             'max': self.max,
         }
 
-def grep(objects, **kwargs):
 
+def grep(objects, **kwargs):
     """ Returns all the elements from array that match the keywords in **kwargs
 
     See documentation for pynag.Model.ObjectDefinition.objects.filter() for 
@@ -929,13 +930,12 @@ def grep(objects, **kwargs):
         else:
             # If all else fails, assume they are asking for exact match
             v_is_str = isinstance(v, str)
-            expression = lambda obj: (lambda objval: str(objval) == v_str or ( v_is_str and isinstance(objval, list) and v in objval ) ) (obj.get(k))
+            expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
         matching_objects = filter(expression, matching_objects)
     return matching_objects
 
 
 def grep_to_livestatus(*args, **kwargs):
-
     """ Converts from pynag style grep syntax to livestatus filter syntax.
 
     Example:
@@ -1242,10 +1242,10 @@ class PluginOutput:
     ['load1'=15;;;;, 'load2'=10;;;;]
 
     """
-    summary = None #: str. Summary returned by the plugin check
+    summary = None  # : str. Summary returned by the plugin check
     long_output = None
-    perfdata = None #: str. Data returned by the plugin as a string
-    parsed_perfdata = None #: Perfdata parsed and split
+    perfdata = None  # : str. Data returned by the plugin as a string
+    parsed_perfdata = None  # : Perfdata parsed and split
 
     def __init__(self, stdout):
         if not stdout:
@@ -1269,6 +1269,7 @@ class PluginOutput:
         self.long_output = '\n'.join(long_output)
         self.perfdata = perfdata.strip()
         self.parsed_perfdata = PerfData(perfdatastring=perfdata)
+
 
 class defaultdict(dict):
 

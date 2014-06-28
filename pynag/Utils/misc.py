@@ -16,6 +16,7 @@ from pynag.Utils import PynagError
 
 
 class FakeNagiosEnvironment(object):
+
     """ Creates a fake nagios environment with minimal configs in /tmp/
 
     Example:
@@ -29,6 +30,7 @@ class FakeNagiosEnvironment(object):
         >>> result, stdout, sdterr = nagios.stop()  # Stop nagios
         >>> nagios.terminate()  # Stops nagios and cleans up everything
     """
+
     def __init__(self, global_config_file=None, p1_file=None, livestatus=False):
         self.global_config_file = global_config_file
         self.p1_file = p1_file

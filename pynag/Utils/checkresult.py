@@ -1,6 +1,6 @@
 # !/usr/bin/python
 #
-# NagiosCheckResult- Class that creates Nagios checkresult file and 
+# NagiosCheckResult- Class that creates Nagios checkresult file and
 # writes Passive Host and Service checks to it
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-###########################################################################
+#
 
 import os
 import tempfile
@@ -27,9 +27,11 @@ host_state = ['UP', 'DOWN', 'DOWN', 'DOWN']
 
 
 class CheckResult(object):
+
     """
     Methods for creating host and service checkresults for nagios processing
     """
+
     def __init__(self, nagios_result_dir, file_time=time.time()):
 
         # Nagios is quite fussy about the filename, it must be
