@@ -298,11 +298,8 @@ class LogFiles(unittest.TestCase):
 
         logfiles = self.log.get_logfiles()
         self.assertEqual(expected_number_of_files, len(logfiles))
-        self.assertEqual('./nagios/log/nagios.log', logfiles[0])
-        self.assertEqual('./nagios/log/archives/nagios-06-18-2014-00.log', logfiles[1])
-        self.assertEqual('./nagios/log/archives/nagios-01-04-2014-00.log', logfiles[2])
-        self.assertEqual('./nagios/log/archives/nagios-12-26-2013-00.log', logfiles[3])
-        self.assertEqual('./nagios/log/archives/nagios-04-24-2013-00.log', logfiles[4])
+        self.assertTrue('./nagios/log/nagios.log' in logfiles)
+        self.assertEqual(5, len(logfiles))
 
     def testLogEntriesAreSorted(self):
         entries = self.log.get_log_entries(start_time=0)
