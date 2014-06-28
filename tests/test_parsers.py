@@ -279,9 +279,9 @@ class LogFiles(unittest.TestCase):
         self.log = pynag.Parsers.LogFiles(maincfg=cfg_file)
 
     def testLogFileParsing(self):
-        expected_no_of_logentries = 63692
-        expected_no_for_app01 = 127
-        len_state_history = 14301
+        expected_no_of_logentries = 1040
+        expected_no_for_app01 = 11
+        len_state_history = 1030
 
         log = self.log.get_log_entries(start_time=0)
         self.assertEqual(expected_no_of_logentries, len(log))
@@ -293,10 +293,26 @@ class LogFiles(unittest.TestCase):
         self.assertEqual(len_state_history, len(state_history))
 
     def testGetLogFiles(self):
+        tmp = pynag.Utils.runCommand('find ./nagios/log -type f | wc -l')
+        expected_number_of_files = int(tmp[1].strip())
+
         logfiles = self.log.get_logfiles()
-        self.assertEqual(2, len(logfiles))
+        self.assertEqual(expected_number_of_files, len(logfiles))
         self.assertEqual('./nagios/log/nagios.log', logfiles[0])
-        self.assertEqual('./nagios/log/archives/archivelog1.log', logfiles[1])
+        self.assertEqual('./nagios/log/archives/nagios-06-18-2014-00.log', logfiles[1])
+        self.assertEqual('./nagios/log/archives/nagios-01-04-2014-00.log', logfiles[2])
+        self.assertEqual('./nagios/log/archives/nagios-12-26-2013-00.log', logfiles[3])
+        self.assertEqual('./nagios/log/archives/nagios-04-24-2013-00.log', logfiles[4])
+
+    def testLogEntriesAreSorted(self):
+        entries = self.log.get_log_entries(start_time=0)
+        last_timestamp = -1
+        for entry in entries:
+            current_timestamp = entry.get('time')
+            if last_timestamp >= 0 and last_timestamp > current_timestamp:
+                message = "Timestamp of log entries are not in ascending order"
+                self.assertLessEqual(last_timestamp, current_timestamp, message)
+            last_timestamp = current_timestamp
 
 
 class Status(unittest.TestCase):
@@ -358,7 +374,6 @@ class SshConfig(Config):
     def testParse(self):
         self.instance.parse()
         host = self.instance.get_host('localhost')
-        print host['__test']
         self.instance.item_edit_field(host, '__test', host['__test'] + '+')
 
     def testOpenFile(self):
