@@ -1,0 +1,10 @@
+[1387929600] LOG ROTATION: DAILY
+[1387929600] LOG VERSION: 2.0
+[1387929600] CURRENT HOST STATE: apc01.acme.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.09 ms
+[1387929600] CURRENT HOST STATE: apc01.belgium.wolfram-hart.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.brasil.wolfram-hart.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.disney.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.france.wolfram-hart.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.google.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.hart.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
+[1387929600] CURRENT HOST STATE: apc01.iceland.wolfram-hart.com;UP;HARD;1;PING OK - Packet loss = 0%, RTA = 0.08 ms
