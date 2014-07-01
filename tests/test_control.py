@@ -15,7 +15,9 @@ from pynag.Parsers import config
 
 import warnings
 
+
 class testControl(unittest.TestCase):
+
     def setUp(self):
         """
         Set to the current defaults of the control.daemon() class
@@ -26,8 +28,8 @@ class testControl(unittest.TestCase):
         # Ignore futurewarnings for nagios_init
         warnings.simplefilter("ignore", FutureWarning)
 
-        self.nagios_bin=self.config.guess_nagios_binary()
-        self.nagios_cfg='/etc/nagios/nagios.cfg'
+        self.nagios_bin = self.config.guess_nagios_binary()
+        self.nagios_cfg = '/etc/nagios/nagios.cfg'
         self.service_name = 'nagios'
         self.nagios_init = "service nagios"
 
@@ -36,10 +38,10 @@ class testControl(unittest.TestCase):
         self.osexists = os.path.exists
 
         self.control = pynag.Control.daemon(
-                nagios_bin=self.nagios_bin,
-                nagios_cfg=self.nagios_cfg,
-                nagios_init=self.nagios_init,
-                service_name=self.service_name)
+            nagios_bin=self.nagios_bin,
+            nagios_cfg=self.nagios_cfg,
+            nagios_init=self.nagios_init,
+            service_name=self.service_name)
 
     def tearDown(self):
         # Restore potentially mocked functions
@@ -58,8 +60,8 @@ class testControl(unittest.TestCase):
 
         # Make sure runCommand is called correctly
         pynag.Control.runCommand.assert_called_once_with(["sudo", self.nagios_bin, "-v", self.nagios_cfg],
-            shell=False
-            )
+                                                         shell=False
+                                                         )
 
     def test_verify_config_failure(self):
         # Patch all calls to Popen, make calls return exit code 1

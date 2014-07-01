@@ -28,7 +28,9 @@ from warnings import warn
 
 from pynag.Utils import PynagError, runCommand
 
+
 class daemon(object):
+
     """
     Control the nagios daemon through python
 
@@ -98,7 +100,7 @@ class daemon(object):
         """
         if self.method == daemon.SYSV_INIT_SCRIPT or \
            self.method == daemon.SYSV_INIT_SERVICE:
-            if self.nagios_config == None:
+            if self.nagios_config is None:
                 self.nagios_config = pynag.Parsers.config()
             if self.nagios_config._get_pid():
                 return True
@@ -217,17 +219,16 @@ class daemon(object):
         """
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
-        elif self.nagios_init and \
-             self.nagios_init.split(None, 1)[0].endswith("service"):
+        elif self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
             self.service_name = self.nagios_init.split(None, 1)[1]
             return daemon.SYSV_INIT_SERVICE
         elif os.path.exists("%s/%s.service" % (daemon.systemd_service_path,
                                                self.service_name)):
             return daemon.SYSTEMD
         else:
-            raise PynagError("Unable to detect daemon method, " \
-                            "could not find init script or " \
-                            "systemd unit file")
+            raise PynagError("Unable to detect daemon method, "
+                             "could not find init script or "
+                             "systemd unit file")
 
     def _deprecate_sudo(self):
         """
@@ -248,5 +249,3 @@ class daemon(object):
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
-
-

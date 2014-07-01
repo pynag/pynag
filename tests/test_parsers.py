@@ -20,7 +20,9 @@ import pynag.Utils.misc
 
 
 class Config(unittest.TestCase):
+
     """ Test pynag.Parsers.config """
+
     def setUp(self):
         self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
         self.environment.create_minimal_environment()
@@ -105,9 +107,15 @@ class Config(unittest.TestCase):
         """ test config.parse_string()
         """
         items = self.config.parse_string(minimal_config)
-        self.assertEqual(items[11]['command_line'], '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$')
-        self.assertEqual(items[11]['command_name'], 'check_local_mrtgtraf')
-    
+        self.assertEqual(
+            items[11]['command_line'],
+            '$USER1$/check_mrtgtraf -F $ARG1$ -a $ARG2$ -w $ARG3$ -c $ARG4$ -e $ARG5$'
+        )
+        self.assertEqual(
+            items[11]['command_name'],
+            'check_local_mrtgtraf'
+        )
+
     def test_invalid_chars_in_item_edit(self):
         """ Test what happens when a user enters invalid characters attribute value """
         field_name = "test_field"
@@ -166,7 +174,9 @@ class Config(unittest.TestCase):
 
 
 class ExtraOptsParser(unittest.TestCase):
+
     """ Test pynag.Parsers.ExtraOptsParser """
+
     def testExtraOptsParser(self):
         """ Smoke-test Parsers.ExtraOptsParser """
         os.chdir(tests_dir)
@@ -191,6 +201,7 @@ class ExtraOptsParser(unittest.TestCase):
 
 
 class Livestatus(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         nagios = pynag.Utils.misc.FakeNagiosEnvironment()
@@ -259,6 +270,7 @@ class Livestatus(unittest.TestCase):
 
 
 class ObjectCache(unittest.TestCase):
+
     """ Tests for pynag.Parsers.objectcache
     """
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
@@ -270,8 +282,10 @@ class ObjectCache(unittest.TestCase):
 
 
 class LogFiles(unittest.TestCase):
+
     """ Test pynag.Parsers.LogFiles
     """
+
     def setUp(self):
         os.chdir(tests_dir)
         os.chdir('dataset01')
@@ -300,6 +314,7 @@ class LogFiles(unittest.TestCase):
 
 
 class Status(unittest.TestCase):
+
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
     def testStatus(self):
         """Unit test for pynag.Parsers.status()"""
@@ -320,8 +335,10 @@ class Status(unittest.TestCase):
 
 
 class MultiSite(Livestatus):
+
     """ Tests for pynag.Parsers.MultiSite
     """
+
     def testAddBackend(self):
         livestatus = pynag.Parsers.MultiSite()
         backend1 = "local autodiscovered"
@@ -344,8 +361,10 @@ class MultiSite(Livestatus):
 
         self.assertEqual(len(hosts), len(hosts_backend1))
 
+
 @unittest.skip("Not ready for production yet")
 class SshConfig(Config):
+
     def setUp(self):
         self.instance = pynag.Parsers.SshConfig(host="localhost", username='palli')
 
@@ -370,7 +389,6 @@ class SshConfig(Config):
         ftp = self.instance.ftp
         i = ftp.stat('/')
         self.assertTrue(self.instance.isdir('/'))
-
 
 
 minimal_config = r"""
@@ -696,25 +714,25 @@ define timeperiod {
 }
 
 define command {
-	command_name	check_dummy
-	command_line	$USER1$/check_dummy!$ARG1$!$ARG2$
+    command_name	check_dummy
+    command_line	$USER1$/check_dummy!$ARG1$!$ARG2$
 }
 
 
 define host {
-	host_name		ok_host
-	use			generic-host
-	address			ok_host
-	max_check_attempts	1
-	check_command		check_dummy!0!Everything seems to be okay
+    host_name		ok_host
+    use			generic-host
+    address			ok_host
+    max_check_attempts	1
+    check_command		check_dummy!0!Everything seems to be okay
 }
 
 
 define service {
-	host_name		ok_host
-	use			generic-service
-	service_description	ok service 1
-	check_command		check_dummy!0!Everything seems to be okay
+    host_name		ok_host
+    use			generic-service
+    service_description	ok service 1
+    check_command		check_dummy!0!Everything seems to be okay
 }
 
 """

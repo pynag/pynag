@@ -35,7 +35,9 @@ import shlex
 from os import environ
 from getpass import getuser
 
+
 class BaseEventHandler:
+
     def __init__(self, debug=False):
         self._debug = debug
 
@@ -56,23 +58,27 @@ class BaseEventHandler:
 
 
 class PrintToScreenHandler(BaseEventHandler):
+
     """Handler that prints everything to stdout"""
+
     def debug(self, object_definition, message):
         """Used for any particual debug notifications"""
         if self._debug:
-            print "%s: %s" % ( time.asctime(), message )
+            print "%s: %s" % (time.asctime(), message)
 
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
-        print "%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message )
+        print "%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message)
 
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        print "%s: %s" % ( time.asctime(), message )
+        print "%s: %s" % (time.asctime(), message)
 
 
 class FileLogger(BaseEventHandler):
+
     """Handler that logs everything to file"""
+
     def __init__(self, logfile='/var/log/pynag.log', debug=False):
         BaseEventHandler.__init__(self)
         self.file = logfile
@@ -80,28 +86,30 @@ class FileLogger(BaseEventHandler):
 
     def _append_to_file(self, message):
         f = open(self.file, 'a')
-        if not message.endswith('\n'): message += '\n'
-        f.write( message  )
+        if not message.endswith('\n'):
+            message += '\n'
+        f.write(message)
         f.close()
 
     def debug(self, object_definition, message):
         """Used for any particular debug notifications"""
         if self.debug:
-            message = "%s: %s" % ( time.asctime(), message )
-            self._append_to_file( message )
+            message = "%s: %s" % (time.asctime(), message)
+            self._append_to_file(message)
 
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
-        message = "%s: file='%s' %s" % ( time.asctime(), object_definition['meta']['filename'], message )
-        self._append_to_file( message )
+        message = "%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message)
+        self._append_to_file(message)
 
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        message = "%s: %s" % ( time.asctime(), message )
-        self._append_to_file( message )
+        message = "%s: %s" % (time.asctime(), message)
+        self._append_to_file(message)
 
 
 class GitEventHandler(BaseEventHandler):
+
     def __init__(self, gitdir, source, modified_by, auto_init=False, ignore_errors=False):
         """
         Commits to git repo rooted in nagios configuration directory
@@ -132,7 +140,7 @@ class GitEventHandler(BaseEventHandler):
         if auto_init:
             try:
                 self._run_command('git status --short')
-            except EventHandlerError, e:
+            except EventHandlerError as e:
                 if e.errorcode == 128:
                     self._git_init()
         #self._run_command('git status --short')
@@ -153,13 +161,13 @@ class GitEventHandler(BaseEventHandler):
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout """
         cwd = self.gitdir
-        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         returncode = proc.returncode
-        if returncode > 0 and self.ignore_errors == False:
+        if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
-            errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
-            raise EventHandlerError( errorstring, errorcode=returncode, errorstring=stderr )
+            errorstring = errorstring % (command, returncode, stdout, stderr, getuser())
+            raise EventHandlerError(errorstring, errorcode=returncode, errorstring=stderr)
         return stdout
 
     def is_commited(self):
@@ -174,7 +182,7 @@ class GitEventHandler(BaseEventHandler):
             line = line.split()
             if len(line) < 2:
                 continue
-            result.append( {'status':line[0], 'filename': " ".join(line[1:])} )
+            result.append({'status': line[0], 'filename': " ".join(line[1:])})
         return result
 
     def _git_init(self, directory=None):
@@ -196,7 +204,7 @@ class GitEventHandler(BaseEventHandler):
             filelist = []
         self._update_author()
         # Lets strip out any single quotes from the message:
-        message = message.replace("'",'"')
+        message = message.replace("'", '"')
         if len(filelist) > 0:
             filename = "' '".join(filelist)
         command = "git commit '%s' -m '%s'" % (filename, message)
@@ -208,8 +216,8 @@ class GitEventHandler(BaseEventHandler):
         if self._is_dirty(filename):
             self._git_add(filename)
             self._git_commit(filename,
-                message="External changes commited in %s '%s'" %
-                        (object_definition.object_type, object_definition.get_shortname()))
+                             message="External changes commited in %s '%s'" %
+                            (object_definition.object_type, object_definition.get_shortname()))
 
     def save(self, object_definition, message):
         filename = object_definition.get_filename()
@@ -231,12 +239,14 @@ class GitEventHandler(BaseEventHandler):
     def write(self, object_definition, message):
         # When write is called ( something was written to file )
         # We will log it in a buffer, and commit when save() is called.
-        self.messages.append( " * %s" % message )
+        self.messages.append(" * %s" % message)
 
 
 class NagiosReloadHandler(BaseEventHandler):
+
     """ This handler reloads nagios every time that a change is made. This is only meant for small environments
     """
+
     def __init__(self, nagios_init, *args, **kwargs):
         import pynag.Control
         BaseEventHandler.__init__(self, *args, **kwargs)
@@ -267,6 +277,7 @@ class NagiosReloadHandler(BaseEventHandler):
         self.in_transaction = False
         self._reload()
 
+
 class EventHandlerError(Exception):
 
     def __init__(self, message, errorcode=None, errorstring=None):
@@ -276,4 +287,3 @@ class EventHandlerError(Exception):
 
     def __str__(self):
         return self.errorstring
-

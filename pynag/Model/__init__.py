@@ -78,6 +78,7 @@ except ImportError:
 
 
 class ObjectRelations(object):
+
     """ Static container for objects and their respective neighbours """
     # c['contact_name'] = [host1.get_id(),host2.get_id()]
     contact_hosts = defaultdict(set)
@@ -344,6 +345,7 @@ class ObjectRelations(object):
 
 
 class ObjectFetcher(object):
+
     """
     This class is a wrapper around pynag.Parsers.config. Is responsible for
     fetching dict objects from config.data and turning into high
@@ -511,6 +513,7 @@ class ObjectFetcher(object):
 
 
 class ObjectDefinition(object):
+
     """
     Holds one instance of one particular Object definition
 
@@ -672,7 +675,7 @@ class ObjectDefinition(object):
         for k in self._inherited_attributes.keys():
             if k not in all_keys:
                 all_keys.append(k)
-            #for k in self._meta.keys():
+            # for k in self._meta.keys():
         #    if k not in all_keys: all_keys.append(k)
         return all_keys
 
@@ -692,7 +695,7 @@ class ObjectDefinition(object):
 
             self.__object_id__ = str(hash(object_id))
 
-            ## this is good when troubleshooting ID issues:
+            # this is good when troubleshooting ID issues:
             # definition = self._original_attributes['meta']['raw_definition']
             # object_id = str((filename, definition))
             #self.__object_id__ = object_id
@@ -1475,7 +1478,7 @@ class Host(ObjectDefinition):
                                                        comment=comment,
                                                        timestamp=timestamp,
                                                        command_file=config.get_cfg_value('command_file')
-        )
+                                                       )
 
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
@@ -1615,9 +1618,9 @@ class Host(ObjectDefinition):
                 i.attribute_removefield('host_name', self.host_name)
                 if ((i.get_attribute('object_type').endswith("escalation") or
                      i.get_attribute('object_type').endswith("dependency"))
-                  and recursive is True and i.attribute_is_empty("host_name")
-                  and i.attribute_is_empty("hostgroup_name")):
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                   and recursive is True and i.attribute_is_empty("host_name")
+                   and i.attribute_is_empty("hostgroup_name")):
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
             # get these here as we might have deleted some in the block above
@@ -1626,8 +1629,8 @@ class Host(ObjectDefinition):
                 # remove from host/service escalations/dependencies
                 i.attribute_removefield('dependent_host_name', self.host_name)
                 if (i.get_attribute('object_type').endswith("dependency")
-                  and recursive is True and i.attribute_is_empty("dependent_host_name")
-                  and i.attribute_is_empty("dependent_hostgroup_name")):
+                   and recursive is True and i.attribute_is_empty("dependent_host_name")
+                   and i.attribute_is_empty("dependent_hostgroup_name")):
                     i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
@@ -1782,7 +1785,7 @@ class Service(ObjectDefinition):
                                                       comment=comment,
                                                       timestamp=timestamp,
                                                       command_file=config.get_cfg_value('command_file')
-        )
+                                                      )
 
     def downtime(self, start_time=None, end_time=None, trigger_id=0, duration=7200, author=None,
                  comment='Downtime scheduled by pynag', recursive=False):
@@ -1901,7 +1904,6 @@ class Service(ObjectDefinition):
         return _remove_from_contactgroup(self, contactgroup)
 
     def merge_with_host(self):
-
         """ Moves a service from its original file to the same file as the
         first effective host """
 
@@ -2024,8 +2026,8 @@ class Contact(ObjectDefinition):
                 # remove contact from objects
                 i.attribute_removefield('contacts', self.contact_name)
                 if (i.get_attribute('object_type').endswith("escalation")
-                  and recursive is True and i.attribute_is_empty("contacts")
-                  and i.attribute_is_empty("contact_groups")):
+                   and recursive is True and i.attribute_is_empty("contacts")
+                   and i.attribute_is_empty("contact_groups")):
                     # no contacts or contact_groups defined for this escalation
                     i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
@@ -2157,14 +2159,14 @@ class Contactgroup(ObjectDefinition):
                 # remove contactgroup from objects
                 i.attribute_removefield('contact_groups', self.contactgroup_name)
                 if (i.get_attribute('object_type').endswith("escalation")
-                  and recursive is True and i.attribute_is_empty("contacts") 
-                  and i.attribute_is_empty("contact_groups")): 
+                   and recursive is True and i.attribute_is_empty("contacts")
+                   and i.attribute_is_empty("contact_groups")):
                     # no contacts or contact_groups defined for this escalation
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
         # Call parent to get delete myself
-        return super(self.__class__, self).delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+        return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
 
     def rename(self, shortname):
         """ Renames this object, and triggers a change in related items as well.
@@ -2242,7 +2244,7 @@ class Hostgroup(ObjectDefinition):
         """
         if recursive is True and self.hostgroup_name:
             for i in Service.objects.filter(hostgroup_name=self.hostgroup_name, host_name__exists=False):
-                #remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
+                # remove only if self.hostgroup_name is the only hostgroup and no host_name is specified
                 i.delete(recursive=recursive)
         if cleanup_related_items is True and self.hostgroup_name:
             hostgroups = Hostgroup.objects.filter(hostgroup_members__has_field=self.hostgroup_name)
@@ -2262,9 +2264,9 @@ class Hostgroup(ObjectDefinition):
                 i.attribute_removefield('hostgroup_name', self.hostgroup_name)
                 if ((i.get_attribute('object_type').endswith("escalation") or
                      i.get_attribute('object_type').endswith("dependency"))
-                  and recursive is True and i.attribute_is_empty("host_name")
-                  and i.attribute_is_empty("hostgroup_name")):
-                    i.delete(recursive=recursive,cleanup_related_items=cleanup_related_items)
+                   and recursive is True and i.attribute_is_empty("host_name")
+                   and i.attribute_is_empty("hostgroup_name")):
+                    i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
             # get these here as we might have deleted some in the block above
@@ -2273,8 +2275,8 @@ class Hostgroup(ObjectDefinition):
                 # remove from host/service escalations/dependencies
                 i.attribute_removefield('dependent_hostgroup_name', self.hostgroup_name)
                 if (i.get_attribute('object_type').endswith("dependency")
-                  and recursive is True and i.attribute_is_empty("dependent_host_name")
-                  and i.attribute_is_empty("dependent_hostgroup_name")):
+                   and recursive is True and i.attribute_is_empty("dependent_host_name")
+                   and i.attribute_is_empty("dependent_hostgroup_name")):
                     i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()

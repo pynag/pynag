@@ -1,10 +1,13 @@
 
-def add_host_comment(host_name, 
-                     persistent, 
-                     author, 
-                     comment, 
-                     command_file=None, 
-                     timestamp=0):
+
+def add_host_comment(
+    host_name,
+    persistent,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Adds a comment to a particular host.  If the "persistent" field
     is set to zero (0), the comment will be deleted the next time
@@ -14,13 +17,16 @@ def add_host_comment(host_name,
     return send_command("ADD_HOST_COMMENT",
                         command_file,
                         timestamp,
-                        host_name, 
-                        persistent, 
-                        author, 
+                        host_name,
+                        persistent,
+                        author,
                         comment)
 
-def shutdown_program(command_file=None, 
-                     timestamp=0):
+
+def shutdown_program(
+    command_file=None,
+    timestamp=0
+):
     """
     Shuts down the Nagios process.
     """
@@ -29,9 +35,12 @@ def shutdown_program(command_file=None,
                         timestamp,
                         )
 
-def disable_servicegroup_passive_svc_checks(servicegroup_name, 
-                                            command_file=None, 
-                                            timestamp=0):
+
+def disable_servicegroup_passive_svc_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables the acceptance and processing of passive checks for all
     services in a particular servicegroup.
@@ -41,9 +50,12 @@ def disable_servicegroup_passive_svc_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def enable_servicegroup_passive_host_checks(servicegroup_name, 
-                                            command_file=None, 
-                                            timestamp=0):
+
+def enable_servicegroup_passive_host_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables the acceptance and processing of passive checks for all
     hosts that have services that are members of a particular
@@ -54,9 +66,12 @@ def enable_servicegroup_passive_host_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def disable_servicegroup_passive_host_checks(servicegroup_name, 
-                                             command_file=None, 
-                                             timestamp=0):
+
+def disable_servicegroup_passive_host_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables the acceptance and processing of passive checks for all
     hosts that have services that are members of a particular
@@ -67,9 +82,12 @@ def disable_servicegroup_passive_host_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def change_global_host_event_handler(event_handler_command, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def change_global_host_event_handler(
+    event_handler_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the global host event handler command to be that
     specified by the "event_handler_command" option.  The
@@ -83,9 +101,12 @@ def change_global_host_event_handler(event_handler_command,
                         timestamp,
                         event_handler_command)
 
-def change_global_svc_event_handler(event_handler_command, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def change_global_svc_event_handler(
+    event_handler_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the global service event handler command to be that
     specified by the "event_handler_command" option.  The
@@ -99,10 +120,13 @@ def change_global_svc_event_handler(event_handler_command,
                         timestamp,
                         event_handler_command)
 
-def change_host_event_handler(host_name, 
-                              event_handler_command, 
-                              command_file=None, 
-                              timestamp=0):
+
+def change_host_event_handler(
+    host_name,
+    event_handler_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the event handler command for a particular host to be
     that specified by the "event_handler_command" option.  The
@@ -114,14 +138,17 @@ def change_host_event_handler(host_name,
     return send_command("CHANGE_HOST_EVENT_HANDLER",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         event_handler_command)
 
-def change_svc_event_handler(host_name, 
-                             service_description, 
-                             event_handler_command, 
-                             command_file=None, 
-                             timestamp=0):
+
+def change_svc_event_handler(
+    host_name,
+    service_description,
+    event_handler_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the event handler command for a particular service to be
     that specified by the "event_handler_command" option.  The
@@ -133,14 +160,17 @@ def change_svc_event_handler(host_name,
     return send_command("CHANGE_SVC_EVENT_HANDLER",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         event_handler_command)
 
-def change_host_check_command(host_name, 
-                              check_command, 
-                              command_file=None, 
-                              timestamp=0):
+
+def change_host_check_command(
+    host_name,
+    check_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the check command for a particular host to be that
     specified by the "check_command" option.  The "check_command"
@@ -151,14 +181,17 @@ def change_host_check_command(host_name,
     return send_command("CHANGE_HOST_CHECK_COMMAND",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_command)
 
-def change_svc_check_command(host_name, 
-                             service_description, 
-                             check_command, 
-                             command_file=None, 
-                             timestamp=0):
+
+def change_svc_check_command(
+    host_name,
+    service_description,
+    check_command,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the check command for a particular service to be that
     specified by the "check_command" option.  The "check_command"
@@ -169,14 +202,17 @@ def change_svc_check_command(host_name,
     return send_command("CHANGE_SVC_CHECK_COMMAND",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_command)
 
-def change_normal_host_check_interval(host_name, 
-                                      check_interval, 
-                                      command_file=None, 
-                                      timestamp=0):
+
+def change_normal_host_check_interval(
+    host_name,
+    check_interval,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the normal (regularly scheduled) check interval for a
     particular host.
@@ -184,13 +220,16 @@ def change_normal_host_check_interval(host_name,
     return send_command("CHANGE_NORMAL_HOST_CHECK_INTERVAL",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_interval)
 
-def enable_svc_notifications(host_name, 
-                             service_description, 
-                             command_file=None, 
-                             timestamp=0):
+
+def enable_svc_notifications(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for a particular service.  Notifications
     will be sent out for the service only if notifications are
@@ -199,14 +238,17 @@ def enable_svc_notifications(host_name,
     return send_command("ENABLE_SVC_NOTIFICATIONS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def change_normal_svc_check_interval(host_name, 
-                                     service_description, 
-                                     check_interval, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def change_normal_svc_check_interval(
+    host_name,
+    service_description,
+    check_interval,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the normal (regularly scheduled) check interval for a
     particular service
@@ -214,29 +256,35 @@ def change_normal_svc_check_interval(host_name,
     return send_command("CHANGE_NORMAL_SVC_CHECK_INTERVAL",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_interval)
 
-def change_retry_svc_check_interval(host_name, 
-                                    service_description, 
-                                    check_interval, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def change_retry_svc_check_interval(
+    host_name,
+    service_description,
+    check_interval,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the retry check interval for a particular service.
     """
     return send_command("CHANGE_RETRY_SVC_CHECK_INTERVAL",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_interval)
 
-def change_max_host_check_attempts(host_name, 
-                                   check_attempts, 
-                                   command_file=None, 
-                                   timestamp=0):
+
+def change_max_host_check_attempts(
+    host_name,
+    check_attempts,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the maximum number of check attempts (retries) for a
     particular host.
@@ -244,14 +292,17 @@ def change_max_host_check_attempts(host_name,
     return send_command("CHANGE_MAX_HOST_CHECK_ATTEMPTS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_attempts)
 
-def change_max_svc_check_attempts(host_name, 
-                                  service_description, 
-                                  check_attempts, 
-                                  command_file=None, 
-                                  timestamp=0):
+
+def change_max_svc_check_attempts(
+    host_name,
+    service_description,
+    check_attempts,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the maximum number of check attempts (retries) for a
     particular service.
@@ -259,16 +310,19 @@ def change_max_svc_check_attempts(host_name,
     return send_command("CHANGE_MAX_SVC_CHECK_ATTEMPTS",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_attempts)
 
-def process_service_check_result(host_name, 
-                                 service_description, 
-                                 return_code, 
-                                 plugin_output, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def process_service_check_result(
+    host_name,
+    service_description,
+    return_code,
+    plugin_output,
+    command_file=None,
+    timestamp=0
+):
     """
     This is used to submit a passive check result for a particular
     service.  The "return_code" field should be one of the
@@ -279,16 +333,19 @@ def process_service_check_result(host_name,
     return send_command("PROCESS_SERVICE_CHECK_RESULT",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        return_code, 
+                        host_name,
+                        service_description,
+                        return_code,
                         plugin_output)
 
-def process_host_check_result(host_name, 
-                              status_code, 
-                              plugin_output, 
-                              command_file=None, 
-                              timestamp=0):
+
+def process_host_check_result(
+    host_name,
+    status_code,
+    plugin_output,
+    command_file=None,
+    timestamp=0
+):
     """
     This is used to submit a passive check result for a particular
     host.  The "status_code" indicates the state of the host check
@@ -299,13 +356,16 @@ def process_host_check_result(host_name,
     return send_command("PROCESS_HOST_CHECK_RESULT",
                         command_file,
                         timestamp,
-                        host_name, 
-                        status_code, 
+                        host_name,
+                        status_code,
                         plugin_output)
 
-def remove_host_acknowledgement(host_name, 
-                                command_file=None, 
-                                timestamp=0):
+
+def remove_host_acknowledgement(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     This removes the problem acknowledgement for a particular host.
     Once the acknowledgement has been removed, notifications can
@@ -316,10 +376,13 @@ def remove_host_acknowledgement(host_name,
                         timestamp,
                         host_name)
 
-def remove_svc_acknowledgement(host_name, 
-                               service_description, 
-                               command_file=None, 
-                               timestamp=0):
+
+def remove_svc_acknowledgement(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     This removes the problem acknowledgement for a particular
     service.  Once the acknowledgement has been removed,
@@ -328,19 +391,22 @@ def remove_svc_acknowledgement(host_name,
     return send_command("REMOVE_SVC_ACKNOWLEDGEMENT",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def schedule_host_downtime(host_name, 
-                           start_time, 
-                           end_time, 
-                           fixed, 
-                           trigger_id, 
-                           duration, 
-                           author, 
-                           comment, 
-                           command_file=None, 
-                           timestamp=0):
+
+def schedule_host_downtime(
+    host_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for a specified host.  If the "fixed"
     argument is set to one (1), downtime will start and end at the
@@ -357,26 +423,29 @@ def schedule_host_downtime(host_name,
     return send_command("SCHEDULE_HOST_DOWNTIME",
                         command_file,
                         timestamp,
-                        host_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        host_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_svc_downtime(host_name, 
-                          service_description, 
-                          start_time, 
-                          end_time, 
-                          fixed, 
-                          trigger_id, 
-                          duration, 
-                          author, 
-                          comment, 
-                          command_file=None, 
-                          timestamp=0):
+
+def schedule_svc_downtime(
+    host_name,
+    service_description,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for a specified service.  If the "fixed"
     argument is set to one (1), downtime will start and end at the
@@ -393,39 +462,45 @@ def schedule_svc_downtime(host_name,
     return send_command("SCHEDULE_SVC_DOWNTIME",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        host_name,
+                        service_description,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def disable_svc_notifications(host_name, 
-                              service_description, 
-                              command_file=None, 
-                              timestamp=0):
+
+def disable_svc_notifications(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for a particular service.
     """
     return send_command("DISABLE_SVC_NOTIFICATIONS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def schedule_servicegroup_svc_downtime(servicegroup_name, 
-                                       start_time, 
-                                       end_time, 
-                                       fixed, 
-                                       trigger_id, 
-                                       duration, 
-                                       author, 
-                                       comment, 
-                                       command_file=None, 
-                                       timestamp=0):
+
+def schedule_servicegroup_svc_downtime(
+    servicegroup_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for all services in a specified servicegroup.
     If the "fixed" argument is set to one (1), downtime will start
@@ -442,25 +517,28 @@ def schedule_servicegroup_svc_downtime(servicegroup_name,
     return send_command("SCHEDULE_SERVICEGROUP_SVC_DOWNTIME",
                         command_file,
                         timestamp,
-                        servicegroup_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        servicegroup_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_servicegroup_host_downtime(servicegroup_name, 
-                                        start_time, 
-                                        end_time, 
-                                        fixed, 
-                                        trigger_id, 
-                                        duration, 
-                                        author, 
-                                        comment, 
-                                        command_file=None, 
-                                        timestamp=0):
+
+def schedule_servicegroup_host_downtime(
+    servicegroup_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for all hosts that have services in a
     specified servicegroup.  If the "fixed" argument is set to one
@@ -478,25 +556,28 @@ def schedule_servicegroup_host_downtime(servicegroup_name,
     return send_command("SCHEDULE_SERVICEGROUP_HOST_DOWNTIME",
                         command_file,
                         timestamp,
-                        servicegroup_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        servicegroup_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_host_svc_downtime(host_name, 
-                               start_time, 
-                               end_time, 
-                               fixed, 
-                               trigger_id, 
-                               duration, 
-                               author, 
-                               comment, 
-                               command_file=None, 
-                               timestamp=0):
+
+def schedule_host_svc_downtime(
+    host_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for all services associated with a particular
     host.  If the "fixed" argument is set to one (1), downtime will
@@ -513,25 +594,28 @@ def schedule_host_svc_downtime(host_name,
     return send_command("SCHEDULE_HOST_SVC_DOWNTIME",
                         command_file,
                         timestamp,
-                        host_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        host_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_hostgroup_host_downtime(hostgroup_name, 
-                                     start_time, 
-                                     end_time, 
-                                     fixed, 
-                                     trigger_id, 
-                                     duration, 
-                                     author, 
-                                     comment, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def schedule_hostgroup_host_downtime(
+    hostgroup_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for all hosts in a specified hostgroup.  If
     the "fixed" argument is set to one (1), downtime will start and
@@ -548,25 +632,28 @@ def schedule_hostgroup_host_downtime(hostgroup_name,
     return send_command("SCHEDULE_HOSTGROUP_HOST_DOWNTIME",
                         command_file,
                         timestamp,
-                        hostgroup_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        hostgroup_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_hostgroup_svc_downtime(hostgroup_name, 
-                                    start_time, 
-                                    end_time, 
-                                    fixed, 
-                                    trigger_id, 
-                                    duration, 
-                                    author, 
-                                    comment, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def schedule_hostgroup_svc_downtime(
+    hostgroup_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for all services associated with hosts in a
     specified servicegroup.  If the "fixed" argument is set to one
@@ -584,18 +671,21 @@ def schedule_hostgroup_svc_downtime(hostgroup_name,
     return send_command("SCHEDULE_HOSTGROUP_SVC_DOWNTIME",
                         command_file,
                         timestamp,
-                        hostgroup_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        hostgroup_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def del_host_downtime(downtime_id, 
-                      command_file=None, 
-                      timestamp=0):
+
+def del_host_downtime(
+    downtime_id,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes the host downtime entry that has an ID number matching
     the "downtime_id" argument.  If the downtime is currently in
@@ -607,9 +697,12 @@ def del_host_downtime(downtime_id,
                         timestamp,
                         downtime_id)
 
-def del_svc_downtime(downtime_id, 
-                     command_file=None, 
-                     timestamp=0):
+
+def del_svc_downtime(
+    downtime_id,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes the service downtime entry that has an ID number
     matching the "downtime_id" argument.  If the downtime is
@@ -622,10 +715,13 @@ def del_svc_downtime(downtime_id,
                         timestamp,
                         downtime_id)
 
-def schedule_host_check(host_name, 
-                        check_time, 
-                        command_file=None, 
-                        timestamp=0):
+
+def schedule_host_check(
+    host_name,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules the next active check of a particular host at
     "check_time".  The "check_time" argument is specified in time_t
@@ -640,13 +736,16 @@ def schedule_host_check(host_name,
     return send_command("SCHEDULE_HOST_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_time)
 
-def schedule_forced_host_check(host_name, 
-                               check_time, 
-                               command_file=None, 
-                               timestamp=0):
+
+def schedule_forced_host_check(
+    host_name,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules a forced active check of a particular host at
     "check_time".  The "check_time" argument is specified in time_t
@@ -658,14 +757,17 @@ def schedule_forced_host_check(host_name,
     return send_command("SCHEDULE_FORCED_HOST_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_time)
 
-def schedule_forced_svc_check(host_name, 
-                              service_description, 
-                              check_time, 
-                              command_file=None, 
-                              timestamp=0):
+
+def schedule_forced_svc_check(
+    host_name,
+    service_description,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules a forced active check of a particular service at
     "check_time".  The "check_time" argument is specified in time_t
@@ -677,13 +779,16 @@ def schedule_forced_svc_check(host_name,
     return send_command("SCHEDULE_FORCED_SVC_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_time)
 
-def del_all_host_comments(host_name, 
-                          command_file=None, 
-                          timestamp=0):
+
+def del_all_host_comments(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes all comments assocated with a particular host.
     """
@@ -692,10 +797,13 @@ def del_all_host_comments(host_name,
                         timestamp,
                         host_name)
 
-def schedule_forced_host_svc_checks(host_name, 
-                                    check_time, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def schedule_forced_host_svc_checks(
+    host_name,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules a forced active check of all services associated with
     a particular host at "check_time".  The "check_time" argument is
@@ -707,13 +815,16 @@ def schedule_forced_host_svc_checks(host_name,
     return send_command("SCHEDULE_FORCED_HOST_SVC_CHECKS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_time)
 
-def process_file(file_name, 
-                 delete, 
-                 command_file=None, 
-                 timestamp=0):
+
+def process_file(
+    file_name,
+    delete,
+    command_file=None,
+    timestamp=0
+):
     """
     Directs Nagios to process all external commands that are found
     in the file specified by the <file_name> argument.  If the
@@ -724,13 +835,16 @@ def process_file(file_name,
     return send_command("PROCESS_FILE",
                         command_file,
                         timestamp,
-                        file_name, 
+                        file_name,
                         delete)
 
-def change_host_check_timeperiod(host_name, 
-                                 check_timeperod, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def change_host_check_timeperiod(
+    host_name,
+    check_timeperod,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the check timeperiod for a particular host to what is
     specified by the "check_timeperiod" option.  The
@@ -742,15 +856,18 @@ def change_host_check_timeperiod(host_name,
     return send_command("CHANGE_HOST_CHECK_TIMEPERIOD",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_timeperod)
 
-def send_custom_host_notification(host_name, 
-                                  options, 
-                                  author, 
-                                  comment, 
-                                  command_file=None, 
-                                  timestamp=0):
+
+def send_custom_host_notification(
+    host_name,
+    options,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Allows you to send a custom host notification.  Very useful in
     dire situations, emergencies or to communicate with all admins
@@ -770,18 +887,21 @@ def send_custom_host_notification(host_name,
     return send_command("SEND_CUSTOM_HOST_NOTIFICATION",
                         command_file,
                         timestamp,
-                        host_name, 
-                        options, 
-                        author, 
+                        host_name,
+                        options,
+                        author,
                         comment)
 
-def send_custom_svc_notification(host_name, 
-                                 service_description, 
-                                 options, 
-                                 author, 
-                                 comment, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def send_custom_svc_notification(
+    host_name,
+    service_description,
+    options,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Allows you to send a custom service notification.  Very useful
     in dire situations, emergencies or to communicate with all
@@ -801,32 +921,38 @@ def send_custom_svc_notification(host_name,
     return send_command("SEND_CUSTOM_SVC_NOTIFICATION",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        options, 
-                        author, 
+                        host_name,
+                        service_description,
+                        options,
+                        author,
                         comment)
 
-def change_retry_host_check_interval(host_name, 
-                                     service_description, 
-                                     check_interval, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def change_retry_host_check_interval(
+    host_name,
+    service_description,
+    check_interval,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the retry check interval for a particular host.
     """
     return send_command("CHANGE_RETRY_HOST_CHECK_INTERVAL",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_interval)
 
-def change_svc_check_timeperiod(host_name, 
-                                service_description, 
-                                check_timeperiod, 
-                                command_file=None, 
-                                timestamp=0):
+
+def change_svc_check_timeperiod(
+    host_name,
+    service_description,
+    check_timeperiod,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the check timeperiod for a particular service to what is
     specified by the "check_timeperiod" option.  The
@@ -838,73 +964,104 @@ def change_svc_check_timeperiod(host_name,
     return send_command("CHANGE_SVC_CHECK_TIMEPERIOD",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_timeperiod)
 
-def change_custom_host_var(host_name, 
-                           varname, 
-                           varvalue, 
-                           command_file=None, 
-                           timestamp=0):
+
+def change_host_check_timeperiod(
+    host_name,
+    timeperiod,
+    command_file=None,
+    timestamp=0
+):
+    """
+    Changes the valid check period for the specified host.
+    """
+    return send_command("CHANGE_HOST_CHECK_TIMEPERIOD",
+                        command_file,
+                        timestamp,
+                        host_name,
+                        timeperiod)
+
+
+def change_custom_host_var(
+    host_name,
+    varname,
+    varvalue,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the value of a custom host variable.
     """
     return send_command("CHANGE_CUSTOM_HOST_VAR",
                         command_file,
                         timestamp,
-                        host_name, 
-                        varname, 
+                        host_name,
+                        varname,
                         varvalue)
 
-def del_all_svc_comments(host_name, 
-                         service_description, 
-                         command_file=None, 
-                         timestamp=0):
+
+def del_all_svc_comments(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes all comments associated with a particular service.
     """
     return send_command("DEL_ALL_SVC_COMMENTS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def change_custom_svc_var(host_name, 
-                          service_description, 
-                          varname, 
-                          varvalue, 
-                          command_file=None, 
-                          timestamp=0):
+
+def change_custom_svc_var(
+    host_name,
+    service_description,
+    varname,
+    varvalue,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the value of a custom service variable.
     """
     return send_command("CHANGE_CUSTOM_SVC_VAR",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        varname, 
+                        host_name,
+                        service_description,
+                        varname,
                         varvalue)
 
-def change_custom_contact_var(contact_name, 
-                              varname, 
-                              varvalue, 
-                              command_file=None, 
-                              timestamp=0):
+
+def change_custom_contact_var(
+    contact_name,
+    varname,
+    varvalue,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the value of a custom contact variable.
     """
     return send_command("CHANGE_CUSTOM_CONTACT_VAR",
                         command_file,
                         timestamp,
-                        contact_name, 
-                        varname, 
+                        contact_name,
+                        varname,
                         varvalue)
 
-def enable_contact_host_notifications(contact_name, 
-                                      command_file=None, 
-                                      timestamp=0):
+
+def enable_contact_host_notifications(
+    contact_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables host notifications for a particular contact.
     """
@@ -913,9 +1070,12 @@ def enable_contact_host_notifications(contact_name,
                         timestamp,
                         contact_name)
 
-def disable_contact_host_notifications(contact_name, 
-                                       command_file=None, 
-                                       timestamp=0):
+
+def disable_contact_host_notifications(
+    contact_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables host notifications for a particular contact.
     """
@@ -924,9 +1084,12 @@ def disable_contact_host_notifications(contact_name,
                         timestamp,
                         contact_name)
 
-def enable_contact_svc_notifications(contact_name, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def enable_contact_svc_notifications(
+    contact_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables service notifications for a particular contact.
     """
@@ -935,9 +1098,12 @@ def enable_contact_svc_notifications(contact_name,
                         timestamp,
                         contact_name)
 
-def disable_contact_svc_notifications(contact_name, 
-                                      command_file=None, 
-                                      timestamp=0):
+
+def disable_contact_svc_notifications(
+    contact_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables service notifications for a particular contact.
     """
@@ -946,9 +1112,12 @@ def disable_contact_svc_notifications(contact_name,
                         timestamp,
                         contact_name)
 
-def enable_contactgroup_host_notifications(contactgroup_name, 
-                                           command_file=None, 
-                                           timestamp=0):
+
+def enable_contactgroup_host_notifications(
+    contactgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables host notifications for all contacts in a particular
     contactgroup.
@@ -958,9 +1127,12 @@ def enable_contactgroup_host_notifications(contactgroup_name,
                         timestamp,
                         contactgroup_name)
 
-def disable_contactgroup_host_notifications(contactgroup_name, 
-                                            command_file=None, 
-                                            timestamp=0):
+
+def disable_contactgroup_host_notifications(
+    contactgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables host notifications for all contacts in a particular
     contactgroup.
@@ -970,9 +1142,12 @@ def disable_contactgroup_host_notifications(contactgroup_name,
                         timestamp,
                         contactgroup_name)
 
-def enable_contactgroup_svc_notifications(contactgroup_name, 
-                                          command_file=None, 
-                                          timestamp=0):
+
+def enable_contactgroup_svc_notifications(
+    contactgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables service notifications for all contacts in a particular
     contactgroup.
@@ -982,9 +1157,12 @@ def enable_contactgroup_svc_notifications(contactgroup_name,
                         timestamp,
                         contactgroup_name)
 
-def disable_contactgroup_svc_notifications(contactgroup_name, 
-                                           command_file=None, 
-                                           timestamp=0):
+
+def disable_contactgroup_svc_notifications(
+    contactgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables service notifications for all contacts in a particular
     contactgroup.
@@ -994,9 +1172,12 @@ def disable_contactgroup_svc_notifications(contactgroup_name,
                         timestamp,
                         contactgroup_name)
 
-def enable_host_notifications(host_name, 
-                              command_file=None, 
-                              timestamp=0):
+
+def enable_host_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for a particular host.  Notifications will
     be sent out for the host only if notifications are enabled on a
@@ -1007,24 +1188,30 @@ def enable_host_notifications(host_name,
                         timestamp,
                         host_name)
 
-def disable_svc_flap_detection(host_name, 
-                               service_description, 
-                               command_file=None, 
-                               timestamp=0):
+
+def disable_svc_flap_detection(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables flap detection for the specified service.
     """
     return send_command("DISABLE_SVC_FLAP_DETECTION",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def change_svc_notification_timeperiod(host_name, 
-                                       service_description, 
-                                       notification_timeperiod, 
-                                       command_file=None, 
-                                       timestamp=0):
+
+def change_svc_notification_timeperiod(
+    host_name,
+    service_description,
+    notification_timeperiod,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the notification timeperiod for a particular service to
     what is specified by the "notification_timeperiod" option.  The
@@ -1036,14 +1223,17 @@ def change_svc_notification_timeperiod(host_name,
     return send_command("CHANGE_SVC_NOTIFICATION_TIMEPERIOD",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         notification_timeperiod)
 
-def change_contact_svc_notification_timeperiod(contact_name, 
-                                               notification_timeperiod, 
-                                               command_file=None, 
-                                               timestamp=0):
+
+def change_contact_svc_notification_timeperiod(
+    contact_name,
+    notification_timeperiod,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the service notification timeperiod for a particular
     contact to what is specified by the "notification_timeperiod"
@@ -1055,13 +1245,16 @@ def change_contact_svc_notification_timeperiod(contact_name,
     return send_command("CHANGE_CONTACT_SVC_NOTIFICATION_TIMEPERIOD",
                         command_file,
                         timestamp,
-                        contact_name, 
+                        contact_name,
                         notification_timeperiod)
 
-def change_contact_host_notification_timeperiod(contact_name, 
-                                                notification_timeperiod, 
-                                                command_file=None, 
-                                                timestamp=0):
+
+def change_contact_host_notification_timeperiod(
+    contact_name,
+    notification_timeperiod,
+    command_file=None,
+    timestamp=0
+):
     """
     Changes the host notification timeperiod for a particular
     contact to what is specified by the "notification_timeperiod"
@@ -1073,13 +1266,16 @@ def change_contact_host_notification_timeperiod(contact_name,
     return send_command("CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD",
                         command_file,
                         timestamp,
-                        contact_name, 
+                        contact_name,
                         notification_timeperiod)
 
-def change_host_modattr(host_name, 
-                        value, 
-                        command_file=None, 
-                        timestamp=0):
+
+def change_host_modattr(
+    host_name,
+    value,
+    command_file=None,
+    timestamp=0
+):
     """
     This command changes the modified attributes value for the
     specified host.  Modified attributes values are used by Nagios
@@ -1092,14 +1288,17 @@ def change_host_modattr(host_name,
     return send_command("CHANGE_HOST_MODATTR",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         value)
 
-def change_svc_modattr(host_name, 
-                       service_description, 
-                       value, 
-                       command_file=None, 
-                       timestamp=0):
+
+def change_svc_modattr(
+    host_name,
+    service_description,
+    value,
+    command_file=None,
+    timestamp=0
+):
     """
     This command changes the modified attributes value for the
     specified service.  Modified attributes values are used by
@@ -1112,14 +1311,17 @@ def change_svc_modattr(host_name,
     return send_command("CHANGE_SVC_MODATTR",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         value)
 
-def change_contact_modattr(contact_name, 
-                           value, 
-                           command_file=None, 
-                           timestamp=0):
+
+def change_contact_modattr(
+    contact_name,
+    value,
+    command_file=None,
+    timestamp=0
+):
     """
     This command changes the modified attributes value for the
     specified contact.  Modified attributes values are used by
@@ -1132,13 +1334,16 @@ def change_contact_modattr(contact_name,
     return send_command("CHANGE_CONTACT_MODATTR",
                         command_file,
                         timestamp,
-                        contact_name, 
+                        contact_name,
                         value)
 
-def change_contact_modhattr(contact_name, 
-                            value, 
-                            command_file=None, 
-                            timestamp=0):
+
+def change_contact_modhattr(
+    contact_name,
+    value,
+    command_file=None,
+    timestamp=0
+):
     """
     This command changes the modified host attributes value for the
     specified contact.  Modified attributes values are used by
@@ -1151,13 +1356,16 @@ def change_contact_modhattr(contact_name,
     return send_command("CHANGE_CONTACT_MODHATTR",
                         command_file,
                         timestamp,
-                        contact_name, 
+                        contact_name,
                         value)
 
-def change_contact_modsattr(contact_name, 
-                            value, 
-                            command_file=None, 
-                            timestamp=0):
+
+def change_contact_modsattr(
+    contact_name,
+    value,
+    command_file=None,
+    timestamp=0
+):
     """
     This command changes the modified service attributes value for
     the specified contact.  Modified attributes values are used by
@@ -1170,12 +1378,15 @@ def change_contact_modsattr(contact_name,
     return send_command("CHANGE_CONTACT_MODSATTR",
                         command_file,
                         timestamp,
-                        contact_name, 
+                        contact_name,
                         value)
 
-def disable_host_notifications(host_name, 
-                               command_file=None, 
-                               timestamp=0):
+
+def disable_host_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for a particular host.
     """
@@ -1184,9 +1395,12 @@ def disable_host_notifications(host_name,
                         timestamp,
                         host_name)
 
-def enable_all_notifications_beyond_host(host_name, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def enable_all_notifications_beyond_host(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all hosts and services "beyond" (e.g.
     on all child hosts of) the specified host.  The current
@@ -1199,9 +1413,12 @@ def enable_all_notifications_beyond_host(host_name,
                         timestamp,
                         host_name)
 
-def disable_all_notifications_beyond_host(host_name, 
-                                          command_file=None, 
-                                          timestamp=0):
+
+def disable_all_notifications_beyond_host(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all hosts and services "beyond" (e.g.
     on all child hosts of) the specified host.  The current
@@ -1212,9 +1429,12 @@ def disable_all_notifications_beyond_host(host_name,
                         timestamp,
                         host_name)
 
-def enable_host_and_child_notifications(host_name, 
-                                        command_file=None, 
-                                        timestamp=0):
+
+def enable_host_and_child_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for the specified host, as well as all
     hosts "beyond" (e.g. on all child hosts of) the specified host.
@@ -1226,13 +1446,16 @@ def enable_host_and_child_notifications(host_name,
                         timestamp,
                         host_name)
 
-def add_svc_comment(host_name, 
-                    service_description, 
-                    persistent, 
-                    author, 
-                    comment, 
-                    command_file=None, 
-                    timestamp=0):
+
+def add_svc_comment(
+    host_name,
+    service_description,
+    persistent,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Adds a comment to a particular service.  If the "persistent"
     field is set to zero (0), the comment will be deleted the next
@@ -1242,15 +1465,18 @@ def add_svc_comment(host_name,
     return send_command("ADD_SVC_COMMENT",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        persistent, 
-                        author, 
+                        host_name,
+                        service_description,
+                        persistent,
+                        author,
                         comment)
 
-def disable_host_and_child_notifications(host_name, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def disable_host_and_child_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for the specified host, as well as all
     hosts "beyond" (e.g. on all child hosts of) the specified host.
@@ -1260,10 +1486,13 @@ def disable_host_and_child_notifications(host_name,
                         timestamp,
                         host_name)
 
-def set_host_notification_number(host_name, 
-                                 notification_number, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def set_host_notification_number(
+    host_name,
+    notification_number,
+    command_file=None,
+    timestamp=0
+):
     """
     Sets the current notification number for a particular host.  A
     value of 0 indicates that no notification has yet been sent for
@@ -1276,14 +1505,17 @@ def set_host_notification_number(host_name,
     return send_command("SET_HOST_NOTIFICATION_NUMBER",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         notification_number)
 
-def set_svc_notification_number(host_name, 
-                                service_description, 
-                                notification_number, 
-                                command_file=None, 
-                                timestamp=0):
+
+def set_svc_notification_number(
+    host_name,
+    service_description,
+    notification_number,
+    command_file=None,
+    timestamp=0
+):
     """
     Sets the current notification number for a particular service.
     A value of 0 indicates that no notification has yet been sent
@@ -1297,12 +1529,15 @@ def set_svc_notification_number(host_name,
     return send_command("SET_SVC_NOTIFICATION_NUMBER",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         notification_number)
 
-def enable_service_freshness_checks(command_file=None, 
-                                    timestamp=0):
+
+def enable_service_freshness_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables freshness checks of all services on a program-wide
     basis.  Individual services that have freshness checks disabled
@@ -1313,8 +1548,11 @@ def enable_service_freshness_checks(command_file=None,
                         timestamp,
                         )
 
-def enable_host_freshness_checks(command_file=None, 
-                                 timestamp=0):
+
+def enable_host_freshness_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables freshness checks of all hosts on a program-wide basis.
     Individual hosts that have freshness checks disabled will not be
@@ -1325,8 +1563,11 @@ def enable_host_freshness_checks(command_file=None,
                         timestamp,
                         )
 
-def disable_service_freshness_checks(command_file=None, 
-                                     timestamp=0):
+
+def disable_service_freshness_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables freshness checks of all services on a program-wide
     basis.
@@ -1336,8 +1577,11 @@ def disable_service_freshness_checks(command_file=None,
                         timestamp,
                         )
 
-def disable_host_freshness_checks(command_file=None, 
-                                  timestamp=0):
+
+def disable_host_freshness_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables freshness checks of all hosts on a program-wide basis.
     """
@@ -1346,16 +1590,19 @@ def disable_host_freshness_checks(command_file=None,
                         timestamp,
                         )
 
-def schedule_and_propagate_triggered_host_downtime(host_name, 
-                                                   start_time, 
-                                                   end_time, 
-                                                   fixed, 
-                                                   trigger_id, 
-                                                   duration, 
-                                                   author, 
-                                                   comment, 
-                                                   command_file=None, 
-                                                   timestamp=0):
+
+def schedule_and_propagate_triggered_host_downtime(
+    host_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for a specified host and all of its children
     (hosts).  If the "fixed" argument is set to one (1), downtime
@@ -1375,25 +1622,28 @@ def schedule_and_propagate_triggered_host_downtime(host_name,
     return send_command("SCHEDULE_AND_PROPAGATE_TRIGGERED_HOST_DOWNTIME",
                         command_file,
                         timestamp,
-                        host_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        host_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_and_propagate_host_downtime(host_name, 
-                                         start_time, 
-                                         end_time, 
-                                         fixed, 
-                                         trigger_id, 
-                                         duration, 
-                                         author, 
-                                         comment, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def schedule_and_propagate_host_downtime(
+    host_name,
+    start_time,
+    end_time,
+    fixed,
+    trigger_id,
+    duration,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules downtime for a specified host and all of its children
     (hosts).  If the "fixed" argument is set to one (1), downtime
@@ -1411,20 +1661,23 @@ def schedule_and_propagate_host_downtime(host_name,
     return send_command("SCHEDULE_AND_PROPAGATE_HOST_DOWNTIME",
                         command_file,
                         timestamp,
-                        host_name, 
-                        start_time, 
-                        end_time, 
-                        fixed, 
-                        trigger_id, 
-                        duration, 
-                        author, 
+                        host_name,
+                        start_time,
+                        end_time,
+                        fixed,
+                        trigger_id,
+                        duration,
+                        author,
                         comment)
 
-def schedule_svc_check(host_name, 
-                       service_description, 
-                       check_time, 
-                       command_file=None, 
-                       timestamp=0):
+
+def schedule_svc_check(
+    host_name,
+    service_description,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules the next active check of a specified service at
     "check_time".  The "check_time" argument is specified in time_t
@@ -1439,13 +1692,16 @@ def schedule_svc_check(host_name,
     return send_command("SCHEDULE_SVC_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         check_time)
 
-def del_host_comment(comment_id, 
-                     command_file=None, 
-                     timestamp=0):
+
+def del_host_comment(
+    comment_id,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes a host comment.  The id number of the comment that is to
     be deleted must be specified.
@@ -1455,10 +1711,13 @@ def del_host_comment(comment_id,
                         timestamp,
                         comment_id)
 
-def schedule_host_svc_checks(host_name, 
-                             check_time, 
-                             command_file=None, 
-                             timestamp=0):
+
+def schedule_host_svc_checks(
+    host_name,
+    check_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Schedules the next active check of all services on a particular
     host at "check_time".  The "check_time" argument is specified in
@@ -1474,11 +1733,14 @@ def schedule_host_svc_checks(host_name,
     return send_command("SCHEDULE_HOST_SVC_CHECKS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         check_time)
 
-def save_state_information(command_file=None, 
-                           timestamp=0):
+
+def save_state_information(
+    command_file=None,
+    timestamp=0
+):
     """
     Causes Nagios to save all current monitoring status information
     to the state retention file.  Normally, state retention
@@ -1493,8 +1755,11 @@ def save_state_information(command_file=None,
                         timestamp,
                         )
 
-def read_state_information(command_file=None, 
-                           timestamp=0):
+
+def read_state_information(
+    command_file=None,
+    timestamp=0
+):
     """
     Causes Nagios to load all current monitoring status information
     from the state retention file.  Normally, state retention
@@ -1509,9 +1774,12 @@ def read_state_information(command_file=None,
                         timestamp,
                         )
 
-def enable_host_svc_checks(host_name, 
-                           command_file=None, 
-                           timestamp=0):
+
+def enable_host_svc_checks(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks of all services on the specified host.
     """
@@ -1520,9 +1788,12 @@ def enable_host_svc_checks(host_name,
                         timestamp,
                         host_name)
 
-def disable_host_svc_checks(host_name, 
-                            command_file=None, 
-                            timestamp=0):
+
+def disable_host_svc_checks(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks of all services on the specified host.
     """
@@ -1531,9 +1802,12 @@ def disable_host_svc_checks(host_name,
                         timestamp,
                         host_name)
 
-def enable_host_svc_notifications(host_name, 
-                                  command_file=None, 
-                                  timestamp=0):
+
+def enable_host_svc_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all services on the specified host.
     Note that notifications will not be sent out if notifications
@@ -1544,9 +1818,12 @@ def enable_host_svc_notifications(host_name,
                         timestamp,
                         host_name)
 
-def disable_host_svc_notifications(host_name, 
-                                   command_file=None, 
-                                   timestamp=0):
+
+def disable_host_svc_notifications(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all services on the specified host.
     """
@@ -1555,11 +1832,14 @@ def disable_host_svc_notifications(host_name,
                         timestamp,
                         host_name)
 
-def delay_svc_notification(host_name, 
-                           service_description, 
-                           notification_time, 
-                           command_file=None, 
-                           timestamp=0):
+
+def delay_svc_notification(
+    host_name,
+    service_description,
+    notification_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Delays the next notification for a parciular service until
     "notification_time".  The "notification_time" argument is
@@ -1572,14 +1852,17 @@ def delay_svc_notification(host_name,
     return send_command("DELAY_SVC_NOTIFICATION",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
+                        host_name,
+                        service_description,
                         notification_time)
 
-def delay_host_notification(host_name, 
-                            notification_time, 
-                            command_file=None, 
-                            timestamp=0):
+
+def delay_host_notification(
+    host_name,
+    notification_time,
+    command_file=None,
+    timestamp=0
+):
     """
     Delays the next notification for a parciular service until
     "notification_time".  The "notification_time" argument is
@@ -1592,22 +1875,25 @@ def delay_host_notification(host_name,
     return send_command("DELAY_HOST_NOTIFICATION",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         notification_time)
 
-def acknowledge_host_problem(host_name, 
-                             sticky, 
-                             notify, 
-                             persistent, 
-                             author, 
-                             comment, 
-                             command_file=None, 
-                             timestamp=0):
+
+def acknowledge_host_problem(
+    host_name,
+    sticky,
+    notify,
+    persistent,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Allows you to acknowledge the current problem for the specified
     host.  By acknowledging the current problem, future
     notifications (for the same host state) are disabled.  If the
-    "sticky" option is set to one (1), the acknowledgement will
+    "sticky" option is set to two (2), the acknowledgement will
     remain until the host returns to an UP state.  Otherwise the
     acknowledgement will automatically be removed when the host
     changes state.  If the "notify" option is set to one (1), a
@@ -1621,16 +1907,19 @@ def acknowledge_host_problem(host_name,
     return send_command("ACKNOWLEDGE_HOST_PROBLEM",
                         command_file,
                         timestamp,
-                        host_name, 
-                        sticky, 
-                        notify, 
-                        persistent, 
-                        author, 
+                        host_name,
+                        sticky,
+                        notify,
+                        persistent,
+                        author,
                         comment)
 
-def del_svc_comment(comment_id, 
-                    command_file=None, 
-                    timestamp=0):
+
+def del_svc_comment(
+    comment_id,
+    command_file=None,
+    timestamp=0
+):
     """
     Deletes a service comment.  The id number of the comment that is
     to be deleted must be specified.
@@ -1640,20 +1929,23 @@ def del_svc_comment(comment_id,
                         timestamp,
                         comment_id)
 
-def acknowledge_svc_problem(host_name, 
-                            service_description, 
-                            sticky, 
-                            notify, 
-                            persistent, 
-                            author, 
-                            comment, 
-                            command_file=None, 
-                            timestamp=0):
+
+def acknowledge_svc_problem(
+    host_name,
+    service_description,
+    sticky,
+    notify,
+    persistent,
+    author,
+    comment,
+    command_file=None,
+    timestamp=0
+):
     """
     Allows you to acknowledge the current problem for the specified
     service.  By acknowledging the current problem, future
     notifications (for the same servicestate) are disabled.  If the
-    "sticky" option is set to one (1), the acknowledgement will
+    "sticky" option is set to two (2), the acknowledgement will
     remain until the service returns to an OK state.  Otherwise the
     acknowledgement will automatically be removed when the service
     changes state.  If the "notify" option is set to one (1), a
@@ -1667,16 +1959,19 @@ def acknowledge_svc_problem(host_name,
     return send_command("ACKNOWLEDGE_SVC_PROBLEM",
                         command_file,
                         timestamp,
-                        host_name, 
-                        service_description, 
-                        sticky, 
-                        notify, 
-                        persistent, 
-                        author, 
+                        host_name,
+                        service_description,
+                        sticky,
+                        notify,
+                        persistent,
+                        author,
                         comment)
 
-def start_executing_svc_checks(command_file=None, 
-                               timestamp=0):
+
+def start_executing_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks of services on a program-wide basis.
     """
@@ -1685,8 +1980,11 @@ def start_executing_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def stop_executing_svc_checks(command_file=None, 
-                              timestamp=0):
+
+def stop_executing_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks of services on a program-wide basis.
     """
@@ -1695,8 +1993,11 @@ def stop_executing_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def start_accepting_passive_svc_checks(command_file=None, 
-                                       timestamp=0):
+
+def start_accepting_passive_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables passive service checks on a program-wide basis.
     """
@@ -1705,8 +2006,11 @@ def start_accepting_passive_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def stop_accepting_passive_svc_checks(command_file=None, 
-                                      timestamp=0):
+
+def stop_accepting_passive_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables passive service checks on a program-wide basis.
     """
@@ -1715,34 +2019,43 @@ def stop_accepting_passive_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def enable_passive_svc_checks(host_name, 
-                              service_description, 
-                              command_file=None, 
-                              timestamp=0):
+
+def enable_passive_svc_checks(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables passive checks for the specified service.
     """
     return send_command("ENABLE_PASSIVE_SVC_CHECKS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def disable_passive_svc_checks(host_name, 
-                               service_description, 
-                               command_file=None, 
-                               timestamp=0):
+
+def disable_passive_svc_checks(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables passive checks for the specified service.
     """
     return send_command("DISABLE_PASSIVE_SVC_CHECKS",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def enable_event_handlers(command_file=None, 
-                          timestamp=0):
+
+def enable_event_handlers(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables host and service event handlers on a program-wide basis.
     """
@@ -1751,8 +2064,11 @@ def enable_event_handlers(command_file=None,
                         timestamp,
                         )
 
-def disable_event_handlers(command_file=None, 
-                           timestamp=0):
+
+def disable_event_handlers(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables host and service event handlers on a program-wide
     basis.
@@ -1762,9 +2078,12 @@ def disable_event_handlers(command_file=None,
                         timestamp,
                         )
 
-def enable_host_event_handler(host_name, 
-                              command_file=None, 
-                              timestamp=0):
+
+def enable_host_event_handler(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables the event handler for the specified host.
     """
@@ -1773,22 +2092,28 @@ def enable_host_event_handler(host_name,
                         timestamp,
                         host_name)
 
-def enable_svc_check(host_name, 
-                     service_description, 
-                     command_file=None, 
-                     timestamp=0):
+
+def enable_svc_check(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks for a particular service.
     """
     return send_command("ENABLE_SVC_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def disable_host_event_handler(host_name, 
-                               command_file=None, 
-                               timestamp=0):
+
+def disable_host_event_handler(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables the event handler for the specified host.
     """
@@ -1797,35 +2122,44 @@ def disable_host_event_handler(host_name,
                         timestamp,
                         host_name)
 
-def enable_svc_event_handler(host_name, 
-                             service_description, 
-                             command_file=None, 
-                             timestamp=0):
+
+def enable_svc_event_handler(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables the event handler for the specified service.
     """
     return send_command("ENABLE_SVC_EVENT_HANDLER",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def disable_svc_event_handler(host_name, 
-                              service_description, 
-                              command_file=None, 
-                              timestamp=0):
+
+def disable_svc_event_handler(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables the event handler for the specified service.
     """
     return send_command("DISABLE_SVC_EVENT_HANDLER",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def enable_host_check(host_name, 
-                      command_file=None, 
-                      timestamp=0):
+
+def enable_host_check(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables (regularly scheduled and on-demand) active checks of the
     specified host.
@@ -1835,9 +2169,12 @@ def enable_host_check(host_name,
                         timestamp,
                         host_name)
 
-def disable_host_check(host_name, 
-                       command_file=None, 
-                       timestamp=0):
+
+def disable_host_check(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables (regularly scheduled and on-demand) active checks of
     the specified host.
@@ -1847,8 +2184,11 @@ def disable_host_check(host_name,
                         timestamp,
                         host_name)
 
-def start_obsessing_over_svc_checks(command_file=None, 
-                                    timestamp=0):
+
+def start_obsessing_over_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables processing of service checks via the OCSP command on a
     program-wide basis.
@@ -1858,8 +2198,11 @@ def start_obsessing_over_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def stop_obsessing_over_svc_checks(command_file=None, 
-                                   timestamp=0):
+
+def stop_obsessing_over_svc_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables processing of service checks via the OCSP command on a
     program-wide basis.
@@ -1869,8 +2212,11 @@ def stop_obsessing_over_svc_checks(command_file=None,
                         timestamp,
                         )
 
-def start_obsessing_over_host_checks(command_file=None, 
-                                     timestamp=0):
+
+def start_obsessing_over_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables processing of host checks via the OCHP command on a
     program-wide basis.
@@ -1880,8 +2226,11 @@ def start_obsessing_over_host_checks(command_file=None,
                         timestamp,
                         )
 
-def stop_obsessing_over_host_checks(command_file=None, 
-                                    timestamp=0):
+
+def stop_obsessing_over_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables processing of host checks via the OCHP command on a
     program-wide basis.
@@ -1891,9 +2240,12 @@ def stop_obsessing_over_host_checks(command_file=None,
                         timestamp,
                         )
 
-def start_obsessing_over_host(host_name, 
-                              command_file=None, 
-                              timestamp=0):
+
+def start_obsessing_over_host(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables processing of host checks via the OCHP command for the
     specified host.
@@ -1903,22 +2255,28 @@ def start_obsessing_over_host(host_name,
                         timestamp,
                         host_name)
 
-def disable_svc_check(host_name, 
-                      service_description, 
-                      command_file=None, 
-                      timestamp=0):
+
+def disable_svc_check(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks for a particular service.
     """
     return send_command("DISABLE_SVC_CHECK",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def stop_obsessing_over_host(host_name, 
-                             command_file=None, 
-                             timestamp=0):
+
+def stop_obsessing_over_host(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables processing of host checks via the OCHP command for the
     specified host.
@@ -1928,10 +2286,13 @@ def stop_obsessing_over_host(host_name,
                         timestamp,
                         host_name)
 
-def start_obsessing_over_svc(host_name, 
-                             service_description, 
-                             command_file=None, 
-                             timestamp=0):
+
+def start_obsessing_over_svc(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables processing of service checks via the OCSP command for
     the specified service.
@@ -1939,13 +2300,16 @@ def start_obsessing_over_svc(host_name,
     return send_command("START_OBSESSING_OVER_SVC",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def stop_obsessing_over_svc(host_name, 
-                            service_description, 
-                            command_file=None, 
-                            timestamp=0):
+
+def stop_obsessing_over_svc(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables processing of service checks via the OCSP command for
     the specified service.
@@ -1953,11 +2317,14 @@ def stop_obsessing_over_svc(host_name,
     return send_command("STOP_OBSESSING_OVER_SVC",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def enable_failure_prediction(command_file=None, 
-                              timestamp=0):
+
+def enable_failure_prediction(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables failure prediction on a program-wide basis.  This
     feature is not currently implemented in Nagios.
@@ -1967,8 +2334,11 @@ def enable_failure_prediction(command_file=None,
                         timestamp,
                         )
 
-def disable_failure_prediction(command_file=None, 
-                               timestamp=0):
+
+def disable_failure_prediction(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables failure prediction on a program-wide basis.  This
     feature is not currently implemented in Nagios.
@@ -1978,8 +2348,11 @@ def disable_failure_prediction(command_file=None,
                         timestamp,
                         )
 
-def enable_performance_data(command_file=None, 
-                            timestamp=0):
+
+def enable_performance_data(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables the processing of host and service performance data on a
     program-wide basis.
@@ -1989,8 +2362,11 @@ def enable_performance_data(command_file=None,
                         timestamp,
                         )
 
-def disable_performance_data(command_file=None, 
-                             timestamp=0):
+
+def disable_performance_data(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables the processing of host and service performance data on
     a program-wide basis.
@@ -2000,8 +2376,11 @@ def disable_performance_data(command_file=None,
                         timestamp,
                         )
 
-def start_executing_host_checks(command_file=None, 
-                                timestamp=0):
+
+def start_executing_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active host checks on a program-wide basis.
     """
@@ -2010,8 +2389,11 @@ def start_executing_host_checks(command_file=None,
                         timestamp,
                         )
 
-def stop_executing_host_checks(command_file=None, 
-                               timestamp=0):
+
+def stop_executing_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active host checks on a program-wide basis.
     """
@@ -2020,8 +2402,11 @@ def stop_executing_host_checks(command_file=None,
                         timestamp,
                         )
 
-def start_accepting_passive_host_checks(command_file=None, 
-                                        timestamp=0):
+
+def start_accepting_passive_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables acceptance and processing of passive host checks on a
     program-wide basis.
@@ -2031,8 +2416,11 @@ def start_accepting_passive_host_checks(command_file=None,
                         timestamp,
                         )
 
-def disable_notifications(command_file=None, 
-                          timestamp=0):
+
+def disable_notifications(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables host and service notifications on a program-wide basis.
     """
@@ -2041,8 +2429,11 @@ def disable_notifications(command_file=None,
                         timestamp,
                         )
 
-def stop_accepting_passive_host_checks(command_file=None, 
-                                       timestamp=0):
+
+def stop_accepting_passive_host_checks(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables acceptance and processing of passive host checks on a
     program-wide basis.
@@ -2052,9 +2443,12 @@ def stop_accepting_passive_host_checks(command_file=None,
                         timestamp,
                         )
 
-def enable_passive_host_checks(host_name, 
-                               command_file=None, 
-                               timestamp=0):
+
+def enable_passive_host_checks(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables acceptance and processing of passive host checks for the
     specified host.
@@ -2064,9 +2458,12 @@ def enable_passive_host_checks(host_name,
                         timestamp,
                         host_name)
 
-def disable_passive_host_checks(host_name, 
-                                command_file=None, 
-                                timestamp=0):
+
+def disable_passive_host_checks(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables acceptance and processing of passive host checks for
     the specified host.
@@ -2076,8 +2473,11 @@ def disable_passive_host_checks(host_name,
                         timestamp,
                         host_name)
 
-def enable_flap_detection(command_file=None, 
-                          timestamp=0):
+
+def enable_flap_detection(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables host and service flap detection on a program-wide basis.
     """
@@ -2086,8 +2486,11 @@ def enable_flap_detection(command_file=None,
                         timestamp,
                         )
 
-def disable_flap_detection(command_file=None, 
-                           timestamp=0):
+
+def disable_flap_detection(
+    command_file=None,
+    timestamp=0
+):
     """
     Disables host and service flap detection on a program-wide
     basis.
@@ -2097,9 +2500,12 @@ def disable_flap_detection(command_file=None,
                         timestamp,
                         )
 
-def enable_host_flap_detection(host_name, 
-                               command_file=None, 
-                               timestamp=0):
+
+def enable_host_flap_detection(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables flap detection for the specified host.  In order for the
     flap detection algorithms to be run for the host, flap detection
@@ -2110,10 +2516,13 @@ def enable_host_flap_detection(host_name,
                         timestamp,
                         host_name)
 
-def enable_svc_flap_detection(host_name, 
-                              service_description, 
-                              command_file=None, 
-                              timestamp=0):
+
+def enable_svc_flap_detection(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables flap detection for the specified service.  In order for
     the flap detection algorithms to be run for the service, flap
@@ -2122,12 +2531,15 @@ def enable_svc_flap_detection(host_name,
     return send_command("ENABLE_SVC_FLAP_DETECTION",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def disable_host_flap_detection(host_name, 
-                                command_file=None, 
-                                timestamp=0):
+
+def disable_host_flap_detection(
+    host_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables flap detection for the specified host.
     """
@@ -2136,22 +2548,28 @@ def disable_host_flap_detection(host_name,
                         timestamp,
                         host_name)
 
-def disable_service_flap_detection(host_name, 
-                                   service_description, 
-                                   command_file=None, 
-                                   timestamp=0):
+
+def disable_service_flap_detection(
+    host_name,
+    service_description,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables flap detection for the specified service.
     """
     return send_command("DISABLE_SERVICE_FLAP_DETECTION",
                         command_file,
                         timestamp,
-                        host_name, 
+                        host_name,
                         service_description)
 
-def enable_hostgroup_svc_notifications(hostgroup_name, 
-                                       command_file=None, 
-                                       timestamp=0):
+
+def enable_hostgroup_svc_notifications(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all services that are associated with
     hosts in a particular hostgroup.  This does not enable
@@ -2165,8 +2583,11 @@ def enable_hostgroup_svc_notifications(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_notifications(command_file=None, 
-                         timestamp=0):
+
+def enable_notifications(
+    command_file=None,
+    timestamp=0
+):
     """
     Enables host and service notifications on a program-wide basis.
     """
@@ -2175,9 +2596,12 @@ def enable_notifications(command_file=None,
                         timestamp,
                         )
 
-def disable_hostgroup_svc_notifications(hostgroup_name, 
-                                        command_file=None, 
-                                        timestamp=0):
+
+def disable_hostgroup_svc_notifications(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all services associated with hosts in
     a particular hostgroup.  This does not disable notifications for
@@ -2189,9 +2613,12 @@ def disable_hostgroup_svc_notifications(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_hostgroup_host_notifications(hostgroup_name, 
-                                        command_file=None, 
-                                        timestamp=0):
+
+def enable_hostgroup_host_notifications(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all hosts in a particular hostgroup.
     This does not enable notifications for the services associated
@@ -2205,9 +2632,12 @@ def enable_hostgroup_host_notifications(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def disable_hostgroup_host_notifications(hostgroup_name, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def disable_hostgroup_host_notifications(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all hosts in a particular hostgroup.
     This does not disable notifications for the services associated
@@ -2219,9 +2649,12 @@ def disable_hostgroup_host_notifications(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_hostgroup_svc_checks(hostgroup_name, 
-                                command_file=None, 
-                                timestamp=0):
+
+def enable_hostgroup_svc_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks for all services associated with hosts in
     a particular hostgroup.
@@ -2231,9 +2664,12 @@ def enable_hostgroup_svc_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def disable_hostgroup_svc_checks(hostgroup_name, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def disable_hostgroup_svc_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks for all services associated with hosts in
     a particular hostgroup.
@@ -2243,9 +2679,12 @@ def disable_hostgroup_svc_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_hostgroup_host_checks(hostgroup_name, 
-                                 command_file=None, 
-                                 timestamp=0):
+
+def enable_hostgroup_host_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks for all hosts in a particular hostgroup.
     """
@@ -2254,9 +2693,12 @@ def enable_hostgroup_host_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def disable_hostgroup_host_checks(hostgroup_name, 
-                                  command_file=None, 
-                                  timestamp=0):
+
+def disable_hostgroup_host_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks for all hosts in a particular hostgroup.
     """
@@ -2265,9 +2707,12 @@ def disable_hostgroup_host_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_hostgroup_passive_host_checks(hostgroup_name, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def enable_hostgroup_passive_host_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables passive checks for all hosts in a particular hostgroup.
     """
@@ -2276,9 +2721,12 @@ def enable_hostgroup_passive_host_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def disable_hostgroup_passive_host_checks(hostgroup_name, 
-                                          command_file=None, 
-                                          timestamp=0):
+
+def disable_hostgroup_passive_host_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables passive checks for all hosts in a particular hostgroup.
     """
@@ -2287,9 +2735,12 @@ def disable_hostgroup_passive_host_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_hostgroup_passive_svc_checks(hostgroup_name, 
-                                        command_file=None, 
-                                        timestamp=0):
+
+def enable_hostgroup_passive_svc_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables passive checks for all services associated with hosts in
     a particular hostgroup.
@@ -2299,8 +2750,11 @@ def enable_hostgroup_passive_svc_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def restart_program(command_file=None, 
-                    timestamp=0):
+
+def restart_program(
+    command_file=None,
+    timestamp=0
+):
     """
     Restarts the Nagios process.
     """
@@ -2309,9 +2763,12 @@ def restart_program(command_file=None,
                         timestamp,
                         )
 
-def disable_hostgroup_passive_svc_checks(hostgroup_name, 
-                                         command_file=None, 
-                                         timestamp=0):
+
+def disable_hostgroup_passive_svc_checks(
+    hostgroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables passive checks for all services associated with hosts
     in a particular hostgroup.
@@ -2321,9 +2778,12 @@ def disable_hostgroup_passive_svc_checks(hostgroup_name,
                         timestamp,
                         hostgroup_name)
 
-def enable_servicegroup_svc_notifications(servicegroup_name, 
-                                          command_file=None, 
-                                          timestamp=0):
+
+def enable_servicegroup_svc_notifications(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all services that are members of a
     particular servicegroup.  In order for notifications to be sent
@@ -2335,9 +2795,12 @@ def enable_servicegroup_svc_notifications(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def disable_servicegroup_svc_notifications(servicegroup_name, 
-                                           command_file=None, 
-                                           timestamp=0):
+
+def disable_servicegroup_svc_notifications(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all services that are members of a
     particular servicegroup.
@@ -2347,9 +2810,12 @@ def disable_servicegroup_svc_notifications(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def enable_servicegroup_host_notifications(servicegroup_name, 
-                                           command_file=None, 
-                                           timestamp=0):
+
+def enable_servicegroup_host_notifications(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables notifications for all hosts that have services that are
     members of a particular servicegroup.  In order for
@@ -2361,9 +2827,12 @@ def enable_servicegroup_host_notifications(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def disable_servicegroup_host_notifications(servicegroup_name, 
-                                            command_file=None, 
-                                            timestamp=0):
+
+def disable_servicegroup_host_notifications(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables notifications for all hosts that have services that are
     members of a particular servicegroup.
@@ -2373,9 +2842,12 @@ def disable_servicegroup_host_notifications(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def enable_servicegroup_svc_checks(servicegroup_name, 
-                                   command_file=None, 
-                                   timestamp=0):
+
+def enable_servicegroup_svc_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks for all services in a particular
     servicegroup.
@@ -2385,9 +2857,12 @@ def enable_servicegroup_svc_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def disable_servicegroup_svc_checks(servicegroup_name, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def disable_servicegroup_svc_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks for all services in a particular
     servicegroup.
@@ -2397,9 +2872,12 @@ def disable_servicegroup_svc_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def enable_servicegroup_host_checks(servicegroup_name, 
-                                    command_file=None, 
-                                    timestamp=0):
+
+def enable_servicegroup_host_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables active checks for all hosts that have services that are
     members of a particular hostgroup.
@@ -2409,9 +2887,12 @@ def enable_servicegroup_host_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def disable_servicegroup_host_checks(servicegroup_name, 
-                                     command_file=None, 
-                                     timestamp=0):
+
+def disable_servicegroup_host_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Disables active checks for all hosts that have services that are
     members of a particular hostgroup.
@@ -2421,9 +2902,12 @@ def disable_servicegroup_host_checks(servicegroup_name,
                         timestamp,
                         servicegroup_name)
 
-def enable_servicegroup_passive_svc_checks(servicegroup_name, 
-                                           command_file=None, 
-                                           timestamp=0):
+
+def enable_servicegroup_passive_svc_checks(
+    servicegroup_name,
+    command_file=None,
+    timestamp=0
+):
     """
     Enables the acceptance and processing of passive checks for all
     services in a particular servicegroup.

@@ -14,8 +14,10 @@ import unittest2 as unittest
 
 from pynag.Utils import defaultdict
 
+
 def foobar():
     return list
+
 
 class TestDefaultDict(unittest.TestCase):
 
@@ -72,7 +74,9 @@ class TestDefaultDict(unittest.TestCase):
         self.assertEqual(d2.default_factory, int)
         d2[12] = 42
         self.assertEqual(repr(d2), "defaultdict(" + str(type(int())) + ", {12: 42})")
-        def foo(): return 43
+
+        def foo():
+            return 43
         d3 = defaultdict(foo)
         self.assertTrue(d3.default_factory is foo)
         d3[13]
@@ -80,7 +84,9 @@ class TestDefaultDict(unittest.TestCase):
 
     def test_print(self):
         d1 = defaultdict()
-        def foo(): return 42
+
+        def foo():
+            return 42
         d2 = defaultdict(foo, {1: 2})
         # NOTE: We can't use tempfile.[Named]TemporaryFile since this
         # code must exercise the tp_print C code, which only gets
@@ -158,8 +164,10 @@ class TestDefaultDict(unittest.TestCase):
     def test_recursive_repr(self):
         # Issue2045: stack overflow when default_factory is a bound method
         class sub(defaultdict):
+
             def __init__(self):
                 self.default_factory = self._factory
+
             def _factory(self):
                 return []
         d = sub()

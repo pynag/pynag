@@ -44,7 +44,9 @@ import tarfile
 
 _sentinel = object()
 
+
 class Config(object):
+
     """ Parse and write nagios config files """
     # Regex for beginning of object definition
     # We want everything that matches:
@@ -56,10 +58,10 @@ class Config(object):
 
         Args:
 
-            cfg_file (str): Full path to nagios.cfg. If None, try to 
+            cfg_file (str): Full path to nagios.cfg. If None, try to
             auto-discover location
 
-            strict (bool): if True, use stricter parsing which is more prone to 
+            strict (bool): if True, use stricter parsing which is more prone to
             raising exceptions
         """
 
@@ -73,12 +75,12 @@ class Config(object):
         self.data = {}
         self.maincfg_values = []
         self._is_dirty = False
-        self.reset() # Initilize misc member variables
+        self.reset()  # Initilize misc member variables
 
     def guess_nagios_directory(self):
         """ Returns a path to the nagios configuration directory on your system
 
-        Use this function for determining the nagios config directory in your 
+        Use this function for determining the nagios config directory in your
         code
 
         Returns:
@@ -87,7 +89,7 @@ class Config(object):
 
         Raises:
 
-            :py:class:`pynag.Parsers.ConfigFileNotFound` if cannot guess config 
+            :py:class:`pynag.Parsers.ConfigFileNotFound` if cannot guess config
             file location.
         """
         cfg_file = self.guess_cfg_file()
@@ -115,14 +117,14 @@ class Config(object):
         * /usr/local/naemon/bin/naemon.cfg
         * /usr/bin/shinken
         * /usr/sbin/shinken
-        
+
         Returns:
 
             str. Path to the nagios binary
 
             None if could not find a binary in any of those locations
         """
-        
+
         possible_files = ('/usr/bin/nagios',
                           '/usr/sbin/nagios',
                           '/usr/local/nagios/bin/nagios',
@@ -190,7 +192,7 @@ class Config(object):
                           './naemon.cfg',
                           './naemon/naemon.cfg',
                           '/etc/shinken/shinken.cfg',
-        )
+                          )
 
         for file_path in possible_files:
             if self.isfile(file_path):
@@ -210,9 +212,9 @@ class Config(object):
         self._resource_values = []  # The contents of any resource_files
         self.item_apply_cache = {}  # This is performance tweak used by _apply_template
 
-        ## This is a pure listof all the key/values in the config files.  It
-        ## shouldn't be useful until the items in it are parsed through with the proper
-        ## 'use' relationships
+        # This is a pure listof all the key/values in the config files.  It
+        # shouldn't be useful until the items in it are parsed through with the proper
+        # 'use' relationships
         self.pre_object_list = []
         self.post_object_list = []
         self.object_type_keys = {
@@ -229,8 +231,8 @@ class Config(object):
         }
 
     def _has_template(self, target):
-        """ Determine if an item has a template associated with it 
-        
+        """ Determine if an item has a template associated with it
+
         Args:
             target (dict): Parsed item as parsed by :py:class:`pynag.Parsers.config`
         """
@@ -259,9 +261,9 @@ class Config(object):
         return self.data['all_hostgroup'].get(hostgroup_name, None)
 
     def _get_key(self, object_type, user_key=None):
-        """ Return the correct 'key' for an item. 
-        
-        This is mainly a helper method for other methods in this class. It is 
+        """ Return the correct 'key' for an item.
+
+        This is mainly a helper method for other methods in this class. It is
         used to shorten code repetition.
 
         Args:
@@ -277,27 +279,27 @@ class Config(object):
         if not user_key and not object_type in self.object_type_keys:
             raise ParserError("Unknown key for object type:  %s\n" % object_type)
 
-        ## Use a default key
+        # Use a default key
         if not user_key:
             user_key = self.object_type_keys[object_type]
 
         return user_key
 
     def _get_item(self, item_name, item_type):
-        """ Return an item from a list 
-        
+        """ Return an item from a list
+
         Creates a cache of items in self.pre_object_list and returns an element
         from this cache. Looks for an item with corresponding name and type.
 
         Args:
-        
+
             item_name: Name of the item to be returned (string)
 
             item_type: Type of the item to be returned (string)
 
         Returns:
 
-            Item with matching name and type from 
+            Item with matching name and type from
             :py:attr:`pynag.Parsers.config.item_cache`
         """
         # create local cache for performance optimizations. TODO: Rewrite functions that call this function
@@ -329,7 +331,7 @@ class Config(object):
 
         Returns:
 
-            original_item to which have been added all the attributes defined 
+            original_item to which have been added all the attributes defined
             in parent items.
         """
 
@@ -380,14 +382,14 @@ class Config(object):
         return original_item
 
     def _get_items_in_file(self, filename):
-        """ Return all items in the given file 
-        
+        """ Return all items in the given file
+
         Iterates through all elements in self.data and gatehrs all the items
         defined in the queried filename.
 
         Args:
 
-            filename: file from which are defined the items that will be 
+            filename: file from which are defined the items that will be
             returned.
 
         Returns:
@@ -404,7 +406,7 @@ class Config(object):
         return return_list
 
     def get_new_item(self, object_type, filename):
-        """ Returns an empty item with all necessary metadata 
+        """ Returns an empty item with all necessary metadata
 
         Creates a new item dict and fills it with usual metadata:
 
@@ -418,7 +420,7 @@ class Config(object):
             * raw_definition = "define %s {\\n\\n} % object_type"
 
         Args:
-            
+
             object_type: type of the object to be created (string)
 
             filename: Path to which the item will be saved (string)
@@ -484,11 +486,11 @@ class Config(object):
 
             string: A string containing one or more object definitions
 
-            filename (optional): If filename is provided, it will be referenced 
+            filename (optional): If filename is provided, it will be referenced
             when raising exceptions
 
         Examples:
-        
+
             >>> test_string = "define host {\\nhost_name examplehost\\n}\\n"
             >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
             >>> c = config()
@@ -502,7 +504,7 @@ class Config(object):
             A list of dictionaries, that look like self.data
 
         Raises:
-        
+
             :py:class:`ParserError`
 
         """
@@ -521,7 +523,7 @@ class Config(object):
                 line = append + line
                 append = None
 
-            ## Cleanup and line skips
+            # Cleanup and line skips
             line = line.strip()
             if line == "":
                 continue
@@ -553,7 +555,7 @@ class Config(object):
                     raise ParserError("Encountered Unexpected end of object definition in file '%s'." % filename)
                 result.append(current)
 
-                ## Destroy the Nagios Object
+                # Destroy the Nagios Object
                 current = None
                 continue
 
@@ -573,7 +575,7 @@ class Config(object):
                 current = self.get_new_item(object_type, filename)
                 current['meta']['line_start'] = line_num
 
-                ## Start off an object
+                # Start off an object
                 in_definition = True
 
                 # Looks to me like nagios ignores everything after the {, so why shouldn't we ?
@@ -582,12 +584,12 @@ class Config(object):
             else:  # In the middle of an object definition
                 tmp_buffer.append('    ' + line)
 
-            ## save whatever's left in the buffer for the next iteration
+            # save whatever's left in the buffer for the next iteration
             if not in_definition:
                 append = line
                 continue
 
-            ## this is an attribute inside an object definition
+            # this is an attribute inside an object definition
             if in_definition:
                 #(key, value) = line.split(None, 1)
                 tmp = line.split(None, 1)
@@ -597,16 +599,16 @@ class Config(object):
                     key = tmp[0]
                     value = ""
 
-                ## Strip out in-line comments
+                # Strip out in-line comments
                 if value.find(";") != -1:
                     value = value.split(";", 1)[0]
 
-                ## Clean info
+                # Clean info
                 key = key.strip()
                 value = value.strip()
 
-                ## Rename some old values that may be in the configuration
-                ## This can probably be removed in the future to increase performance
+                # Rename some old values that may be in the configuration
+                # This can probably be removed in the future to increase performance
                 if (current['meta']['object_type'] == 'service') and key == 'description':
                     key = 'service_description'
 
@@ -617,20 +619,20 @@ class Config(object):
                     value = ''
                 current[key] = value
                 current['meta']['defined_attributes'][key] = value
-            ## Something is wrong in the config
+            # Something is wrong in the config
             else:
                 raise ParserError("Error: Unexpected token in file '%s'" % filename)
 
-        ## Something is wrong in the config
+        # Something is wrong in the config
         if in_definition:
             raise ParserError("Error: Unexpected EOF in file '%s'" % filename)
 
         return result
 
     def _locate_item(self, item):
-        """ This is a helper function for anyone who wishes to modify objects. 
-        
-        It takes "item", locates the file which is configured in, and locates 
+        """ This is a helper function for anyone who wishes to modify objects.
+
+        It takes "item", locates the file which is configured in, and locates
         exactly the lines which contain that definition.
 
         Returns: (tuple)
@@ -696,11 +698,12 @@ class Config(object):
                 result.append(tmp_buffer + i)
                 tmp_buffer = ''
         return result
+
     def _modify_object(self, item, field_name=None, new_value=None, new_field_name=None, new_item=None,
                        make_comments=False):
         """ Locates "item" and changes the line which contains field_name.
 
-        Helper function for object_* functions. Locates "item" and changes the 
+        Helper function for object_* functions. Locates "item" and changes the
         line which contains field_name. If new_value and new_field_name are both
         None, the attribute is removed.
 
@@ -714,10 +717,10 @@ class Config(object):
 
             new_value(str): If set the value of field_name will be changed
 
-            new_item(str): If set, whole object will be replaced with this 
+            new_item(str): If set, whole object will be replaced with this
             string
 
-            make_comments: If set, put pynag-branded comments where changes 
+            make_comments: If set, put pynag-branded comments where changes
             have been made
 
         Returns:
@@ -725,7 +728,7 @@ class Config(object):
             True on success
 
         Raises:
-            
+
             :py:class:`ValueError` if object or field_name is not found
 
             :py:class:`IOError` is save is unsuccessful.
@@ -807,8 +810,8 @@ class Config(object):
 
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def write(self, filename, string):
-        """ Wrapper around open(filename).write() 
-        
+        """ Wrapper around open(filename).write()
+
         Writes string to filename and closes the file handler. File handler is
         openned in `'w'` mode.
 
@@ -827,7 +830,7 @@ class Config(object):
         fh = self.open(filename, 'w')
         return_code = fh.write(string)
         fh.flush()
-        #os.fsync(fh)
+        # os.fsync(fh)
         fh.close()
         self._is_dirty = True
         return return_code
@@ -841,7 +844,7 @@ class Config(object):
 
             str_new_item: str representation of the new item
 
-        .. 
+        ..
             In the following line, every "\\n" is actually a simple line break
             This is only a little patch for the generated documentation.
 
@@ -869,7 +872,7 @@ class Config(object):
 
             str_new_item: string representation of the new item
 
-        .. 
+        ..
             In the following line, every "\\n" is actually a simple line break
             This is only a little patch for the generated documentation.
 
@@ -881,7 +884,7 @@ class Config(object):
             True on success
 
         Raises:
-        
+
             :py:class:`ValueError` if object is not found
 
             :py:class:`IOError` if save fails
@@ -889,8 +892,8 @@ class Config(object):
         return self._modify_object(item=item, new_item="")
 
     def item_edit_field(self, item, field_name, new_value):
-        """ Modifies one field of a (currently existing) object. 
-        
+        """ Modifies one field of a (currently existing) object.
+
         Changes are immediate (i.e. there is no commit)
 
         Args:
@@ -904,7 +907,7 @@ class Config(object):
 
         Example usage::
             edit_object( item, field_name="host_name", new_value="examplehost.example.com") # doctest: +SKIP
-            
+
         Returns:
             True on success
 
@@ -917,8 +920,8 @@ class Config(object):
         return self._modify_object(item, field_name=field_name, new_value=new_value)
 
     def item_remove_field(self, item, field_name):
-        """ Removes one field of a (currently existing) object. 
-        
+        """ Removes one field of a (currently existing) object.
+
         Changes are immediate (i.e. there is no commit)
 
         Args:
@@ -942,8 +945,8 @@ class Config(object):
         return self._modify_object(item=item, field_name=field_name, new_value=None, new_field_name=None)
 
     def item_rename_field(self, item, old_field_name, new_field_name):
-        """ Renames a field of a (currently existing) item. 
-        
+        """ Renames a field of a (currently existing) item.
+
         Changes are immediate (i.e. there is no commit).
 
         Args:
@@ -977,7 +980,7 @@ class Config(object):
 
             filename: Filename that we are supposed to write the new item to.
             This is the path to the file. (string)
-                
+
         Returns:
 
             True on success
@@ -1002,8 +1005,8 @@ class Config(object):
         return True
 
     def edit_object(self, item, field_name, new_value):
-        """ Modifies a (currently existing) item. 
-        
+        """ Modifies a (currently existing) item.
+
         Changes are immediate (i.e. there is no commit)
 
         Args:
@@ -1014,7 +1017,7 @@ class Config(object):
 
             new_value: Updated value of field `field_name`
 
-        Example Usage: 
+        Example Usage:
             edit_object( item, field_name="host_name", new_value="examplehost.example.com")
 
         Returns:
@@ -1027,11 +1030,11 @@ class Config(object):
         return self.item_edit_field(item=item, field_name=field_name, new_value=new_value)
 
     def compareObjects(self, item1, item2):
-        """ Compares two items. Returns true if they are equal 
+        """ Compares two items. Returns true if they are equal
 
         Compares every key: value pair for both items. If anything is different,
         the items will not be considered equal.
-        
+
         Args:
             item1, item2: Items to be compared.
 
@@ -1064,8 +1067,8 @@ class Config(object):
         return True
 
     def edit_service(self, target_host, service_description, field_name, new_value):
-        """ Edit a service's attributes 
-        
+        """ Edit a service's attributes
+
         Takes a host, service_description pair to identify the service to modify
         and sets its field `field_name` to `new_value`.
 
@@ -1097,7 +1100,7 @@ class Config(object):
         """ Return a comma list from an item
 
         Args:
-        
+
             item: Item from which to select value. (string)
 
             key: Field name of the value to select and return as a list. (string)
@@ -1136,14 +1139,14 @@ class Config(object):
         else:
             return_list.append(item[key])
 
-        ## Alphabetize
+        # Alphabetize
         return_list.sort()
 
         return return_list
 
     def delete_object(self, object_type, object_name, user_key=None):
-        """ Delete object from configuration files 
-        
+        """ Delete object from configuration files
+
         Args:
 
             object_type: Type of the object to delete from configuration files.
@@ -1162,13 +1165,13 @@ class Config(object):
 
     def delete_service(self, service_description, host_name):
         """ Delete service from configuration files
-        
+
         Args:
 
             service_description: service_description field value of the object
             to delete from configuration files.
 
-            host_name: host_name field value of the object to delete from 
+            host_name: host_name field value of the object to delete from
             configuration files.
 
         Returns:
@@ -1181,10 +1184,10 @@ class Config(object):
 
     def delete_host(self, object_name, user_key=None):
         """ Delete a host from its configuration files
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1199,10 +1202,10 @@ class Config(object):
 
     def delete_hostgroup(self, object_name, user_key=None):
         """ Delete a hostgroup from its configuration files
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1216,10 +1219,10 @@ class Config(object):
 
     def get_object(self, object_type, object_name, user_key=None):
         """ Return a complete object dictionary
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: User defined key. Default None. (string)
@@ -1239,10 +1242,10 @@ class Config(object):
 
     def get_host(self, object_name, user_key=None):
         """ Return a host object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1257,10 +1260,10 @@ class Config(object):
 
     def get_servicegroup(self, object_name, user_key=None):
         """ Return a Servicegroup object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1274,10 +1277,10 @@ class Config(object):
 
     def get_contact(self, object_name, user_key=None):
         """ Return a Contact object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1291,10 +1294,10 @@ class Config(object):
 
     def get_contactgroup(self, object_name, user_key=None):
         """ Return a Contactgroup object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1308,10 +1311,10 @@ class Config(object):
 
     def get_timeperiod(self, object_name, user_key=None):
         """ Return a Timeperiod object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1325,10 +1328,10 @@ class Config(object):
 
     def get_command(self, object_name, user_key=None):
         """ Return a Command object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1342,10 +1345,10 @@ class Config(object):
 
     def get_hostgroup(self, object_name, user_key=None):
         """ Return a hostgroup object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1359,10 +1362,10 @@ class Config(object):
 
     def get_servicedependency(self, object_name, user_key=None):
         """ Return a servicedependency object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1376,10 +1379,10 @@ class Config(object):
 
     def get_hostdependency(self, object_name, user_key=None):
         """ Return a hostdependency object
-        
+
         Args:
 
-            object_name: object_name field value of the object to delete from 
+            object_name: object_name field value of the object to delete from
             configuration files.
 
             user_key: user_key to pass to :py:meth:`get_object`
@@ -1392,14 +1395,14 @@ class Config(object):
         return self.get_object('hostdependency', object_name, user_key=user_key)
 
     def get_service(self, target_host, service_description):
-        """ Return a service object 
-        
+        """ Return a service object
+
         Args:
-        
+
             target_host: host_name field of the service to be returned. This is
             the host to which is attached the service.
 
-            service_description: service_description field of the service to be 
+            service_description: service_description field of the service to be
             returned.
 
         Returns:
@@ -1419,7 +1422,7 @@ class Config(object):
 
             source_item: item (dict) to apply the inheritance upon
 
-            name: obsolete (discovered automatically via source_item['use']. 
+            name: obsolete (discovered automatically via source_item['use'].
             Here for compatibility.
 
         Returns:
@@ -1427,17 +1430,17 @@ class Config(object):
             Source Item with appended attributes.
 
         Raises:
-        
+
             :py:class:`ParserError` on recursion errors
 
         """
-        ## Remove the 'use' key
+        # Remove the 'use' key
         if "use" in source_item:
             del source_item['use']
 
         for possible_item in self.pre_object_list:
             if "name" in possible_item:
-                ## Start appending to the item
+                # Start appending to the item
                 for k, v in possible_item.iteritems():
 
                     try:
@@ -1446,7 +1449,7 @@ class Config(object):
                     except Exception:
                         raise ParserError("Recursion error on %s %s" % (source_item, v))
 
-                    ## Only add the item if it doesn't already exist
+                    # Only add the item if it doesn't already exist
                     if not k in source_item:
                         source_item[k] = v
         return source_item
@@ -1454,7 +1457,7 @@ class Config(object):
     def _post_parse(self):
         """ Creates a few optimization tweaks and easy access lists in self.data
 
-        Creates :py:attr:`config.item_apply_cache` and fills the all_object 
+        Creates :py:attr:`config.item_apply_cache` and fills the all_object
         item lists in self.data.
 
         """
@@ -1469,7 +1472,7 @@ class Config(object):
             if "use" in raw_item:
                 raw_item = self._apply_template(raw_item)
             self.post_object_list.append(raw_item)
-            ## Add the items to the class lists.
+            # Add the items to the class lists.
         for list_item in self.post_object_list:
             type_list_name = "all_%s" % list_item['meta']['object_type']
             if not type_list_name in self.data:
@@ -1479,35 +1482,35 @@ class Config(object):
 
     def commit(self):
         """ Write any changes that have been made to it's appropriate file """
-        ## Loops through ALL items
+        # Loops through ALL items
         for k in self.data.keys():
             for item in self[k]:
 
-                ## If the object needs committing, commit it!
+                # If the object needs committing, commit it!
                 if item['meta']['needs_commit']:
-                    ## Create file contents as an empty string
+                    # Create file contents as an empty string
                     file_contents = ""
 
-                    ## find any other items that may share this config file
+                    # find any other items that may share this config file
                     extra_items = self._get_items_in_file(item['meta']['filename'])
                     if len(extra_items) > 0:
                         for commit_item in extra_items:
-                            ## Ignore files that are already set to be deleted:w
+                            # Ignore files that are already set to be deleted:w
                             if commit_item['meta']['delete_me']:
                                 continue
-                                ## Make sure we aren't adding this thing twice
+                                # Make sure we aren't adding this thing twice
                             if item != commit_item:
                                 file_contents += self.print_conf(commit_item)
 
-                    ## This is the actual item that needs commiting
+                    # This is the actual item that needs commiting
                     if not item['meta']['delete_me']:
                         file_contents += self.print_conf(item)
 
-                    ## Write the file
+                    # Write the file
                     filename = item['meta']['filename']
                     self.write(filename, file_contents)
 
-                    ## Recreate the item entry without the commit flag
+                    # Recreate the item entry without the commit flag
                     self.data[k].remove(item)
                     item['meta']['needs_commit'] = None
                     self.data[k].append(item)
@@ -1522,9 +1525,9 @@ class Config(object):
 
     def print_conf(self, item):
         """ Return a string that can be used in a configuration file
-        
+
         Args:
-        
+
             item: Item to be dumped as a string.
 
         Returns:
@@ -1532,19 +1535,19 @@ class Config(object):
             String representation of item.
         """
         output = ""
-        ## Header, to go on all files
+        # Header, to go on all files
         output += "# Configuration file %s\n" % item['meta']['filename']
         output += "# Edited by PyNag on %s\n" % time.ctime()
 
-        ## Some hostgroup information
+        # Some hostgroup information
         if "hostgroup_list" in item['meta']:
             output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
 
-        ## Some hostgroup information
+        # Some hostgroup information
         if "service_list" in item['meta']:
             output += "# Services: %s\n" % ",".join(item['meta']['service_list'])
 
-        ## Some hostgroup information
+        # Some hostgroup information
         if "service_members" in item['meta']:
             output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
 
@@ -1580,14 +1583,14 @@ class Config(object):
         if not filename:
             filename = self.cfg_file
         for line in self.open(filename).readlines():
-            ## Strip out new line characters
+            # Strip out new line characters
             line = line.strip()
 
-            ## Skip blank lines
+            # Skip blank lines
             if line == "":
                 continue
 
-            ## Skip comments
+            # Skip comments
             if line[0] == "#" or line[0] == ';':
                 continue
             tmp = line.split("=", 1)
@@ -1611,11 +1614,11 @@ class Config(object):
             new_value: new value for the said attribute (i.e. "1"). None deletes
             the line.
 
-            old_value: Useful if multiple attributes exist (i.e. cfg_dir) and 
+            old_value: Useful if multiple attributes exist (i.e. cfg_dir) and
             you want to replace a specific one.
 
-            append: If true, do not overwrite current setting. Instead append 
-            this at the end. Use this with settings that are repeated like 
+            append: If true, do not overwrite current setting. Instead append
+            this at the end. Use this with settings that are repeated like
             cfg_file.
 
         Examples::
@@ -1639,14 +1642,14 @@ class Config(object):
         write_buffer = self.open(filename).readlines()
         is_dirty = False  # dirty if we make any changes
         for i, line in enumerate(write_buffer):
-            ## Strip out new line characters
+            # Strip out new line characters
             line = line.strip()
 
-            ## Skip blank lines
+            # Skip blank lines
             if line == "":
                 continue
 
-            ## Skip comments
+            # Skip comments
             if line[0] == "#" or line[0] == ';':
                 continue
             key, value = line.split("=", 1)
@@ -1689,9 +1692,9 @@ class Config(object):
 
     def needs_reload(self):
         """  Checks if the Nagios service needs a reload.
-        
+
         Returns:
-        
+
             True if Nagios service needs reload of cfg files
 
             False if reload not needed or Nagios is not running
@@ -1719,11 +1722,11 @@ class Config(object):
 
     def needs_reparse(self):
         """ Checks if the Nagios configuration needs to be reparsed.
-        
+
         Returns:
 
             True if any Nagios configuration file has changed since last parse()
-        
+
         """
         # If Parse has never been run:
         if self.data == {}:
@@ -1745,11 +1748,11 @@ class Config(object):
     def parse_maincfg(self):
         """ Parses your main configuration (nagios.cfg) and stores it as key/value pairs in self.maincfg_values
 
-        This function is mainly used by config.parse() which also parses your 
+        This function is mainly used by config.parse() which also parses your
         whole configuration set.
 
         Raises:
-        
+
             py:class:`ConfigFileNotFound`
 
         """
@@ -1763,8 +1766,8 @@ class Config(object):
     def parse(self):
         """ Parse all objects in your nagios configuration
 
-        This functions starts by loading up your nagios.cfg ( parse_maincfg() ) 
-        then moving on to your object configuration files (as defined via 
+        This functions starts by loading up your nagios.cfg ( parse_maincfg() )
+        then moving on to your object configuration files (as defined via
         cfg_file and cfg_dir) and and your resource_file as well.
 
         Returns:
@@ -1773,7 +1776,7 @@ class Config(object):
 
         Raises:
 
-          :py:class:`IOError` if unable to read any file due to permission 
+          :py:class:`IOError` if unable to read any file due to permission
           problems
         """
 
@@ -1795,7 +1798,7 @@ class Config(object):
 
         self.timestamps = self.get_timestamps()
 
-        ## This loads everything into
+        # This loads everything into
         for cfg_file in self.cfg_files:
             self._load_file(cfg_file)
 
@@ -1889,14 +1892,14 @@ class Config(object):
         return resources
 
     def extended_parse(self):
-        """ This parse is used after the initial parse() command is run. 
-        
+        """ This parse is used after the initial parse() command is run.
+
         It is only needed if you want extended meta information about hosts or other objects
         """
-        ## Do the initial parsing
+        # Do the initial parsing
         self.parse()
 
-        ## First, cycle through the hosts, and append hostgroup information
+        # First, cycle through the hosts, and append hostgroup information
         index = 0
         for host in self.data['all_host']:
             if host.get("register", None) == "0":
@@ -1906,7 +1909,7 @@ class Config(object):
             if not "hostgroup_list" in self.data['all_host'][index]['meta']:
                 self.data['all_host'][index]['meta']['hostgroup_list'] = []
 
-            ## Append any hostgroups that are directly listed in the host definition
+            # Append any hostgroups that are directly listed in the host definition
             if "hostgroups" in host:
                 for hostgroup_name in self._get_list(host, 'hostgroups'):
                     if not "hostgroup_list" in self.data['all_host'][index]['meta']:
@@ -1914,7 +1917,7 @@ class Config(object):
                     if hostgroup_name not in self.data['all_host'][index]['meta']['hostgroup_list']:
                         self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup_name)
 
-            ## Append any services which reference this host
+            # Append any services which reference this host
             service_list = []
             for service in self.data['all_service']:
                 if service.get("register", None) == "0":
@@ -1925,10 +1928,10 @@ class Config(object):
                     service_list.append(service['service_description'])
             self.data['all_host'][index]['meta']['service_list'] = service_list
 
-            ## Increment count
+            # Increment count
             index += 1
 
-        ## Loop through all hostgroups, appending them to their respective hosts
+        # Loop through all hostgroups, appending them to their respective hosts
         for hostgroup in self.data['all_hostgroup']:
             for member in self._get_list(hostgroup, 'members'):
                 index = 0
@@ -1936,31 +1939,31 @@ class Config(object):
                     if not "host_name" in host:
                         continue
 
-                    ## Skip members that do not match
+                    # Skip members that do not match
                     if host['host_name'] == member:
 
-                        ## Create the meta var if it doesn' exist
+                        # Create the meta var if it doesn' exist
                         if not "hostgroup_list" in self.data['all_host'][index]['meta']:
                             self.data['all_host'][index]['meta']['hostgroup_list'] = []
 
                         if hostgroup['hostgroup_name'] not in self.data['all_host'][index]['meta']['hostgroup_list']:
                             self.data['all_host'][index]['meta']['hostgroup_list'].append(hostgroup['hostgroup_name'])
 
-                    ## Increment count
+                    # Increment count
                     index += 1
 
-        ## Expand service membership
+        # Expand service membership
         index = 0
         for service in self.data['all_service']:
-            ## Find a list of hosts to negate from the final list
+            # Find a list of hosts to negate from the final list
             self.data['all_service'][index]['meta']['service_members'] = self._get_active_hosts(service)
 
-            ## Increment count
+            # Increment count
             index += 1
 
     def _get_active_hosts(self, item):
-        """ Given an object, return a list of active hosts. 
-        
+        """ Given an object, return a list of active hosts.
+
         This will exclude hosts that are negated with a "!"
 
         Args:
@@ -1971,38 +1974,38 @@ class Config(object):
 
             List of all the active hosts for `item`
         """
-        ## First, generate the negation list
+        # First, generate the negation list
         negate_hosts = []
 
-        ## Hostgroups
+        # Hostgroups
         if "hostgroup_name" in item:
             for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] == "!":
                     hostgroup_obj = self.get_hostgroup(hostgroup_name[1:])
                     negate_hosts.extend(self._get_list(hostgroup_obj, 'members'))
 
-        ## Host Names
+        # Host Names
         if "host_name" in item:
             for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] == "!":
                     negate_hosts.append(host_name[1:])
 
-        ## Now get hosts that are actually listed
+        # Now get hosts that are actually listed
         active_hosts = []
 
-        ## Hostgroups
+        # Hostgroups
         if "hostgroup_name" in item:
             for hostgroup_name in self._get_list(item, 'hostgroup_name'):
                 if hostgroup_name[0] != "!":
                     active_hosts.extend(self._get_list(self.get_hostgroup(hostgroup_name), 'members'))
 
-        ## Host Names
+        # Host Names
         if "host_name" in item:
             for host_name in self._get_list(item, 'host_name'):
                 if host_name[0] != "!":
                     active_hosts.append(host_name)
 
-        ## Combine the lists
+        # Combine the lists
         return_hosts = []
         for active_host in active_hosts:
             if active_host not in negate_hosts:
@@ -2011,8 +2014,8 @@ class Config(object):
         return return_hosts
 
     def get_cfg_dirs(self):
-        """ Parses the main config file for configuration directories 
-        
+        """ Parses the main config file for configuration directories
+
         Returns:
 
             List of all cfg directories used in this configuration
@@ -2032,7 +2035,7 @@ class Config(object):
     def get_cfg_files(self):
         """ Return a list of all cfg files used in this configuration
 
-        Filenames are normalised so that if nagios.cfg specifies relative 
+        Filenames are normalised so that if nagios.cfg specifies relative
         filenames we will convert it to fully qualified filename before returning.
 
         Returns:
@@ -2048,13 +2051,13 @@ class Config(object):
         cfg_files = []
         for config_object, config_value in self.maincfg_values:
 
-            ## Add cfg_file objects to cfg file list
+            # Add cfg_file objects to cfg file list
             if config_object == "cfg_file":
                 config_value = self.abspath(config_value)
                 if self.isfile(config_value):
                     cfg_files.append(config_value)
 
-            ## Parse all files in a cfg directory
+            # Parse all files in a cfg directory
             if config_object == "cfg_dir":
                 config_value = self.abspath(config_value)
                 directories = []
@@ -2114,7 +2117,7 @@ class Config(object):
         return normpath
 
     def get_cfg_value(self, key):
-        """ Returns one specific value from your nagios.cfg file, 
+        """ Returns one specific value from your nagios.cfg file,
         None if value is not found.
 
         Arguments:
@@ -2160,6 +2163,7 @@ class Config(object):
 
 
 class Livestatus(object):
+
     """ Wrapper around MK-Livestatus
 
     Example usage::
@@ -2174,13 +2178,13 @@ class Livestatus(object):
 
         Args:
 
-          livestatus_socket_path: Path to livestatus socket (if none specified, 
+          livestatus_socket_path: Path to livestatus socket (if none specified,
           use one specified in nagios.cfg)
 
-          nagios_cfg_file: Path to your nagios.cfg. If None then try to 
+          nagios_cfg_file: Path to your nagios.cfg. If None then try to
           auto-detect
-          
-          authuser: If specified. Every data pulled is with the access rights 
+
+          authuser: If specified. Every data pulled is with the access rights
           of that contact.
 
         """
@@ -2237,20 +2241,20 @@ class Livestatus(object):
     def _get_socket(self):
         """ Returns a socket.socket() instance to communicate with livestatus
 
-        Socket might be either unix filesocket or a tcp socket depenging in 
+        Socket might be either unix filesocket or a tcp socket depenging in
         the content of :py:attr:`livestatus_socket_path`
 
         Returns:
-            
+
             Socket to livestatus instance (socket.socket)
-            
+
         Raises:
 
             :py:class:`LivestatusNotConfiguredException` on failed connection.
 
             :py:class:`ParserError` If could not parse configured TCP address
             correctly.
-            
+
         """
         if not self.livestatus_socket_path:
             msg = "We could not find path to MK livestatus socket file. Make sure MK livestatus is installed and configured"
@@ -2275,11 +2279,11 @@ class Livestatus(object):
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
     def query(self, query, *args, **kwargs):
-        """ Performs LQL queries the livestatus socket 
-        
+        """ Performs LQL queries the livestatus socket
+
         Queries are corrected and convienient default data are added to the
         query before sending it to the socket.
-        
+
         Args:
 
             query: Query to be passed to the livestatus socket (string)
@@ -2290,9 +2294,9 @@ class Livestatus(object):
 
         Returns:
 
-            Answer from livestatus. It will be in python format unless specified 
+            Answer from livestatus. It will be in python format unless specified
             otherwise.
-        
+
         Raises:
 
             :py:class:`ParserError` if problems connecting to livestatus.
@@ -2394,8 +2398,8 @@ class Livestatus(object):
         return result
 
     def get(self, table, *args, **kwargs):
-        """ Same as self.query('GET %s' % (table,)) 
-        
+        """ Same as self.query('GET %s' % (table,))
+
         Extra arguments will be appended to the query.
 
         Args:
@@ -2412,15 +2416,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET %s' % (table,), *args, **kwargs)
 
     def get_host(self, host_name):
-        """ Performs a GET query for a particular host 
+        """ Performs a GET query for a particular host
 
         This performs::
-            
+
             '''GET hosts
             Filter: host_name = %s''' % host_name
 
@@ -2431,15 +2435,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET hosts', 'Filter: host_name = %s' % host_name)[0]
 
     def get_service(self, host_name, service_description):
-        """ Performs a GET query for a particular service 
+        """ Performs a GET query for a particular service
 
         This performs::
-            
+
             '''GET services
             Filter: host_name = %s
             Filter: service_description = %s''' % (host_name, service_description)
@@ -2454,7 +2458,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET services', 'Filter: host_name = %s' % host_name,
                           'Filter: description = %s' % service_description)[0]
@@ -2463,7 +2467,7 @@ class Livestatus(object):
         """ Performs a GET query for all hosts
 
         This performs::
-            
+
             '''GET hosts %s %s''' % (*args, **kwargs)
 
         Args:
@@ -2474,7 +2478,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET hosts', *args, **kwargs)
 
@@ -2482,7 +2486,7 @@ class Livestatus(object):
         """ Performs a GET query for all services
 
         This performs::
-            
+
             '''GET services
             %s %s''' % (*args, **kwargs)
 
@@ -2494,7 +2498,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET services', *args, **kwargs)
 
@@ -2502,7 +2506,7 @@ class Livestatus(object):
         """ Performs a GET query for all hostgroups
 
         This performs::
-            
+
             '''GET hostgroups
             %s %s''' % (*args, **kwargs)
 
@@ -2514,7 +2518,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET hostgroups', *args, **kwargs)
 
@@ -2522,7 +2526,7 @@ class Livestatus(object):
         """ Performs a GET query for all servicegroups
 
         This performs::
-            
+
             '''GET servicegroups
             %s %s''' % (*args, **kwargs)
 
@@ -2534,7 +2538,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET servicegroups', *args, **kwargs)
 
@@ -2542,7 +2546,7 @@ class Livestatus(object):
         """ Performs a GET query for all contactgroups
 
         This performs::
-            
+
             '''GET contactgroups
             %s %s''' % (*args, **kwargs)
 
@@ -2554,7 +2558,7 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET contactgroups', *args, **kwargs)
 
@@ -2562,7 +2566,7 @@ class Livestatus(object):
         """ Performs a GET query for all contacts
 
         This performs::
-            
+
             '''GET contacts
             %s %s''' % (*args, **kwargs)
 
@@ -2574,15 +2578,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET contacts', *args, **kwargs)
 
     def get_contact(self, contact_name):
-        """ Performs a GET query for a particular contact 
+        """ Performs a GET query for a particular contact
 
         This performs::
-            
+
             '''GET contacts
             Filter: contact_name = %s''' % contact_name
 
@@ -2593,15 +2597,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET contacts', 'Filter: contact_name = %s' % contact_name)[0]
 
     def get_servicegroup(self, name):
-        """ Performs a GET query for a particular servicegroup 
+        """ Performs a GET query for a particular servicegroup
 
         This performs::
-            
+
             '''GET servicegroups
             Filter: servicegroup_name = %s''' % servicegroup_name
 
@@ -2612,15 +2616,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET servicegroups', 'Filter: name = %s' % name)[0]
 
     def get_hostgroup(self, name):
-        """ Performs a GET query for a particular hostgroup 
+        """ Performs a GET query for a particular hostgroup
 
         This performs::
-            
+
             '''GET hostgroups
             Filter: hostgroup_name = %s''' % hostgroup_name
 
@@ -2631,15 +2635,15 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET hostgroups', 'Filter: name = %s' % name)[0]
 
     def get_contactgroup(self, name):
-        """ Performs a GET query for a particular contactgroup 
+        """ Performs a GET query for a particular contactgroup
 
         This performs::
-            
+
             '''GET contactgroups
             Filter: contactgroup_name = %s''' % contactgroup_name
 
@@ -2650,12 +2654,13 @@ class Livestatus(object):
         Returns:
 
             Answer from livestatus in python format.
-        
+
         """
         return self.query('GET contactgroups', 'Filter: name = %s' % name)[0]
 
 
 class RetentionDat(object):
+
     """ Easy way to parse the content of retention.dat
 
     After calling parse() contents of retention.dat are kept in self.data
@@ -2675,7 +2680,7 @@ class RetentionDat(object):
 
             filename: path to your retention.dat file
 
-            cfg_file: path to your nagios.cfg file, path to retention.dat will 
+            cfg_file: path to your nagios.cfg file, path to retention.dat will
             be looked up in this file
 
         """
@@ -2694,7 +2699,7 @@ class RetentionDat(object):
         """ Parses your status.dat file and stores in a dictionary under self.data
 
         Returns:
-        
+
             None
 
         Raises:
@@ -2702,7 +2707,7 @@ class RetentionDat(object):
             :py:class:`ParserError`: if problem arises while reading status.dat
 
             :py:class:`ParserError`: if status.dat is not found
-            
+
             :py:class:`IOError`: if status.dat cannot be read
         """
         self.data = {}
@@ -2714,7 +2719,7 @@ class RetentionDat(object):
         lines = open(self.filename, 'rb').readlines()
         for sequence_no, line in enumerate(lines):
             line_num = sequence_no + 1
-            ## Cleanup and line skips
+            # Cleanup and line skips
             line = line.strip()
             if line == "":
                 pass
@@ -2765,6 +2770,7 @@ class RetentionDat(object):
 
 
 class StatusDat(RetentionDat):
+
     """ Easy way to parse status.dat file from nagios
 
     After calling parse() contents of status.dat are kept in status.data
@@ -2790,7 +2796,7 @@ class StatusDat(RetentionDat):
 
             filename: path to your status.dat file
 
-            cfg_file: path to your nagios.cfg file, path to status.dat will be 
+            cfg_file: path to your nagios.cfg file, path to status.dat will be
             looked up in this file
 
         """
@@ -2810,13 +2816,13 @@ class StatusDat(RetentionDat):
 
         Args:
 
-            contact_name: `contact_name` field of the contact's status.dat data 
+            contact_name: `contact_name` field of the contact's status.dat data
             to parse and return as a dict.
 
         Returns:
 
             dict derived from status.dat for the contact.
-            
+
         Raises:
 
             ValueError if object is not found
@@ -2842,7 +2848,7 @@ class StatusDat(RetentionDat):
 
         Args:
 
-            host_name: `host_name` field of the host's status.dat data 
+            host_name: `host_name` field of the host's status.dat data
             to parse and return as a dict.
 
         Returns:
@@ -2865,13 +2871,13 @@ class StatusDat(RetentionDat):
 
         Args:
 
-            service_name: `service_name` field of the host's status.dat data 
+            service_name: `service_name` field of the host's status.dat data
             to parse and return as a dict.
 
         Returns:
 
             dict derived from status.dat for the service.
-            
+
         Raises:
 
             ValueError if object is not found
@@ -2886,6 +2892,7 @@ class StatusDat(RetentionDat):
 
 
 class ObjectCache(Config):
+
     """ Loads the configuration as it appears in objects.cache file """
 
     def get_cfg_files(self):
@@ -2895,6 +2902,7 @@ class ObjectCache(Config):
 
 
 class ParserError(Exception):
+
     """ ParserError is used for errors that the Parser has when parsing config.
 
     Typical usecase when there is a critical error while trying to read configuration.
@@ -2928,17 +2936,20 @@ class ParserError(Exception):
 
 
 class ConfigFileNotFound(ParserError):
+
     """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
     pass
 
 
 class LivestatusNotConfiguredException(ParserError):
+
     """ This exception is raised if we tried to autodiscover path to livestatus and failed """
 
 
 class LogFiles(object):
+
     """ Parses Logfiles defined in nagios.cfg and allows easy access to its content
-    
+
     Content is stored in python-friendly arrays of dicts. Output should be more
     or less compatible with mk_livestatus log output
     """
@@ -2958,14 +2969,14 @@ class LogFiles(object):
             end_time: If specified, only fetch log entries older than this (unix
             timestamp)
 
-            strict: If True, only return entries between start_time and 
-            end_time, if False, then return entries that belong to same log 
+            strict: If True, only return entries between start_time and
+            end_time, if False, then return entries that belong to same log
             files as given timeset
 
-            search: If provided, only return log entries that contain this 
+            search: If provided, only return log entries that contain this
             string (case insensitive)
 
-            kwargs: All extra arguments are provided as filter on the log 
+            kwargs: All extra arguments are provided as filter on the log
             entries. f.e. host_name="localhost"
 
          Returns:
@@ -3015,14 +3026,14 @@ class LogFiles(object):
 
     def get_logfiles(self):
         """ Returns a list with the fullpath to every log file used by nagios.
-        
+
         Lists are sorted by modification times. Newest logfile is at the front
         of the list so usually nagios.log comes first, followed by archivelogs
 
         Returns:
 
             List of strings
-           
+
         """
         logfiles = []
 
@@ -3042,7 +3053,7 @@ class LogFiles(object):
 
     def get_flap_alerts(self, **kwargs):
         """ Same as :py:meth:`get_log_entries`, except return timeperiod transitions.
-        
+
         Takes same parameters.
         """
         return self.get_log_entries(class_name="timeperiod transition", **kwargs)
@@ -3054,8 +3065,8 @@ class LogFiles(object):
         return self.get_log_entries(class_name="notification", **kwargs)
 
     def get_state_history(self, start_time=None, end_time=None, host_name=None, strict=True, service_description=None):
-        """ Returns a list of dicts, with the state history of hosts and services. 
-        
+        """ Returns a list of dicts, with the state history of hosts and services.
+
         Args:
 
            start_time: unix timestamp. if None, return all entries from today
@@ -3063,10 +3074,10 @@ class LogFiles(object):
            end_time: If specified, only fetch log entries older than this (unix
            timestamp)
 
-           host_name: If provided, only return log entries that contain this 
+           host_name: If provided, only return log entries that contain this
            string (case insensitive)
 
-           service_description: If provided, only return log entries that contain this 
+           service_description: If provided, only return log entries that contain this
            string (case insensitive)
 
         Returns:
@@ -3112,7 +3123,7 @@ class LogFiles(object):
 
         Args:
 
-            filename: Log file to be parsed. If is None, then log_file from 
+            filename: Log file to be parsed. If is None, then log_file from
             nagios.cfg is used.
 
         Returns:
@@ -3252,6 +3263,7 @@ class LogFiles(object):
 
 
 class ExtraOptsParser(object):
+
     """ Get Nagios Extra-Opts from a config file as specified by http://nagiosplugins.org/extra-opts
 
     We could ALMOST use pythons ConfParser but nagios plugin team thought it would be a
@@ -3341,8 +3353,8 @@ class ExtraOptsParser(object):
         return None
 
     def get(self, option_name, default=_sentinel):
-        """ Return the value of one specific option 
-        
+        """ Return the value of one specific option
+
         Args:
 
             option_name: The value set to this option will be returned
@@ -3370,10 +3382,10 @@ class ExtraOptsParser(object):
             return result[0]
 
     def getlist(self, option_name, default=_sentinel):
-        """ Return a list of all values for option_name 
-        
+        """ Return a list of all values for option_name
+
         Args:
-        
+
             option_name: All the values set to this option will be returned
 
         Returns:
@@ -3393,7 +3405,7 @@ class ExtraOptsParser(object):
     def parse_file(self, filename):
         """ Parses an ini-file and returns a dict of the ini values.
 
-        The datatype returned is a list of sections where each section is a 
+        The datatype returned is a list of sections where each section is a
         dict of values.
 
         Args:
@@ -3430,15 +3442,15 @@ class ExtraOptsParser(object):
             f.close()
 
     def parse_string(self, string):
-        """ Parses a string that is supposed to be ini-style format. 
-        
+        """ Parses a string that is supposed to be ini-style format.
+
         See :py:meth:`parse_file` for more info
 
         Args:
 
             string: String to be parsed. Should be in ini-file format.
 
-        Returns: 
+        Returns:
 
             Dictionnary containing all the sections of the ini-file and their
             respective data.
@@ -3482,8 +3494,9 @@ class ExtraOptsParser(object):
 
 
 class SshConfig(Config):
-    """ Parse object configuration files from remote host via ssh 
-    
+
+    """ Parse object configuration files from remote host via ssh
+
     Uses python-paramiko for ssh connections.
     """
 
@@ -3502,7 +3515,7 @@ class SshConfig(Config):
         """
         import paramiko
         self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(host, username=username, password=password)
         self.ftp = self.ssh.open_sftp()
 
@@ -3533,7 +3546,7 @@ class SshConfig(Config):
         tar = tarfile.open(fileobj=stdout, mode='r|')
         if not self.tar:
             self.tar = tar
-            #return
+            # return
         else:
             for i in tar:
                 self.tar.addfile(i)
@@ -3548,11 +3561,12 @@ class SshConfig(Config):
         if filename not in self.tar.getnames():
             self.add_to_tar(filename)
         return self.tar.getmember(filename)
+
     def get_cfg_files(self):
         cfg_files = []
         for config_object, config_value in self.maincfg_values:
 
-            ## Add cfg_file objects to cfg file list
+            # Add cfg_file objects to cfg file list
             if config_object == "cfg_file":
                 config_value = self.abspath(config_value)
                 if self.isfile(config_value):
@@ -3631,6 +3645,7 @@ class SshConfig(Config):
 
 
 class MultiSite(Livestatus):
+
     """ Wrapps around multiple Livesatus instances and aggregates the results
         of queries.
 
@@ -3639,6 +3654,7 @@ class MultiSite(Livestatus):
             >>> m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
             >>> m.add_backend(path='127.0.0.1:5992', name='remote')
     """
+
     def __init__(self, *args, **kwargs):
         super(MultiSite, self).__init__(*args, **kwargs)
         self.backends = {}
@@ -3674,6 +3690,7 @@ class MultiSite(Livestatus):
             return self.backends[backend_name]
         except KeyError:
             raise ParserError("No backend found with name='%s'" % backend_name)
+
     def query(self, query, *args, **kwargs):
         """ Behaves like mk_livestatus.query() except results are aggregated from multiple backends
 
@@ -3706,7 +3723,6 @@ class MultiSite(Livestatus):
                     result.append(row)
 
         return result
-
 
     def _merge_statistics(self, list1, list2):
         """ Merges multiple livestatus results into one result
@@ -3767,24 +3783,28 @@ class MultiSite(Livestatus):
 
 
 class config(Config):
+
     """ This class is here only for backwards compatibility. Use Config instead. """
 
 
 class mk_livestatus(Livestatus):
+
     """ This class is here only for backwards compatibility. Use Livestatus instead. """
 
 
 class object_cache(ObjectCache):
+
     """ This class is here only for backwards compatibility. Use ObjectCache instead. """
 
 
 class status(StatusDat):
+
     """ This class is here only for backwards compatibility. Use StatusDat instead. """
 
 
 class retention(RetentionDat):
-    """ This class is here only for backwards compatibility. Use RetentionDat instead. """
 
+    """ This class is here only for backwards compatibility. Use RetentionDat instead. """
 
 
 if __name__ == '__main__':
@@ -3794,13 +3814,13 @@ if __name__ == '__main__':
     ssh.ssh.get_transport().window_size = 3 * 1024 * 1024
     ssh.ssh.get_transport().use_compression()
 
-    #ssh.add_to_tar('/etc/nagios')
-    #sys.exit()
-    #ssh.ssh.exec_command("/bin/ls")
+    # ssh.add_to_tar('/etc/nagios')
+    # sys.exit()
+    # ssh.ssh.exec_command("/bin/ls")
     print "before reset"
     ssh.parse()
     end = time.time()
-    print "duration=", end-start
+    print "duration=", end - start
     bland = ssh.tar.getmember('/etc/nagios/okconfig/hosts/web-servers/bland.is-http.cfg')
     print bland.tobuf()
     sys.exit(0)

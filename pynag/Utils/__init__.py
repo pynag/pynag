@@ -38,6 +38,7 @@ from pynag.Utils.checkresult import CheckResult
 
 rlock = threading.RLock()
 
+
 class PynagError(Exception):
 
     """ The default pynag exception.
@@ -85,7 +86,7 @@ def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
                             env=run_env)
     stdout, stderr = proc.communicate('through stdin to stdout')
     result = proc.returncode, stdout, stderr
-    if proc.returncode > 0 and raise_error_on_fail == True:
+    if proc.returncode > 0 and raise_error_on_fail:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
         error_string += "* Error was:\n%s\n" % (stderr.strip())
         error_string += "* Command was:\n%s\n" % command
@@ -154,8 +155,8 @@ class GitRepo(object):
         environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
 
     def _run_command(self, command):
-        """ Run a specified command from the command line. Return stdout 
-        
+        """ Run a specified command from the command line. Return stdout
+
         Args:
             command (str): command to execute
 
@@ -165,22 +166,22 @@ class GitRepo(object):
         import subprocess
         import os
         cwd = self.directory
-        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+        proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
         returncode = proc.returncode
-        if returncode > 0 and self.ignore_errors == False:
+        if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
-            errorstring = errorstring % (command, returncode, stdout, stderr,getuser())
-            raise PynagError( errorstring, errorcode=returncode, errorstring=stderr )
+            errorstring = errorstring % (command, returncode, stdout, stderr, getuser())
+            raise PynagError(errorstring, errorcode=returncode, errorstring=stderr)
         return stdout
 
     def is_up_to_date(self):
-        """ Returns True if all files in git repo are fully commited 
-        
+        """ Returns True if all files in git repo are fully commited
+
         Returns:
             bool. Git repo is up-to-date
                 True -- All files are commited
-                
+
                 False -- At least one file is not commited
         """
         return len(self.get_uncommited_files()) == 0
@@ -194,8 +195,8 @@ class GitRepo(object):
         return map(lambda x: x.get('hash'), self.log())
 
     def get_uncommited_files(self):
-        """ Returns a list of files that are have unstaged changes 
-        
+        """ Returns a list of files that are have unstaged changes
+
         Returns:
             List. All files that have unstaged changes.
         """
@@ -239,7 +240,7 @@ class GitRepo(object):
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
-            hash,author, authoremail, authortime, comment = line.split("\t", 4)
+            hash, author, authoremail, authortime, comment = line.split("\t", 4)
             result.append({
                 "hash": hash,
                 "author_name": author,
@@ -273,7 +274,7 @@ class GitRepo(object):
             commit_id_or_filename = commit_id_or_filename.replace("'", r"\'")
             command = "git diff '%s'" % commit_id_or_filename
         else:
-            raise  PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
+            raise PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
         # Clean single quotes from parameters:
         return self._run_command(command)
 
@@ -286,7 +287,7 @@ class GitRepo(object):
         Returns:
             str. Output of ``git show commit_id``
 
-        Raises: 
+        Raises:
             PynagError: Invalid commit_id was given
         """
         if commit_id not in self.get_valid_commits():
@@ -316,11 +317,11 @@ class GitRepo(object):
         return self.commit(message=message, filelist=filelist)
 
     def pre_save(self, object_definition, message):
-        """ Commits object_definition.get_filename() if it has any changes. 
+        """ Commits object_definition.get_filename() if it has any changes.
 
         This function is called by :py:class:`pynag.Model.EventHandlers` before
         calling :py:meth:`pynag.Utils.GitRepo.save`
-        
+
         Args:
 
             object_definition (pynag.Model.ObjectDefinition): object to commit changes
@@ -340,7 +341,7 @@ class GitRepo(object):
                             (object_definition.object_type, object_definition.get_shortname()))
 
     def save(self, object_definition, message):
-        """ Commits object_definition.get_filename() if it has any changes. 
+        """ Commits object_definition.get_filename() if it has any changes.
         This function is called by :py:class:`pynag.Model.EventHandlers`
 
         Args:
@@ -360,9 +361,9 @@ class GitRepo(object):
         self.messages = []
 
     def is_dirty(self, filename):
-        """ Returns True if filename needs to be committed to git 
+        """ Returns True if filename needs to be committed to git
 
-        Args: 
+        Args:
 
             filename (str): file to check
         """
@@ -398,10 +399,10 @@ class GitRepo(object):
 
             message (str): Message used for the git commit
 
-            filelist (list of strings): List of filenames to commit (if None, 
+            filelist (list of strings): List of filenames to commit (if None,
             then commit all files in the repo)
 
-            author (str): Author to use for git commit. If any is specified, 
+            author (str): Author to use for git commit. If any is specified,
             overwrite self.author_name and self.author_email
 
         Returns:
@@ -452,7 +453,7 @@ class GitRepo(object):
             return
         # Create a space seperated string with the filenames
         filestring = ' '.join(filelist)
-        command = "git commit -m '%s' --author='%s' -- %s" % (message, author,filestring)
+        command = "git commit -m '%s' --author='%s' -- %s" % (message, author, filestring)
         return self._run_command(command=command)
 
     def add(self, filename):
@@ -490,7 +491,7 @@ class PerfData(object):
 
     def __init__(self, perfdatastring=""):
         """
-        >>> perf = PerfData("load1=10 load2=10 load3=20") 
+        >>> perf = PerfData("load1=10 load2=10 load3=20")
         """
         self.metrics = []
         self.invalid_metrics = []
@@ -555,7 +556,7 @@ class PerfData(object):
         >>> s.add_perfdatametric("a=1")
         >>> s.add_perfdatametric(label="utilization",value="10",uom="%")
         """
-        metric=PerfDataMetric(perfdatastring=perfdatastring, label=label,value=value,warn=warn,crit=crit,min=min,max=max,uom=uom)
+        metric = PerfDataMetric(perfdatastring=perfdatastring, label=label, value=value, warn=warn, crit=crit, min=min, max=max, uom=uom)
         self.metrics.append(metric)
 
     def get_perfdatametric(self, metric_name):
@@ -587,8 +588,8 @@ class PerfData(object):
 
 class PerfDataMetric(object):
 
-    """ Data structure for one single Nagios Perfdata Metric 
-    
+    """ Data structure for one single Nagios Perfdata Metric
+
 
     Attributes:
 
@@ -610,13 +611,13 @@ class PerfDataMetric(object):
 
     """
 
-    label = "" #: str. Label section of the perfdata string
-    value = "" #: str. Value section of the perfdata string
-    warn = "" #: str. WARNING threshold
-    crit = "" #: str CRITICAL threshold
-    min = "" #: str. Minimal value of control
-    max = "" #: str. Maximal value of control
-    uom = "" #: str. Measure unit (octets, bits/s, volts, ...)
+    label = ""  # : str. Label section of the perfdata string
+    value = ""  # : str. Value section of the perfdata string
+    warn = ""  # : str. WARNING threshold
+    crit = ""  # : str CRITICAL threshold
+    min = ""  # : str. Minimal value of control
+    max = ""  # : str. Maximal value of control
+    uom = ""  # : str. Measure unit (octets, bits/s, volts, ...)
 
     def __repr__(self):
         return "'%s'=%s%s;%s;%s;%s;%s" % (
@@ -702,7 +703,7 @@ class PerfDataMetric(object):
     def get_status(self):
         """ Return nagios-style exit code (int 0-3) by comparing
 
-        Example: 
+        Example:
 
         self.value with self.warn and self.crit
 
@@ -778,15 +779,15 @@ class PerfDataMetric(object):
 
     def reconsile_thresholds(self):
         """ Convert threshold from new threshold syntax to current one.
-        
-        For backwards compatibility 
+
+        For backwards compatibility
         """
 
         self.warn = reconsile_threshold(self.warn)
         self.crit = reconsile_threshold(self.crit)
 
     def split_value_and_uom(self, value):
-        """ 
+        """
         Example:
 
         get value="10M" and return (10,"M")
@@ -844,11 +845,11 @@ class PerfDataMetric(object):
             'max': self.max,
         }
 
-def grep(objects, **kwargs):
 
+def grep(objects, **kwargs):
     """ Returns all the elements from array that match the keywords in **kwargs
 
-    See documentation for pynag.Model.ObjectDefinition.objects.filter() for 
+    See documentation for pynag.Model.ObjectDefinition.objects.filter() for
     example how to use this.
 
     Arguments:
@@ -875,7 +876,7 @@ def grep(objects, **kwargs):
     search = []
     for k, v in kwargs.items():
         # We need the actual array in "v" for __in and __notin
-        if type(v) == type([]) and not (k.endswith('__in') or k.endswith('__notin')):
+        if isinstance(v, type([])) and not (k.endswith('__in') or k.endswith('__notin')):
             for i in v:
                 search.append((k, i))
         else:
@@ -904,7 +905,7 @@ def grep(objects, **kwargs):
             expression = lambda x: not str(x.get(k)).endswith(v_str)
         elif k.endswith('__exists'):
             k = k[:-len('__exists')]
-            expression = lambda x: str(x.has_key(k)) == v_str
+            expression = lambda x: str(k in x) == v_str
         elif k.endswith('__isnot'):
             k = k[:-len('__isnot')]
             expression = lambda x: v_str != str(x.get(k))
@@ -929,13 +930,12 @@ def grep(objects, **kwargs):
         else:
             # If all else fails, assume they are asking for exact match
             v_is_str = isinstance(v, str)
-            expression = lambda obj: (lambda objval: str(objval) == v_str or ( v_is_str and isinstance(objval, list) and v in objval ) ) (obj.get(k))
+            expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
         matching_objects = filter(expression, matching_objects)
     return matching_objects
 
 
 def grep_to_livestatus(*args, **kwargs):
-
     """ Converts from pynag style grep syntax to livestatus filter syntax.
 
     Example:
@@ -998,9 +998,9 @@ def grep_to_livestatus(*args, **kwargs):
 class AttributeList(object):
 
     """ Parse a list of nagios attributes into a parsable format.
-    (e. contact_groups) 
+    (e. contact_groups)
 
-    This makes it handy to mangle with nagios attribute values that are in a 
+    This makes it handy to mangle with nagios attribute values that are in a
     comma seperated format.
 
     Typical comma-seperated format in nagios configuration files looks something
@@ -1088,7 +1088,7 @@ class AttributeList(object):
         """ Same as list.append():
 
         Args:
-            
+
             object: Item to append into self.fields (typically a string)
 
 
@@ -1242,10 +1242,10 @@ class PluginOutput:
     ['load1'=15;;;;, 'load2'=10;;;;]
 
     """
-    summary = None #: str. Summary returned by the plugin check
+    summary = None  # : str. Summary returned by the plugin check
     long_output = None
-    perfdata = None #: str. Data returned by the plugin as a string
-    parsed_perfdata = None #: Perfdata parsed and split
+    perfdata = None  # : str. Data returned by the plugin as a string
+    parsed_perfdata = None  # : Perfdata parsed and split
 
     def __init__(self, stdout):
         if not stdout:
@@ -1270,6 +1270,7 @@ class PluginOutput:
         self.perfdata = perfdata.strip()
         self.parsed_perfdata = PerfData(perfdatastring=perfdata)
 
+
 class defaultdict(dict):
 
     """ This is an alternative implementation of collections.defaultdict.
@@ -1285,8 +1286,7 @@ class defaultdict(dict):
     """
 
     def __init__(self, default_factory=None, *a, **kw):
-        if (default_factory is not None and
-            not hasattr(default_factory, '__call__')):
+        if (default_factory is not None and not hasattr(default_factory, '__call__')):
             raise TypeError('first argument must be callable')
         dict.__init__(self, *a, **kw)
         self.default_factory = default_factory
@@ -1326,13 +1326,13 @@ class defaultdict(dict):
 
 
 def reconsile_threshold(threshold_range):
-    """ Take threshold string as and normalize it to the format supported by plugin 
+    """ Take threshold string as and normalize it to the format supported by plugin
     development team
 
-    The input (usually a string in the form of 'the new threshold syntax') is a 
+    The input (usually a string in the form of 'the new threshold syntax') is a
     string in the form of x..y
 
-    The output will be a compatible string in the older nagios plugin format 
+    The output will be a compatible string in the older nagios plugin format
     @x:y
 
     Examples:
@@ -1428,14 +1428,14 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
         message (str): Message to pass back.
 
         nscahost (str): Hostname or IP address of NSCA server.
-        
+
         hostname (str): Hostname the check results apply to.
-        
+
         service (str): Service the check results apply to.
-        
+
         nscabin (str): Location of send_nsca binary. If none specified whatever
         is in the path will be used.
-        
+
         nscaconf (str): Location of the NSCA configuration to use if any.
 
     Returns:

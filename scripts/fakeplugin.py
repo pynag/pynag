@@ -20,4 +20,3 @@ np.activate()
 
 # Test supplied fake data against thresholds
 np.check_range(int(np['fakedata']))
-
