@@ -17,11 +17,7 @@ versionfile:
 	echo "release:" $(RELEASE) >> etc/version
 	echo "source build date:" $(DATE) >> etc/version
 
-manpage:
-	for manpage in $(MANPAGES); do (pod2man --center=$$manpage --release="" ./docs/$$manpage.pod > ./docs/$$manpage.1); done
-
-
-build: clean manpage
+build: clean
 	$(PYTHON) setup.py build -f
 
 clean:
@@ -40,7 +36,7 @@ clean_hard:
 clean_hardest: clean_rpms
 
 
-install: build manpage
+install: build
 	$(PYTHON) setup.py install -f
 
 install_hard: clean_hard install
