@@ -293,9 +293,11 @@ class LogFiles(unittest.TestCase):
         self.assertEqual(len_state_history, len(state_history))
 
     def testGetLogFiles(self):
-        tmp = pynag.Utils.runCommand('find ./nagios/log -type f | wc -l')
-        expected_number_of_files = int(tmp[1].strip())
+        files_num = 0
+        for root, dirs, files in os.walk("nagios/log"):
+            files_num += len(files)
 
+        expected_number_of_files = files_num
         logfiles = self.log.get_logfiles()
         self.assertEqual(expected_number_of_files, len(logfiles))
         self.assertTrue('./nagios/log/nagios.log' in logfiles)
