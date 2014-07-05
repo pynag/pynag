@@ -3000,6 +3000,10 @@ class LogFiles(object):
         if 'filename' in kwargs:
             logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
 
+        # Log entries are returned in ascending order, which is the opposite of
+        # what get_logfiles returns.
+        logfiles.reverse()
+
         result = []
         for log_file in logfiles:
             entries = self._parse_log_file(filename=log_file)
@@ -3022,6 +3026,13 @@ class LogFiles(object):
 
             if start_time is None or int(start_time) >= int(first_entry.get('time')):
                 break
+
+        # Now, logfiles should in MOST cases come sorted for us.
+        # However we rely on modification time of files and if it is off,
+        # We want to make sure log entries are coming in the correct order.
+        # The following sort should not impact performance in the typical use case.
+        result.sort(key=lambda x: x.get('time'))
+
         return result
 
     def get_logfiles(self):

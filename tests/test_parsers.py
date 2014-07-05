@@ -293,9 +293,9 @@ class LogFiles(unittest.TestCase):
         self.log = pynag.Parsers.LogFiles(maincfg=cfg_file)
 
     def testLogFileParsing(self):
-        expected_no_of_logentries = 63692
-        expected_no_for_app01 = 127
-        len_state_history = 14301
+        expected_no_of_logentries = 1040
+        expected_no_for_app01 = 11
+        len_state_history = 1030
 
         log = self.log.get_log_entries(start_time=0)
         self.assertEqual(expected_no_of_logentries, len(log))
@@ -307,10 +307,25 @@ class LogFiles(unittest.TestCase):
         self.assertEqual(len_state_history, len(state_history))
 
     def testGetLogFiles(self):
+        files_num = 0
+        for root, dirs, files in os.walk("nagios/log"):
+            files_num += len(files)
+
+        expected_number_of_files = files_num
         logfiles = self.log.get_logfiles()
-        self.assertEqual(2, len(logfiles))
-        self.assertEqual('./nagios/log/nagios.log', logfiles[0])
-        self.assertEqual('./nagios/log/archives/archivelog1.log', logfiles[1])
+        self.assertEqual(expected_number_of_files, len(logfiles))
+        self.assertTrue('./nagios/log/nagios.log' in logfiles)
+        self.assertEqual(5, len(logfiles))
+
+    def testLogEntriesAreSorted(self):
+        entries = self.log.get_log_entries(start_time=0)
+        last_timestamp = -1
+        for entry in entries:
+            current_timestamp = entry.get('time')
+            if last_timestamp >= 0 and last_timestamp > current_timestamp:
+                message = "Timestamp of log entries are not in ascending order"
+                self.assertLessEqual(last_timestamp, current_timestamp, message)
+            last_timestamp = current_timestamp
 
 
 class Status(unittest.TestCase):
@@ -377,7 +392,6 @@ class SshConfig(Config):
     def testParse(self):
         self.instance.parse()
         host = self.instance.get_host('localhost')
-        print host['__test']
         self.instance.item_edit_field(host, '__test', host['__test'] + '+')
 
     def testOpenFile(self):
