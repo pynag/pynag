@@ -3025,7 +3025,7 @@ class LogFiles(object):
             result += entries
 
             if start_time is None or int(start_time) >= int(first_entry.get('time')):
-                break
+                continue
 
         # Now, logfiles should in MOST cases come sorted for us.
         # However we rely on modification time of files and if it is off,
