@@ -13,6 +13,8 @@ import tempfile
 import shutil
 import string
 import random
+import time
+import datetime
 
 from tests import tests_dir
 import pynag.Parsers
@@ -326,6 +328,18 @@ class LogFiles(unittest.TestCase):
                 message = "Timestamp of log entries are not in ascending order"
                 self.assertLessEqual(last_timestamp, current_timestamp, message)
             last_timestamp = current_timestamp
+
+    def testForMissingLogEntries(self):
+        # Get all log files from 2014-01-01, make sure we find all of them
+        start_time = (2014, 01, 01, 0, 0, 0, 0, 0, 0)
+        start_time = time.mktime(start_time)  # timestamp
+
+        # We expect 1020 log entries to appear
+        # nagios.log + 2 logfiles for 2014.
+        # All log files from 2013 should be skipped
+        expected_number_of_entries = 1000 + 10 + 10
+        entries = self.log.get_log_entries(start_time=start_time)
+        self.assertEqual(expected_number_of_entries, len(entries))
 
 
 class Status(unittest.TestCase):
