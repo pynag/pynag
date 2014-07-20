@@ -112,6 +112,11 @@ update_freecode_info() {
 
 }
 
+update_manpage() {
+    ask "Update manpage?" || return 0
+    ./setup.py build_man
+    gzip -c < man/pynag.1 > man/pynag.1.gz
+}
 
 update_version_number() {
     ask "Update version number?" || return 0

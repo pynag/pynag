@@ -20,3 +20,8 @@ Subpackages
     pynag.Plugins
     pynag.Utils
 
+The pynag command line
+======================
+
+.. toctree::
+   pynag-command

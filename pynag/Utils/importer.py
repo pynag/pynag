@@ -4,10 +4,10 @@
 
 Either execute this script standalone from the command line or use it as a python library like so:
 
-from pynag.Utils import importer
-pynag_objects = importer.import_from_csv_file(filename='foo', seperator=',')
-for i in pynag_objects:
-    i.save()
+>>> from pynag.Utils import importer
+>>> pynag_objects = importer.import_from_csv_file(filename='foo', seperator=',') # doctest: +SKIP
+>>> for i in pynag_objects: # doctest: +SKIP
+...     i.save() # doctest: +SKIP
 """
 
 import optparse
