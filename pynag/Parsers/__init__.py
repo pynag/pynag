@@ -3000,6 +3000,11 @@ class LogFiles(object):
         if 'filename' in kwargs:
             logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
 
+        # If start time was provided, skip all files that we last modified
+        # before start_time
+        if start_time:
+            logfiles = filter(lambda x: start_time <= os.stat(x).st_mtime, logfiles)
+
         # Log entries are returned in ascending order, which is the opposite of
         # what get_logfiles returns.
         logfiles.reverse()
@@ -3025,7 +3030,7 @@ class LogFiles(object):
             result += entries
 
             if start_time is None or int(start_time) >= int(first_entry.get('time')):
-                break
+                continue
 
         # Now, logfiles should in MOST cases come sorted for us.
         # However we rely on modification time of files and if it is off,
