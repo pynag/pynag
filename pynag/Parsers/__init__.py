@@ -3000,8 +3000,8 @@ class LogFiles(object):
         if 'filename' in kwargs:
             logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
 
-        # If start time was provided, skip all files that have modification
-        # time older than our file.
+        # If start time was provided, skip all files that we last modified
+        # before start_time
         if start_time:
             logfiles = filter(lambda x: start_time <= os.stat(x).st_mtime, logfiles)
 
