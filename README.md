@@ -81,6 +81,7 @@ We blatantly admit that documentation is scarce in pynag. Most of the documentat
 is in-line in pydoc strings in the respective python modules.
 
 Any help with improving the documentation is much appreciated. For more documentation see
+* http://docs.pynag.org/
 * The pynag/examples directory
 * Our github wiki: https://github.com/pynag/pynag/wiki
 

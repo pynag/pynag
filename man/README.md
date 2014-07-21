@@ -6,4 +6,5 @@ Generate new man page
 ---------------------
 ```
 ./setup.py build_man
+gzip -cf < pynag.1 > pynag.1.gz
 ```
