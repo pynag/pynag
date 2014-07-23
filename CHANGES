@@ -1,4 +1,4 @@
-Changes in 0.9.0
+Changes in 0.9.0 (July 23 2014)
 New Features:
     - new method: Model.*.rename()
     - new class: Utils.CheckResult, add checkresults
