@@ -27,6 +27,8 @@ main() {
     
     new_version=$(grep ^VERSION Makefile | awk '{ print $3 }')
 
+    update_manpage || echo FAIL
+
     git_commit || echo FAIL
 
     git_push || echo FAIL
@@ -156,7 +158,7 @@ update_debian_changelog() {
 
 git_commit() {
     ask "Commit changes to git and tag release ?" || return 0
-    git commit Makefile CHANGES ${project_name}/__init__.py rel-eng/packages/${project_name} ${project_name}.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
+    git commit Makefile CHANGES ${project_name}/__init__.py rel-eng/packages/${project_name} ${project_name}.spec debian.upstream/changelog man/pynag.1* -m "Bumped version number to $new_version" > /dev/null
     git tag ${project_name}-${new_version}-${current_release} -a -m "Bumped version number to $new_version"
 }
 
