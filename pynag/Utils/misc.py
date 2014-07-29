@@ -88,7 +88,7 @@ class FakeNagiosEnvironment(object):
         pynag.Model.pynag_directory = self.original_objects_dir
         self._model_is_dirty = False
 
-    def create_minimal_environment(self):
+    def create_minimal_environment(self, backend='nagios'):
         """ Starts a nagios server with empty config in an isolated environment """
         t = self.tempdir
         cfg_file = self.cfg_file = os.path.join(t, "nagios.cfg")
@@ -107,6 +107,7 @@ class FakeNagiosEnvironment(object):
 
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
+            f.write(config_additions[backend])
 
         config = self.config = pynag.Parsers.config(cfg_file=cfg_file)
         self.config.open = self.open_decorator(self.config.open)
@@ -141,22 +142,33 @@ class FakeNagiosEnvironment(object):
         config._edit_static_file(attribute='temp_path', new_value=log_dir)
         config._edit_static_file(attribute='temp_file',
                                  new_value=os.path.join(t, "nagios.tmp"))
+        if backend == 'shinken':
+            config._edit_static_file(attribute='modules_dir',
+                                     new_value='/usr/share/pyshared/shinken/modules')
+
 
     def clean_up(self):
         """ Clean up all temporary directories """
         command = ['rm', '-rf', self.tempdir]
         pynag.Utils.runCommand(command=command, shell=False)
 
-    def terminate(self):
+    def terminate(self, stop_command=None):
         """ Stop the nagios environment and remove all temporary files """
-        self.stop()
+        self.stop(stop_command=stop_command)
         if self._model_is_dirty:
             self.restore_model()
         self.clean_up()
 
     def start(self, start_command=None, timeout=10):
+        """ Starts the environment.
+
+        If provided, start_command will be intrapolated with tmp_conf and tmp_dir.
+        """
         self.configure_p1_file()
-        if not start_command:
+        if start_command:
+            start_command = start_command.format(tmp_conf=self.config.cfg_file,
+                                                 tmp_dir=self.tempdir)
+        else:
             nagios_binary = self.config.guess_nagios_binary()
             start_command = "%s -d %s" % (nagios_binary, self.config.cfg_file)
         result = pynag.Utils.runCommand(command=start_command)
@@ -597,3 +609,66 @@ minimal_config = r"""
     }
 
     """
+
+config_additions = {
+    'nagios': '',
+    'shinken': """
+define arbiter{
+     arbiter_name  arbiter-1
+     address       localhost
+     port          7770
+     spare         0
+}
+
+define scheduler{
+     scheduler_name   scheduler-1
+     address          localhost
+     port             7768
+     spare            0
+}
+
+define reactionner{
+     reactionner_name     reactionner-1
+     address              localhost
+     port                 7769
+     spare                0
+}
+
+define receiver{
+     receiver_name     receiver-1
+     address              localhost
+     port                 7773
+     spare                0
+}
+
+
+define poller{
+     poller_name     poller-1
+     address         localhost
+     port            7771
+     spare           0
+}
+
+define broker{
+     broker_name      broker-1
+     address          localhost
+     port             7772
+     spare            0
+     modules          livestatus
+}
+
+define module {
+     module_name     livestatus
+     module_type     livestatus
+     host            *           ; * = listen on all configured IP addresses
+     port            50000       ; port to listen
+     modules
+}
+
+define module{
+     module_name      Simple-log
+     module_type      simple_log
+     path             /var/lib/shinken/shinken.log
+}
+"""
+}
