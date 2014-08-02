@@ -41,7 +41,6 @@ class CheckResult(object):
 
         # Nagios is quite fussy about the filename, it must be
         # a 7 character name starting with 'c'
-        self.file_time = file_time
 
         self.fh, self.cmd_file = tempfile.mkstemp(prefix='c',
                                                   dir=nagios_result_dir)
