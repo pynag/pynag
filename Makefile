@@ -1,4 +1,4 @@
-VERSION		= 0.9.0
+VERSION		= 0.9.1
 RELEASE		= 1
 DATE		= $(shell date)
 NEWRELEASE	= $(shell echo $$(($(RELEASE) + 1)))
