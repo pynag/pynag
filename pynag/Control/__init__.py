@@ -82,7 +82,7 @@ class daemon(object):
         """
         cmd = [self.nagios_bin, "-v", self.nagios_cfg]
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
@@ -125,7 +125,7 @@ class daemon(object):
             cmd = ["service", self.service_name, "restart"]
 
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
@@ -144,7 +144,7 @@ class daemon(object):
             cmd = ["service", self.service_name, "status"]
 
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
@@ -163,7 +163,7 @@ class daemon(object):
             cmd = ["service", self.service_name, "start"]
 
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
@@ -182,7 +182,7 @@ class daemon(object):
             cmd = ["service", self.service_name, "stop"]
 
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
@@ -201,7 +201,7 @@ class daemon(object):
             cmd = ["service", self.service_name, "reload"]
 
         if self.sudo:
-            cmd.insert(0, 'sudo')
+            cmd = ['sudo', '--non-interactive'] + cmd
 
         result, self.stdout, self.stderr = runCommand(cmd, shell=False)
 
