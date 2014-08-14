@@ -59,7 +59,7 @@ class testControl(unittest.TestCase):
         self.assertTrue(result)
 
         # Make sure runCommand is called correctly
-        pynag.Control.runCommand.assert_called_once_with(["sudo", "--non-interactive", self.nagios_bin, "-v", self.nagios_cfg],
+        pynag.Control.runCommand.assert_called_once_with(["sudo", "-n", self.nagios_bin, "-v", self.nagios_cfg],
                                                          shell=False
                                                          )
 
@@ -77,7 +77,7 @@ class testControl(unittest.TestCase):
         # Make sure runCommand is called correctly
         pynag.Control.runCommand.assert_called_once()
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_bin, "-v", self.nagios_cfg],
+            ["sudo", "-n", self.nagios_bin, "-v", self.nagios_cfg],
             shell=False)
 
     def test_restart_script(self):
@@ -88,7 +88,7 @@ class testControl(unittest.TestCase):
         result = self.control.restart()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_init, "restart"], shell=False)
+            ["sudo", "-n", self.nagios_init, "restart"], shell=False)
 
     def test_restart_service(self):
         pynag.Control.runCommand = MagicMock()
@@ -98,7 +98,7 @@ class testControl(unittest.TestCase):
         result = self.control.restart()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "restart"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "restart"], shell=False)
 
     def test_restart_systemd(self):
         pynag.Control.runCommand = MagicMock()
@@ -108,7 +108,7 @@ class testControl(unittest.TestCase):
         result = self.control.restart()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "restart"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "restart"], shell=False)
 
     def test_status_script(self):
         pynag.Control.runCommand = MagicMock()
@@ -118,7 +118,7 @@ class testControl(unittest.TestCase):
         result = self.control.status()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_init, "status"], shell=False)
+            ["sudo", "-n", self.nagios_init, "status"], shell=False)
 
     def test_status_service(self):
         pynag.Control.runCommand = MagicMock()
@@ -128,7 +128,7 @@ class testControl(unittest.TestCase):
         result = self.control.status()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "status"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "status"], shell=False)
 
     def test_status_systemd(self):
         pynag.Control.runCommand = MagicMock()
@@ -138,7 +138,7 @@ class testControl(unittest.TestCase):
         result = self.control.status()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "status"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "status"], shell=False)
 
     def test_reload_script(self):
         pynag.Control.runCommand = MagicMock()
@@ -148,7 +148,7 @@ class testControl(unittest.TestCase):
         self.control.reload()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_init, "reload"], shell=False)
+            ["sudo", "-n", self.nagios_init, "reload"], shell=False)
 
     def test_reload_service(self):
         pynag.Control.runCommand = MagicMock()
@@ -158,7 +158,7 @@ class testControl(unittest.TestCase):
         self.control.reload()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "reload"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "reload"], shell=False)
 
     def test_reload_systemd(self):
         pynag.Control.runCommand = MagicMock()
@@ -168,7 +168,7 @@ class testControl(unittest.TestCase):
         self.control.reload()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "reload"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "reload"], shell=False)
 
     def test_stop_script(self):
         pynag.Control.runCommand = MagicMock()
@@ -178,7 +178,7 @@ class testControl(unittest.TestCase):
         self.control.stop()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_init, "stop"], shell=False)
+            ["sudo", "-n", self.nagios_init, "stop"], shell=False)
 
     def test_stop_service(self):
         pynag.Control.runCommand = MagicMock()
@@ -188,7 +188,7 @@ class testControl(unittest.TestCase):
         self.control.stop()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "stop"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "stop"], shell=False)
 
     def test_stop_systemd(self):
         pynag.Control.runCommand = MagicMock()
@@ -198,7 +198,7 @@ class testControl(unittest.TestCase):
         self.control.stop()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "stop"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "stop"], shell=False)
 
     def test_start_script(self):
         pynag.Control.runCommand = MagicMock()
@@ -208,7 +208,7 @@ class testControl(unittest.TestCase):
         self.control.start()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", self.nagios_init, "start"], shell=False)
+            ["sudo", "-n", self.nagios_init, "start"], shell=False)
 
     def test_start_service(self):
         pynag.Control.runCommand = MagicMock()
@@ -218,7 +218,7 @@ class testControl(unittest.TestCase):
         self.control.start()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "start"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "start"], shell=False)
 
     def test_start_systemd(self):
         pynag.Control.runCommand = MagicMock()
@@ -228,7 +228,7 @@ class testControl(unittest.TestCase):
         self.control.start()
 
         pynag.Control.runCommand.assert_called_once_with(
-            ["sudo", "--non-interactive", "service", self.service_name, "start"], shell=False)
+            ["sudo", "-n", "service", self.service_name, "start"], shell=False)
 
     def test_running_script(self):
         pynag.Parsers.config._get_pid = MagicMock()
