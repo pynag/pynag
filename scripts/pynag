@@ -512,7 +512,7 @@ def _get_all_downtimes():
         result += s.data.get('servicedowntime', [])
         result += s.data.get('hostdowntime', [])
         for i in result:
-            i['id'] = i.get('comment_id', None)
+            i['id'] = i.get('downtime_id', None)
         return result
 def copy_object():
     parser.usage = ''' %prog copy <SET attr1=value1 [attr2=val2]> <WHERE ...> [--filename /path/to/file] '''
