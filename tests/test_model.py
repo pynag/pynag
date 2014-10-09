@@ -1768,6 +1768,23 @@ class Model2(unittest.TestCase):
 
         self.assertEqual(production_service.get_effective_hostgroups(), [production_servers])
 
+    def test_host_delete_that_shares_service(self):
+        """ Try deleting a host and all services, but services are in use by another host """
+        pynag.Model.Host(host_name='host_a').save()
+        pynag.Model.Host(host_name='host_b').save()
+        pynag.Model.Service(host_name='host_a,host_b', service_description='shared_service').save()
+
+        host_a = pynag.Model.Host.objects.get_by_shortname('host_a')
+        host_a.delete(recursive=True)
+
+        services = pynag.Model.Service.objects.filter(service_description='shared_service')
+        self.assertEqual(1, len(services), "Expected 1 service existing with description=shared_service")
+
+        shared_service = services[0]
+        self.assertEqual('host_b', shared_service.host_name)
+
+
+
 
 class NagiosReloadHandler(unittest.TestCase):
 

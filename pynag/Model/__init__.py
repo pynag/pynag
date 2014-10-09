@@ -1602,13 +1602,19 @@ class Host(ObjectDefinition):
            recursive             -- If True, also delete all services of this host
         """
         if recursive is True and self.host_name:
-            for i in Service.objects.filter(host_name__has_field=self.host_name, hostgroup_name__exists=False):
-                # delete only services where only this host_name and no hostgroups are defined
-                i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
+            # Delete all services that use this host_name, and have no hostgroup_name set
+            for service in Service.objects.filter(host_name=self.host_name, hostgroup_name__exists=False):
+                service.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
+
+            # In case of services that have multiple host_names, only clean up references
+            for service in Service.objects.filter(host_name__has_field=self.host_name):
+                service.attribute_removefield('host_name', self.host_name)
+                service.save()
         if cleanup_related_items is True and self.host_name:
             hostgroups = Hostgroup.objects.filter(members__has_field=self.host_name)
             dependenciesAndEscalations = ObjectDefinition.objects.filter(
                 host_name__has_field=self.host_name, object_type__isnot='host')
+            services = Service.objects.filter(host_name__has_field=self.host_name)
             for i in hostgroups:
                 # remove host from hostgroups
                 i.attribute_removefield('members', self.host_name)
@@ -1623,6 +1629,9 @@ class Host(ObjectDefinition):
                     i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
+            for service in services:
+                service.attribute_removefield('host_name', self.host_name)
+                service.save()
             # get these here as we might have deleted some in the block above
             dependencies = ObjectDefinition.objects.filter(dependent_host_name__has_field=self.host_name)
             for i in dependencies:
@@ -1634,6 +1643,7 @@ class Host(ObjectDefinition):
                     i.delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
                 else:
                     i.save()
+
         # Call parent to get delete myself
         return super(self.__class__, self).delete(recursive=recursive, cleanup_related_items=cleanup_related_items)
 
