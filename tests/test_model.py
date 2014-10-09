@@ -1774,9 +1774,6 @@ class Model2(unittest.TestCase):
         pynag.Model.Host(host_name='host_b').save()
         pynag.Model.Service(host_name='host_a,host_b', service_description='shared_service').save()
 
-        services_pre_delete = pynag.Model.Service.objects.filter(service_description='shared_service')
-        self.assertEqual(2, len(services_pre_delete), "Expected 2 service existing with description=shared_service")
-
         host_a = pynag.Model.Host.objects.get_by_shortname('host_a')
         host_a.delete(recursive=True)
 
