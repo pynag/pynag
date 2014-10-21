@@ -2288,7 +2288,7 @@ class Livestatus(object):
 
             query: Query to be passed to the livestatus socket (string)
 
-            args, kwargs: Additionnal parameters that will be sent to
+            args, kwargs: Additional parameters that will be sent to
             :py:meth:`pynag.Utils.grep_to_livestatus`. The result will be
             appended to the query.
 
@@ -2407,7 +2407,7 @@ class Livestatus(object):
             table: Table from which the data will be retrieved
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Example::
 
@@ -2473,7 +2473,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2493,7 +2493,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2513,7 +2513,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2533,7 +2533,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2553,7 +2553,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2573,7 +2573,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
