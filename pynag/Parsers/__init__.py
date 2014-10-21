@@ -2264,7 +2264,7 @@ class Livestatus(object):
             if self.livestatus_socket_path.find(':') > 0:
                 address, tcp_port = self.livestatus_socket_path.split(':', 1)
                 if not tcp_port.isdigit():
-                    msg = 'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
+                    msg = 'Could not parse host:port "%s". This "%s" does not look like a valid tcp port.'
                     raise ParserError(msg % (self.livestatus_socket_path, tcp_port))
                 tcp_port = int(tcp_port)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
