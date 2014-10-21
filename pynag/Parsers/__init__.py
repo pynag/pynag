@@ -2241,7 +2241,7 @@ class Livestatus(object):
     def _get_socket(self):
         """ Returns a socket.socket() instance to communicate with livestatus
 
-        Socket might be either unix filesocket or a tcp socket depenging in
+        Socket might be either unix filesocket or a tcp socket depending in
         the content of :py:attr:`livestatus_socket_path`
 
         Returns:
@@ -2281,7 +2281,7 @@ class Livestatus(object):
     def query(self, query, *args, **kwargs):
         """ Performs LQL queries the livestatus socket
 
-        Queries are corrected and convienient default data are added to the
+        Queries are corrected and convenient default data are added to the
         query before sending it to the socket.
 
         Args:
