@@ -1552,7 +1552,7 @@ class Host(ObjectDefinition):
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Host """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
-        list_of_shortnames = sorted(ObjectRelations.host_hostgroups[self.host_name])
+        list_of_shortnames = sorted(set(self._get_effective_attribute('hostgroups').split(',')))
         return map(get_object, list_of_shortnames)
 
     def get_effective_network_parents(self, recursive=False):
