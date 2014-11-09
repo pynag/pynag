@@ -1858,7 +1858,7 @@ class Config(object):
         """ Wrapper around os.path.islink """
         return os.path.islink(*args, **kwargs)
 
-    def readlink(selfself, *args, **kwargs):
+    def readlink(self, *args, **kwargs):
         """ Wrapper around os.readlink """
         return os.readlink(*args, **kwargs)
 
