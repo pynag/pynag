@@ -2522,9 +2522,10 @@ class Livestatus(object):
         """ Perform LQL queries on the livestatus socket.
 
         Args:
-            query: String. an LQL query that is passed on to the livestatus socket.
-            *args: String. Any args will be appended directly to the livestatus query.
-            **kwargs: 'key':'value'. Will be added as 'Key: value\n' to the livestatus query.
+            query: String. Query to be passed to the livestatus socket
+            *args: String. Will be appended to query
+            **kwargs: String. Will be appended as 'Filter:' to query.
+                For example name='foo' will be appended as 'Filter: name = foo'
 
         In most cases if you already have constructed a livestatus query, you should only
         need the query argument, args and kwargs can be used to assist in constructing the query.
@@ -2547,26 +2548,21 @@ class Livestatus(object):
     def query(self, query, *args, **kwargs):
         """ Performs LQL queries the livestatus socket
 
-        Queries are corrected and convenient default data are added to the
-        query before sending it to the socket.
-
         Args:
-
-            query: Query to be passed to the livestatus socket (string)
-
-            args, kwargs: Additional parameters that will be sent to
-            :py:meth:`pynag.Utils.grep_to_livestatus`. The result will be
-            appended to the query.
+            query: String. Query to be passed to the livestatus socket
+            *args: String. Will be appended to query
+            **kwargs: Will be appended as 'Filter:' to query.
+                For example name='foo' will be appended as 'Filter: name = foo'
 
         Returns:
-
-            Answer from livestatus. It will be in python format unless specified
-            otherwise.
+            List of dicts. Every item in the list is a row from livestatus and
+                every row is a dictionary where the keys are column names and values
+                are columns.
+            Example return value:
+                [{'host_name': 'localhost', 'service_description':'Ping'},]
 
         Raises:
-
-            :py:class:`ParserError` if problems connecting to livestatus.
-
+            LivestatusError: If there is a problem talking to livestatus socket.
         """
 
         # columns parameter is here for backwards compatibility only
