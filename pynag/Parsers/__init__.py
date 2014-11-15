@@ -2491,6 +2491,59 @@ class Livestatus(object):
             msg = "%s while connecting to '%s'. Make sure nagios is running and mk_livestatus loaded."
             raise ParserError(msg % (e, self.livestatus_socket_path))
 
+    def write(self, livestatus_query):
+        """ Send a raw livestatus query to livestatus socket.
+
+        Args:
+            livestatus_query: String. A query that will written to livestatus socket.
+
+        Returns:
+            A string. The result that comes back from our livestatus socket.
+
+        Raises:
+            LivestatusError if there is a problem writing to socket.
+
+        """
+        # Lets create a socket and see if we can write to it
+        livestatus_socket = self._get_socket()
+        try:
+            livestatus_socket.send(livestatus_query)
+            livestatus_socket.shutdown(socket.SHUT_WR)
+            filesocket = livestatus_socket.makefile()
+            result = filesocket.read()
+            return result
+        except IOError:
+            msg = "Could not write to socket '%s'. Make sure you have the right permissions"
+            raise LivestatusError(msg % self.livestatus_socket_path)
+        finally:
+            livestatus_socket.close()
+
+    def raw_query(self, query, *args, **kwargs):
+        """ Perform LQL queries on the livestatus socket.
+
+        Args:
+            query: String. an LQL query that is passed on to the livestatus socket.
+            *args: String. Any args will be appended directly to the livestatus query.
+            **kwargs: 'key':'value'. Will be added as 'Key: value\n' to the livestatus query.
+
+        In most cases if you already have constructed a livestatus query, you should only
+        need the query argument, args and kwargs can be used to assist in constructing the query.
+
+        For example, the following calls all construct equalant queries:
+            l = Livestatus()
+            l.query('GET status\nColumns: requests\n')
+            l.query('GET status'. 'Columns: requests')
+            l.query('GET status', Columns:'requests')
+
+        Returns:
+            A string. The results that come out of our livestatus socket.
+
+        Raises:
+            LivestatusError: If there are problems with talking to socket.
+        """
+        livestatus_query = LivestatusQuery(query, *args, **kwargs)
+        return self.write(str(livestatus_query))
+
     def query(self, query, *args, **kwargs):
         """ Performs LQL queries the livestatus socket
 

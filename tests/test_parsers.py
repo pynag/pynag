@@ -8,6 +8,7 @@ pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
 import unittest2 as unittest
+import mock
 import doctest
 import tempfile
 import shutil
@@ -270,6 +271,112 @@ class Livestatus(unittest.TestCase):
             "Dummy livestatus instance was supposed to be nonfunctional"
         )
 
+    def test_raw_query_normal(self):
+        result = self.livestatus.raw_query('GET status', 'Columns: requests')
+        self.assertTrue(result.endswith('\n'))
+        try:
+            requests = int(result.strip())
+        except ValueError:
+            self.assertTrue(False, 'Expected livestatus result to be a number, but got %s' % repr(result))
+
+    def test_write_normal(self):
+        result = self.livestatus.write('GET status\nColumns: requests\n')
+        self.assertTrue(result.endswith('\n'))
+        try:
+            requests = int(result.strip())
+        except ValueError:
+            self.assertTrue(False, 'Expected livestatus result to be a number, but got %s' % repr(result))
+
+    @mock.patch('socket.socket')
+    def test_write_raises(self, mock_socket_class):
+        mock_socket = mock_socket_class.return_value
+        mock_socket.send.side_effect = IOError
+
+        # Make sure write() raises Livestatus errors if we cannot write to socket:
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.write('GET status\nColumns: requests\n')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_raw_query_calls_write(self, mock_write):
+        result = self.livestatus.raw_query('GET services')
+
+        # Make sure its returning the output of livestatus.write()
+        self.assertEqual(mock_write.return_value, result)
+        mock_write.assert_called_once_with('GET services\n')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_raw_query_calls_write(self, mock_write):
+        result = self.livestatus.raw_query('GET services', 'OutputFormat: python')
+
+        # Make sure its returning the output of livestatus.write()
+        self.assertEqual(mock_write.return_value, result)
+        mock_write.assert_called_once_with('GET services\nOutputFormat: python\n')
+
+
+class LivestatusQuery(unittest.TestCase):
+
+    def setUp(self):
+        self.query = pynag.Parsers.LivestatusQuery('GET services')
+
+    def test_init_normal(self):
+        test_query = 'GET status\nColumns: requests\n'
+        query = pynag.Parsers.LivestatusQuery(test_query)
+        self.assertEqual(test_query, query.get_query())
+
+    def test_init_with_args(self):
+        test_query = 'GET status\nColumns: requests\n'
+        query = pynag.Parsers.LivestatusQuery('GET status', 'Columns: requests')
+        self.assertEqual(test_query, query.get_query())
+
+    def test_init_with_kwargs(self):
+        test_query = 'GET hosts\nColumns: name\nFilter: name = localhost\n'
+        query = pynag.Parsers.LivestatusQuery('GET hosts', 'Columns: name', name='localhost')
+        self.assertEqual(test_query, query.get_query())
+
+    def test_add_header(self):
+        self.query.add_header('OutputFormat', 'python')
+
+        expected_result = 'GET services\nOutputFormat: python\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_add_header_line(self):
+        self.query.add_header_line('OutputFormat: python')
+
+        expected_result = 'GET services\nOutputFormat: python\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_remove_header(self):
+        self.query.add_header_line('OutputFormat: python')
+        self.query.remove_header('OutputFormat')
+
+        expected_result = 'GET services\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_set_outputformat(self):
+        self.query.set_outputformat('python')
+        expected_result = 'GET services\nOutputFormat: python\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_set_responseheader(self):
+        self.query.set_responseheader('fixed16')
+        expected_result = 'GET services\nResponseHeader: fixed16\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_has_header_true(self):
+        self.query.add_header('OutputFormat', 'python')
+        self.assertTrue(self.query.has_header('OutputFormat'))
+
+    def test_has_header_false(self):
+        self.assertFalse(self.query.has_header('OutputFormat'))
+
+    def test_set_authuser(self):
+        self.query.set_authuser('username')
+        expected_result = 'GET services\nAuthUser: username\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test__str__(self):
+        query = str(self.query)
+        self.assertEqual('GET services\n', query)
 
 class ObjectCache(unittest.TestCase):
 
