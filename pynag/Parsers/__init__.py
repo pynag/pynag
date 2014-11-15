@@ -2162,6 +2162,219 @@ class Config(object):
         return self.data[key]
 
 
+class LivestatusQuery(object):
+    """Convenience class to help construct a livestatus query."""
+    _ResponseHeader = 'ResponseHeader'
+    _OutputFormat = 'OutputFormat'
+    _Columns = 'Columns'
+    _Filter = 'Filter'
+    _ColumnHeaders = 'ColumnHeaders'
+    _AuthUser = 'AuthUser'
+    _HeaderLineFormat = '{keyword}: {arguments}'
+
+    def __init__(self, query, *args, **kwargs):
+        """Create a new LivestatusQuery.
+
+        Args:
+            query: String. Initial query (like GET hosts)
+            *args: String. Any args will appended to the query as additional headers.
+            **kwargs: String. Any kwargs will be treated like additional filter to our query.
+
+        Examples:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.get_query()
+            'GET services\\n'
+
+            >>> query = LivestatusQuery('GET services', 'OutputFormat: json')
+            >>> query.get_query()
+            'GET services\\nOutputFormat: json\\n'
+
+            >>> query = LivestatusQuery('GET services', 'Columns: service_description', host_name='localhost')
+            >>> query.get_query()
+            'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n'
+        """
+        self._query = query.splitlines()
+        self._query += pynag.Utils.grep_to_livestatus(*args,**kwargs)
+
+    def get_query(self):
+        """Get a string representation of our query
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.get_query()
+            'GET services\\n'
+            >>> query.add_header('Filter', 'host_name = foo')
+            >>> query.get_query()
+            'GET services\\nFilter: host_name = foo\\n'
+
+        Returns:
+            A string. String representation of our query that is compatibe
+            with livestatus.
+        """
+        return '\n'.join(self._query) + '\n'
+
+    def add_header_line(self, header_line):
+        """Add a new header line to our livestatus query
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.add_header_line('Filter: host_name = foo')
+            >>> query.get_query()
+            'GET services\\nFilter: host_name = foo\\n'
+        """
+        self._query.append(header_line)
+
+    def add_header(self, keyword, arguments):
+        """Add a new header to our livestatus query.
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.add_header('Filter', 'host_name = foo')
+            >>> query.get_query()
+            'GET services\\nFilter: host_name = foo\\n'
+        """
+        header_line = self._HeaderLineFormat.format(keyword=keyword, arguments=arguments)
+        self.add_header_line(header_line)
+
+    def has_header(self, keyword):
+        """ Returns True if specific header is in current query.
+
+        Examples:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.has_header('OutputFormat')
+            False
+            >>> query.add_header('OutputFormat', 'fixed16')
+            >>> query.has_header('OutputFormat')
+            True
+
+        """
+        signature = keyword + ':'
+        for row in self._query:
+            if row.startswith(signature):
+                return True
+        return False
+
+    def remove_header(self, keyword):
+        """Remove a header from out query
+
+        Examples:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.has_header('OutputFormat')
+            False
+            >>> query.add_header('OutputFormat', 'fixed16')
+            >>> query.has_header('OutputFormat')
+            True
+            >>> query.remove_header('OutputFormat')
+            >>> query.has_header('OutputFormat')
+            False
+        """
+        signature = keyword + ':'
+        self._query = filter(lambda x: not x.startswith(signature), self._query)
+
+    def set_responseheader(self, response_header='fixed16'):
+        """Set ResponseHeader to our query.
+
+        Args:
+            response_header: String. Response header that livestatus knows. Example: fixed16
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.set_responseheader()
+            >>> query.get_query()
+            'GET services\\nResponseHeader: fixed16\\n'
+        """
+        # First remove whatever responseheader might have been set before
+        self.remove_header(self._ResponseHeader)
+        self.add_header(self._ResponseHeader, response_header)
+
+    def set_outputformat(self, output_format):
+        """Set OutFormat header in our query.
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.set_outputformat('json')
+            >>> query.get_query()
+            'GET services\\nOutputFormat: json\\n'
+        """
+        # Remove outputformat if it was already in out query
+        self.remove_header(self._OutputFormat)
+        self.add_header(self._OutputFormat, output_format)
+
+    def set_columnheaders(self, status='on'):
+        """Turn on or off ColumnHeaders
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.set_columnheaders('on')
+            >>> query.get_query()
+            'GET services\\nColumnHeaders: on\\n'
+            >>> query.set_columnheaders('off')
+            >>> query.get_query()
+            'GET services\\nColumnHeaders: off\\n'
+        """
+        self.remove_header(self._ColumnHeaders)
+        self.add_header(self._ColumnHeaders, status)
+
+    def set_authuser(self, auth_user):
+        """Set AuthUser in our query.
+
+        Example:
+            >>> query = LivestatusQuery('GET services')
+            >>> query.set_authuser('nagiosadmin')
+            >>> query.get_query()
+            'GET services\\nAuthUser: nagiosadmin\\n'
+        """
+        self.remove_header(self._AuthUser)
+        self.add_header(self._AuthUser, auth_user)
+
+    def __str__(self):
+        """Wrapper around self.get_query().
+
+        Example:
+            >>> query = LivestatusQuery('GET services', 'Columns: host_name')
+            >>> str(query)
+            'GET services\\nColumns: host_name\\n'
+
+        """
+        return self.get_query()
+
+    def splitlines(self, *args, **kwargs):
+        """ Wrapper around str(self).splitlines().
+
+         This function is here for backwards compatibility because a lot of callers were previously passing
+         in strings, but are now passing in LivestatusQuery. For this purpose we behave like a string.
+
+        Example:
+            >>> query = LivestatusQuery('GET services', 'Columns: host_name')
+            >>> query.splitlines()
+            ['GET services', 'Columns: host_name']
+        """
+        querystring = str(self)
+        return querystring.splitlines(*args, **kwargs)
+
+    def split(self, *args, **kwargs):
+        """ Wrapper around str(self).split().
+
+         This function is here for backwards compatibility because a lot of callers were previously passing
+         in strings, but are now passing in LivestatusQuery. For this purpose we behave like a string.
+
+        Example:
+            >>> query = LivestatusQuery('GET services', 'Columns: host_name')
+            >>> query.split('\\n')
+            ['GET services', 'Columns: host_name', '']
+        """
+        querystring = str(self)
+        return querystring.split(*args, **kwargs)
+
+    def strip(self, *args, **kwargs):
+        """ Wrapper around str(self).strip().
+
+         This function is here for backwards compatibility because a lot of callers were previously passing
+         in strings, but are now passing in LivestatusQuery. For this purpose we behave like a string.
+        """
+        return str(self._query).strip(*args, **kwargs)
+
+
 class Livestatus(object):
 
     """ Wrapper around MK-Livestatus
@@ -2281,14 +2494,14 @@ class Livestatus(object):
     def query(self, query, *args, **kwargs):
         """ Performs LQL queries the livestatus socket
 
-        Queries are corrected and convienient default data are added to the
+        Queries are corrected and convenient default data are added to the
         query before sending it to the socket.
 
         Args:
 
             query: Query to be passed to the livestatus socket (string)
 
-            args, kwargs: Additionnal parameters that will be sent to
+            args, kwargs: Additional parameters that will be sent to
             :py:meth:`pynag.Utils.grep_to_livestatus`. The result will be
             appended to the query.
 
@@ -2902,7 +3115,6 @@ class ObjectCache(Config):
 
 
 class ParserError(Exception):
-
     """ ParserError is used for errors that the Parser has when parsing config.
 
     Typical usecase when there is a critical error while trying to read configuration.
@@ -2936,14 +3148,15 @@ class ParserError(Exception):
 
 
 class ConfigFileNotFound(ParserError):
-
     """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
-    pass
 
 
 class LivestatusNotConfiguredException(ParserError):
-
     """ This exception is raised if we tried to autodiscover path to livestatus and failed """
+
+
+class LivestatusError(ParserError):
+    """ Used when we get errors from Livestatus """
 
 
 class LogFiles(object):
