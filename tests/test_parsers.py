@@ -220,8 +220,15 @@ class Livestatus(unittest.TestCase):
 
     def testLivestatus(self):
         """ Smoketest livestatus integration """
-        requests = self.livestatus.query('GET status', 'Columns: requests')
-        self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
+        rows = self.livestatus.query('GET status', 'Columns: requests')
+        self.assertEqual(1, len(rows), "Could not get status.requests from livestatus")
+        result = rows[0]
+        self.assertEqual(['requests'], result.keys())
+        num_requests = result['requests']
+        try:
+            int(num_requests)
+        except ValueError:
+            self.assertTrue(False, "Expected requests to be a number")
 
     def testParseMaincfg(self):
         """ Test parsing of different broker_module declarations """
@@ -312,6 +319,72 @@ class Livestatus(unittest.TestCase):
         self.assertEqual(mock_write.return_value, result)
         mock_write.assert_called_once_with('GET services\nOutputFormat: python\n')
 
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_adds_required_headers(self, mock_write):
+        result = self.livestatus.query('GET services')
+        expected_query = 'GET services\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
+        mock_write.assert_called_once_with(expected_query)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_adds_required_headers_authuser(self, mock_write):
+        self.livestatus.authuser = 'nagiosadmin'
+        self.livestatus.query('GET services')
+        self.livestatus.authuser = None
+        expected_query = 'GET services\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
+        expected_query += 'AuthUser: nagiosadmin\n'
+        mock_write.assert_called_once_with(expected_query)
+
+    def test_query_stats_have_no_headers(self):
+        # Some versions of livestatus have an annoying bug that when you
+        # include both Stats and ColumnHeaders: on, in a query, the output will get corrupted.
+        # This test makes sure that livestatus.query() works around that bug.
+        response = self.livestatus.query('GET services', 'Stats: state = 0', 'ColumnHeaders: on')
+        self.assertIsInstance(response, list)
+        self.assertEqual(1, len(response))
+        stats_for_state_0 = response[0]
+        self.assertIsInstance(stats_for_state_0, int)
+
+    @mock.patch('pynag.Parsers.Livestatus.raw_query')
+    def test_query_empty_response_raises(self, mock_raw_query):
+        mock_raw_query.return_value = ''
+        with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
+            self.livestatus.query('GET services')
+
+    @mock.patch('pynag.Parsers.Livestatus.raw_query')
+    def test_query_invalid_response_raises(self, mock_raw_query):
+        mock_raw_query.return_value = '200\ngarbage data from livestatus['
+        with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
+            self.livestatus.query('GET services')
+
+    def test_query_outputformat_json_returns_string(self):
+        result = self.livestatus.query('GET status', 'OutputFormat: json')
+        self.assertIsInstance(result, str)
+
+    def test_query_columheaders_off_returns_list_of_lists(self):
+        result = self.livestatus.query('GET status', 'ColumnHeaders: off')
+        for row in result:
+            self.assertIsInstance(row, list)
+
+    def test_query_invalid_query_raises(self):
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.query('GET something else')
+
+    def test_parse_response_header_empty(self):
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus._parse_response_header('')
+
+    def test_parse_response_header_ok(self):
+        header = '200      510608'
+        data = '[[1,2,3]]'
+        result = self.livestatus._parse_response_header(header + '\n' + data)
+        self.assertEqual(data, result)
+
+    def test_parse_response_header_problem(self):
+        header = '600'
+        data = '[[1,2,3]]'
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus._parse_response_header(header + '\n' + data)
+
 
 class LivestatusQuery(unittest.TestCase):
 
@@ -377,6 +450,7 @@ class LivestatusQuery(unittest.TestCase):
     def test__str__(self):
         query = str(self.query)
         self.assertEqual('GET services\n', query)
+
 
 class ObjectCache(unittest.TestCase):
 
