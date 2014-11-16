@@ -2164,14 +2164,19 @@ class Config(object):
 
 class LivestatusQuery(object):
     """Convenience class to help construct a livestatus query."""
-    _ResponseHeader = 'ResponseHeader'
-    _OutputFormat = 'OutputFormat'
-    _Columns = 'Columns'
-    _ColumnHeaders = 'ColumnHeaders'
-    _AuthUser = 'AuthUser'
-    _Stats = 'Stats'
-    _Filter = 'Filter'
-    _HeaderLineFormat = '{keyword}: {arguments}'
+
+    # The following constants describe names of specific
+    # Livestatus headers:
+    _RESPONSE_HEADER = 'ResponseHeader'
+    _OUTPUT_FORMAT = 'OutputFormat'
+    _COLUMNS = 'Columns'
+    _COLUMN_HEADERS = 'ColumnHeaders'
+    _AUTH_USER = 'AuthUser'
+    _STATS = 'Stats'
+    _FILTER = 'Filter'
+
+    # How a header line is formatted in a query
+    _FORMAT_OF_HEADER_LINE = '{keyword}: {arguments}'
 
     def __init__(self, query, *args, **kwargs):
         """Create a new LivestatusQuery.
@@ -2242,7 +2247,7 @@ class LivestatusQuery(object):
             >>> query.column_headers()
             True
         """
-        column_headers = self.get_header(self._ColumnHeaders)
+        column_headers = self.get_header(self._COLUMN_HEADERS)
         if not column_headers or column_headers == 'off':
             return False
         if column_headers == 'on':
@@ -2259,7 +2264,7 @@ class LivestatusQuery(object):
              >>> query.output_format()
              'python'
         """
-        return self.get_header(self._OutputFormat)
+        return self.get_header(self._OUTPUT_FORMAT)
 
     def add_header_line(self, header_line):
         """Add a new header line to our livestatus query
@@ -2281,7 +2286,7 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nFilter: host_name = foo\\n'
         """
-        header_line = self._HeaderLineFormat.format(keyword=keyword, arguments=arguments)
+        header_line = self._FORMAT_OF_HEADER_LINE.format(keyword=keyword, arguments=arguments)
         self.add_header_line(header_line)
 
     def has_header(self, keyword):
@@ -2303,7 +2308,7 @@ class LivestatusQuery(object):
         return False
 
     def remove_header(self, keyword):
-        """Remove a header from out query
+        """Remove a header from our query
 
         Examples:
             >>> query = LivestatusQuery('GET services')
@@ -2332,8 +2337,8 @@ class LivestatusQuery(object):
             'GET services\\nResponseHeader: fixed16\\n'
         """
         # First remove whatever responseheader might have been set before
-        self.remove_header(self._ResponseHeader)
-        self.add_header(self._ResponseHeader, response_header)
+        self.remove_header(self._RESPONSE_HEADER)
+        self.add_header(self._RESPONSE_HEADER, response_header)
 
     def set_outputformat(self, output_format):
         """Set OutFormat header in our query.
@@ -2345,8 +2350,8 @@ class LivestatusQuery(object):
             'GET services\\nOutputFormat: json\\n'
         """
         # Remove outputformat if it was already in out query
-        self.remove_header(self._OutputFormat)
-        self.add_header(self._OutputFormat, output_format)
+        self.remove_header(self._OUTPUT_FORMAT)
+        self.add_header(self._OUTPUT_FORMAT, output_format)
 
     def set_columnheaders(self, status='on'):
         """Turn on or off ColumnHeaders
@@ -2360,8 +2365,8 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nColumnHeaders: off\\n'
         """
-        self.remove_header(self._ColumnHeaders)
-        self.add_header(self._ColumnHeaders, status)
+        self.remove_header(self._COLUMN_HEADERS)
+        self.add_header(self._COLUMN_HEADERS, status)
 
     def set_authuser(self, auth_user):
         """Set AuthUser in our query.
@@ -2372,8 +2377,8 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nAuthUser: nagiosadmin\\n'
         """
-        self.remove_header(self._AuthUser)
-        self.add_header(self._AuthUser, auth_user)
+        self.remove_header(self._AUTH_USER)
+        self.add_header(self._AUTH_USER, auth_user)
 
     def has_responseheader(self):
         """ Check if there are any ResponseHeaders set.
@@ -2389,7 +2394,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any ResponseHeader, otherwise False.
         """
-        return self.has_header(self._ResponseHeader)
+        return self.has_header(self._RESPONSE_HEADER)
 
     def has_authuser(self):
         """ Check if AuthUser is set.
@@ -2405,7 +2410,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any AuthUser, otherwise False.
         """
-        return self.has_header(self._AuthUser)
+        return self.has_header(self._AUTH_USER)
 
     def has_outputformat(self):
         """ Check if OutputFormat is set.
@@ -2421,7 +2426,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any OutputFormat set, otherwise False.
         """
-        return self.has_header(self._OutputFormat)
+        return self.has_header(self._OUTPUT_FORMAT)
 
     def has_columnheaders(self):
         """ Check if there are any ColumnHeaders set.
@@ -2437,7 +2442,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any ColumnHeaders, otherwise False.
         """
-        return self.has_header(self._ColumnHeaders)
+        return self.has_header(self._COLUMN_HEADERS)
 
     def has_stats(self):
         """ Returns True if Stats headers are present in our query.
@@ -2453,7 +2458,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any stats, otherwise False.
         """
-        return self.has_header(self._Stats)
+        return self.has_header(self._STATS)
 
     def has_filters(self):
         """ Returns True if any filters are applied.
@@ -2469,7 +2474,7 @@ class LivestatusQuery(object):
         Returns:
             Boolean. True if query has any filters, otherwise False.
         """
-        return self.has_header(self._Filter)
+        return self.has_header(self._FILTER)
 
     def __str__(self):
         """Wrapper around self.get_query().
