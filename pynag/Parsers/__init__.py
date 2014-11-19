@@ -2339,7 +2339,7 @@ class Livestatus(object):
 
         # When we reach here, we are done adding options to the query, so we convert to the string that will
         # be sent to the livestatus socket
-        query = '\n'.join(query) + '\n'
+        query = '\n'.join(query) + '\n\n'
         self.last_query = query
 
         #
