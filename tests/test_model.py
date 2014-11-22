@@ -867,47 +867,104 @@ class TestMacroResolving(unittest.TestCase):
         self.environment.create_minimal_environment()
         self.environment.update_model()
 
-    def tearDown(self):
-        self.environment.terminate()
-
-    def test_macro_resolving(self):
-        """ Test the get_macro and get_all_macros commands of services """
-
-        # FIXME FNE should probably have a nicer way of handling this
+        # FIXME FNE should probably have a nicer way of handling import
+        # of resource files.
         resource_cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.resource.cfg')
         self.environment.import_config(resource_cfg_file)
         self.environment.config._edit_static_file(attribute='resource_file',
                                                   new_value=os.path.join(self.environment.objects_dir, 'custom.macros.resource.cfg'))
-        self.environment.config.parse_maincfg()
-
         cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.cfg')
         self.environment.import_config(cfg_file)
 
+        self.environment.config.parse_maincfg()
+
+    def tearDown(self):
+        self.environment.terminate()
+
+    def test_get_all_macros(self):
         service1 = pynag.Model.Service.objects.get_by_name('macroservice')
         macros = service1.get_all_macros()
-        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$']
-        self.assertEqual(sorted(expected_macrokeys), sorted(macros.keys()))
 
+        expected_macrokeys = [
+            '$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$',
+            '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$',
+        ]
+        self.assertEqual(sorted(expected_macrokeys), sorted(macros.keys()))
         self.assertEqual('/path/to/user1', macros['$USER1$'])
         self.assertEqual('/path/to/user1', macros['$ARG2$'])
         self.assertEqual('hostaddress', macros['$HOSTADDRESS$'])
-
         self.assertEqual('macro1', macros['$_SERVICE_macro1$'])
         self.assertEqual('macro1', macros['$ARG1$'])
         self.assertEqual('macro1', macros['$_HOST_macro1$'])
         self.assertEqual('this.macro.is.not.used', macros['$_SERVICE_not_used$'])
-
         self.assertEqual(None, macros['$_HOST_nonexistant$'])
         self.assertEqual(None, macros['$_SERVICE_nonexistant$'])
-
         self.assertEqual('', macros['$_SERVICE_empty$'])
         self.assertEqual('', macros['$_HOST_empty$'])
 
+    def test_get_effective_command_line(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
         expected_command_line = "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
         actual_command_line = service1.get_effective_command_line()
 
         self.assertEqual(expected_command_line, actual_command_line)
 
+    def test_service_get_macro_returns_empty_on_nonexistant_macro(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        self.assertEqual('', service1.get_macro('$INVALID_MACRO$'))
+        self.assertEqual('', service1.get_macro('$HOST_INVALID$'))
+        self.assertEqual('', service1.get_macro('$_HOST_INVALID$'))
+        self.assertEqual('', service1.get_macro('$SERVICE_INVALID$'))
+        self.assertEqual('', service1.get_macro('$_SERVICE_INVALID$'))
+        self.assertEqual('', service1.get_macro('$ARG17$'))
+        self.assertEqual('', service1.get_macro('$ARGINVALID$'))
+
+    def test_host_get_macro_returns_empty_on_nonexistant_macro(self):
+        host2 = pynag.Model.Host.objects.get_by_shortname('macrohost2')
+        self.assertEqual('', host2.get_macro('$INVALID_MACRO$'))
+        self.assertEqual('', host2.get_macro('$HOST_INVALID$'))
+        self.assertEqual('', host2.get_macro('$_HOST_INVALID$'))
+
+    def test_service_get_macro_command_argument1(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        self.assertEqual('macro1', service1.get_macro('$ARG1$'))
+
+    def test_service_get_macro_custom_variable(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        self.assertEqual('macro1', service1.get_macro('$_SERVICE_macro1$'))
+
+    def test_service_get_macro_from_host(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        macro1 = service1.get_macro('$_HOST_macro1$')
+        self.assertEqual('macro1', macro1)
+
+    def test_service_get_macro_custom_host_variable_inherited_from_parent(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        macro1 = service1.get_macro('$_HOST_macro1$', host_name='macrohost2')
+        self.assertEqual('macro1', macro1)
+
+    def test_service_get_macro_where_host_is_applied_via_hostgroup(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        macro2 = service1.get_macro('$_HOST_macrohost2$', host_name='macrohost2')
+        self.assertEqual('macrohost2', macro2)
+
+    def test_service_get_macro_where_command_arg_comes_from_host(self):
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        service1.check_command = 'only_arg!$HOSTADDRESS$'
+        self.assertEqual('hostaddress', service1.get_macro('$ARG1$'))
+        self.assertEqual('macrohost2', service1.get_macro('$ARG1$', host_name='macrohost2'))
+
+    def test_host_get_macro_address(self):
+        macrohost2 = pynag.Model.Host.objects.get_by_shortname('macrohost2')
+        self.assertEqual('macrohost2', macrohost2.get_macro('$HOSTADDRESS$'))
+
+    def test_host_get_macro_custom(self):
+        macrohost2 = pynag.Model.Host.objects.get_by_shortname('macrohost2')
+        self.assertEqual('macrohost2', macrohost2.get_macro('$_HOST_macrohost2$'))
+
+    def test_host_get_macro_custom_variable_inherited_from_parent(self):
+        macrohost2 = pynag.Model.Host.objects.get_by_shortname('macrohost2')
+        self.assertEqual('macro1', macrohost2.get_macro('$_HOST_macro1$'))
 
 class Model2(unittest.TestCase):
 
