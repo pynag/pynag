@@ -1480,8 +1480,6 @@ def is_macro(macro):
         True
         >>> is_macro('$HOSTADDRESS')
         False
-        >>> is_macro(None)
-        False
         >>> is_macro('')
         False
         >>> is_macro('$CONTACTNAME$')
