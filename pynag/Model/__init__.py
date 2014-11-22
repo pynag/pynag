@@ -1057,8 +1057,8 @@ class ObjectDefinition(object):
         if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
             return self._get_contact_macro(macroname, contact_name=contact_name)
         if macroname in _standard_macros:
-            attr = _standard_macros[macroname]
-            return self[attr]
+            attribute_name = _standard_macros[macroname]
+            return self.get(attribute_name, _UNRESOLVED_MACRO)
         return _UNRESOLVED_MACRO
 
     def set_macro(self, macroname, new_value):
