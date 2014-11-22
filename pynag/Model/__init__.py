@@ -637,7 +637,7 @@ class ObjectDefinition(object):
 
     def __setitem__(self, key, item):
         # Special handle for macros
-        if key.startswith('$') and key.endswith('$'):
+        if pynag.Utils.is_macro(key):
             self.set_macro(key, item)
         elif self[key] != item:
             self._changes[key] = item
@@ -1127,7 +1127,7 @@ class ObjectDefinition(object):
             >>> s['__TEST']
             'test'
         """
-        if not macroname.startswith('$') or not macroname.endswith('$'):
+        if not pynag.Utils.is_macro(macro):
             raise ValueError("Macros must be of the format $<macroname>$")
         if macroname.startswith('$ARG'):
             if self.check_command is None:
