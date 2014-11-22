@@ -1127,7 +1127,7 @@ class ObjectDefinition(object):
             >>> s['__TEST']
             'test'
         """
-        if not pynag.Utils.is_macro(macro):
+        if not pynag.Utils.is_macro(macroname):
             raise ValueError("Macros must be of the format $<macroname>$")
         if macroname.startswith('$ARG'):
             if self.check_command is None:
