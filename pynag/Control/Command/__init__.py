@@ -79,12 +79,12 @@ def send_command(command_id, command_file=None, timestamp=0, *args):
     """
     if not timestamp or timestamp == 0:
         timestamp = time.time()
-    if not command_file:
-        command_file = find_command_file()
     command_arguments = map(str, args)
     command_arguments = ";".join(command_arguments)
     command_string = "[%s] %s;%s" % (timestamp, command_id, command_arguments)
     try:
+        if not command_file:
+            command_file = find_command_file()
         _write_to_command_file(command_file, command_string)
     except Exception:
         _write_to_livestatus(command_string)
