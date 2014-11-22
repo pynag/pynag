@@ -79,6 +79,18 @@ except ImportError:
 # Default value returned when a macro cannot be found
 _UNRESOLVED_MACRO = ''
 
+# We know that a macro is a custom variable macro if the name
+# of the macro starts with this prefix:
+_CUSTOM_VARIABLE_PREFIX = '_'
+
+
+class Error(Exception):
+    """Base class for errors in this module."""
+
+
+class InvalidMacro(Error):
+    """Raised when a method is inputted with an invalid macro."""
+
 
 class ObjectRelations(object):
 
@@ -625,7 +637,7 @@ class ObjectDefinition(object):
 
     def __setitem__(self, key, item):
         # Special handle for macros
-        if key.startswith('$') and key.endswith('$'):
+        if pynag.Utils.is_macro(key):
             self.set_macro(key, item)
         elif self[key] != item:
             self._changes[key] = item
@@ -1031,6 +1043,40 @@ class ObjectDefinition(object):
         else:
             self._meta['filename'] = os.path.normpath(filename)
 
+    def _get_custom_variable_macro(self, macro):
+        """Get the value for a specific custom variable macro for this object.
+
+        Args:
+            macro: String. Macro name in the format of $_{OBJECTTYPE}{VARNAME}$, e.g. $HOSTMACADDRESS$
+
+        Returns:
+            String. The real value for this custom variable macro. Emptystring if macro cannot be resolved.
+
+        Raises:
+            InvalidMacro if macro parameter is not a valid custom variable macro for this object type.
+        """
+        if not pynag.Utils.is_macro(macro):
+            raise InvalidMacro("%s does not look like a valid macro" % macro)
+
+        # Remove leading and trailing $ from the macro name:
+        macro = macro[1:-1]
+        # We expect '_{OBJECTTYPE}{VARIABLENAME}'
+        expected_prefix = _CUSTOM_VARIABLE_PREFIX + self.object_type.upper()
+        if not macro.startswith(expected_prefix):
+            raise InvalidMacro("%s does not look like a custom macro for %s" % (macro, self.object_type))
+
+        variable_name = macro.replace(expected_prefix, '')
+        # We want to be case insensitive
+        variable_name = variable_name.upper()
+        # custom variable attribute names are all prefixed
+        variable_name = _CUSTOM_VARIABLE_PREFIX + variable_name
+
+        for attribute_name in self.keys():
+            if attribute_name.upper() == variable_name:
+                return self.get(attribute_name)
+        else:
+            return _UNRESOLVED_MACRO
+
     def get_macro(self, macroname, host_name=None, contact_name=None):
         """ Take macroname (e.g. $USER1$) and return its actual value
 
@@ -1081,7 +1127,7 @@ class ObjectDefinition(object):
             >>> s['__TEST']
             'test'
         """
-        if not macroname.startswith('$') or not macroname.endswith('$'):
+        if not pynag.Utils.is_macro(macroname):
             raise ValueError("Macros must be of the format $<macroname>$")
         if macroname.startswith('$ARG'):
             if self.check_command is None:
@@ -1122,13 +1168,18 @@ class ObjectDefinition(object):
 
         # Add all custom macros to our list:
         for i in self.keys():
-            if not i.startswith('_'):
+            if not i.startswith(_CUSTOM_VARIABLE_PREFIX):
                 continue
             if self.object_type == 'service':
                 i = '$_SERVICE%s$' % (i[1:])
             elif self.object_type == 'host':
                 i = '$_HOST%s$' % (i[1:])
             macronames.append(i)
+
+        # Nagios is case-insensitive when it comes to macros, but it always displays
+        # them in upper-case:
+        macronames = [name.upper() for name in macronames]
+
         result = {}
         for i in macronames:
             result[i] = self.get_macro(i)
@@ -1248,10 +1299,7 @@ class ObjectDefinition(object):
         if not pynag.Utils.is_macro(macroname):
             return _UNRESOLVED_MACRO
         if macroname.startswith('$_SERVICE'):
-            # If this is a custom macro
-            name = macroname[9:-1]
-            key = '_' + name
-            return self.get(key, _UNRESOLVED_MACRO)
+            return self._get_custom_variable_macro(macroname)
         elif macroname in _standard_macros:
             attr = _standard_macros[macroname]
             return self.get(attr, _UNRESOLVED_MACRO)
@@ -1264,10 +1312,7 @@ class ObjectDefinition(object):
         if not pynag.Utils.is_macro(macroname):
             return ''
         if macroname.startswith('$_HOST'):
-            # if this is a custom macro
-            name = macroname[6:-1]
-            key = "_" + name
-            return self.get(key, _UNRESOLVED_MACRO)
+            return self._get_custom_variable_macro(macroname)
         elif macroname == '$HOSTADDRESS$' and not self.address:
             return self.get("host_name", _UNRESOLVED_MACRO)
         elif macroname in _standard_macros:
@@ -2006,9 +2051,7 @@ class Contact(ObjectDefinition):
         if macroname in _standard_macros:
             attribute_name = _standard_macros.get(macroname, _UNRESOLVED_MACRO)
         elif macroname.startswith('$_CONTACT'):
-            # if this is a custom macro
-            name = macroname[len('$_CONTACT'):-1]
-            attribute_name = "_%s" % name
+            return self._get_custom_variable_macro(macroname)
         elif macroname.startswith('$CONTACT'):
             # Lets guess an attribute for this macro
             # So convert $CONTACTEMAIL$ to email
