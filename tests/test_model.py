@@ -856,6 +856,20 @@ class TestMacroResolving(unittest.TestCase):
     def tearDown(self):
         self.environment.terminate()
 
+    def test_get_custom_variable_macro_normal(self):
+        self.assertEqual('macro1', self.macroservice._get_custom_variable_macro('$_SERVICE_MACRO1$'))
+
+    def test_get_custom_variable_macro_nonexistant_macro(self):
+        self.assertEqual('', self.macroservice._get_custom_variable_macro('$_SERVICE_DOES_NOT_EXIST$'))
+
+    def test_get_custom_variable_macro_raises_on_invalid_macro(self):
+        with self.assertRaises(pynag.Model.InvalidMacro):
+            self.macroservice._get_custom_variable_macro('$_TEST')
+
+    def test_get_custom_variable_macro_raises_on_invalid_object_type(self):
+        with self.assertRaises(pynag.Model.InvalidMacro):
+            self.macroservice._get_custom_variable_macro('$_HOST_MACRO1$')
+
     # Tests for Service._get_service_macro()
     def test_get_service_macro_standard(self):
         self.assertEqual('macroservice', self.macroservice._get_service_macro('$SERVICEDESC$'))
@@ -867,7 +881,7 @@ class TestMacroResolving(unittest.TestCase):
         self.assertEqual('', self.macroservice._get_service_macro('$SERVICEFOOBAR'))
 
     def test_get_service_macro_custom_variable(self):
-        self.assertEqual('macro1', self.macroservice._get_service_macro('$_SERVICE_macro1$'))
+        self.assertEqual('macro1', self.macroservice._get_service_macro('$_SERVICE_MACRO1$'))
 
     def test_get_service_macro_custom_variable_empty(self):
         self.assertEqual('', self.macroservice._get_service_macro('$_SERVICE_empty$'))
@@ -892,13 +906,13 @@ class TestMacroResolving(unittest.TestCase):
         self.assertEqual('', self.macrohost._get_host_macro('$HOSTADDRESS%'))
 
     def test_get_host_macro_custom_variable(self):
-        self.assertEqual('macro1', self.macrohost._get_host_macro('$_HOST_macro1$'))
+        self.assertEqual('macro1', self.macrohost._get_host_macro('$_HOST_MACRO1$'))
 
     def test_get_host_macro_custom_variable_missing(self):
         self.assertEqual('', self.macrohost._get_host_macro('$_HOST_foo$'))
 
     def test_get_host_macro_custom_variable_inherited_from_parent(self):
-        self.assertEqual('macro1', self.macrohost2._get_host_macro('$_HOST_macro1$'))
+        self.assertEqual('macro1', self.macrohost2._get_host_macro('$_HOST_MACRO1$'))
 
     # Tests for Service._get_host_macro()
     def test_service_get_host_macro_normal(self):
@@ -963,24 +977,22 @@ class TestMacroResolving(unittest.TestCase):
 
     # Following tests might need rewrite
     def test_get_all_macros(self):
-        macros = self.macroservice.get_all_macros()
+        expected_macros = {
+            '$_SERVICE_EMPTY$': '',
+            '$_SERVICE_NONEXISTANT$': '',
+            '$_SERVICE_NOT_USED$': 'this.macro.is.not.used',
+            '$_SERVICE_MACRO1$': 'macro1',
+            '$_HOST_NONEXISTANT$': '',
+            '$_HOST_MACRO1$': 'macro1',
+            '$_HOST_EMPTY$': '',
+            '$ARG1$': 'macro1',
+            '$ARG2$': '/path/to/user1',
+            '$HOSTADDRESS$': 'hostaddress',
+            '$USER1$': '/path/to/user1',
+        }
 
-        expected_macrokeys = [
-            '$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$',
-            '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$',
-        ]
-        self.assertEqual(sorted(expected_macrokeys), sorted(macros.keys()))
-        self.assertEqual('/path/to/user1', macros['$USER1$'])
-        self.assertEqual('/path/to/user1', macros['$ARG2$'])
-        self.assertEqual('hostaddress', macros['$HOSTADDRESS$'])
-        self.assertEqual('macro1', macros['$_SERVICE_macro1$'])
-        self.assertEqual('macro1', macros['$ARG1$'])
-        self.assertEqual('macro1', macros['$_HOST_macro1$'])
-        self.assertEqual('this.macro.is.not.used', macros['$_SERVICE_not_used$'])
-        self.assertEqual('', macros['$_HOST_nonexistant$'])
-        self.assertEqual('', macros['$_SERVICE_nonexistant$'])
-        self.assertEqual('', macros['$_SERVICE_empty$'])
-        self.assertEqual('', macros['$_HOST_empty$'])
+        macros = self.macroservice.get_all_macros()
+        self.assertEqual(expected_macros, macros)
 
     def test_get_effective_command_line(self):
         expected_command_line = "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
@@ -1006,13 +1018,13 @@ class TestMacroResolving(unittest.TestCase):
         self.assertEqual('macro1', self.macroservice.get_macro('$ARG1$'))
 
     def test_service_get_macro_custom_variable(self):
-        self.assertEqual('macro1', self.macroservice.get_macro('$_SERVICE_macro1$'))
+        self.assertEqual('macro1', self.macroservice.get_macro('$_SERVICE_MACRO1$'))
 
     def test_service_get_macro_from_host(self):
-        self.assertEqual('macro1', self.macroservice.get_macro('$_HOST_macro1$'))
+        self.assertEqual('macro1', self.macroservice.get_macro('$_HOST_MACRO1$'))
 
     def test_service_get_macro_custom_host_variable_inherited_from_parent(self):
-        self.assertEqual('macro1', self.macroservice.get_macro('$_HOST_macro1$', host_name='macrohost2'))
+        self.assertEqual('macro1', self.macroservice.get_macro('$_HOST_MACRO1$', host_name='macrohost2'))
 
     def test_service_get_macro_where_host_is_applied_via_hostgroup(self):
         self.assertEqual('macrohost2', self.macroservice.get_macro('$_HOST_macrohost2$', host_name='macrohost2'))
