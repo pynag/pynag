@@ -76,6 +76,9 @@ try:
 except ImportError:
     from pynag.Utils import defaultdict
 
+# Default value returned when a macro cannot be found
+_UNRESOLVED_MACRO = ''
+
 
 class ObjectRelations(object):
 
@@ -1039,6 +1042,8 @@ class ObjectDefinition(object):
         Returns:
           (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
         """
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname, host_name=host_name)
@@ -1052,9 +1057,9 @@ class ObjectDefinition(object):
         if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
             return self._get_contact_macro(macroname, contact_name=contact_name)
         if macroname in _standard_macros:
-            attr = _standard_macros[macroname]
-            return self[attr]
-        return ''
+            attribute_name = _standard_macros[macroname]
+            return self.get(attribute_name, _UNRESOLVED_MACRO)
+        return _UNRESOLVED_MACRO
 
     def set_macro(self, macroname, new_value):
         """ Update a macro (custom variable) like $ARG1$ intelligently
@@ -1185,7 +1190,7 @@ class ObjectDefinition(object):
         'check_ping -H 127.0.0.1'
         """
         if not string:
-            return None
+            return _UNRESOLVED_MACRO
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
         result = regex.sub(get_macro, string)
@@ -1222,55 +1227,65 @@ class ObjectDefinition(object):
 
     def _get_command_macro(self, macroname, check_command=None, host_name=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if check_command is None:
             check_command = self.check_command
         if check_command is None:
-            return ''
+            return _UNRESOLVED_MACRO
         all_args = {}
         c = self._split_check_command_and_arguments(check_command)
         c.pop(0)  # First item is the command, we dont need it
         for i, v in enumerate(c):
             name = '$ARG%s$' % str(i + 1)
             all_args[name] = v
-        result = all_args.get(macroname, '')
+        result = all_args.get(macroname, _UNRESOLVED_MACRO)
         # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
         result = self._resolve_macros(result, host_name=host_name)
         return result
 
     def _get_service_macro(self, macroname):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$_SERVICE'):
             # If this is a custom macro
             name = macroname[9:-1]
-            return self["_%s" % name]
+            key = '_' + name
+            return self.get(key, _UNRESOLVED_MACRO)
         elif macroname in _standard_macros:
             attr = _standard_macros[macroname]
-            return self[attr]
+            return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$SERVICE'):
             name = macroname[8:-1].lower()
-            return self.get(name) or ''
-        return ''
+            return self.get(name, _UNRESOLVED_MACRO)
+        return _UNRESOLVED_MACRO
 
     def _get_host_macro(self, macroname, host_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return ''
         if macroname.startswith('$_HOST'):
             # if this is a custom macro
             name = macroname[6:-1]
-            return self["_%s" % name]
+            key = "_" + name
+            return self.get(key, _UNRESOLVED_MACRO)
         elif macroname == '$HOSTADDRESS$' and not self.address:
-            return self.get("host_name")
+            return self.get("host_name", _UNRESOLVED_MACRO)
         elif macroname in _standard_macros:
             attr = _standard_macros[macroname]
-            return self[attr]
+            return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$HOST'):
             name = macroname[5:-1].lower()
-            return self.get(name)
-        return ''
+            return self.get(name, _UNRESOLVED_MACRO)
+        return _UNRESOLVED_MACRO
 
     def _get_contact_macro(self, macroname, contact_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return ''
         # If contact_name is not specified, get first effective contact and resolve macro for that contact
         if not contact_name:
             contacts = self.get_effective_contacts()
             if len(contacts) == 0:
-                return None
+                return _UNRESOLVED_MACRO
             contact = contacts[0]
         else:
             contact = Contact.objects.get_by_shortname(contact_name)
@@ -1744,15 +1759,17 @@ class Service(ObjectDefinition):
             return None
 
     def _get_host_macro(self, macroname, host_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if not host_name:
             host_name = self['host_name']
         if not host_name:
-            return None
+            return _UNRESOLVED_MACRO
         try:
             myhost = Host.objects.get_by_shortname(host_name)
             return myhost._get_host_macro(macroname)
         except Exception:
-            return None
+            return _UNRESOLVED_MACRO
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -1984,8 +2001,10 @@ class Contact(ObjectDefinition):
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname in _standard_macros:
-            attribute_name = _standard_macros.get(macroname)
+            attribute_name = _standard_macros.get(macroname, _UNRESOLVED_MACRO)
         elif macroname.startswith('$_CONTACT'):
             # if this is a custom macro
             name = macroname[len('$_CONTACT'):-1]
@@ -1996,8 +2015,8 @@ class Contact(ObjectDefinition):
             name = macroname[len('$CONTACT'):-1]
             attribute_name = name.lower()
         else:
-            return ''
-        return self.get(attribute_name) or ''
+            return _UNRESOLVED_MACRO
+        return self.get(attribute_name, _UNRESOLVED_MACRO)
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
