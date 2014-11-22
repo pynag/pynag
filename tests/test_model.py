@@ -860,6 +860,55 @@ class Model(unittest.TestCase):
         self.assertEqual(production_service.get_effective_hostgroups(), [production_servers])
 
 
+class TestMacroResolving(unittest.TestCase):
+
+    def setUp(self):
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
+        self.environment.update_model()
+
+    def tearDown(self):
+        self.environment.terminate()
+
+    def test_macro_resolving(self):
+        """ Test the get_macro and get_all_macros commands of services """
+
+        # FIXME FNE should probably have a nicer way of handling this
+        resource_cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.resource.cfg')
+        self.environment.import_config(resource_cfg_file)
+        self.environment.config._edit_static_file(attribute='resource_file',
+                                                  new_value=os.path.join(self.environment.objects_dir, 'custom.macros.resource.cfg'))
+        self.environment.config.parse_maincfg()
+
+        cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.cfg')
+        self.environment.import_config(cfg_file)
+
+        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
+        macros = service1.get_all_macros()
+        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$']
+        self.assertEqual(sorted(expected_macrokeys), sorted(macros.keys()))
+
+        self.assertEqual('/path/to/user1', macros['$USER1$'])
+        self.assertEqual('/path/to/user1', macros['$ARG2$'])
+        self.assertEqual('hostaddress', macros['$HOSTADDRESS$'])
+
+        self.assertEqual('macro1', macros['$_SERVICE_macro1$'])
+        self.assertEqual('macro1', macros['$ARG1$'])
+        self.assertEqual('macro1', macros['$_HOST_macro1$'])
+        self.assertEqual('this.macro.is.not.used', macros['$_SERVICE_not_used$'])
+
+        self.assertEqual(None, macros['$_HOST_nonexistant$'])
+        self.assertEqual(None, macros['$_SERVICE_nonexistant$'])
+
+        self.assertEqual('', macros['$_SERVICE_empty$'])
+        self.assertEqual('', macros['$_HOST_empty$'])
+
+        expected_command_line = "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
+        actual_command_line = service1.get_effective_command_line()
+
+        self.assertEqual(expected_command_line, actual_command_line)
+
+
 class Model2(unittest.TestCase):
 
     """ Another class for testing pynag.Model. Should replace Model at some point.
@@ -1135,44 +1184,6 @@ class Model2(unittest.TestCase):
 
         host = search_results[0]
         self.assertEqual(file2, host.get_filename())
-
-    def test_macro_resolving(self):
-        """ Test the get_macro and get_all_macros commands of services """
-
-        # FIXME FNE should probably have a nicer way of handling this
-        resource_cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.resource.cfg')
-        self.environment.import_config(resource_cfg_file)
-        self.environment.config._edit_static_file(attribute='resource_file',
-                                                  new_value=os.path.join(self.environment.objects_dir, 'custom.macros.resource.cfg'))
-        self.environment.config.parse_maincfg()
-
-        cfg_file = os.path.join(tests_dir, 'testconfigs/custom.macros.cfg')
-        self.environment.import_config(cfg_file)
-
-        service1 = pynag.Model.Service.objects.get_by_name('macroservice')
-        macros = service1.get_all_macros()
-        expected_macrokeys = ['$USER1$', '$ARG2$', '$_SERVICE_empty$', '$_HOST_nonexistant$', '$_SERVICE_nonexistant$', '$_SERVICE_macro1$', '$ARG1$', '$_HOST_macro1$', '$_HOST_empty$', '$HOSTADDRESS$', '$_SERVICE_not_used$']
-        self.assertEqual(sorted(expected_macrokeys), sorted(macros.keys()))
-
-        self.assertEqual('/path/to/user1', macros['$USER1$'])
-        self.assertEqual('/path/to/user1', macros['$ARG2$'])
-        self.assertEqual('hostaddress', macros['$HOSTADDRESS$'])
-
-        self.assertEqual('macro1', macros['$_SERVICE_macro1$'])
-        self.assertEqual('macro1', macros['$ARG1$'])
-        self.assertEqual('macro1', macros['$_HOST_macro1$'])
-        self.assertEqual('this.macro.is.not.used', macros['$_SERVICE_not_used$'])
-
-        self.assertEqual(None, macros['$_HOST_nonexistant$'])
-        self.assertEqual(None, macros['$_SERVICE_nonexistant$'])
-
-        self.assertEqual('', macros['$_SERVICE_empty$'])
-        self.assertEqual('', macros['$_HOST_empty$'])
-
-        expected_command_line = "/path/to/user1/macro -H 'hostaddress' host_empty='' service_empty='' host_macro1='macro1' arg1='macro1' host_nonexistant='' service_nonexistant='' escaped_dollarsign=$$ user1_as_argument=/path/to/user1"
-        actual_command_line = service1.get_effective_command_line()
-
-        self.assertEqual(expected_command_line, actual_command_line)
 
     def test_parenting(self):
         """ Test the use of get_effective_parents and get_effective_children
@@ -1782,8 +1793,6 @@ class Model2(unittest.TestCase):
 
         shared_service = services[0]
         self.assertEqual('host_b', shared_service.host_name)
-
-
 
 
 class NagiosReloadHandler(unittest.TestCase):
