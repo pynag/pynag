@@ -1465,3 +1465,43 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
     result = proc.returncode, stdout, stderr
 
     return result
+
+def is_macro(macro):
+    """Test if macro is in the format of a valid nagios macro.
+
+    Args:
+        macro: String. Any macro, example $HOSTADDRESS$
+
+    Returns:
+        Boolean. True if macro is in the format of a macro, otherwise false.
+
+    Examples:
+        >>> is_macro('$HOSTADDRESS$')
+        True
+        >>> is_macro('$HOSTADDRESS')
+        False
+        >>> is_macro(None)
+        False
+        >>> is_macro('')
+        False
+        >>> is_macro('$CONTACTNAME$')
+        True
+        >>> is_macro('$SERVICEDESC$')
+        True
+        >>> is_macro('$_SERVICE_CUSTOM$')
+        True
+        >>> is_macro('$_HOST_CUSTOM$')
+        True
+        >>> is_macro('$_CONTACT_CUSTOM$')
+        True
+    """
+    if not macro.startswith('$'):
+        return False
+    if not macro.endswith('$'):
+        return False
+
+    # Remove $ from macro
+    macro = macro[1:-1]
+    if not macro:
+        return False
+    return True
