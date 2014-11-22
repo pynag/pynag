@@ -101,7 +101,7 @@ Of course these can be combined with the pynag filter syntax:
    | pynag list host_name service_description effective_command_line
 
 For detailed description of the filter see pydoc for
-pynag.Model.ObjectDefintion.filter()
+pynag.Model.ObjectDefinition.filter()
 
 SET statements
 --------------

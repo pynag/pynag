@@ -27,6 +27,8 @@ main() {
     
     new_version=$(grep ^VERSION Makefile | awk '{ print $3 }')
 
+    update_manpage || echo FAIL
+
     git_commit || echo FAIL
 
     git_push || echo FAIL
@@ -112,6 +114,11 @@ update_freecode_info() {
 
 }
 
+update_manpage() {
+    ask "Update manpage?" || return 0
+    ./setup.py build_man
+    gzip -c < man/pynag.1 > man/pynag.1.gz
+}
 
 update_version_number() {
     ask "Update version number?" || return 0
@@ -140,7 +147,7 @@ update_debian_changelog() {
     changelog=$(mktemp)
     echo "${project_name} (${new_version}-${current_release}) unstable; urgency=low" > ${changelog}
     echo "" >> ${changelog}
-    echo " * New upstream version" >> ${changelog}
+    echo "  * New upstream version" >> ${changelog}
     echo "" >> ${changelog}
     echo " -- ${NAME} <${MAIL}>  ${DATE}" >> ${changelog}
     echo "" >> ${changelog}
@@ -151,7 +158,7 @@ update_debian_changelog() {
 
 git_commit() {
     ask "Commit changes to git and tag release ?" || return 0
-    git commit Makefile CHANGES ${project_name}/__init__.py rel-eng/packages/${project_name} ${project_name}.spec debian.upstream/changelog -m "Bumped version number to $new_version" > /dev/null
+    git commit Makefile CHANGES ${project_name}/__init__.py rel-eng/packages/${project_name} ${project_name}.spec debian.upstream/changelog man/pynag.1* -m "Bumped version number to $new_version" > /dev/null
     git tag ${project_name}-${new_version}-${current_release} -a -m "Bumped version number to $new_version"
 }
 

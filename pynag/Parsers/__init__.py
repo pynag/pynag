@@ -2610,7 +2610,7 @@ class Livestatus(object):
     def _get_socket(self):
         """ Returns a socket.socket() instance to communicate with livestatus
 
-        Socket might be either unix filesocket or a tcp socket depenging in
+        Socket might be either unix filesocket or a tcp socket depending in
         the content of :py:attr:`livestatus_socket_path`
 
         Returns:
@@ -2635,7 +2635,7 @@ class Livestatus(object):
             if self.livestatus_socket_path.find(':') > 0:
                 address, tcp_port = self.livestatus_socket_path.split(':', 1)
                 if not tcp_port.isdigit():
-                    msg = 'Could not parse host:port "%s". %s  does not look like a valid port is not a valid tcp port.'
+                    msg = 'Could not parse host:port "%s". This "%s" does not look like a valid tcp port.'
                     raise ParserError(msg % (self.livestatus_socket_path, tcp_port))
                 tcp_port = int(tcp_port)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -2652,8 +2652,8 @@ class Livestatus(object):
     def write(self, livestatus_query):
         """ Send a raw livestatus query to livestatus socket.
 
-        Args:
-            livestatus_query: String. A query that will written to livestatus socket.
+        Queries are corrected and convienient default data are added to the
+        query before sending it to the socket.
 
         Returns:
             A string. The result that comes back from our livestatus socket.
@@ -2831,7 +2831,7 @@ class Livestatus(object):
             table: Table from which the data will be retrieved
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Example::
 
@@ -2897,7 +2897,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2917,7 +2917,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2937,7 +2937,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2957,7 +2957,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2977,7 +2977,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 
@@ -2997,7 +2997,7 @@ class Livestatus(object):
         Args:
 
             args, kwargs: These will be appendend to the end of the query to
-            perform additionnal instructions.
+            perform additional instructions.
 
         Returns:
 

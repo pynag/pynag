@@ -1,7 +1,14 @@
-Changes in 0.9.0
+Changes in 0.9.1 (August 5 2014)
+Bug Fixes:
+    - Fixes file_time bug in Utils.CheckResult
+
+Changes in 0.9.0 (July 23 2014)
 New Features:
     - new method: Model.*.rename()
     - new class: Utils.CheckResult, add checkresults
+      http://docs.pynag.org/en/latest/pynag.Utils.html#pynag.Utils.CheckResult
+    - new importer module, currently supports csv files
+      http://docs.pynag.org/en/latest/pynag.Utils.html#module-pynag.Utils.importer
     - better docstrings, reflected on http://docs.pynag.org
 
 Bug Fixes:

@@ -93,7 +93,7 @@ class FileLogger(BaseEventHandler):
 
     def debug(self, object_definition, message):
         """Used for any particular debug notifications"""
-        if self.debug:
+        if self._debug:
             message = "%s: %s" % (time.asctime(), message)
             self._append_to_file(message)
 
