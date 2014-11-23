@@ -283,18 +283,6 @@ class Model(unittest.TestCase):
         h3 = pynag.Model.Host.objects.get_by_shortname('brand_new_host3')
         self.assertEqual(h3, h2)
 
-    # Migrated to Model2.test_get_related_objects()
-    def test_get_related_objects(self):
-        """ Test objectdefinition.get_related_objects()
-        """
-        host1 = pynag.Model.Host(name='a-host-template', use='generic-host')
-        host1.save()
-
-        host2 = pynag.Model.Host(host_name='server', use='a-host-template')
-        host2.save()
-
-        self.assertEqual(host1.get_related_objects(), [host2])
-
     # Migrated to Model2.test_attribute_is_empty()
     def test_attribute_is_empty(self):
         """Test if pynag properly determines if an attribute is empty"""
@@ -1920,6 +1908,21 @@ class Model2(unittest.TestCase):
         shared_service = services[0]
         self.assertEqual('host_b', shared_service.host_name)
 
+    def test_copy(self):
+        host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        host.copy(host_name='new_host_name')
+
+        new_host = pynag.Model.Host.objects.get_by_shortname('new_host_name')
+        self.assertEqual(host.keys(), new_host.keys())
+        self.assertEqual('new_host_name', new_host.host_name)
+        for attribute_name in host.keys():
+            new_value = new_host[attribute_name]
+            old_value = host[attribute_name]
+            if attribute_name in ('meta', 'id', 'shortname', 'host_name'):
+                self.assertNotEqual(old_value, new_value)
+            else:
+                self.assertEqual(host[attribute_name], new_host[attribute_name])
+
 
 class NagiosReloadHandler(unittest.TestCase):
 
@@ -1937,6 +1940,62 @@ class NagiosReloadHandler(unittest.TestCase):
         self.handler.pre_save(None, None)
         self.handler.save(None, None)
 
+
+class EventHandlersTest(unittest.TestCase):
+
+    def setUp(self):
+        self.environment = pynag.Utils.misc.FakeNagiosEnvironment()
+        self.environment.create_minimal_environment()
+        self.environment.update_model()
+
+        self.mock_eventhandler = mock.create_autospec(pynag.Model.EventHandlers.BaseEventHandler, autospec=True)
+        pynag.Model.eventhandlers = [self.mock_eventhandler]
+
+    def tearDown(self):
+        self.environment.terminate()
+
+    def test_eventhandler_called_when_saving_new_object(self):
+        pynag.Model.Host(host_name='test').save()
+        self.assertEqual(True, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(True, self.mock_eventhandler.write.called)
+        self.assertEqual(True, self.mock_eventhandler.save.called)
+
+    def test_eventhandler_called_when_modifying_existing_object(self):
+        ok_host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        ok_host.address = 'new ip address'
+        ok_host.save()
+        self.assertEqual(True, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(True, self.mock_eventhandler.write.called)
+        self.assertEqual(True, self.mock_eventhandler.save.called)
+
+    def test_eventhandler_called_when_copying_a_host(self):
+        ok_host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        ok_host.copy(host_name='new host_name')
+        self.assertEqual(True, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(True, self.mock_eventhandler.write.called)
+        self.assertEqual(True, self.mock_eventhandler.save.called)
+
+    def test_eventhandler_called_when_rewriting_object(self):
+        ok_host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        ok_host.rewrite("define host {\n host_name ok_host \n}")
+        self.assertEqual(True, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(True, self.mock_eventhandler.write.called)
+        self.assertEqual(True, self.mock_eventhandler.save.called)
+
+    def test_eventhandler_called_when_deleting_object(self):
+        ok_host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        ok_host.delete()
+        self.assertEqual(True, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(True, self.mock_eventhandler.write.called)
+        self.assertEqual(True, self.mock_eventhandler.save.called)
+
+    def test_eventhandler_debug_called_when_changing_attribute(self):
+        ok_host = pynag.Model.Host.objects.get_by_shortname('ok_host')
+        ok_host.address = 'Test'
+        self.assertEqual(False, self.mock_eventhandler.pre_save.called)
+        self.assertEqual(False, self.mock_eventhandler.write.called)
+        self.assertEqual(False, self.mock_eventhandler.save.called)
+        self.assertEqual(True, self.mock_eventhandler.debug.called)
 
 class ObjectRelations(unittest.TestCase):
 
