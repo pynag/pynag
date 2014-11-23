@@ -789,7 +789,8 @@ class ObjectDefinition(object):
                 del self._changes[k]
             self.is_new = False
             self._filename_has_changed = False
-            return config.item_add(self._original_attributes, self.get_filename())
+            self._event(level='write', message="Added new %s: %s" % (self.object_type, self.get_description()))
+            config.item_add(self._original_attributes, self.get_filename())
 
         # If we get here, we are making modifications to an object
         else:

@@ -2712,7 +2712,7 @@ class Livestatus(object):
         return_code = header.split()[0]
         if not return_code.startswith('2'):
             error_message = header.strip()
-            raise LivestatusError("Error '%s' from livestatus: %s" % (return_code, error_message))
+            raise LivestatusError("Error '%s' from livestatus: %s" % (return_code, data))
         return data
 
     def query(self, query, *args, **kwargs):
