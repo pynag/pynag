@@ -2178,6 +2178,19 @@ class LivestatusQuery(object):
     # How a header line is formatted in a query
     _FORMAT_OF_HEADER_LINE = '{keyword}: {arguments}'
 
+    # How a typical filter statement looks like:
+    __FILTER_STATEMENT = 'Filter: {attribute} = {value}'
+
+    # This is a mapping from 'pynag style' attribute suffixes into appropriate
+    # livestatus filter statement.
+    __FILTER_TRANSMUTATION_SUFFIX = {
+        '__contains': 'Filter: {attribute} ~ {value}',
+        '__has_field': 'Filter: {attribute} >= {value}',
+        '__isnot': 'Filter: {attribute} != {value}',
+        '__startswith': 'Filter: {attribute} ~ ^{value}',
+        '__endswith': 'Filter: {attribute} ~ {value}$',
+    }
+
     def __init__(self, query, *args, **kwargs):
         """Create a new LivestatusQuery.
 
@@ -2200,7 +2213,32 @@ class LivestatusQuery(object):
             'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n'
         """
         self._query = query.splitlines()
-        self._query += pynag.Utils.grep_to_livestatus(*args,**kwargs)
+        for header_line in args:
+            self.add_header_line(header_line)
+        self.add_filters(**kwargs)
+
+    def _join_arguments_with_or(self, *args):
+        """join multiple Livestatus Filter statements with a logical OR.
+
+        Args:
+            *args: List of strings like: ['Filter: state = 0', 'Filter: state = 1']
+
+        Returns:
+            List of strings. Same as args except 'Or: %s' % len(args) is added to the list.
+
+        Examples:
+            >>> query = LivestatusQuery('')
+            >>> query._join_arguments_with_or('', '', '')
+            ['', '', '', 'Or: 3']
+            >>> query._join_arguments_with_or('')
+            ['']
+        """
+        args = list(args)
+        length_of_arguments = len(args)
+        if length_of_arguments > 1:
+            or_statement = 'Or: %s' % len(args)
+            args.append(or_statement)
+        return args
 
     def get_query(self):
         """Get a string representation of our query
@@ -2529,6 +2567,124 @@ class LivestatusQuery(object):
            'GET services'
         """
         return str(self).strip(*args, **kwargs)
+
+    def startswith(self, *args, **kwargs):
+        """ Wrapper around str(self).startswith().
+
+         This function is here for backwards compatibility because a lot of callers were previously passing
+         in strings, but are now passing in LivestatusQuery. For this purpose we behave like a string.
+
+        Example:
+           >>> query = LivestatusQuery('GET services')
+           >>> str(query)
+           'GET services\\n'
+           >>> query.startswith('GET')
+           True
+        """
+        return str(self).startswith(*args, **kwargs)
+
+    def convert_key_value_to_filter_statement(self, attribute, value):
+        """Convert a key/value pair to a Livestatus compatible Filter: statement.
+
+        Args:
+            attribute: String. Name of a single livestatus attribute, for example 'host_name'.
+                the attribute can have a 'pynag style' suffix which is a hint to what kind of
+                filtering will be applied. See the examples section for an idea how this is applied.
+            value: String. Single value to filter by, for example: 'localhost'
+
+        Returns:
+            String. A single livestatus compatible filter statement. See Examples section for
+            an idea of what return statement looks like.
+
+        Examples:
+            >>> query = LivestatusQuery('')
+            >>> query.convert_key_value_to_filter_statement('host_name', 'test')
+            'Filter: host_name = test'
+            >>> query.convert_key_value_to_filter_statement('service_description__contains', 'serv')
+            'Filter: service_description ~ serv'
+            >>> query.convert_key_value_to_filter_statement('service_description__isnot', 'serv')
+            'Filter: service_description != serv'
+            >>> query.convert_key_value_to_filter_statement('service_description__has_field', 'foo')
+            'Filter: service_description >= foo'
+            >>> query.convert_key_value_to_filter_statement('service_description__startswith', 'foo')
+            'Filter: service_description ~ ^foo'
+            >>> query.convert_key_value_to_filter_statement('service_description__endswith', 'foo')
+            'Filter: service_description ~ foo$'
+        """
+
+        # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
+        # For example if attribute ends with '__contains' we want the end result
+        # to be 'Filter: attribute ~ value' (notice the ~ instead of =)
+        for suffix, potential_filter_statement in self.__FILTER_TRANSMUTATION_SUFFIX.items():
+            if attribute.endswith(suffix):
+                suffix_length = len(suffix)
+                attribute = attribute[:-suffix_length]
+                filter_statement = potential_filter_statement
+                break
+        else:
+            filter_statement = self.__FILTER_STATEMENT
+        return filter_statement.format(attribute=attribute, value=value)
+
+    def create_filter_statement(self, attribute, *values):
+        """Create a Livestatus filter statement from a key/value pair.
+
+        Args:
+          attribute: String. Name of a livestatus attribute, example: 'host_name'
+          *values: List of strings. If more than one value is provided the resulting filter
+              query will be be joined with a logical OR.
+
+        Returns:
+          List of strings. List of Livestatus Filter statements. Look at Examples section
+          for an idea of what return result looks like.
+
+        Examples:
+            >>> query = LivestatusQuery('')
+            >>> query.create_filter_statement('host', 'localhost')
+            ['Filter: host = localhost']
+            >>> query.create_filter_statement('host', 'localhost', 'remote_host')
+            ['Filter: host = localhost', 'Filter: host = remote_host', 'Or: 2']
+        """
+        return_arguments = []
+        for value in values:
+            filter_statement = self.convert_key_value_to_filter_statement(attribute, value)
+            return_arguments.append(filter_statement)
+        if len(return_arguments) > 1:
+            return_arguments = self._join_arguments_with_or(*return_arguments)
+        return return_arguments
+
+    def add_filters(self, **kwargs):
+        """Add a new filter statement to current query.
+
+        Args:
+         **kwargs: Every key/value pair is a string. See examples for ideas.
+
+        >>> query = LivestatusQuery('GET services')
+        >>> query.add_filters(host_name='localhost')
+        >>> query.get_query()
+        'GET services\\nFilter: host_name = localhost\\n'
+        >>> query.add_filters(description__contains='Ping')
+        >>> query.get_query()
+        'GET services\\nFilter: host_name = localhost\\nFilter: description ~ Ping\\n'
+        """
+        for key, value in kwargs.items():
+            filter_statements = self.create_filter_statement(key, value)
+            for statement in filter_statements:
+                self.add_header_line(statement)
+
+    def set_columns(self, *columns):
+        """Set a Columns header to our query with the specified Columns.
+
+        Args:
+            *columns: List of strings. Examples: ['host_name','description']
+
+        Examples:
+            >>> query = LivestatusQuery('GET hosts')
+            >>> query.set_columns('name', 'address')
+            >>> query.get_query()
+            'GET hosts\\nColumns: name address\\n'
+        """
+        self.remove_header(self._COLUMNS)
+        self.add_header(self._COLUMNS, ' '.join(columns))
 
 
 class Livestatus(object):
