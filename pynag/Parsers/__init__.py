@@ -2163,7 +2163,30 @@ class Config(object):
 
 
 class LivestatusQuery(object):
-    """Convenience class to help construct a livestatus query."""
+    """Convenience class to help construct a livestatus query.
+
+    When talking to Livestatus we use the LQL - the Livestatus Query Language.
+
+    Each query contains:
+        * A Command in the form of 'GET <table>' (e.g. 'GET services')
+        * Arbritary number of 'Header Lines' in the form of 'Header: Argument'
+        * An Empty line, i.e. \n
+
+    Example Livestatus Queries:
+        'GET contacts\n'
+        'GET contacts\nColumns: name alias\n'
+
+    Examples on using this class:
+        >>> query = LivestatusQuery('GET contacts')
+        >>> query.get_query()
+        'GET contacts\\n'
+        >>> query.set_outputformat('python')
+        >>> query.get_query()
+        'GET contacts\\nOutputFormat: python\\n'
+
+    For more information on Livestatus see:
+        https://mathias-kettner.de/checkmk_livestatus.html
+    """
 
     # The following constants describe names of specific
     # Livestatus headers:
@@ -2184,11 +2207,12 @@ class LivestatusQuery(object):
     # This is a mapping from 'pynag style' attribute suffixes into appropriate
     # livestatus filter statement.
     __FILTER_TRANSMUTATION_SUFFIX = {
-        '__contains': 'Filter: {attribute} ~ {value}',
+        '__contains': 'Filter: {attribute} ~~ {value}',
         '__has_field': 'Filter: {attribute} >= {value}',
         '__isnot': 'Filter: {attribute} != {value}',
         '__startswith': 'Filter: {attribute} ~ ^{value}',
         '__endswith': 'Filter: {attribute} ~ {value}$',
+        '__regex': 'Filter: {attribute} ~ {value}',
     }
 
     def __init__(self, query, *args, **kwargs):
@@ -2601,7 +2625,7 @@ class LivestatusQuery(object):
             >>> query.convert_key_value_to_filter_statement('host_name', 'test')
             'Filter: host_name = test'
             >>> query.convert_key_value_to_filter_statement('service_description__contains', 'serv')
-            'Filter: service_description ~ serv'
+            'Filter: service_description ~~ serv'
             >>> query.convert_key_value_to_filter_statement('service_description__isnot', 'serv')
             'Filter: service_description != serv'
             >>> query.convert_key_value_to_filter_statement('service_description__has_field', 'foo')
@@ -2664,7 +2688,7 @@ class LivestatusQuery(object):
         'GET services\\nFilter: host_name = localhost\\n'
         >>> query.add_filters(description__contains='Ping')
         >>> query.get_query()
-        'GET services\\nFilter: host_name = localhost\\nFilter: description ~ Ping\\n'
+        'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n'
         """
         for key, value in kwargs.items():
             filter_statements = self.create_filter_statement(key, value)
@@ -2688,14 +2712,16 @@ class LivestatusQuery(object):
 
 
 class Livestatus(object):
-
-    """ Wrapper around MK-Livestatus
+    """ Class for communicating with Livestatus.
 
     Example usage::
 
         s = Livestatus()
         for hostgroup s.get_hostgroups():
             print(hostgroup['name'], hostgroup['num_hosts'])
+
+    For more information on Livestatus see:
+        https://mathias-kettner.de/checkmk_livestatus.html
     """
 
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
