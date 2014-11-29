@@ -2641,9 +2641,9 @@ class LivestatusQuery(object):
             >>> query.convert_key_value_to_filter_statement('service_description__endswith', 'foo')
             'Filter: service_description ~ foo$'
             >>> query.convert_key_value_to_filter_statement('state__gt', '0')
-            'Filter: state > 0$'
-            >>> query.convert_key_value_to_filter_statement('state_lt', '1')
-            'Filter: state < 1$'
+            'Filter: state > 0'
+            >>> query.convert_key_value_to_filter_statement('state__lt', '1')
+            'Filter: state < 1'
         """
 
         # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
@@ -2675,7 +2675,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('')
             >>> query.create_filter_statement('host', 'localhost')
             ['Filter: host = localhost']
-            >>> query.create_filter_statement('host', 'localhost', 'remote_host')
+            >>> query.create_filter_statement('host', ['localhost', 'remote_host'])
             ['Filter: host = localhost', 'Filter: host = remote_host', 'Or: 2']
         """
         return_arguments = []
