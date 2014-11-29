@@ -2664,7 +2664,7 @@ class LivestatusQuery(object):
 
         Args:
           attribute: String. Name of a livestatus attribute, example: 'host_name'
-          *values: List of strings. If more than one value is provided the resulting filter
+          values: List of strings. If more than one value is provided the resulting filter
               query will be be joined with a logical OR.
 
         Returns:
