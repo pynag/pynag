@@ -2197,6 +2197,7 @@ class LivestatusQuery(object):
     _AUTH_USER = 'AuthUser'
     _STATS = 'Stats'
     _FILTER = 'Filter'
+    _OR = 'Or'
 
     # How a header line is formatted in a query
     _FORMAT_OF_HEADER_LINE = '{keyword}: {arguments}'
@@ -2213,6 +2214,8 @@ class LivestatusQuery(object):
         '__startswith': 'Filter: {attribute} ~ ^{value}',
         '__endswith': 'Filter: {attribute} ~ {value}$',
         '__regex': 'Filter: {attribute} ~ {value}',
+        '__gt': 'Filter: {attribute} > {value}',
+        '__lt': 'Filter: {attribute} < {value}',
     }
 
     def __init__(self, query, *args, **kwargs):
@@ -2240,6 +2243,9 @@ class LivestatusQuery(object):
         for header_line in args:
             self.add_header_line(header_line)
         self.add_filters(**kwargs)
+
+    def __eq__(self, other):
+        return self._query == other._query
 
     def _join_arguments_with_or(self, *args):
         """join multiple Livestatus Filter statements with a logical OR.
@@ -2634,6 +2640,10 @@ class LivestatusQuery(object):
             'Filter: service_description ~ ^foo'
             >>> query.convert_key_value_to_filter_statement('service_description__endswith', 'foo')
             'Filter: service_description ~ foo$'
+            >>> query.convert_key_value_to_filter_statement('state__gt', '0')
+            'Filter: state > 0$'
+            >>> query.convert_key_value_to_filter_statement('state_lt', '1')
+            'Filter: state < 1$'
         """
 
         # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
@@ -2649,7 +2659,7 @@ class LivestatusQuery(object):
             filter_statement = self.__FILTER_STATEMENT
         return filter_statement.format(attribute=attribute, value=value)
 
-    def create_filter_statement(self, attribute, *values):
+    def create_filter_statement(self, attribute, values):
         """Create a Livestatus filter statement from a key/value pair.
 
         Args:
@@ -2669,12 +2679,30 @@ class LivestatusQuery(object):
             ['Filter: host = localhost', 'Filter: host = remote_host', 'Or: 2']
         """
         return_arguments = []
+        if not isinstance(values, list):
+            values = [values]
         for value in values:
             filter_statement = self.convert_key_value_to_filter_statement(attribute, value)
             return_arguments.append(filter_statement)
         if len(return_arguments) > 1:
             return_arguments = self._join_arguments_with_or(*return_arguments)
         return return_arguments
+
+    def add_filter(self, attribute, value):
+        """Adds a single filter statement to current query.
+
+        Args:
+            attribute. String. Attribute to search for.
+            value: String. Value to search for.
+
+        >>> query = LivestatusQuery('GET services')
+        >>> query.add_filter('host_name', 'localhost')
+        >>> query.get_query()
+        'GET services\\nFilter: host_name = localhost\\n'
+        """
+        filter_statements = self.create_filter_statement(attribute, value)
+        for statement in filter_statements:
+            self.add_header_line(statement)
 
     def add_filters(self, **kwargs):
         """Add a new filter statement to current query.
@@ -2691,9 +2719,7 @@ class LivestatusQuery(object):
         'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n'
         """
         for key, value in kwargs.items():
-            filter_statements = self.create_filter_statement(key, value)
-            for statement in filter_statements:
-                self.add_header_line(statement)
+            self.add_filter(key, value)
 
     def set_columns(self, *columns):
         """Set a Columns header to our query with the specified Columns.
@@ -2709,6 +2735,22 @@ class LivestatusQuery(object):
         """
         self.remove_header(self._COLUMNS)
         self.add_header(self._COLUMNS, ' '.join(columns))
+
+    def add_or_statement(self, number):
+        """Adds an OR statement to the current set of header lines.
+
+        Args:
+            number: Integer. Tells how many arguments should be joined together.
+        Examples:
+            >>> query = LivestatusQuery('GET hosts')
+            >>> query.add_filters(name='localhost')
+            >>> query.add_filters(name='otherhost')
+            >>> query.add_or_statement(2)
+            >>> query.get_query()
+            'GET hosts\\nFilter: name = localhost\\nFilter: name = otherhost\\nOr: 2\\n'
+
+        """
+        self.add_header(self._OR, number)
 
 
 class Livestatus(object):
@@ -2883,7 +2925,8 @@ class Livestatus(object):
             LivestatusError: If there are problems with talking to socket.
         """
         livestatus_query = LivestatusQuery(query, *args, **kwargs)
-        return self.write(str(livestatus_query))
+        response = self.write(str(livestatus_query))
+        return response
 
     def _parse_response_header(self, livestatus_response):
         if not livestatus_response:
@@ -2897,15 +2940,79 @@ class Livestatus(object):
             raise LivestatusError("Error '%s' from livestatus: %s" % (return_code, data))
         return data
 
-    def query(self, query, *args, **kwargs):
-        """ Performs LQL queries on the livestatus socket.
+    def _process_query(self, livestatus_query):
+        """ Applies pynag specific quirks and defaults to a Livestatus Query.
 
-        The following will be added to our query automatically:
+        The following will be added to our livestatus_query automatically:
             * If AuthUser is not specified, we add self.authuser.
             * If OutputFormat is not specified, we add python.
             * If ResponseHeader is not specified, we add fixed16.
             * If ColumnHeaders are not specified, we turn them on.
             * If Stats are specified, we turn ColumnHeaders off.
+
+        Args:
+            livestatus_query: LivestatusQuery. The query we will process.
+
+        """
+        # Implicitly add ResponseHeader if none was specified
+        if not livestatus_query.has_responseheader():
+            livestatus_query.set_responseheader('fixed16')
+
+        # Implicitly add OutputFormat if none was specified
+        if not livestatus_query.has_outputformat():
+            livestatus_query.set_outputformat('python')
+
+        # Implicitly turn ColumnHeaders on if none we specified
+        if not livestatus_query.has_columnheaders():
+            livestatus_query.set_columnheaders('on')
+
+        # Implicitly add AuthUser if one was configured:
+        if self.authuser and not livestatus_query.has_authuser():
+            livestatus_query.set_authuser(self.authuser)
+
+        # This piece of code is here to workaround a bug in livestatus when
+        # livestatus_query contains 'Stats' and ColumnHeaders are on.
+        # * Old behavior: Livestatus turns columnheaders explicitly off.
+        # * New behavior: Livestatus gives us headers, but corrupted data.
+        #
+        # Out of 2 evils we maintain consistency by choosing the older
+        # behavior of always turning of columnheaders for Stats.
+        if livestatus_query.has_stats():
+            livestatus_query.set_columnheaders('off')
+
+    def _process_response(self, response_data):
+        """Returns livestatus response in a structured format.
+
+        Args:
+            response_data: List of strings. Output from livestatus with PythonFormat On
+                and without Response headers. Every string in the list represents a single
+                line of livestatus output.
+        Returns:
+            * List of dicts.
+            * Every element in the list represents one row from livestatus.
+            * Every dict is a {'str':'str'} where the keys are column names and
+            the values are column values.
+        """
+        column_headers = response_data.pop(0)
+        # Lets throw everything into a hashmap before we return
+        result = []
+        for line in response_data:
+            current_row = {}
+            for i, value in enumerate(line):
+                column_name = column_headers[i]
+                current_row[column_name] = value
+            result.append(current_row)
+        return result
+
+    def query(self, query, *args, **kwargs):
+        """ Performs LQL queries on the livestatus socket.
+
+        Note:
+            The incoming query is mangled and various default headers
+            are set on, for more details see _process_query().
+
+            Use raw_query() instead if you need more control over the
+            input and output of Livestatus queries.
 
         Args:
             query: String. Query to be passed to the livestatus socket
@@ -2928,32 +3035,7 @@ class Livestatus(object):
         kwargs.pop('columns', None)
 
         livestatus_query = LivestatusQuery(query, *args, **kwargs)
-
-        # Implicitly add ResponseHeader if none was specified
-        if not livestatus_query.has_responseheader():
-            livestatus_query.set_responseheader('fixed16')
-
-        # Implicitly add OutputFormat if none was specified
-        if not livestatus_query.has_outputformat():
-            livestatus_query.set_outputformat('python')
-
-        # Implicitly turn ColumnHeaders on if none we specified
-        if not livestatus_query.has_columnheaders():
-            livestatus_query.set_columnheaders('on')
-
-        # Implicitly add AuthUser if one was configured:
-        if self.authuser and not livestatus_query.has_authuser():
-            livestatus_query.set_authuser(self.authuser)
-
-        # This piece of code is here to workaround a bug in livestatus when
-        # query contains 'Stats' and ColumnHeaders are on.
-        # * Old behavior: Livestatus turns columnheaders explicitly off.
-        # * New behavior: Livestatus gives us headers, but corrupted data.
-        #
-        # Out of 2 evils we maintain consistency by choosing the older
-        # behavior of always turning of columnheaders for Stats.
-        if livestatus_query.has_stats():
-            livestatus_query.set_columnheaders('off')
+        self._process_query(livestatus_query)
 
         # This is we actually send our query into livestatus. livestatus_response is the raw response
         # from livestatus socket (string):
@@ -2991,17 +3073,7 @@ class Livestatus(object):
         if not livestatus_query.column_headers():
             return response_data
 
-        column_headers = response_data.pop(0)
-
-        # Lets throw everything into a hashmap before we return
-        result = []
-        for line in response_data:
-            current_row = {}
-            for i, value in enumerate(line):
-                column_name = column_headers[i]
-                current_row[column_name] = value
-            result.append(current_row)
-        return result
+        return self._process_response(response_data)
 
     def get(self, table, *args, **kwargs):
         """ Same as self.query('GET %s' % (table,))
