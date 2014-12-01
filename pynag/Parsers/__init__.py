@@ -2766,6 +2766,11 @@ class Livestatus(object):
         https://mathias-kettner.de/checkmk_livestatus.html
     """
 
+    # Its relatively common that livestatus queries fail because they are made
+    # at the same time as nagios is being reloaded. For that reason we introduce
+    # one retry on failed queries after waiting for _RETRY_INTERVAL seconds.
+    _RETRY_INTERVAL = 0.5
+
     def __init__(self, livestatus_socket_path=None, nagios_cfg_file=None, authuser=None):
         """ Initilize a new instance of Livestatus
 
@@ -3039,7 +3044,12 @@ class Livestatus(object):
 
         # This is we actually send our query into livestatus. livestatus_response is the raw response
         # from livestatus socket (string):
-        livestatus_response = self.raw_query(livestatus_query)
+        try:
+            livestatus_response = self.raw_query(livestatus_query)
+        except LivestatusError:
+            time.sleep(self._RETRY_INTERVAL)
+            livestatus_response = self.raw_query(livestatus_query)
+
 
         if not livestatus_response:
             raise InvalidResponseFromLivestatus(query=livestatus_query, response=livestatus_response)
@@ -3588,7 +3598,7 @@ class ParserError(Exception):
     line_start = None
     message = None
 
-    def __init__(self, message, item=None):
+    def __init__(self, message=None, item=None):
         """ Creates an instance of ParserError
 
         Args:

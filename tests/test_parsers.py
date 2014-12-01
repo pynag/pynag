@@ -320,6 +320,19 @@ class Livestatus(unittest.TestCase):
         mock_write.assert_called_once_with('GET services\nOutputFormat: python\n')
 
     @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_retries_on_socket_error(self, mock_write):
+        mock_write.side_effect = iter([pynag.Parsers.LivestatusError, '200'])
+        self.livestatus.get_hosts()
+        self.assertEqual(2, mock_write.call_count)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_raises_on_repeated_errors(self, mock_write):
+        mock_write.side_effect = iter([pynag.Parsers.LivestatusError, pynag.Parsers.LivestatusError, '200'])
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.get_hosts()
+        self.assertEqual(2, mock_write.call_count)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
     def test_query_adds_required_headers(self, mock_write):
         result = self.livestatus.query('GET services')
         expected_query = 'GET services\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
