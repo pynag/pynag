@@ -2179,10 +2179,10 @@ class LivestatusQuery(object):
     Examples on using this class:
         >>> query = LivestatusQuery('GET contacts')
         >>> query.get_query()
-        'GET contacts\\n'
+        'GET contacts\\n\\n'
         >>> query.set_outputformat('python')
         >>> query.get_query()
-        'GET contacts\\nOutputFormat: python\\n'
+        'GET contacts\\nOutputFormat: python\\n\\n'
 
     For more information on Livestatus see:
         https://mathias-kettner.de/checkmk_livestatus.html
@@ -2231,15 +2231,15 @@ class LivestatusQuery(object):
         Examples:
             >>> query = LivestatusQuery('GET services')
             >>> query.get_query()
-            'GET services\\n'
+            'GET services\\n\\n'
 
             >>> query = LivestatusQuery('GET services', 'OutputFormat: json')
             >>> query.get_query()
-            'GET services\\nOutputFormat: json\\n'
+            'GET services\\nOutputFormat: json\\n\\n'
 
             >>> query = LivestatusQuery('GET services', 'Columns: service_description', host_name='localhost')
             >>> query.get_query()
-            'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n'
+            'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n\\n'
         """
         # `query´ here represents a *single* query, obviously.
         # But we don't know from where it comes or if it can be trusted..
@@ -2281,10 +2281,10 @@ class LivestatusQuery(object):
         Example:
             >>> query = LivestatusQuery('GET services')
             >>> query.get_query()
-            'GET services\\n'
+            'GET services\\n\\n'
             >>> query.add_header('Filter', 'host_name = foo')
             >>> query.get_query()
-            'GET services\\nFilter: host_name = foo\\n'
+            'GET services\\nFilter: host_name = foo\\n\\n'
 
         Returns:
             A string. String representation of our query that is compatibe
@@ -2346,7 +2346,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.add_header_line('Filter: host_name = foo')
             >>> query.get_query()
-            'GET services\\nFilter: host_name = foo\\n'
+            'GET services\\nFilter: host_name = foo\\n\\n'
         """
         # from same reason than in __init__, we have to skip empty header:
         if header_line:
@@ -2359,7 +2359,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.add_header('Filter', 'host_name = foo')
             >>> query.get_query()
-            'GET services\\nFilter: host_name = foo\\n'
+            'GET services\\nFilter: host_name = foo\\n\\n'
         """
         header_line = self._FORMAT_OF_HEADER_LINE.format(keyword=keyword, arguments=arguments)
         self.add_header_line(header_line)
@@ -2409,7 +2409,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.set_responseheader()
             >>> query.get_query()
-            'GET services\\nResponseHeader: fixed16\\n'
+            'GET services\\nResponseHeader: fixed16\\n\\n'
         """
         # First remove whatever responseheader might have been set before
         self.remove_header(self._RESPONSE_HEADER)
@@ -2422,7 +2422,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.set_outputformat('json')
             >>> query.get_query()
-            'GET services\\nOutputFormat: json\\n'
+            'GET services\\nOutputFormat: json\\n\\n'
         """
         # Remove outputformat if it was already in out query
         self.remove_header(self._OUTPUT_FORMAT)
@@ -2435,10 +2435,10 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.set_columnheaders('on')
             >>> query.get_query()
-            'GET services\\nColumnHeaders: on\\n'
+            'GET services\\nColumnHeaders: on\\n\\n'
             >>> query.set_columnheaders('off')
             >>> query.get_query()
-            'GET services\\nColumnHeaders: off\\n'
+            'GET services\\nColumnHeaders: off\\n\\n'
         """
         self.remove_header(self._COLUMN_HEADERS)
         self.add_header(self._COLUMN_HEADERS, status)
@@ -2450,7 +2450,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services')
             >>> query.set_authuser('nagiosadmin')
             >>> query.get_query()
-            'GET services\\nAuthUser: nagiosadmin\\n'
+            'GET services\\nAuthUser: nagiosadmin\\n\\n'
         """
         self.remove_header(self._AUTH_USER)
         self.add_header(self._AUTH_USER, auth_user)
@@ -2557,7 +2557,7 @@ class LivestatusQuery(object):
         Example:
             >>> query = LivestatusQuery('GET services', 'Columns: host_name')
             >>> str(query)
-            'GET services\\nColumns: host_name\\n'
+            'GET services\\nColumns: host_name\\n\\n'
 
         """
         return self.get_query()
@@ -2571,7 +2571,7 @@ class LivestatusQuery(object):
         Example:
             >>> query = LivestatusQuery('GET services', 'Columns: host_name')
             >>> query.splitlines()
-            ['GET services', 'Columns: host_name']
+            ['GET services', 'Columns: host_name', '']
         """
         querystring = str(self)
         return querystring.splitlines(*args, **kwargs)
@@ -2585,7 +2585,7 @@ class LivestatusQuery(object):
         Example:
             >>> query = LivestatusQuery('GET services', 'Columns: host_name')
             >>> query.split('\\n')
-            ['GET services', 'Columns: host_name', '']
+            ['GET services', 'Columns: host_name', '', '']
         """
         querystring = str(self)
         return querystring.split(*args, **kwargs)
@@ -2599,7 +2599,7 @@ class LivestatusQuery(object):
         Example:
            >>> query = LivestatusQuery('GET services')
            >>> str(query)
-           'GET services\\n'
+           'GET services\\n\\n'
            >>> query.strip()
            'GET services'
         """
@@ -2614,7 +2614,7 @@ class LivestatusQuery(object):
         Example:
            >>> query = LivestatusQuery('GET services')
            >>> str(query)
-           'GET services\\n'
+           'GET services\\n\\n'
            >>> query.startswith('GET')
            True
         """
@@ -2705,7 +2705,7 @@ class LivestatusQuery(object):
         >>> query = LivestatusQuery('GET services')
         >>> query.add_filter('host_name', 'localhost')
         >>> query.get_query()
-        'GET services\\nFilter: host_name = localhost\\n'
+        'GET services\\nFilter: host_name = localhost\\n\\n'
         """
         filter_statements = self.create_filter_statement(attribute, value)
         for statement in filter_statements:
@@ -2720,10 +2720,10 @@ class LivestatusQuery(object):
         >>> query = LivestatusQuery('GET services')
         >>> query.add_filters(host_name='localhost')
         >>> query.get_query()
-        'GET services\\nFilter: host_name = localhost\\n'
+        'GET services\\nFilter: host_name = localhost\\n\\n'
         >>> query.add_filters(description__contains='Ping')
         >>> query.get_query()
-        'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n'
+        'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n\\n'
         """
         for key, value in kwargs.items():
             self.add_filter(key, value)
@@ -2738,7 +2738,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET hosts')
             >>> query.set_columns('name', 'address')
             >>> query.get_query()
-            'GET hosts\\nColumns: name address\\n'
+            'GET hosts\\nColumns: name address\\n\\n'
         """
         self.remove_header(self._COLUMNS)
         self.add_header(self._COLUMNS, ' '.join(columns))
@@ -2754,7 +2754,7 @@ class LivestatusQuery(object):
             >>> query.add_filters(name='otherhost')
             >>> query.add_or_statement(2)
             >>> query.get_query()
-            'GET hosts\\nFilter: name = localhost\\nFilter: name = otherhost\\nOr: 2\\n'
+            'GET hosts\\nFilter: name = localhost\\nFilter: name = otherhost\\nOr: 2\\n\\n'
 
         """
         self.add_header(self._OR, number)
