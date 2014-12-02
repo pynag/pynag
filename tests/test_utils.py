@@ -27,6 +27,7 @@ class testUtils(unittest.TestCase):
         pynag.Model.cfg_file = './nagios/nagios.cfg'
         pynag.Model.ObjectDefinition.objects.get_all()
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
+        os.environ['LANG'] = 'en_US@UTF8'
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
