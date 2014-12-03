@@ -69,7 +69,7 @@ state_text[critical] = "Critical"
 state_text[unknown] = "Unknown"
 
 
-class simple:
+class simple(object):
 
     """
     Nagios plugin helper library based on Nagios::Plugin
@@ -526,7 +526,7 @@ def check_range(value, range_threshold=None):
     return True
 
 
-class PluginHelper:
+class PluginHelper(object):
 
     """ PluginHelper takes away some of the tedious work of writing Nagios plugins. Primary features include:
 
