@@ -509,7 +509,6 @@ class LogFiles(unittest.TestCase):
 
         expected_number_of_files = files_num
         logfiles = self.log.get_logfiles()
-        self.assertEqual(expected_number_of_files, len(logfiles))
         self.assertTrue('./nagios/log/nagios.log' in logfiles)
         self.assertEqual(5, len(logfiles))
 
@@ -535,6 +534,9 @@ class LogFiles(unittest.TestCase):
         entries = self.log.get_log_entries(start_time=start_time)
         self.assertEqual(expected_number_of_entries, len(entries))
 
+    def testGetLogFilesSkipsDirectories(self):
+        directory = './nagios/log/archives/old'
+        self.assertNotIn(directory, self.log.get_logfiles())
 
 class Status(unittest.TestCase):
 
