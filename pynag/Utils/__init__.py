@@ -24,203 +24,10 @@ This module contains misc classes and conveninence functions
 that are used throughout the pynag library.
 
 """
-import subprocess
+
+import os
 import re
-from os import getenv, environ
-import pynag.Plugins
-
-from pynag.Utils import errors
-
-
-
-def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
-    """ Run command from the shell prompt. Wrapper around subprocess.
-
-    Args:
-
-        command (str): string containing the command line to run
-
-        raise_error_on_fail (bool): Raise PynagError if returncode > 0
-
-    Returns:
-
-        str: stdout/stderr of the command run
-
-    Raises:
-
-        PynagError if returncode > 0
-    """
-    run_env = environ.copy()
-    # Merge dict into environ
-    if env:
-        run_env.update(env)
-    proc = subprocess.Popen(command,
-                            shell=shell,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            env=run_env)
-    stdout, stderr = proc.communicate('through stdin to stdout')
-    result = proc.returncode, stdout, stderr
-    if proc.returncode > 0 and raise_error_on_fail:
-        error_string = "* Could not run command (return code= %s)\n" % proc.returncode
-        error_string += "* Error was:\n%s\n" % (stderr.strip())
-        error_string += "* Command was:\n%s\n" % command
-        error_string += "* Output was:\n%s\n" % (stdout.strip())
-        if proc.returncode == 127:  # File not found, lets print path
-            path = getenv("PATH")
-            error_string += "Check if y/our path is correct: %s" % path
-        raise PynagError(error_string)
-    else:
-        return result
-
-
-def grep(objects, **kwargs):
-    """ Returns all the elements from array that match the keywords in **kwargs
-
-    See documentation for pynag.Model.ObjectDefinition.objects.filter() for
-    example how to use this.
-
-    Arguments:
-
-        objects (list of dict): list to be searched
-
-        kwargs (str): Any search argument provided will be checked against every dict
-
-    Examples::
-
-        array = [
-        {'host_name': 'examplehost', 'state':0},
-        {'host_name': 'example2', 'state':1},
-        ]
-        grep_dict(array, state=0)
-        # should return [{'host_name': 'examplehost', 'state':0},]
-
-    """
-
-    # Input comes to us as a key/value dict.
-    # We will flatten this out into a tuble, because if value
-    # is a list, it means the calling function is doing multible search on
-    # the same key
-    search = []
-    for k, v in kwargs.items():
-        # We need the actual array in "v" for __in and __notin
-        if isinstance(v, type([])) and not (k.endswith('__in') or k.endswith('__notin')):
-            for i in v:
-                search.append((k, i))
-        else:
-            search.append((k, v))
-    matching_objects = objects
-    for k, v in search:
-        #v = str(v)
-        v_str = str(v)
-        if k.endswith('__contains'):
-            k = k[:-len('__contains')]
-            expression = lambda x: x.get(k) and v_str in str(x.get(k))
-        elif k.endswith('__notcontains'):
-            k = k[:-len('__notcontains')]
-            expression = lambda x: not v_str in str(x.get(k))
-        elif k.endswith('__startswith'):
-            k = k[:-len('__startswith')]
-            expression = lambda x: str(x.get(k)).startswith(v_str)
-        elif k.endswith('__notstartswith'):
-            k = k[:-len('__notstartswith')]
-            expression = lambda x: not str(x.get(k)).startswith(v_str)
-        elif k.endswith('__endswith'):
-            k = k[:-len('__endswith')]
-            expression = lambda x: str(x.get(k)).endswith(v_str)
-        elif k.endswith('__notendswith'):
-            k = k[:-len('__notendswith')]
-            expression = lambda x: not str(x.get(k)).endswith(v_str)
-        elif k.endswith('__exists'):
-            k = k[:-len('__exists')]
-            expression = lambda x: str(k in x) == v_str
-        elif k.endswith('__isnot'):
-            k = k[:-len('__isnot')]
-            expression = lambda x: v_str != str(x.get(k))
-        elif k.endswith('__regex'):
-            k = k[:-len('__regex')]
-            regex = re.compile(str(v))
-            expression = lambda x: regex.search(str(x.get(k)))
-        elif k.endswith('__in'):
-            k = k[:-len('__in')]
-            expression = lambda x: str(x.get(k)) in v
-        elif k.endswith('__notin'):
-            k = k[:-len('__notin')]
-            expression = lambda x: str(x.get(k)) not in v
-        elif k.endswith('__has_field'):
-            k = k[:-len('__has_field')]
-            expression = lambda x: v_str in AttributeList(x.get(k)).fields
-        elif k == 'register' and str(v) == '1':
-            # in case of register attribute None is the same as "1"
-            expression = lambda x: x.get(k) in (v, None)
-        elif k in ('search', 'q'):
-            expression = lambda x: v_str in str(x)
-        else:
-            # If all else fails, assume they are asking for exact match
-            v_is_str = isinstance(v, str)
-            expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
-        matching_objects = filter(expression, matching_objects)
-    return matching_objects
-
-
-def grep_to_livestatus(*args, **kwargs):
-    """ Converts from pynag style grep syntax to livestatus filter syntax.
-
-    Example:
-
-        >>> grep_to_livestatus(host_name='test')
-        ['Filter: host_name = test']
-        >>> grep_to_livestatus(service_description__contains='serv')
-        ['Filter: service_description ~ serv']
-        >>> grep_to_livestatus(service_description__isnot='serv')
-        ['Filter: service_description != serv']
-        >>> grep_to_livestatus(service_description__contains=['serv','check'])
-        ['Filter: service_description ~ serv']
-        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
-        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
-        >>> grep_to_livestatus(service_description__has_field='foo')
-        ['Filter: service_description >= foo']
-        >>> grep_to_livestatus(service_description__startswith='foo')
-        ['Filter: service_description ~ ^foo']
-        >>> grep_to_livestatus(service_description__endswith='foo')
-        ['Filter: service_description ~ foo$']
-    """
-
-    result = list(args)  # Args go unchanged back into results
-    for k, v in kwargs.items():
-        if isinstance(v, list) and len(v) > 0:
-            v = v[0]
-        if k.endswith('__contains'):
-            k = k[:-len('__contains')]
-            my_string = "Filter: %s ~ %s" % (k, v)
-        elif k.endswith('__has_field'):
-            k = k[:-len('__has_field')]
-            my_string = "Filter: %s >= %s" % (k, v)
-        elif k.endswith('__isnot'):
-            k = k[:-len('__isnot')]
-            my_string = "Filter: %s != %s" % (k, v)
-        elif k.endswith('__startswith'):
-            k = k[:-len('__startswith')]
-            my_string = "Filter: %s ~ ^%s" % (k, v)
-        elif k.endswith('__endswith'):
-            k = k[:-len('__endswith')]
-            my_string = "Filter: %s ~ %s$" % (k, v)
-        elif k == 'WaitObject':
-            my_string = "WaitObject: %s" % (v,)
-        elif k == 'WaitCondition':
-            my_string = "WaitCondition: %s" % (v,)
-        elif k == 'WaitTrigger':
-            my_string = "WaitTrigger: %s" % (v,)
-        elif k == 'WaitTimeout':
-            my_string = "WaitTimeout: %s" % (v,)
-        elif k in ('Limit', 'limit'):
-            my_string = "Limit: %s" % (v,)
-        elif k in ('Filter', 'filter'):
-            my_string = "Filter: %s" % (v,)
-        else:
-            my_string = "Filter: %s = %s" % (k, v)
-        result.append(my_string)
-    return result
+import subprocess
 
 
 class AttributeList(object):
@@ -499,7 +306,7 @@ class PluginOutput:
         self.parsed_perfdata = PerfData(perfdatastring=perfdata)
 
 
-class defaultdict(dict):
+class DefaultDict(dict):
 
     """ This is an alternative implementation of collections.defaultdict.
 
@@ -551,6 +358,194 @@ class defaultdict(dict):
     def __repr__(self):
         return 'defaultdict(%s, %s)' % (self.default_factory,
                                         dict.__repr__(self))
+
+
+def is_macro(macro):
+    """Test if macro is in the format of a valid nagios macro.
+
+    Args:
+        macro: String. Any macro, example $HOSTADDRESS$
+
+    Returns:
+        Boolean. True if macro is in the format of a macro, otherwise false.
+
+    Examples:
+        >>> is_macro('$HOSTADDRESS$')
+        True
+        >>> is_macro('$HOSTADDRESS')
+        False
+        >>> is_macro('')
+        False
+        >>> is_macro('$CONTACTNAME$')
+        True
+        >>> is_macro('$SERVICEDESC$')
+        True
+        >>> is_macro('$_SERVICE_CUSTOM$')
+        True
+        >>> is_macro('$_HOST_CUSTOM$')
+        True
+        >>> is_macro('$_CONTACT_CUSTOM$')
+        True
+    """
+    if not macro.startswith('$'):
+        return False
+    if not macro.endswith('$'):
+        return False
+
+    # Remove $ from macro
+    macro = macro[1:-1]
+    if not macro:
+        return False
+    return True
+
+
+def grep(objects, **kwargs):
+    """ Returns all the elements from array that match the keywords in **kwargs
+
+    See documentation for pynag.Model.ObjectDefinition.objects.filter() for
+    example how to use this.
+
+    Arguments:
+
+        objects (list of dict): list to be searched
+
+        kwargs (str): Any search argument provided will be checked against every dict
+
+    Examples::
+
+        array = [
+        {'host_name': 'examplehost', 'state':0},
+        {'host_name': 'example2', 'state':1},
+        ]
+        grep_dict(array, state=0)
+        # should return [{'host_name': 'examplehost', 'state':0},]
+
+    """
+
+    # Input comes to us as a key/value dict.
+    # We will flatten this out into a tuble, because if value
+    # is a list, it means the calling function is doing multible search on
+    # the same key
+    search = []
+    for k, v in kwargs.items():
+        # We need the actual array in "v" for __in and __notin
+        if isinstance(v, type([])) and not (k.endswith('__in') or k.endswith('__notin')):
+            for i in v:
+                search.append((k, i))
+        else:
+            search.append((k, v))
+    matching_objects = objects
+    for k, v in search:
+        #v = str(v)
+        v_str = str(v)
+        if k.endswith('__contains'):
+            k = k[:-len('__contains')]
+            expression = lambda x: x.get(k) and v_str in str(x.get(k))
+        elif k.endswith('__notcontains'):
+            k = k[:-len('__notcontains')]
+            expression = lambda x: not v_str in str(x.get(k))
+        elif k.endswith('__startswith'):
+            k = k[:-len('__startswith')]
+            expression = lambda x: str(x.get(k)).startswith(v_str)
+        elif k.endswith('__notstartswith'):
+            k = k[:-len('__notstartswith')]
+            expression = lambda x: not str(x.get(k)).startswith(v_str)
+        elif k.endswith('__endswith'):
+            k = k[:-len('__endswith')]
+            expression = lambda x: str(x.get(k)).endswith(v_str)
+        elif k.endswith('__notendswith'):
+            k = k[:-len('__notendswith')]
+            expression = lambda x: not str(x.get(k)).endswith(v_str)
+        elif k.endswith('__exists'):
+            k = k[:-len('__exists')]
+            expression = lambda x: str(k in x) == v_str
+        elif k.endswith('__isnot'):
+            k = k[:-len('__isnot')]
+            expression = lambda x: v_str != str(x.get(k))
+        elif k.endswith('__regex'):
+            k = k[:-len('__regex')]
+            regex = re.compile(str(v))
+            expression = lambda x: regex.search(str(x.get(k)))
+        elif k.endswith('__in'):
+            k = k[:-len('__in')]
+            expression = lambda x: str(x.get(k)) in v
+        elif k.endswith('__notin'):
+            k = k[:-len('__notin')]
+            expression = lambda x: str(x.get(k)) not in v
+        elif k.endswith('__has_field'):
+            k = k[:-len('__has_field')]
+            expression = lambda x: v_str in AttributeList(x.get(k)).fields
+        elif k == 'register' and str(v) == '1':
+            # in case of register attribute None is the same as "1"
+            expression = lambda x: x.get(k) in (v, None)
+        elif k in ('search', 'q'):
+            expression = lambda x: v_str in str(x)
+        else:
+            # If all else fails, assume they are asking for exact match
+            v_is_str = isinstance(v, str)
+            expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
+        matching_objects = filter(expression, matching_objects)
+    return matching_objects
+
+
+def grep_to_livestatus(*args, **kwargs):
+    """ Converts from pynag style grep syntax to livestatus filter syntax.
+
+    Example:
+
+        >>> grep_to_livestatus(host_name='test')
+        ['Filter: host_name = test']
+        >>> grep_to_livestatus(service_description__contains='serv')
+        ['Filter: service_description ~ serv']
+        >>> grep_to_livestatus(service_description__isnot='serv')
+        ['Filter: service_description != serv']
+        >>> grep_to_livestatus(service_description__contains=['serv','check'])
+        ['Filter: service_description ~ serv']
+        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
+        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
+        >>> grep_to_livestatus(service_description__has_field='foo')
+        ['Filter: service_description >= foo']
+        >>> grep_to_livestatus(service_description__startswith='foo')
+        ['Filter: service_description ~ ^foo']
+        >>> grep_to_livestatus(service_description__endswith='foo')
+        ['Filter: service_description ~ foo$']
+    """
+
+    result = list(args)  # Args go unchanged back into results
+    for k, v in kwargs.items():
+        if isinstance(v, list) and len(v) > 0:
+            v = v[0]
+        if k.endswith('__contains'):
+            k = k[:-len('__contains')]
+            my_string = "Filter: %s ~ %s" % (k, v)
+        elif k.endswith('__has_field'):
+            k = k[:-len('__has_field')]
+            my_string = "Filter: %s >= %s" % (k, v)
+        elif k.endswith('__isnot'):
+            k = k[:-len('__isnot')]
+            my_string = "Filter: %s != %s" % (k, v)
+        elif k.endswith('__startswith'):
+            k = k[:-len('__startswith')]
+            my_string = "Filter: %s ~ ^%s" % (k, v)
+        elif k.endswith('__endswith'):
+            k = k[:-len('__endswith')]
+            my_string = "Filter: %s ~ %s$" % (k, v)
+        elif k == 'WaitObject':
+            my_string = "WaitObject: %s" % (v,)
+        elif k == 'WaitCondition':
+            my_string = "WaitCondition: %s" % (v,)
+        elif k == 'WaitTrigger':
+            my_string = "WaitTrigger: %s" % (v,)
+        elif k == 'WaitTimeout':
+            my_string = "WaitTimeout: %s" % (v,)
+        elif k in ('Limit', 'limit'):
+            my_string = "Limit: %s" % (v,)
+        elif k in ('Filter', 'filter'):
+            my_string = "Filter: %s" % (v,)
+        else:
+            my_string = "Filter: %s = %s" % (k, v)
+        result.append(my_string)
+    return result
 
 
 def reconsile_threshold(threshold_range):
@@ -610,51 +605,53 @@ def reconsile_threshold(threshold_range):
     return result
 
 
-def is_macro(macro):
-    """Test if macro is in the format of a valid nagios macro.
+def run_command(command, raise_error_on_fail=False, shell=True, env=None):
+    """ Run command from the shell prompt. Wrapper around subprocess.
 
     Args:
-        macro: String. Any macro, example $HOSTADDRESS$
+
+        command (str): string containing the command line to run
+
+        raise_error_on_fail (bool): Raise PynagError if returncode > 0
 
     Returns:
-        Boolean. True if macro is in the format of a macro, otherwise false.
 
-    Examples:
-        >>> is_macro('$HOSTADDRESS$')
-        True
-        >>> is_macro('$HOSTADDRESS')
-        False
-        >>> is_macro('')
-        False
-        >>> is_macro('$CONTACTNAME$')
-        True
-        >>> is_macro('$SERVICEDESC$')
-        True
-        >>> is_macro('$_SERVICE_CUSTOM$')
-        True
-        >>> is_macro('$_HOST_CUSTOM$')
-        True
-        >>> is_macro('$_CONTACT_CUSTOM$')
-        True
+        str: stdout/stderr of the command run
+
+    Raises:
+
+        PynagError if returncode > 0
     """
-    if not macro.startswith('$'):
-        return False
-    if not macro.endswith('$'):
-        return False
-
-    # Remove $ from macro
-    macro = macro[1:-1]
-    if not macro:
-        return False
-    return True
-
+    run_env = os.environ.copy()
+    # Merge dict into environ
+    if env:
+        run_env.update(env)
+    proc = subprocess.Popen(command,
+                            shell=shell,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            env=run_env)
+    stdout, stderr = proc.communicate('through stdin to stdout')
+    result = proc.returncode, stdout, stderr
+    if proc.returncode > 0 and raise_error_on_fail:
+        error_string = "* Could not run command (return code= %s)\n" % proc.returncode
+        error_string += "* Error was:\n%s\n" % (stderr.strip())
+        error_string += "* Command was:\n%s\n" % command
+        error_string += "* Output was:\n%s\n" % (stdout.strip())
+        if proc.returncode == 127:  # File not found, lets print path
+            path = os.getenv("PATH")
+            error_string += "Check if y/our path is correct: %s" % path
+        raise PynagError(error_string)
+    else:
+        return result
 
 # These are here for backwards compatibility only
 from pynag.Utils import checkresult
-from pynag.Utils import metrics
-from pynag.Utils import git
-from pynag.Utils import nsca
 from pynag.Utils import decorators
+from pynag.Utils import errors
+from pynag.Utils import git
+from pynag.Utils import metrics
+from pynag.Utils import nsca
 
 PerfData = metrics.PerfData
 PerfDataMetric = metrics.PerfDataMetric
@@ -664,3 +661,5 @@ PynagError = errors.PynagError
 send_nsca = nsca.send_nsca
 rlock = decorators.rlock
 synchronized = decorators.synchronized
+runCommand = run_command
+defaultdict = DefaultDict
