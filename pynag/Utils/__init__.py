@@ -26,19 +26,13 @@ that are used throughout the pynag library.
 """
 import subprocess
 import re
-import shlex
 import threading
-from os import getenv, environ, listdir, path
-from platform import node
-import datetime
+from os import getenv, environ
 import pynag.Plugins
-import sys
 
 from pynag.Utils import errors
 
 rlock = threading.RLock()
-
-
 
 
 def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
@@ -80,9 +74,6 @@ def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
         raise PynagError(error_string)
     else:
         return result
-
-
-
 
 
 def grep(objects, **kwargs):
