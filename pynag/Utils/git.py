@@ -8,7 +8,7 @@ from getpass import getuser
 from platform import node
 
 from pynag.Utils import grep
-from pynag.Utils import PynagError
+from pynag.Utils.errors import PynagError
 
 class GitRepo(object):
 
