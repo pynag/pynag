@@ -26,13 +26,11 @@ that are used throughout the pynag library.
 """
 import subprocess
 import re
-import threading
 from os import getenv, environ
 import pynag.Plugins
 
 from pynag.Utils import errors
 
-rlock = threading.RLock()
 
 
 def runCommand(command, raise_error_on_fail=False, shell=True, env=None):
@@ -612,40 +610,6 @@ def reconsile_threshold(threshold_range):
     return result
 
 
-def synchronized(lock):
-    """ Synchronization decorator
-
-    Use this to make a multi-threaded method synchronized and thread-safe.
-
-    Use the decorator like so::
-
-        @pynag.Utils.synchronized(pynag.Utils.rlock)
-    """
-    def wrap(f):
-        def newFunction(*args, **kw):
-            lock.acquire()
-            try:
-                return f(*args, **kw)
-            finally:
-                lock.release()
-        newFunction.__name__ = f.__name__
-        newFunction.__module__ = f.__module__
-        return newFunction
-    return wrap
-
-
-def cache_only(func):
-    def wrap(*args, **kwargs):
-        pynag.Model.ObjectFetcher._cache_only = True
-        try:
-            return func(*args, **kwargs)
-        finally:
-            pynag.Model.ObjectFetcher._cache_only = False
-    wrap.__name__ = func.__name__
-    wrap.__module__ = func.__module__
-    return wrap
-
-
 def is_macro(macro):
     """Test if macro is in the format of a valid nagios macro.
 
@@ -690,6 +654,7 @@ from pynag.Utils import checkresult
 from pynag.Utils import metrics
 from pynag.Utils import git
 from pynag.Utils import nsca
+from pynag.Utils import decorators
 
 PerfData = metrics.PerfData
 PerfDataMetric = metrics.PerfDataMetric
@@ -697,3 +662,5 @@ GitRepo = git.GitRepo
 CheckResult = checkresult.CheckResult
 PynagError = errors.PynagError
 send_nsca = nsca.send_nsca
+rlock = decorators.rlock
+synchronized = decorators.synchronized
