@@ -29,6 +29,15 @@ import os
 import re
 import subprocess
 
+from pynag import errors
+
+
+class UtilsError(errors.PynagError):
+    """Base class for errors in this module."""
+
+
+class CommandFailed(UtilsError):
+    """Raised when a subprocess execution was unsuccessful."""
 
 class AttributeList(object):
 
@@ -554,7 +563,7 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
 
         command (str): string containing the command line to run
 
-        raise_error_on_fail (bool): Raise PynagError if returncode > 0
+        raise_error_on_fail (bool): Raise CommandFailed if returncode > 0
 
     Returns:
 
@@ -562,7 +571,7 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
 
     Raises:
 
-        PynagError if returncode > 0
+        CommandFailed if returncode > 0
     """
     run_env = os.environ.copy()
     # Merge dict into environ
@@ -583,14 +592,13 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
         if proc.returncode == 127:  # File not found, lets print path
             path = os.getenv("PATH")
             error_string += "Check if y/our path is correct: %s" % path
-        raise PynagError(error_string)
+        raise CommandFailed(error_string)
     else:
         return result
 
 # These are here for backwards compatibility only
 from pynag.Utils import checkresult
 from pynag.Utils import decorators
-from pynag import errors
 from pynag.errors import PynagError
 from pynag.Utils import git
 from pynag.Utils import metrics
@@ -601,7 +609,6 @@ PerfData = metrics.PerfData
 PerfDataMetric = metrics.PerfDataMetric
 GitRepo = git.GitRepo
 CheckResult = checkresult.CheckResult
-PynagError = errors.PynagError
 send_nsca = nsca.send_nsca
 cache_only = decorators.cache_only
 rlock = decorators.rlock
