@@ -34,8 +34,17 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 
 import pynag.Plugins
-from pynag.Utils import PynagError
+from pynag.Utils import errors
 from pynag.Utils import states
+
+
+class Error(errors.PynagError):
+    """Base class for errors in this module."""
+
+
+class InvalidThreshold(Error):
+    """Raised when an invalid threshold was provided."""
+
 
 def check_threshold(value, ok=None, warning=None, critical=None):
     """ Checks value against warning/critical and returns Nagios exit code.
@@ -74,7 +83,7 @@ def check_threshold(value, ok=None, warning=None, critical=None):
             return states.OK
         # 2 - If an ok level is specified and value is within range, return OK
         if ok and check_range(value, ok):
-            return states.ok
+            return states.OK
         # 3 - If a critical level is specified and value is within range, return CRITICAL
         if critical and check_range(value, critical):
             return states.CRITICAL
@@ -141,6 +150,7 @@ def parse_threshold(threshold):
     Examples:
         >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95.100')
         {'thresholds': [(0, '0..90'), (1, '90..95'), (2, '95.100')], 'metric': 'disk_usage'}
+
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []
