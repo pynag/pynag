@@ -590,7 +590,7 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
 # These are here for backwards compatibility only
 from pynag.Utils import checkresult
 from pynag.Utils import decorators
-from pynag.Utils import errors
+from pynag import errors
 from pynag.Utils import git
 from pynag.Utils import metrics
 from pynag.Utils import nsca

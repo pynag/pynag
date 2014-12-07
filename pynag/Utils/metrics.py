@@ -3,7 +3,7 @@
 import shlex
 import re
 import pynag.Plugins
-from pynag.Utils import errors
+from pynag import errors
 
 
 class PerfDataMetric(object):
