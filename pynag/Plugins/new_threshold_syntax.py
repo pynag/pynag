@@ -121,7 +121,7 @@ def check_range(value, range):
     # If range does not contain ".." then we assume its the older style of
     # ranges (either a plain number or the start:end syntax)
     if '..' not in range:
-        return not pynag.Plugins.check_range(value=value, range_threshold=range)
+        return not pynag.Plugins.classic_threshold_syntax.check_range(value=value, range_threshold=range)
     # If range starts with ^ we the conditions are inverted
     if range[0] == '^':
         return not check_range(value, range[1:])
