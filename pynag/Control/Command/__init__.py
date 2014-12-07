@@ -46,7 +46,7 @@ def find_command_file(cfg_file=None):
         str. Path to the nagios command file
 
     Raises:
-        ControlError
+        CommandError
 
     """
     global path_to_command_file
@@ -61,7 +61,7 @@ def find_command_file(cfg_file=None):
     command_file = c.get_cfg_value('command_file')
 
     if not command_file:
-        raise ControlError("command_file not found in your nagios.cfg (%s)" % c.cfg_file)
+        raise CommandError("command_file not found in your nagios.cfg (%s)" % c.cfg_file)
 
     path_to_command_file = command_file
     return command_file

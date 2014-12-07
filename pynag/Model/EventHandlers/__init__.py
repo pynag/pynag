@@ -29,9 +29,7 @@ This enables you for example to log to file every time an object is rewritten.
 
 import time
 from platform import node
-from os.path import dirname
 import subprocess
-import shlex
 from os import environ
 from getpass import getuser
 

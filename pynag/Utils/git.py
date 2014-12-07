@@ -11,7 +11,7 @@ from pynag.Utils import grep
 from pynag.errors import PynagError
 
 
-class GitError(errors.PynagError):
+class GitError(PynagError):
     """Base class for errors in this module."""
 
 
