@@ -713,6 +713,7 @@ class PluginHelper(object):
           >>> p.add_long_output('* Humidity: OK')
           >>> p.get_long_output()
           u'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
+
         """
         self._long_output.append(message)
 
@@ -825,6 +826,7 @@ class PluginHelper(object):
           >>> p.add_metric(perfdatastring="load15=1;;;;")
           >>> p.get_perfdata()
           "'load1'=6;;;; 'load5'=4;;;; 'load15'=1;;;;"
+
         """
         if not perfdatastring is None:
             self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)

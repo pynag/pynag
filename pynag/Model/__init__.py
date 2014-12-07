@@ -537,6 +537,7 @@ class ObjectDefinition(object):
     Example:
          >>> objects = ObjectDefinition.objects.all
          >>> my_object = ObjectDefinition( dict ) # doctest: +SKIP
+
     """
     object_type = None
     objects = ObjectFetcher(None)
@@ -1126,6 +1127,7 @@ class ObjectDefinition(object):
             >>> s.set_macro('$_SERVICE_TEST$', 'test')
             >>> s['__TEST']
             'test'
+
         """
         if not pynag.Utils.is_macro(macroname):
             raise ValueError("Macros must be of the format $<macroname>$")
@@ -1239,6 +1241,7 @@ class ObjectDefinition(object):
         >>> host.address = "127.0.0.1"
         >>> host._resolve_macros('check_ping -H $HOSTADDRESS$')
         'check_ping -H 127.0.0.1'
+
         """
         if not string:
             return _UNRESOLVED_MACRO
@@ -1267,6 +1270,7 @@ class ObjectDefinition(object):
          >>> complex_check_command = "check_ping!warning with \! in it!critical"
          >>> o._split_check_command_and_arguments(complex_check_command)
          ['check_ping', 'warning with \\\\! in it', 'critical']
+
         """
         if check_command in (None, ''):
             return []
@@ -1419,7 +1423,8 @@ class ObjectDefinition(object):
            >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
            >>> print myservice.contact_groups
            +alladmins,webmasters
-           """
+
+        """
         aList = AttributeList(self[attribute_name])
 
         # If list was empty before, add a + to it so we are appending to parent
@@ -1442,7 +1447,8 @@ class ObjectDefinition(object):
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value="alladmins")
            >>> print myservice.contact_groups
            None
-           """
+
+        """
         aList = AttributeList(self[attribute_name])
 
         if value in aList.fields:
@@ -1462,7 +1468,8 @@ class ObjectDefinition(object):
            >>> myservice.attribute_replacefield(attribute_name="contact_groups", old_value='localadmins', new_value="webmasters")
            >>> print myservice.contact_groups
            +alladmins,webmasters
-           """
+
+        """
         aList = AttributeList(self[attribute_name])
 
         if old_value in aList.fields:

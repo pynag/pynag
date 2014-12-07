@@ -37,6 +37,7 @@ class FakeNagiosEnvironment(object):
         >>> livestatus = nagios.get_livestatus()  # Returns Parsers.Livestatus instance
         >>> result, stdout, sdterr = nagios.stop()  # Stop nagios
         >>> nagios.terminate()  # Stops nagios and cleans up everything
+
     """
 
     def __init__(self, global_config_file=None, p1_file=None, livestatus=False):
