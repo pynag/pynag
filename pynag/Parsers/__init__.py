@@ -46,7 +46,6 @@ import tarfile
 
 _sentinel = object()
 
-
 class ParserError(pynag.errors.PynagError):
     """ ParserError is used for errors that the Parser has when parsing config.
 
@@ -2191,6 +2190,7 @@ class Config(object):
             >>> c = Config() # doctest: +SKIP
             >>> log_file = c.get_cfg_value('log_file') # doctest: +SKIP
             # Should return something like "/var/log/nagios/nagios.log"
+
         """
         if not self.maincfg_values:
             self.parse_maincfg()
@@ -2296,6 +2296,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services', 'Columns: service_description', host_name='localhost')
             >>> query.get_query()
             'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n'
+
         """
         self._query = query.splitlines()
         for header_line in args:
@@ -2320,6 +2321,7 @@ class LivestatusQuery(object):
             ['', '', '', 'Or: 3']
             >>> query._join_arguments_with_or('')
             ['']
+
         """
         args = list(args)
         length_of_arguments = len(args)
@@ -2342,6 +2344,7 @@ class LivestatusQuery(object):
         Returns:
             A string. String representation of our query that is compatibe
             with livestatus.
+
         """
         return '\n'.join(self._query) + '\n'
 
@@ -2354,6 +2357,7 @@ class LivestatusQuery(object):
             >>> query.set_outputformat('python')
             >>> query.get_header('OutputFormat')
             'python'
+
         """
         signature = keyword + ':'
         for header in self._query:
@@ -2372,6 +2376,7 @@ class LivestatusQuery(object):
             >>> query.set_columnheaders('on')
             >>> query.column_headers()
             True
+
         """
         column_headers = self.get_header(self._COLUMN_HEADERS)
         if not column_headers or column_headers == 'off':
@@ -2389,6 +2394,7 @@ class LivestatusQuery(object):
              >>> query.set_outputformat('python')
              >>> query.output_format()
              'python'
+
         """
         return self.get_header(self._OUTPUT_FORMAT)
 
@@ -2400,6 +2406,7 @@ class LivestatusQuery(object):
             >>> query.add_header_line('Filter: host_name = foo')
             >>> query.get_query()
             'GET services\\nFilter: host_name = foo\\n'
+
         """
         self._query.append(header_line)
 
@@ -2411,6 +2418,7 @@ class LivestatusQuery(object):
             >>> query.add_header('Filter', 'host_name = foo')
             >>> query.get_query()
             'GET services\\nFilter: host_name = foo\\n'
+
         """
         header_line = self._FORMAT_OF_HEADER_LINE.format(keyword=keyword, arguments=arguments)
         self.add_header_line(header_line)
@@ -2446,6 +2454,7 @@ class LivestatusQuery(object):
             >>> query.remove_header('OutputFormat')
             >>> query.has_header('OutputFormat')
             False
+
         """
         signature = keyword + ':'
         self._query = filter(lambda x: not x.startswith(signature), self._query)
@@ -2461,6 +2470,7 @@ class LivestatusQuery(object):
             >>> query.set_responseheader()
             >>> query.get_query()
             'GET services\\nResponseHeader: fixed16\\n'
+
         """
         # First remove whatever responseheader might have been set before
         self.remove_header(self._RESPONSE_HEADER)
@@ -2474,6 +2484,7 @@ class LivestatusQuery(object):
             >>> query.set_outputformat('json')
             >>> query.get_query()
             'GET services\\nOutputFormat: json\\n'
+
         """
         # Remove outputformat if it was already in out query
         self.remove_header(self._OUTPUT_FORMAT)
@@ -2490,6 +2501,7 @@ class LivestatusQuery(object):
             >>> query.set_columnheaders('off')
             >>> query.get_query()
             'GET services\\nColumnHeaders: off\\n'
+
         """
         self.remove_header(self._COLUMN_HEADERS)
         self.add_header(self._COLUMN_HEADERS, status)
@@ -2502,6 +2514,7 @@ class LivestatusQuery(object):
             >>> query.set_authuser('nagiosadmin')
             >>> query.get_query()
             'GET services\\nAuthUser: nagiosadmin\\n'
+
         """
         self.remove_header(self._AUTH_USER)
         self.add_header(self._AUTH_USER, auth_user)
@@ -2623,6 +2636,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services', 'Columns: host_name')
             >>> query.splitlines()
             ['GET services', 'Columns: host_name']
+
         """
         querystring = str(self)
         return querystring.splitlines(*args, **kwargs)
@@ -2637,6 +2651,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET services', 'Columns: host_name')
             >>> query.split('\\n')
             ['GET services', 'Columns: host_name', '']
+
         """
         querystring = str(self)
         return querystring.split(*args, **kwargs)
@@ -2653,6 +2668,7 @@ class LivestatusQuery(object):
            'GET services\\n'
            >>> query.strip()
            'GET services'
+
         """
         return str(self).strip(*args, **kwargs)
 
@@ -2668,6 +2684,7 @@ class LivestatusQuery(object):
            'GET services\\n'
            >>> query.startswith('GET')
            True
+
         """
         return str(self).startswith(*args, **kwargs)
 
@@ -2702,6 +2719,7 @@ class LivestatusQuery(object):
             'Filter: state > 0'
             >>> query.convert_key_value_to_filter_statement('state__lt', '1')
             'Filter: state < 1'
+
         """
 
         # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
@@ -2735,6 +2753,7 @@ class LivestatusQuery(object):
             ['Filter: host = localhost']
             >>> query.create_filter_statement('host', ['localhost', 'remote_host'])
             ['Filter: host = localhost', 'Filter: host = remote_host', 'Or: 2']
+
         """
         return_arguments = []
         if not isinstance(values, list):
@@ -2757,6 +2776,7 @@ class LivestatusQuery(object):
         >>> query.add_filter('host_name', 'localhost')
         >>> query.get_query()
         'GET services\\nFilter: host_name = localhost\\n'
+
         """
         filter_statements = self.create_filter_statement(attribute, value)
         for statement in filter_statements:
@@ -2775,6 +2795,7 @@ class LivestatusQuery(object):
         >>> query.add_filters(description__contains='Ping')
         >>> query.get_query()
         'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n'
+
         """
         for key, value in kwargs.items():
             self.add_filter(key, value)
@@ -2790,6 +2811,7 @@ class LivestatusQuery(object):
             >>> query.set_columns('name', 'address')
             >>> query.get_query()
             'GET hosts\\nColumns: name address\\n'
+
         """
         self.remove_header(self._COLUMNS)
         self.add_header(self._COLUMNS, ' '.join(columns))
@@ -3581,6 +3603,7 @@ class StatusDat(RetentionDat):
             >>> first_contact = s.data['contactstatus'][0]['contact_name']
             >>> s.get_contactstatus(first_contact)['contact_name'] == first_contact
             True
+
         """
         if self.data is None:
             self.parse()
@@ -3756,6 +3779,8 @@ class LogFiles(object):
 
         for filename in os.listdir(self.log_archive_path):
             full_path = "%s/%s" % (self.log_archive_path, filename)
+            if not os.path.isfile(full_path):
+                continue
             logfiles.append(full_path)
         logfiles.append(self.log_file)
 
@@ -4370,6 +4395,7 @@ class MultiSite(Livestatus):
             >>> m = MultiSite()
             >>> m.add_backend(path='/var/spool/nagios/livestatus.socket', name='local')
             >>> m.add_backend(path='127.0.0.1:5992', name='remote')
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -4455,6 +4481,7 @@ class MultiSite(Livestatus):
             >>> result2 = [2,2,2,2]
             >>> MultiSite()._merge_statistics(result1, result2)
             [3, 3, 3, 3]
+
         """
         if not list1:
             return list2
