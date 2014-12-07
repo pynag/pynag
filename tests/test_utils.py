@@ -340,7 +340,7 @@ class testUtils(unittest.TestCase):
         # code somewhere
         try:
             pynag.Utils.send_nsca(code=0, message="test", nscahost="localhost")
-        except OSError, e:
+        except OSError as e:
             # We don't care about the result if we have error because send_nsca
             # is not installed
             if e.errno != 2:
