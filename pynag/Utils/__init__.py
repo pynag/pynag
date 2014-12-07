@@ -43,8 +43,7 @@ class AttributeList(object):
 
         contact_groups     +group1,group2,group3
 
-    Example::
-
+    Examples:
         >>> i = AttributeList('+group1,group2,group3')
         >>> i.operator
         '+'
@@ -548,63 +547,6 @@ def grep_to_livestatus(*args, **kwargs):
     return result
 
 
-def reconsile_threshold(threshold_range):
-    """ Take threshold string as and normalize it to the format supported by plugin
-    development team
-
-    The input (usually a string in the form of 'the new threshold syntax') is a
-    string in the form of x..y
-
-    The output will be a compatible string in the older nagios plugin format
-    @x:y
-
-    Examples:
-
-    >>> reconsile_threshold("0..5")
-    '@0:5'
-    >>> reconsile_threshold("inf..5")
-    '5:'
-    >>> reconsile_threshold("5..inf")
-    '~:5'
-    >>> reconsile_threshold("inf..inf")
-    '@~:'
-    >>> reconsile_threshold("^0..5")
-    '0:5'
-    >>> reconsile_threshold("10..20")
-    '@10:20'
-    >>> reconsile_threshold("10..inf")
-    '~:10'
-    """
-
-    threshold_range = str(threshold_range)
-    if not '..' in threshold_range:
-        return threshold_range
-    threshold_range = threshold_range.strip()
-    if threshold_range.startswith('^'):
-        operator = ''
-        threshold_range = threshold_range[1:]
-    else:
-        operator = '@'
-
-    start, end = threshold_range.split('..', 1)
-    start = start.replace('-inf', '~').replace('inf', '~')
-    end = end.replace('-inf', '').replace('inf', '')
-
-    if not start:
-        start = '0'
-
-    # Lets convert the common case of @0:x into x:
-    if operator == '@' and start == '~' and end not in ('', '~'):
-        result = "%s:" % end
-    # Convert the common case of @x: into 0:x
-    elif operator == '@' and end in ('', '~') and start != '~':
-        result = '~:%s' % start
-    else:
-        result = '%s%s:%s' % (operator, start, end)
-    #result = '%s%s:%s' % (operator, start, end)
-    return result
-
-
 def run_command(command, raise_error_on_fail=False, shell=True, env=None):
     """ Run command from the shell prompt. Wrapper around subprocess.
 
@@ -659,7 +601,10 @@ GitRepo = git.GitRepo
 CheckResult = checkresult.CheckResult
 PynagError = errors.PynagError
 send_nsca = nsca.send_nsca
+cache_only = decorators.cache_only
 rlock = decorators.rlock
 synchronized = decorators.synchronized
+
 runCommand = run_command
 defaultdict = DefaultDict
+reconsile_threshold = metrics.reconsile_threshold

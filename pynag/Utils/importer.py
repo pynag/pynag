@@ -12,7 +12,6 @@ Either execute this script standalone from the command line or use it as a pytho
 
 import optparse
 import os
-import sys
 
 import pynag.Model
 

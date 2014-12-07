@@ -28,6 +28,7 @@ def synchronized(lock):
 
 
 def cache_only(func):
+    import pynag.Model
     def wrap(*args, **kwargs):
         pynag.Model.ObjectFetcher._cache_only = True
         try:
