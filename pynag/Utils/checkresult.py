@@ -35,9 +35,9 @@ class CheckResult(object):
     def __init__(self, nagios_result_dir, file_time=None):
 
         if file_time is not None:
-	    self.file_time = file_time
-	else:
-	    self.file_time = time.time()
+            self.file_time = file_time
+        else:
+            self.file_time = time.time()
 
         # Nagios is quite fussy about the filename, it must be
         # a 7 character name starting with 'c'

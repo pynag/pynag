@@ -12,7 +12,15 @@ import os
 import time
 import pynag.Parsers
 import pynag.Model
-from pynag.Utils import PynagError
+from pynag.errors import PynagError
+
+
+class MiscError(PynagError):
+    """Base class for errors in this module."""
+
+
+class SandboxError(MiscError):
+    """Raised when FakeEnvironment tries to modify files outside its sandbox."""
 
 
 class FakeNagiosEnvironment(object):
@@ -76,7 +84,7 @@ class FakeNagiosEnvironment(object):
             if filename.startswith(self.tempdir):
                 return func(filename, *args, **kwargs)
             else:
-                raise PynagError("FakeNagiosEnvironment tried to open file outside its sandbox: %s" % (filename, ))
+                raise SandboxError("FakeNagiosEnvironment tried to open file outside its sandbox: %s" % (filename, ))
         wrap.__name__ = func.__name__
         wrap.__module__ = func.__module__
         return wrap
