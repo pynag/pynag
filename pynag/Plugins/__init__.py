@@ -37,12 +37,9 @@ import pynag.Utils
 import pynag.errors
 from . import new_threshold_syntax
 
-# Map the return codes
-OK = 0
-WARNING = 1
-CRITICAL = 2
-UNKNOWN = 3
-
+# The following constants, and state, state_text below are considered deprecated.
+# Use pynag.Utils.states module instead.
+OK, WARNING, CRITICAL, UNKNOWN = 0, 1, 2, 3
 ok, warning, critical, unknown = 0, 1, 2, 3
 
 state = {}

@@ -3756,6 +3756,8 @@ class LogFiles(object):
 
         for filename in os.listdir(self.log_archive_path):
             full_path = "%s/%s" % (self.log_archive_path, filename)
+            if not os.path.isfile(full_path):
+                continue
             logfiles.append(full_path)
         logfiles.append(self.log_file)
 
