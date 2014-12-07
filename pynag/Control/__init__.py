@@ -26,7 +26,12 @@ import os
 import pynag.Utils
 from warnings import warn
 
-from pynag.Utils import PynagError, runCommand
+import pynag.errors
+from pynag.Utils import runCommand
+
+
+class ControlError(pynag.errors.PynagError):
+    """ Base class for all errors in this module."""
 
 
 class daemon(object):
@@ -226,9 +231,9 @@ class daemon(object):
                                                self.service_name)):
             return daemon.SYSTEMD
         else:
-            raise PynagError("Unable to detect daemon method, "
-                             "could not find init script or "
-                             "systemd unit file")
+            raise ControlError(
+                'Unable to detect daemon method, could not find init'
+                'script or systemd unit file')
 
     def _deprecate_sudo(self):
         """

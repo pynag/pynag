@@ -39,10 +39,68 @@ import stat
 
 import pynag.Plugins
 import pynag.Utils
+import pynag.errors
+
 import StringIO
 import tarfile
 
 _sentinel = object()
+
+
+class ParserError(pynag.errors.PynagError):
+    """ ParserError is used for errors that the Parser has when parsing config.
+
+    Typical usecase when there is a critical error while trying to read configuration.
+    """
+    filename = None
+    line_start = None
+    message = None
+
+    def __init__(self, message=None, item=None):
+        """ Creates an instance of ParserError
+
+        Args:
+
+            message: Message to be printed by the error
+
+            item: Pynag item who caused the error
+
+        """
+        self.message = message
+        if item is None:
+            return
+        self.item = item
+        self.filename = item['meta']['filename']
+        self.line_start = item['meta'].get('line_start')
+
+    def __str__(self):
+        message = self.message
+        if self.filename and self.line_start:
+            message = '%s in %s, line %s' % (message, self.filename, self.line_start)
+        return repr(message)
+
+
+class ConfigFileNotFound(ParserError):
+    """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
+
+
+class LivestatusNotConfiguredException(ParserError):
+    """ This exception is raised if we tried to autodiscover path to livestatus and failed """
+
+
+class LivestatusError(ParserError):
+    """ Used when we get errors from Livestatus """
+
+
+class InvalidResponseFromLivestatus(LivestatusError):
+    """Used when an unparsable response comes out of livestatus"""
+    def __init__(self, query, response, *args, **kwargs):
+        self.query = query
+        self.response = response
+
+    def __str__(self):
+        message = 'Could not parse response from livestatus.\nQuery:{query}\nResponse: {response}'
+        return message.format(query=self.query, response=self.response)
 
 
 class Config(object):
@@ -3587,62 +3645,6 @@ class ObjectCache(Config):
         for k, v in self.maincfg_values:
             if k == 'object_cache_file':
                 return [v]
-
-
-class ParserError(Exception):
-    """ ParserError is used for errors that the Parser has when parsing config.
-
-    Typical usecase when there is a critical error while trying to read configuration.
-    """
-    filename = None
-    line_start = None
-    message = None
-
-    def __init__(self, message=None, item=None):
-        """ Creates an instance of ParserError
-
-        Args:
-
-            message: Message to be printed by the error
-
-            item: Pynag item who caused the error
-
-        """
-        self.message = message
-        if item is None:
-            return
-        self.item = item
-        self.filename = item['meta']['filename']
-        self.line_start = item['meta'].get('line_start')
-
-    def __str__(self):
-        message = self.message
-        if self.filename and self.line_start:
-            message = '%s in %s, line %s' % (message, self.filename, self.line_start)
-        return repr(message)
-
-
-class ConfigFileNotFound(ParserError):
-    """ This exception is thrown if we cannot locate any nagios.cfg-style config file. """
-
-
-class LivestatusNotConfiguredException(ParserError):
-    """ This exception is raised if we tried to autodiscover path to livestatus and failed """
-
-
-class LivestatusError(ParserError):
-    """ Used when we get errors from Livestatus """
-
-
-class InvalidResponseFromLivestatus(LivestatusError):
-    """Used when an unparsable response comes out of livestatus"""
-    def __init__(self, query, response, *args, **kwargs):
-        self.query = query
-        self.response = response
-
-    def __str__(self):
-        message = 'Could not parse response from livestatus.\nQuery:{query}\nResponse: {response}'
-        return message.format(query=self.query, response=self.response)
 
 
 class LogFiles(object):

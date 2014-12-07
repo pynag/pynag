@@ -34,7 +34,15 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 
 import pynag.Plugins
-from pynag.Utils import PynagError
+import pynag.errors
+
+
+class Error(pynag.errors.PynagError):
+    """Base class for errors in this module."""
+
+
+class InvalidThreshold(Error):
+    """Raised when an invalid threshold was provided."""
 
 
 def check_threshold(value, ok=None, warning=None, critical=None):
@@ -105,7 +113,7 @@ def check_range(value, range):
     """
 
     if not isinstance(range, basestring) or range == '':
-        raise PynagError('range must be a string')
+        raise InvalidThreshold('range must be a string')
 
     # value must be numeric, so we try to convert it to float
     value = float(value)
@@ -121,7 +129,7 @@ def check_range(value, range):
     # Start and end must be defined
     tmp = range.split('..')
     if len(tmp) != 2:
-        raise PynagError('Invalid Format for threshold range: "%s"' % range)
+        raise InvalidThreshold('Invalid Format for threshold range: "%s"' % range)
     start, end = tmp
 
     if not start in ('inf', '-inf'):
@@ -148,7 +156,7 @@ def parse_threshold(threshold):
     results['thresholds'] = parsed_thresholds
     for i in tmp:
         if i.find('=') < 1:
-            raise PynagError("Invalid input: '%s' is not of the format key=value" % i)
+            raise InvalidThreshold("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
         if key in pynag.Plugins.state.keys():
             parsed_thresholds.append((pynag.Plugins.state[key], value))

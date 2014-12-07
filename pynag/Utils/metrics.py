@@ -4,7 +4,7 @@ import shlex
 import re
 import pynag.Plugins
 from pynag import errors
-
+from pynag.Plugins import new_threshold_syntax
 
 class PerfDataMetric(object):
 
@@ -203,8 +203,8 @@ class PerfDataMetric(object):
         For backwards compatibility
         """
 
-        self.warn = reconsile_threshold(self.warn)
-        self.crit = reconsile_threshold(self.crit)
+        self.warn = new_threshold_syntax.convert_to_classic_format(self.warn)
+        self.crit = new_threshold_syntax.convert_to_classic_format(self.crit)
 
     def split_value_and_uom(self, value):
         """

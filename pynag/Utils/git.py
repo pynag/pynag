@@ -11,6 +11,10 @@ from pynag.Utils import grep
 from pynag.errors import PynagError
 
 
+class GitError(PynagError):
+    """Base class for errors in this module."""
+
+
 class GitRepo(object):
 
     def __init__(self, directory, auto_init=True, author_name="Pynag User", author_email=None):
@@ -82,7 +86,7 @@ class GitRepo(object):
         if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
             errorstring = errorstring % (command, returncode, stdout, stderr, getuser())
-            raise PynagError(errorstring, errorcode=returncode, errorstring=stderr)
+            raise GitError(errorstring, errorcode=returncode, errorstring=stderr)
         return stdout
 
     def is_up_to_date(self):
@@ -173,7 +177,7 @@ class GitRepo(object):
             str. git diff for filename or commit id
 
         Raises:
-            PynagError: Invalid commit id or filename was given
+            GitError: Invalid commit id or filename was given
         """
         if commit_id_or_filename in ('', None):
             command = "git diff"
@@ -184,7 +188,7 @@ class GitRepo(object):
             commit_id_or_filename = commit_id_or_filename.replace("'", r"\'")
             command = "git diff '%s'" % commit_id_or_filename
         else:
-            raise PynagError("%s is not a valid commit id or filename" % commit_id_or_filename)
+            raise GitError("%s is not a valid commit id or filename" % commit_id_or_filename)
         # Clean single quotes from parameters:
         return self._run_command(command)
 
@@ -198,10 +202,10 @@ class GitRepo(object):
             str. Output of ``git show commit_id``
 
         Raises:
-            PynagError: Invalid commit_id was given
+            GitError: Invalid commit_id was given
         """
         if commit_id not in self.get_valid_commits():
-            raise PynagError("%s is not a valid commit id" % commit_id)
+            raise GitError("%s is not a valid commit id" % commit_id)
         command = "git show %s" % commit_id
         return self._run_command(command)
 
