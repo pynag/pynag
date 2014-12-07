@@ -51,7 +51,7 @@ from pynag.Model import macros
 import pynag.Control.Command
 import pynag.errors
 import pynag.Utils
-import all_attributes
+from pynag.Model import all_attributes
 
 
 # Path To Nagios configuration file

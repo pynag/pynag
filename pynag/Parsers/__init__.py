@@ -46,7 +46,6 @@ import tarfile
 
 _sentinel = object()
 
-
 class ParserError(pynag.errors.PynagError):
     """ ParserError is used for errors that the Parser has when parsing config.
 

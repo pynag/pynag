@@ -49,7 +49,7 @@ def parse_expression(expression):
         >>> parse_expression('disk_usage FOO 90%')
         Traceback (most recent call last):
           ...
-        ValueError: Expression needs to contain at least on of ('>=', '<=', '!=', '==', '<', '>', '=', '<>')
+        InvalidThreshold: Expression needs to contain at least on of ('>=', '<=', '!=', '==', '<', '>', '=', '<>')
 
     """
     for operator in OPERATORS:
