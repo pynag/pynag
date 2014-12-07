@@ -47,6 +47,7 @@ import getpass
 
 from pynag import Parsers
 import pynag.Control.Command
+import pynag.errors
 import pynag.Utils
 from macros import _standard_macros
 import all_attributes
@@ -84,11 +85,11 @@ _UNRESOLVED_MACRO = ''
 _CUSTOM_VARIABLE_PREFIX = '_'
 
 
-class Error(Exception):
+class ModelError(pynag.errors.PynagError):
     """Base class for errors in this module."""
 
 
-class InvalidMacro(Error):
+class InvalidMacro(ModelError):
     """Raised when a method is inputted with an invalid macro."""
 
 
@@ -1210,7 +1211,7 @@ class ObjectDefinition(object):
         if contact_name is None:
             contacts = self.get_effective_contacts()
             if len(contacts) == 0:
-                raise pynag.Utils.PynagError('Cannot calculate notification command for object with no contacts')
+                raise ModelError('Cannot calculate notification command for object with no contacts')
             else:
                 contact = contacts[0]
         else:
@@ -1558,12 +1559,12 @@ class Host(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.host_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for host with no host_name')
+            raise ModelError('Cannot schedule a downtime for host with no host_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -1877,16 +1878,16 @@ class Service(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Only for compatibility, it has no effect.
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.host_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with no host_name')
+            raise ModelError('Cannot schedule a downtime for service with no host_name')
         if not self.service_description:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with service_description')
+            raise ModelError('Cannot schedule a downtime for service with service_description')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -2373,14 +2374,14 @@ class Hostgroup(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Not used, but is here for backwards compatibility
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.hostgroup_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for hostgroup with no hostgroup_name')
+            raise ModelError('Cannot schedule a downtime for hostgroup with no hostgroup_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -2474,14 +2475,14 @@ class Servicegroup(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Its here for compatibility but we dont do anything with it.
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.servicegroup_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for servicegroup with no servicegroup_name')
+            raise ModelError('Cannot schedule a downtime for servicegroup with no servicegroup_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:
