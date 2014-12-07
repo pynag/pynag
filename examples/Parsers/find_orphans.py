@@ -26,8 +26,8 @@ for host in nc['all_host']:
     
     if not host.has_key('parents') or not host['parents']:
         if  host[use_attr] not in top_level_items:
-		orphan_hosts.append(host)
-        	print "%-12s %-32s (%s)" % (use_attr, host[use_attr], host['meta']['filename'])
+            orphan_hosts.append(host)
+            print "%-12s %-32s (%s)" % (use_attr, host[use_attr], host['meta']['filename'])
 
 if not len(orphan_hosts):
     print "No ophaned hosts found"

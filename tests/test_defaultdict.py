@@ -51,7 +51,7 @@ class TestDefaultDict(unittest.TestCase):
         self.assertEqual(d2.default_factory, None)
         try:
             d2[15]
-        except KeyError, err:
+        except KeyError as err:
             self.assertEqual(err.args, (15,))
         else:
             self.fail("d2[15] didn't raise KeyError")
@@ -155,7 +155,7 @@ class TestDefaultDict(unittest.TestCase):
         d1 = defaultdict()
         try:
             d1[(1,)]
-        except KeyError, err:
+        except KeyError as err:
             self.assertEqual(err.args[0], (1,))
         else:
             self.fail("expected KeyError")
