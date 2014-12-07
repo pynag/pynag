@@ -16,7 +16,7 @@ helper.parse_arguments()
 # And if it fails, we exit immediately with UNKNOWN status
 try:
     content = open('/proc/loadavg').read()
-except Exception, e:
+except Exception as e:
     helper.exit(summary="Could not read /proc/loadavg", long_output=str(e), exit_code=unknown, perfdata='')
 
 
