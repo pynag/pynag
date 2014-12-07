@@ -35,7 +35,7 @@ from __future__ import absolute_import
 
 import pynag.Plugins
 import pynag.errors
-
+from pynag.Utils import states
 
 class Error(pynag.errors.PynagError):
     """Base class for errors in this module."""
