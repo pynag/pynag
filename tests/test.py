@@ -12,7 +12,6 @@ sys.path.insert(0, pynagbase)
 import unittest2
 import doctest
 import mock  # This import is here on purpose to make it obvious if mock is not installed.
-import importlib
 
 # Make sure all tests run from a fixed path, this also makes sure
 # That pynag in local directory is imported before any system-wide
@@ -41,7 +40,7 @@ def get_all_pynag_modules():
         filename = filename.replace('/', '.')
         filename = filename.strip('.')
         module_name = filename
-        module = importlib.import_module(module_name)
+        module = __import__(module_name)
         yield module
 
 
