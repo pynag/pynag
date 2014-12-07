@@ -594,6 +594,7 @@ from pynag import errors
 from pynag.Utils import git
 from pynag.Utils import metrics
 from pynag.Utils import nsca
+from pynag.Plugins import new_threshold_syntax
 
 PerfData = metrics.PerfData
 PerfDataMetric = metrics.PerfDataMetric
@@ -607,4 +608,4 @@ synchronized = decorators.synchronized
 
 runCommand = run_command
 defaultdict = DefaultDict
-reconsile_threshold = metrics.reconsile_threshold
+reconsile_threshold = new_threshold_syntax.convert_to_classic_format
