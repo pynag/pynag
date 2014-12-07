@@ -12,7 +12,7 @@ import os
 import time
 import pynag.Parsers
 import pynag.Model
-from pynag.Utils.errors import PynagError
+from pynag.errors import PynagError
 
 
 class FakeNagiosEnvironment(object):
