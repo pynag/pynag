@@ -2222,7 +2222,9 @@ class LivestatusQuery(object):
         """Create a new LivestatusQuery.
 
         Args:
-            query: String. Initial query (like GET hosts)
+            query: String. Initial query (like GET hosts).
+                Technically any object (not only str) having a `splitlines`
+                method (accepting no arguments) and returning an iterable will be handled as well.
             *args: String. Any args will appended to the query as additional headers.
             **kwargs: String. Any kwargs will be treated like additional filter to our query.
 
@@ -2239,7 +2241,10 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n'
         """
-        self._query = query.splitlines()
+        # `query´ here represents a *single* query, obviously.
+        # But we don't know from where it comes or if it can be trusted..
+        # If it would contains some empty line then we must filter them out:
+        self._query = [ line for line in query.splitlines() if line ]
         for header_line in args:
             self.add_header_line(header_line)
         self.add_filters(**kwargs)
@@ -2285,7 +2290,7 @@ class LivestatusQuery(object):
             A string. String representation of our query that is compatibe
             with livestatus.
         """
-        return '\n'.join(self._query) + '\n'
+        return '\n'.join(self._query) + '\n\n'
 
     def get_header(self, keyword):
         """Get first header found with keyword in it.
@@ -2343,7 +2348,9 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nFilter: host_name = foo\\n'
         """
-        self._query.append(header_line)
+        # from same reason than in __init__, we have to skip empty header:
+        if header_line:
+            self._query.append(header_line)
 
     def add_header(self, keyword, arguments):
         """Add a new header to our livestatus query.
