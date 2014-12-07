@@ -158,6 +158,17 @@ class TestMacroResolving(unittest.TestCase):
     def test_host_get_macro_address(self):
         self.assertEqual('macrohost2', self.macrohost2.get_macro('$HOSTADDRESS$'))
 
+    def test_host_get_macro_address_defaults_to_name(self):
+        self.macrohost2.address = 'my_addr'
+        self.assertEqual('my_addr', self.macrohost2.get_macro('$HOSTADDRESS$'))
+
+    def test_host_get_macro_display_name(self):
+        self.macrohost2.display_name = 'display_name'
+        self.assertEqual('display_name', self.macrohost2.get_macro('$HOSTDISPLAYNAME$'))
+
+    def test_host_get_macro_display_name_defaults_to_name(self):
+        self.assertEqual('macrohost2', self.macrohost2.get_macro('$HOSTDISPLAYNAME$'))
+
     def test_host_get_macro_custom(self):
         self.assertEqual('macrohost2', self.macrohost2.get_macro('$_HOST_macrohost2$'))
 
