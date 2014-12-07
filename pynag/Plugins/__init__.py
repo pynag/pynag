@@ -268,7 +268,7 @@ class simple(object):
         self._check_messages_and_exit()
 
     def _range_checker(self, value, range_threshold):
-        """ deprecated. Use pynag.Plugins.class_threshold_syntax.check_range() """
+        """ deprecated. Use pynag.Plugins.classic_threshold_syntax.check_range() """
         return check_range(value=value, range_threshold=range_threshold)
 
     def send_nsca(self, *args, **kwargs):
