@@ -591,6 +591,7 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
 from pynag.Utils import checkresult
 from pynag.Utils import decorators
 from pynag import errors
+from pynag.errors import PynagError
 from pynag.Utils import git
 from pynag.Utils import metrics
 from pynag.Utils import nsca
