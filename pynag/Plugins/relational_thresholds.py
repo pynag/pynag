@@ -50,6 +50,7 @@ def parse_expression(expression):
         Traceback (most recent call last):
           ...
         ValueError: Expression needs to contain at least on of ('>=', '<=', '!=', '==', '<', '>', '=', '<>')
+
     """
     for operator in OPERATORS:
         if operator in expression:
@@ -117,6 +118,7 @@ def check_threshold(left, operator, right):
         False
         True
         False
+
     """
     if operator not in OPERATORS:
         raise InvalidThreshold('Invalid operator "%s", needs to be one of %s' % (operator, OPERATORS))

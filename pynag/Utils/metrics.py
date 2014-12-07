@@ -142,7 +142,7 @@ class PerfDataMetric(object):
         tmp = everything_but_label.split(';')
         if len(tmp) > 0:
             val = tmp.pop(0).strip('=')
-            self.value, self.uom = self.split_value_and_uom(val)
+            self.value, self.uom = split_value_and_uom(val)
         if len(tmp) > 0:
             self.warn = tmp.pop(0)
         if len(tmp) > 0:
@@ -237,39 +237,6 @@ class PerfDataMetric(object):
 
         self.warn = new_threshold_syntax.convert_to_classic_format(self.warn)
         self.crit = new_threshold_syntax.convert_to_classic_format(self.crit)
-
-    def split_value_and_uom(self, value):
-        """
-        Example:
-
-        get value="10M" and return (10,"M")
-
-        >>> p = PerfDataMetric()
-        >>> p.split_value_and_uom( "10" )
-        ('10', '')
-        >>> p.split_value_and_uom( "10c" )
-        ('10', 'c')
-        >>> p.split_value_and_uom( "10B" )
-        ('10', 'B')
-        >>> p.split_value_and_uom( "10MB" )
-        ('10', 'MB')
-        >>> p.split_value_and_uom( "10KB" )
-        ('10', 'KB')
-        >>> p.split_value_and_uom( "10TB" )
-        ('10', 'TB')
-        >>> p.split_value_and_uom( "10%" )
-        ('10', '%')
-        >>> p.split_value_and_uom( "10s" )
-        ('10', 's')
-        >>> p.split_value_and_uom( "10us" )
-        ('10', 'us')
-        >>> p.split_value_and_uom( "10ms" )
-        ('10', 'ms')
-        """
-        tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
-        if len(tmp) == 0:
-            return '', ''
-        return tmp[0]
 
     def get_dict(self):
         """ Returns a dictionary which contains this class' attributes.
@@ -412,6 +379,44 @@ class PerfData(object):
     def __str__(self):
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
+
+
+def split_value_and_uom(value):
+    """split_value_and_uom("10mb") -> ('10', 'mb')
+
+    Args:
+        value: String. Usually a perfdata metric like '10mb'
+
+    Returns:
+        A tuple of ('str', 'str') e.g. ('10', 'mb')
+
+    Examples:
+        >>> split_value_and_uom( "10" )
+        ('10', '')
+        >>> split_value_and_uom( "10c" )
+        ('10', 'c')
+        >>> split_value_and_uom( "10B" )
+        ('10', 'B')
+        >>> split_value_and_uom( "10MB" )
+        ('10', 'MB')
+        >>> split_value_and_uom( "10KB" )
+        ('10', 'KB')
+        >>> split_value_and_uom( "10TB" )
+        ('10', 'TB')
+        >>> split_value_and_uom( "10%" )
+        ('10', '%')
+        >>> split_value_and_uom( "10s" )
+        ('10', 's')
+        >>> split_value_and_uom( "10us" )
+        ('10', 'us')
+        >>> split_value_and_uom( "10ms" )
+        ('10', 'ms')
+
+    """
+    tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
+    if len(tmp) == 0:
+        return '', ''
+    return tmp[0]
 
 
 def get_base_value(value, uom=None, maximum=None):
