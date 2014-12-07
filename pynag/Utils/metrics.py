@@ -2,9 +2,10 @@
 """ Classes and functions related to Perfdata metrics."""
 import shlex
 import re
-import pynag.Plugins
 from pynag import errors
 from pynag.Plugins import new_threshold_syntax
+from pynag.Plugins import classic_threshold_syntax
+
 
 class PerfDataMetric(object):
 
@@ -141,7 +142,7 @@ class PerfDataMetric(object):
         """
 
         try:
-            status = pynag.Plugins.check_threshold(self.value, warning=self.warn, critical=self.crit)
+            status = classic_threshold_syntax.check_threshold(self.value, warning=self.warn, critical=self.crit)
         except errors.PynagError:
             status = 3
 

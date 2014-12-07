@@ -46,11 +46,12 @@ import time
 import getpass
 
 from pynag import Parsers
+from pynag.Model import macros
+from pynag.Model import all_attributes
+
 import pynag.Control.Command
 import pynag.errors
 import pynag.Utils
-from macros import _standard_macros
-from pynag.Model import all_attributes
 
 
 # Path To Nagios configuration file
@@ -1104,9 +1105,6 @@ class ObjectDefinition(object):
             return self._get_service_macro(macroname)
         if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
             return self._get_contact_macro(macroname, contact_name=contact_name)
-        if macroname in _standard_macros:
-            attribute_name = _standard_macros[macroname]
-            return self.get(attribute_name, _UNRESOLVED_MACRO)
         return _UNRESOLVED_MACRO
 
     def set_macro(self, macroname, new_value):
@@ -1302,8 +1300,8 @@ class ObjectDefinition(object):
             return _UNRESOLVED_MACRO
         if macroname.startswith('$_SERVICE'):
             return self._get_custom_variable_macro(macroname)
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
+        elif macroname in macros.STANDARD_SERVICE_MACROS:
+            attr = macros.STANDARD_SERVICE_MACROS[macroname]
             return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$SERVICE'):
             name = macroname[8:-1].lower()
@@ -1312,13 +1310,15 @@ class ObjectDefinition(object):
 
     def _get_host_macro(self, macroname, host_name=None):
         if not pynag.Utils.is_macro(macroname):
-            return ''
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$_HOST'):
             return self._get_custom_variable_macro(macroname)
         elif macroname == '$HOSTADDRESS$' and not self.address:
-            return self.get("host_name", _UNRESOLVED_MACRO)
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
+            return self._get_host_macro('$HOSTNAME$')
+        elif macroname == '$HOSTDISPLAYNAME$' and not self.display_name:
+            return self._get_host_macro('$HOSTNAME$')
+        elif macroname in macros.STANDARD_HOST_MACROS:
+            attr = macros.STANDARD_HOST_MACROS[macroname]
             return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$HOST'):
             name = macroname[5:-1].lower()
@@ -1327,7 +1327,7 @@ class ObjectDefinition(object):
 
     def _get_contact_macro(self, macroname, contact_name=None):
         if not pynag.Utils.is_macro(macroname):
-            return ''
+            return _UNRESOLVED_MACRO
         # If contact_name is not specified, get first effective contact and resolve macro for that contact
         if not contact_name:
             contacts = self.get_effective_contacts()
@@ -2050,8 +2050,8 @@ class Contact(ObjectDefinition):
     def _get_contact_macro(self, macroname, contact_name=None):
         if not pynag.Utils.is_macro(macroname):
             return _UNRESOLVED_MACRO
-        if macroname in _standard_macros:
-            attribute_name = _standard_macros.get(macroname, _UNRESOLVED_MACRO)
+        if macroname in macros.STANDARD_CONTACT_MACROS:
+            attribute_name = macros.STANDARD_CONTACT_MACROS[macroname]
         elif macroname.startswith('$_CONTACT'):
             return self._get_custom_variable_macro(macroname)
         elif macroname.startswith('$CONTACT'):

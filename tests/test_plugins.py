@@ -88,10 +88,10 @@ class PluginNoThreshold(unittest.TestCase):
         self.np.activate()
         try:
             self.np.check_range(value)
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertEquals(type(e), type(SystemExit()))
             self.assertEquals(e.code, expected_exit)
-        except Exception, e:
+        except Exception as e:
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
@@ -142,10 +142,10 @@ class PluginHelper(unittest.TestCase):
         try:
             self.my_plugin.check_all_metrics()
             self.my_plugin.exit()
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertEquals(type(e), type(SystemExit()))
             self.assertEquals(e.code, expected_exit)
-        except Exception, e:
+        except Exception as e:
             self.fail('unexpected exception: %s' % e)
         else:
             self.fail('SystemExit exception expected')
@@ -321,7 +321,7 @@ class PluginHelper(unittest.TestCase):
             self.my_plugin.set_timeout(1)
             time.sleep(1)
             self.assertTrue(False, "Code should have timed out by now")
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertEquals(type(e), type(SystemExit()))
             self.assertEquals(e.code, pynag.Plugins.unknown)
         self.assertTrue(True, "Timeout occured in plugin, just like expected.")
@@ -354,10 +354,10 @@ class Plugin(unittest.TestCase):
             self.np.add_message('OK', 'Some message')
             self.assertEquals(self.np.data['messages'][0], ['Some message'])
             self.np.check_range(value)
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertEquals(type(e), type(SystemExit()))
             self.assertEquals(e.code, expected_exit)
-        except Exception, e:
+        except Exception as e:
             import traceback
             print(traceback.format_exc())
             self.fail('unexpected exception: %s' % e)

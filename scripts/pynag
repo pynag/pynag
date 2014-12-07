@@ -142,7 +142,7 @@ def execute_check_command():
         print ""
         if opts.quiet == False:
             print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
-    except KeyError, e:
+    except KeyError as e:
         parser.error("Could not find host '%s'" % e)
 
 def search_objects(search_statements):
@@ -814,7 +814,7 @@ if __name__ == '__main__':
         debug = True
     try:
         parse_arguments()
-    except Exception, e:
+    except Exception as e:
         print "Error occured, use --debug to see full traceback:"
         print ""
         print "%s: %s" % (e.__class__.__name__, e)
