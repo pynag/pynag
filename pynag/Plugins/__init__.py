@@ -31,9 +31,10 @@ import traceback
 import signal
 from platform import node
 from optparse import OptionParser, OptionGroup
-from pynag.Utils import PerfData, PynagError, reconsile_threshold, runCommand
+from pynag.Utils import PerfData, reconsile_threshold, runCommand
 from pynag.Parsers import ExtraOptsParser
 import pynag.Utils
+import pynag.errors
 from . import new_threshold_syntax
 
 # Map the return codes
@@ -67,6 +68,10 @@ state_text[ok] = 'OK'
 state_text[warning] = 'Warning'
 state_text[critical] = "Critical"
 state_text[unknown] = "Unknown"
+
+
+class PluginError(pynag.errors.PynagError):
+    """Base class for errors in this module."""
 
 
 class simple(object):
@@ -482,7 +487,7 @@ def check_range(value, range_threshold=None):
     >>> check_range("10000000", "invalid:invalid") # What happens on invalid range
     Traceback (most recent call last):
     ...
-    PynagError: Invalid threshold format: invalid:invalid
+    PluginError: Invalid threshold format: invalid:invalid
     """
 
     # Return false if value is not a number
@@ -522,7 +527,7 @@ def check_range(value, range_threshold=None):
         if end is not None and float(value) > float(end):
             return False
     except ValueError:
-        raise PynagError("Invalid threshold format: %s" % range_threshold)
+        raise PluginError("Invalid threshold format: %s" % range_threshold)
     return True
 
 
@@ -1089,7 +1094,7 @@ class PluginHelper(object):
             try:
                 in_range = new_threshold_syntax.check_range(
                     metric.value, threshold_range)
-            except PynagError:
+            except pynag.errors.PynagError:
                 self.set_summary(
                     "Could not parse threshold %s=%s for metric %s" %
                     (state_text[
