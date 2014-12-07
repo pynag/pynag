@@ -37,12 +37,9 @@ import pynag.errors
 from . import new_threshold_syntax
 from . import classic_threshold_syntax
 
-# Map the return codes
-OK = 0
-WARNING = 1
-CRITICAL = 2
-UNKNOWN = 3
-
+# The following constants, and state, state_text below are considered deprecated.
+# Use pynag.Utils.states module instead.
+OK, WARNING, CRITICAL, UNKNOWN = 0, 1, 2, 3
 ok, warning, critical, unknown = 0, 1, 2, 3
 
 state = {}
@@ -583,6 +580,7 @@ class PluginHelper(object):
           >>> p.add_long_output('* Humidity: OK')
           >>> p.get_long_output()
           u'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
+
         """
         self._long_output.append(message)
 
@@ -695,6 +693,7 @@ class PluginHelper(object):
           >>> p.add_metric(perfdatastring="load15=1;;;;")
           >>> p.get_perfdata()
           "'load1'=6;;;; 'load5'=4;;;; 'load15'=1;;;;"
+
         """
         if not perfdatastring is None:
             self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)
