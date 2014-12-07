@@ -1,4 +1,14 @@
-"""Constants and convenience functions for host and service states."""
+"""Constants and convenience functions for host and service states.
+
+Example usage:
+    from pynag.Utils import states
+    print states.OK, states.WARNING, states.CRITICAL, states.UNKNOWN
+
+    print states.service_state_to_int('critical')
+    print states.service_state_to_string(0)
+    print states.host_state_to_int('UP')
+    print states.host_state_to_string(1)
+"""
 import pynag.errors
 
 OK, WARNING, CRITICAL, UNKNOWN = 0, 1, 2, 3
@@ -17,6 +27,7 @@ _SERVICE_TEXT_TO_INT = {
     'c': CRITICAL,
     'u': UNKNOWN,
 
+    # Numerical string representation of states:
     '0': OK,
     '1': WARNING,
     '2': CRITICAL,
@@ -28,6 +39,7 @@ _HOST_TEXT_TO_INT = {
     'DOWN': DOWN,
     'UNREACHABLE': UNREACHABLE,
 
+    # Numerical string representation of states:
     '0': UP,
     '1': DOWN,
     '2': UNREACHABLE
@@ -80,6 +92,11 @@ def service_state_to_int(state):
         2
         >>> service_state_to_int('3')
         3
+        >>> service_state_to_int('foo')
+        Traceback (most recent call last):
+          ..
+        UnknownState: Do not know how to handle state foo
+
     """
     text = str(state).lower()
     try:
@@ -113,6 +130,11 @@ def service_state_to_string(state):
         'OK'
         >>> service_state_to_string('warn')
         'Warning'
+        >>> service_state_to_string('foo')
+        Traceback (most recent call last):
+          ..
+        UnknownState: Do not know how to handle state foo
+
     """
     integer = service_state_to_int(state)
     try:
@@ -141,7 +163,7 @@ def host_state_to_int(state):
         raise UnknownState('Do not know how to handle state %s' % state)
 
 
-def host_to_string(state):
+def host_state_to_string(state):
     """Converts from integer or text to a formal text representation of a nagios state.
 
     Args:
