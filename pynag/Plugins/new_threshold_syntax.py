@@ -35,7 +35,7 @@ from __future__ import absolute_import
 
 import pynag.Plugins
 import pynag.errors
-
+from pynag.Utils import states
 
 class Error(pynag.errors.PynagError):
     """Base class for errors in this module."""
@@ -79,24 +79,24 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     try:
         # 1 - If no levels are specified, return OK
         if not ok and not warning and not critical:
-            return pynag.Plugins.OK
+            return states.OK
         # 2 - If an ok level is specified and value is within range, return OK
         if ok and check_range(value, ok):
-            return pynag.Plugins.OK
+            return states.OK
         # 3 - If a critical level is specified and value is within range, return CRITICAL
         if critical and check_range(value, critical):
-            return pynag.Plugins.CRITICAL
+            return states.CRITICAL
         # 4 - If a warning level is specified and value is within range, return WARNING
         if warning and check_range(value, warning):
-            return pynag.Plugins.WARNING
+            return states.WARNING
         # 5 - If an ok level is specified, return CRITICAL
         if ok:
-            return pynag.Plugins.CRITICAL
+            return states.CRITICAL
         # 6 - Otherwise return OK
-        return pynag.Plugins.OK
+        return states.OK
     except Exception:
         # Return unknown if any problem occurs, including invalid input
-        return pynag.Plugins.UNKNOWN
+        return states.UNKNOWN
 
 
 def check_range(value, range):
