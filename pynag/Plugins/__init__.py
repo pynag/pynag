@@ -34,8 +34,8 @@ from pynag.Utils import PerfData, reconsile_threshold
 from pynag.Parsers import ExtraOptsParser
 import pynag.Utils
 import pynag.errors
-from . import new_threshold_syntax
-from . import classic_threshold_syntax
+from pynag.Plugins import new_threshold_syntax
+from pynag.Plugins import classic_threshold_syntax
 
 # The following constants, and state, state_text below are considered deprecated.
 # Use pynag.Utils.states module instead.
@@ -580,6 +580,7 @@ class PluginHelper(object):
           >>> p.add_long_output('* Humidity: OK')
           >>> p.get_long_output()
           u'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
+
         """
         self._long_output.append(message)
 
@@ -692,6 +693,7 @@ class PluginHelper(object):
           >>> p.add_metric(perfdatastring="load15=1;;;;")
           >>> p.get_perfdata()
           "'load1'=6;;;; 'load5'=4;;;; 'load15'=1;;;;"
+
         """
         if not perfdatastring is None:
             self._perfdata.add_perfdatametric(perfdatastring=perfdatastring)

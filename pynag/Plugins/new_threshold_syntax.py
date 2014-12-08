@@ -147,8 +147,8 @@ def parse_threshold(threshold):
     """ takes a threshold string as an input and returns a hash map of options and values
 
     Examples:
-        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95.100')
-        {'thresholds': [(0, '0..90'), (1, '90..95'), (2, '95.100')], 'metric': 'disk_usage'}
+        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
+        {u'thresholds': [(0, u'0..90'), (1, u'90..95'), (2, u'95..100')], u'metric': u'disk_usage'}
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []
@@ -177,20 +177,20 @@ def convert_to_classic_format(threshold_range):
 
     Examples:
 
-    >>> reconsile_threshold("0..5")
-    '@0:5'
-    >>> reconsile_threshold("inf..5")
-    '5:'
-    >>> reconsile_threshold("5..inf")
-    '~:5'
-    >>> reconsile_threshold("inf..inf")
-    '@~:'
-    >>> reconsile_threshold("^0..5")
-    '0:5'
-    >>> reconsile_threshold("10..20")
-    '@10:20'
-    >>> reconsile_threshold("10..inf")
-    '~:10'
+    >>> convert_to_classic_format("0..5")
+    u'@0:5'
+    >>> convert_to_classic_format("inf..5")
+    u'5:'
+    >>> convert_to_classic_format("5..inf")
+    u'~:5'
+    >>> convert_to_classic_format("inf..inf")
+    u'@~:'
+    >>> convert_to_classic_format("^0..5")
+    u'0:5'
+    >>> convert_to_classic_format("10..20")
+    u'@10:20'
+    >>> convert_to_classic_format("10..inf")
+    u'~:10'
     """
 
     threshold_range = str(threshold_range)

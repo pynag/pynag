@@ -47,11 +47,11 @@ import getpass
 
 from pynag import Parsers
 from pynag.Model import macros
+from pynag.Model import all_attributes
 
 import pynag.Control.Command
 import pynag.errors
 import pynag.Utils
-import all_attributes
 
 
 # Path To Nagios configuration file

@@ -123,6 +123,7 @@ class AttributeList(object):
             >>> i.insert(1, 'group4')
             >>> i.fields
             ['group1', 'group4', 'group2', 'group3']
+
         """
 
         return self.fields.insert(index, object)
@@ -141,6 +142,7 @@ class AttributeList(object):
             >>> i.append('group5')
             >>> i.fields
             ['group1', 'group2', 'group3', 'group5']
+
         """
         return self.fields.append(object)
 
@@ -157,6 +159,7 @@ class AttributeList(object):
             >>> i = AttributeList('group1,group2,group3')
             >>> i.count('group3')
             1
+
         """
 
         return self.fields.count(value)
@@ -172,6 +175,7 @@ class AttributeList(object):
             >>> i.extend(['group4', 'group5'])
             >>> i.fields
             ['group1', 'group2', 'group3', 'group4', 'group5']
+
         """
         return self.fields.extend(iterable)
 
@@ -194,6 +198,7 @@ class AttributeList(object):
             1
             >>> i.index('group3', 2, 5)
             2
+
         """
 
         if stop is None:
@@ -208,6 +213,7 @@ class AttributeList(object):
             >>> i.reverse()
             >>> i.fields
             ['group3', 'group2', 'group1']
+
         """
 
         return self.fields.reverse()
@@ -220,6 +226,7 @@ class AttributeList(object):
             >>> i.sort()
             >>> print(i.fields)
             ['group1', 'group2', 'group3']
+
         """
 
         return self.fields.sort()
@@ -235,6 +242,7 @@ class AttributeList(object):
             >>> i.remove('group3')
             >>> i.fields
             ['group1', 'group2']
+
         """
 
         return self.fields.remove(value)
@@ -247,6 +255,7 @@ class AttributeList(object):
         group1
         group2
         group3
+
         """
 
         return self.fields.__iter__()
@@ -394,6 +403,7 @@ def is_macro(macro):
         True
         >>> is_macro('$_CONTACT_CUSTOM$')
         True
+
     """
     if not macro.startswith('$'):
         return False
@@ -517,6 +527,7 @@ def grep_to_livestatus(*args, **kwargs):
         ['Filter: service_description ~ ^foo']
         >>> grep_to_livestatus(service_description__endswith='foo')
         ['Filter: service_description ~ foo$']
+
     """
 
     result = list(args)  # Args go unchanged back into results
