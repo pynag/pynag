@@ -40,7 +40,7 @@ def get_all_pynag_modules():
         filename = filename.replace('/', '.')
         filename = filename.strip('.')
         module_name = filename
-        module = __import__(module_name)
+        module = __import__(module_name, locals(), globals(), [module_name], -1)
         yield module
 
 
