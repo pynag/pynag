@@ -35,9 +35,9 @@ _SERVICE_TEXT_TO_INT = {
 }
 
 _HOST_TEXT_TO_INT = {
-    'UP': UP,
-    'DOWN': DOWN,
-    'UNREACHABLE': UNREACHABLE,
+    'up': UP,
+    'down': DOWN,
+    'unreachable': UNREACHABLE,
 
     # Numerical string representation of states:
     '0': UP,
@@ -137,10 +137,7 @@ def service_state_to_string(state):
 
     """
     integer = service_state_to_int(state)
-    try:
-        return _SERVICE_INT_TO_TEXT[integer]
-    except KeyError:
-        raise UnknownState('Do not know how to handle state %s' % state)
+    return _SERVICE_INT_TO_TEXT[integer]
 
 
 def host_state_to_int(state):
@@ -154,6 +151,20 @@ def host_state_to_int(state):
 
     Raises:
         UnknownState: If no match can be found for 'state'.
+
+    Examples:
+        >>> host_state_to_int('up')
+        0
+        >>> host_state_to_int('Down')
+        1
+        >>> host_state_to_int('UNREACHABLE')
+        2
+        >>> host_state_to_int(0)
+        0
+        >>> host_state_to_int(3)
+        Traceback (most recent call last):
+         ..
+        UnknownState: Do not know how to handle state 3
 
     """
     text = str(state).lower()
@@ -174,9 +185,16 @@ def host_state_to_string(state):
 
     Raises:
         UnknownState: If no match can be found for 'state'.
+
+    Examples:
+        >>> host_state_to_string(0)
+        'Up'
+        >>> host_state_to_string(1)
+        'Down'
+        >>> host_state_to_string(2)
+        'Unreachable'
+        >>> host_state_to_string('DOWN')
+        'Down'
     """
     integer = host_state_to_int(state)
-    try:
-        return _SERVICE_INT_TO_TEXT[integer]
-    except KeyError:
-        raise UnknownState('Do not know how to handle state %s' % state)
+    return _HOST_INT_TO_TEXT[integer]
