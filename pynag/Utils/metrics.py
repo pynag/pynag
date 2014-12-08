@@ -450,7 +450,9 @@ def get_base_value(value, uom=None, maximum=None):
         float. Base value of self.value after uom has been taken into account.
     """
     float_value = float(value)
-    all_multipliers_in_lowercase = {key.lower(): value for key, value in MULTIPLIERS.items()}
+    all_multipliers_in_lowercase = {}
+    for key, multiplier in MULTIPLIERS.items():
+        all_multipliers_in_lowercase[key.lower()] = multiplier
     if not uom:
         return float_value
     elif uom == '%' and not maximum:
