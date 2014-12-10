@@ -323,7 +323,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         self.test_check_command = 'test_check_command'
         self.test_event_handler_command = 'test_event_handler'
         self.check_interval = 50
-        self.livestatus_command_suffix = '\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
+        self.livestatus_command_suffix = '\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n\n'
 
         self.command = Command
 
