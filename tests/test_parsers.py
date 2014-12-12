@@ -357,15 +357,15 @@ class Livestatus(unittest.TestCase):
         stats_for_state_0 = response[0]
         self.assertIsInstance(stats_for_state_0, int)
 
-    @mock.patch('pynag.Parsers.Livestatus.raw_query')
-    def test_query_empty_response_raises(self, mock_raw_query):
-        mock_raw_query.return_value = ''
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_empty_response_raises(self, mock_write):
+        mock_write.return_value = ''
         with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
             self.livestatus.query('GET services')
 
-    @mock.patch('pynag.Parsers.Livestatus.raw_query')
-    def test_query_invalid_response_raises(self, mock_raw_query):
-        mock_raw_query.return_value = '200\ngarbage data from livestatus['
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_invalid_response_raises(self, mock_write):
+        mock_write.return_value = '200\ngarbage data from livestatus['
         with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
             self.livestatus.query('GET services')
 

@@ -3120,7 +3120,7 @@ class Livestatus(object):
         # This is we actually send our query into livestatus. livestatus_response is the raw response
         # from livestatus socket (string):
         try:
-            livestatus_response = self.raw_query(livestatus_query)
+            livestatus_response = self.write(livestatus_query.get_query())
         except LivestatusError:
             time.sleep(self._RETRY_INTERVAL)
             livestatus_response = self.raw_query(livestatus_query)
