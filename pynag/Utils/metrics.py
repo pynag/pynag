@@ -200,6 +200,10 @@ class PerfDataMetric(object):
         False
         >>> PerfDataMetric("'label with spaces=0'").is_valid()
         False
+        >>> PerfDataMetric("value=5.5").is_valid()
+        True
+        >>> PerfDataMetric("value=5,5").is_valid()
+        True
         """
 
         if self.label in (None, ''):
@@ -230,19 +234,28 @@ class PerfDataMetric(object):
         return True
 
     def reconsile_thresholds(self):
-        """ Convert threshold from new threshold syntax to current one.
+        """ Convert threshold from new threshold syntax to classic.
 
         For backwards compatibility
+
+        Example:
+            >>> p = PerfDataMetric(warn='0..100')
+            >>> p.warn
+            '0..100'
+            >>> p.reconsile_thresholds()
+            >>> p.warn
+            u'@0:100'
+
         """
 
         self.warn = new_threshold_syntax.convert_to_classic_format(self.warn)
         self.crit = new_threshold_syntax.convert_to_classic_format(self.crit)
 
     def get_dict(self):
-        """ Returns a dictionary which contains this class' attributes.
+        """ Returns a dictionary which contents this class' attributes.
 
-        Returned dict example::
-
+        Returns:
+            Dict. With every key as a string, and every value is a string.
             {
                 'label': self.label,
                 'value': self.value,
@@ -252,6 +265,11 @@ class PerfDataMetric(object):
                 'min': self.min,
                 'max': self.max,
             }
+
+        Examples:
+            >>> p = PerfDataMetric("load=5")
+            >>> p.get_dict()
+            {'min': '', 'max': '', 'value': '5', 'label': 'load', 'warn': '', 'crit': '', 'uom': ''}
         """
 
         return {
@@ -265,6 +283,20 @@ class PerfDataMetric(object):
         }
 
     def get_base_value(self):
+        """Get the base value for current metric.
+
+        This is a simple convenience wrapper around get_base_value()
+        module function.
+
+        Returns:
+            float. Base value of self.value after unit of measurement
+            has been taken into account.
+
+        Examples:
+            >>> p = PerfDataMetric('size=10KiB')
+            >>> p.get_base_value()
+            10240.0
+        """
         return get_base_value(self.value, self.uom, self.max)
 
 
@@ -372,11 +404,29 @@ class PerfData(object):
                 return i
 
     def reconsile_thresholds(self):
-        """ Convert all thresholds in new_threshold_syntax to the standard one """
+        """Convert all warn and crit thresholds into classic thresholds format.
+
+        Example:
+            >>> p = PerfData('load=15;0..5;;;')
+            >>> print p
+            'load'=15;0..5;;;
+            >>> p.reconsile_thresholds()
+            >>> print p
+            'load'=15;@0:5;;;
+
+        """
         for i in self.metrics:
             i.reconsile_thresholds()
 
     def __str__(self):
+        """ Simple string representation of our PerfData.
+
+        Example:
+            >>> p = PerfData('load=15')
+            >>> str(p)
+            "'load'=15;;;;"
+
+        """
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
 
