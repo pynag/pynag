@@ -2851,7 +2851,7 @@ class LivestatusQuery(object):
             >>> query = LivestatusQuery('GET hosts')
             >>> query.set_limit(5)
             >>> query.get_query()
-            'GET hosts\\nColumns: name address\\n\\n'
+            'GET hosts\\nLimit: 5\\n\\n'
             >>> query.remove_limit()
             >>> query.get_query()
             'GET hosts\\n\\n'
