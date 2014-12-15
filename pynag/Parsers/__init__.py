@@ -2252,6 +2252,7 @@ class LivestatusQuery(object):
     _OUTPUT_FORMAT = 'OutputFormat'
     _COLUMNS = 'Columns'
     _COLUMN_HEADERS = 'ColumnHeaders'
+    _LIMIT = 'Limit'
     _AUTH_USER = 'AuthUser'
     _STATS = 'Stats'
     _FILTER = 'Filter'
@@ -2826,6 +2827,36 @@ class LivestatusQuery(object):
 
         """
         self.add_header(self._OR, number)
+
+    def set_limit(self, limit):
+        """Set a Limit header to our query.
+
+        Args:
+            limit: Limit results to this number (integer)
+
+        Examples:
+            >>> query = LivestatusQuery('GET hosts')
+            >>> query.set_limit(5)
+            >>> query.get_query()
+            'GET hosts\\nLimit: 5\\n\\n'
+        """
+        limit = int(limit)
+        self.remove_limit()
+        self.add_header(self._LIMIT, limit)
+
+    def remove_limit(self):
+        """Remove limit header from this query.
+
+        Examples:
+            >>> query = LivestatusQuery('GET hosts')
+            >>> query.set_limit(5)
+            >>> query.get_query()
+            'GET hosts\\nLimit: 5\\n\\n'
+            >>> query.remove_limit()
+            >>> query.get_query()
+            'GET hosts\\n\\n'
+        """
+        self.remove_header(self._LIMIT)
 
 
 class Livestatus(object):
