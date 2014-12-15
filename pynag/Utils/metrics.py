@@ -7,6 +7,37 @@ from pynag.Plugins import new_threshold_syntax
 from pynag.Plugins import classic_threshold_syntax
 
 
+MULTIPLIERS = {
+    'h': 10**2,
+    'k': 10**3,
+    'M': 10**6,
+    'G': 10**9,
+    'T': 10**12,
+    'P': 10**15,
+    'E': 10**18,
+    'Z': 10**21,
+    'Y': 10**24,
+
+    'kB': 1000,
+    'MB': 1000**2,
+    'GB': 1000**3,
+    'TB': 1000**4,
+    'PB': 1000**5,
+    'EB': 1000**6,
+    'ZB': 1000**7,
+    'YB': 1000**8,
+
+    'kiB': 1024,
+    'MiB': 1024**2,
+    'GiB': 1024**3,
+    'TiB': 1024**4,
+    'PiB': 1024**5,
+    'EiB': 1024**6,
+    'ZiB': 1024**7,
+    'YiB': 1024**8,
+}
+
+
 class PerfDataMetric(object):
 
     """ Data structure for one single Nagios Perfdata Metric
@@ -111,7 +142,7 @@ class PerfDataMetric(object):
         tmp = everything_but_label.split(';')
         if len(tmp) > 0:
             val = tmp.pop(0).strip('=')
-            self.value, self.uom = self.split_value_and_uom(val)
+            self.value, self.uom = split_value_and_uom(val)
         if len(tmp) > 0:
             self.warn = tmp.pop(0)
         if len(tmp) > 0:
@@ -169,6 +200,10 @@ class PerfDataMetric(object):
         False
         >>> PerfDataMetric("'label with spaces=0'").is_valid()
         False
+        >>> PerfDataMetric("value=5.5").is_valid()
+        True
+        >>> PerfDataMetric("value=5,5").is_valid()
+        True
         """
 
         if self.label in (None, ''):
@@ -199,52 +234,28 @@ class PerfDataMetric(object):
         return True
 
     def reconsile_thresholds(self):
-        """ Convert threshold from new threshold syntax to current one.
+        """ Convert threshold from new threshold syntax to classic.
 
         For backwards compatibility
+
+        Example:
+            >>> p = PerfDataMetric(warn='0..100')
+            >>> p.warn
+            '0..100'
+            >>> p.reconsile_thresholds()
+            >>> p.warn
+            u'@0:100'
+
         """
 
         self.warn = new_threshold_syntax.convert_to_classic_format(self.warn)
         self.crit = new_threshold_syntax.convert_to_classic_format(self.crit)
 
-    def split_value_and_uom(self, value):
-        """
-        Example:
-
-        get value="10M" and return (10,"M")
-
-        >>> p = PerfDataMetric()
-        >>> p.split_value_and_uom( "10" )
-        ('10', '')
-        >>> p.split_value_and_uom( "10c" )
-        ('10', 'c')
-        >>> p.split_value_and_uom( "10B" )
-        ('10', 'B')
-        >>> p.split_value_and_uom( "10MB" )
-        ('10', 'MB')
-        >>> p.split_value_and_uom( "10KB" )
-        ('10', 'KB')
-        >>> p.split_value_and_uom( "10TB" )
-        ('10', 'TB')
-        >>> p.split_value_and_uom( "10%" )
-        ('10', '%')
-        >>> p.split_value_and_uom( "10s" )
-        ('10', 's')
-        >>> p.split_value_and_uom( "10us" )
-        ('10', 'us')
-        >>> p.split_value_and_uom( "10ms" )
-        ('10', 'ms')
-        """
-        tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
-        if len(tmp) == 0:
-            return '', ''
-        return tmp[0]
-
     def get_dict(self):
-        """ Returns a dictionary which contains this class' attributes.
+        """ Returns a dictionary which contents this class' attributes.
 
-        Returned dict example::
-
+        Returns:
+            Dict. With every key as a string, and every value is a string.
             {
                 'label': self.label,
                 'value': self.value,
@@ -254,6 +265,11 @@ class PerfDataMetric(object):
                 'min': self.min,
                 'max': self.max,
             }
+
+        Examples:
+            >>> p = PerfDataMetric("load=5")
+            >>> p.get_dict()
+            {'min': '', 'max': '', 'value': '5', 'label': 'load', 'warn': '', 'crit': '', 'uom': ''}
         """
 
         return {
@@ -265,6 +281,23 @@ class PerfDataMetric(object):
             'min': self.min,
             'max': self.max,
         }
+
+    def get_base_value(self):
+        """Get the base value for current metric.
+
+        This is a simple convenience wrapper around get_base_value()
+        module function.
+
+        Returns:
+            float. Base value of self.value after unit of measurement
+            has been taken into account.
+
+        Examples:
+            >>> p = PerfDataMetric('size=10KiB')
+            >>> p.get_base_value()
+            10240.0
+        """
+        return get_base_value(self.value, self.uom, self.max)
 
 
 class PerfData(object):
@@ -371,10 +404,114 @@ class PerfData(object):
                 return i
 
     def reconsile_thresholds(self):
-        """ Convert all thresholds in new_threshold_syntax to the standard one """
+        """Convert all warn and crit thresholds into classic thresholds format.
+
+        Example:
+            >>> p = PerfData('load=15;0..5;;;')
+            >>> print p
+            'load'=15;0..5;;;
+            >>> p.reconsile_thresholds()
+            >>> print p
+            'load'=15;@0:5;;;
+
+        """
         for i in self.metrics:
             i.reconsile_thresholds()
 
     def __str__(self):
+        """ Simple string representation of our PerfData.
+
+        Example:
+            >>> p = PerfData('load=15')
+            >>> str(p)
+            "'load'=15;;;;"
+
+        """
         metrics = map(lambda x: x.__str__(), self.metrics)
         return ' '.join(metrics)
+
+
+def split_value_and_uom(value):
+    """split_value_and_uom("10mb") -> ('10', 'mb')
+
+    Args:
+        value: String. Usually a perfdata metric like '10mb'
+
+    Returns:
+        A tuple of ('str', 'str') e.g. ('10', 'mb')
+
+    Examples:
+        >>> split_value_and_uom( "10" )
+        ('10', '')
+        >>> split_value_and_uom( "10c" )
+        ('10', 'c')
+        >>> split_value_and_uom( "10B" )
+        ('10', 'B')
+        >>> split_value_and_uom( "10MB" )
+        ('10', 'MB')
+        >>> split_value_and_uom( "10KB" )
+        ('10', 'KB')
+        >>> split_value_and_uom( "10TB" )
+        ('10', 'TB')
+        >>> split_value_and_uom( "10%" )
+        ('10', '%')
+        >>> split_value_and_uom( "10s" )
+        ('10', 's')
+        >>> split_value_and_uom( "10us" )
+        ('10', 'us')
+        >>> split_value_and_uom( "10ms" )
+        ('10', 'ms')
+
+    """
+    tmp = re.findall(r"([-]*[\d.]*\d+)(.*)", value)
+    if len(tmp) == 0:
+        return '', ''
+    return tmp[0]
+
+
+def get_base_value(value, uom=None, maximum=None):
+    """ Get base value of a metric (i.e. turns 1KB into 1024).
+
+    Examples:
+        >>> get_base_value(value=50)
+        50.0
+        >>> get_base_value(value=1, uom='kib')
+        1024.0
+        >>> get_base_value(value=1, uom='k')
+        1000.0
+        >>> get_base_value(value=1, uom='kb')
+        1000.0
+        >>> get_base_value(value=1, uom='gib')
+        1073741824.0
+        >>> get_base_value(value=1, uom='g')
+        1000000000.0
+        >>> get_base_value(value=50, uom='%', maximum=10)
+        5.0
+        >>> get_base_value(value=50, uom='%')
+        Traceback (most recent call last):
+          ...
+        ValueError: Cant get absolute value for 50% unless max is defined.
+        >>> get_base_value(value=50, uom='FOO')
+        Traceback (most recent call last):
+          ...
+        ValueError: Dont know how to get the base value of a "FOO".
+
+    Returns:
+        float. Base value of self.value after uom has been taken into account.
+    """
+    float_value = float(value)
+    all_multipliers_in_lowercase = {}
+    for key, multiplier in MULTIPLIERS.items():
+        all_multipliers_in_lowercase[key.lower()] = multiplier
+    if not uom:
+        return float_value
+    elif uom == '%' and not maximum:
+        raise ValueError('Cant get absolute value for %s%s unless max is defined.' % (value, uom))
+    elif uom == '%':
+        return float_value * 0.01 * float(maximum)
+    elif uom in MULTIPLIERS:
+        return float_value * MULTIPLIERS[uom]
+    elif uom.lower() in all_multipliers_in_lowercase:
+        return float_value * all_multipliers_in_lowercase[uom.lower()]
+    else:
+        raise ValueError('Dont know how to get the base value of a "%s".' % uom)
