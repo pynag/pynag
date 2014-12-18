@@ -40,7 +40,6 @@ localhost
 """
 
 import os
-import re
 import subprocess
 import time
 import getpass

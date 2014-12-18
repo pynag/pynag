@@ -2,6 +2,7 @@
 import pynag.Utils
 from pynag import Parsers
 import all_attributes
+import re
 
 try:
     from collections import defaultdict
