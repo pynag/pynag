@@ -9,6 +9,15 @@ try:
 except ImportError:
     from pynag.Utils import defaultdict
 
+
+#: eventhandlers -- A list of Model.EventHandlers object.
+# Event handler is responsible for passing notification whenever something
+# important happens in the model.
+#
+# For example FileLogger class is an event handler responsible for logging to
+# file whenever something has been written.
+eventhandlers = []
+
 class ObjectRelations(object):
     """ Static container for objects and their respective neighbours """
     # c['contact_name'] = [host1.get_id(),host2.get_id()]
