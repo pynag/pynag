@@ -651,13 +651,12 @@ class ObjectDefinition(object):
         object_type = re.sub(invalid_chars, '', self.object_type)
         description = re.sub(invalid_chars, '', self.get_description())
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
-        global pynag_directory
-        if pynag_directory is None:
+        if pynag.Model.pynag_directory is None:
             from os.path import dirname
-            pynag_directory = dirname(config.cfg_file) + "/pynag"
+            pynag.Model.pynag_directory = dirname(config.cfg_file) + "/pynag"
 
         # By default assume this is the filename
-        path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
+        path = "%s/%ss/%s.cfg" % (pynag.Model.pynag_directory, object_type, description)
 
         # Services go to same file as their host
         if object_type == "service" and self.get('host_name'):
@@ -669,13 +668,13 @@ class ObjectDefinition(object):
 
         # templates go to the template directory
         if not self.is_registered():
-            path = "%s/templates/%ss.cfg" % (pynag_directory, object_type)
+            path = "%s/templates/%ss.cfg" % (pynag.Model.pynag_directory, object_type)
 
         # Filename of services should match service description or name
         elif object_type == 'service':
             filename = self.name or self.service_description or "untitled"
             filename = re.sub(invalid_chars, '', filename)
-            path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, filename)
+            path = "%s/%ss/%s.cfg" % (pynag.Model.pynag_directory, object_type, filename)
 
         return path
 
