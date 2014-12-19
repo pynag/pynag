@@ -1378,7 +1378,7 @@ class ObjectDefinition(object):
 
     def _event(self, level=None, message=None):
         """ Pass informational message about something that has happened within the Model """
-        for i in Model.eventhandlers:
+        for i in pynag.Model.eventhandlers:
             if level == 'write':
                 i.write(object_definition=self, message=message)
             elif level == 'save':
