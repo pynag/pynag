@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
+import os
+import re
+
 import pynag.Utils
 from pynag import Parsers
 import all_attributes
-import re
 
 try:
     from collections import defaultdict
 except ImportError:
     from pynag.Utils import defaultdict
+
+config = None
+eventhandlers = []
+pynag_directory = None
 
 class ObjectRelations(object):
     """ Static container for objects and their respective neighbours """
@@ -327,7 +333,7 @@ class ObjectFetcher(object):
         ObjectFetcher._cached_object_type = defaultdict(list)
         global config
         global cfg_file
-        config = pynag.Model.config
+        config = config
         cfg_file = pynag.Model.cfg_file
 
         # If global variable cfg_file has been changed, lets create a new ConfigParser object
@@ -410,6 +416,7 @@ class ObjectFetcher(object):
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
+        config = config
         if config is None or config.needs_reparse():
             self.reload_cache()
         return config.get_object_types()
@@ -645,6 +652,7 @@ class ObjectDefinition(object):
 
         :returns: filename, eg str('/etc/nagios/pynag/templates/hosts.cfg')
         """
+        config = config
         # Invalid characters that might potentially mess with our path
         # | / ' " are all invalid. So is any whitespace
         invalid_chars = '[/\s\'\"\|]'
@@ -695,6 +703,7 @@ class ObjectDefinition(object):
                   * In case of new objects, return True
         """
 
+        config = config
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
         number_of_changes = len(self._changes.keys())
@@ -746,6 +755,7 @@ class ObjectDefinition(object):
 
     def reload_object(self):
         """ Re-applies templates to this object (handy when you have changed the use attribute """
+        config = config
         old_me = config.get_new_item(self.object_type, self.get_filename())
         old_me['meta']['defined_attributes'] = self._defined_attributes
         for k, v in self._defined_attributes.items():
@@ -770,6 +780,7 @@ class ObjectDefinition(object):
 
         :returns: True on success
         """
+        config = config
         self._event(level='pre_save', message="Object definition is being rewritten")
         if self.is_new is True:
             self.save()
@@ -800,6 +811,7 @@ class ObjectDefinition(object):
             If True, look for related items and remove references to this one.
             (for example, if you delete a host, remove its name from all hostgroup.members entries)
         """
+        config = config
         self._event(level="pre_save", message="%s '%s' will be deleted." % (self.object_type, self.get_shortname()))
         if recursive is True:
             # Recursive does not have any meaning for a generic object, this should subclassed.
@@ -976,6 +988,7 @@ class ObjectDefinition(object):
         Returns:
           (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
         """
+        config = config
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname, host_name=host_name)
@@ -2373,4 +2386,147 @@ class Servicegroup(ObjectDefinition):
 class Timeperiod(ObjectDefinition):
     object_type = 'timeperiod'
     objects = ObjectFetcher('timeperiod')
+
+def _add_object_to_group(my_object, my_group):
+    """ Add one specific object to a specified objectgroup
+
+    Examples:
+    c = Contact()
+    g = Contactgroup()
+
+    _add_to_group(c, g )
+    """
+    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
+    group_type = my_group.object_type        # contactgroup,hostgroup,servicegroup
+    group_name = my_group.get_shortname()    # admins
+    object_name = my_object.get_shortname()  # root
+
+    group_field = 'members'     # i.e. Contactgroup.members
+    object_field = group_type + 's'  # i.e. Host.hostgroups
+
+    groups = my_object[object_field] or ''  # f.e. value of Contact.contactgroups
+    list_of_groups = pynag.Utils.AttributeList(groups)
+
+    members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
+    list_of_members = pynag.Utils.AttributeList(members)
+
+    if group_name in list_of_groups:
+        return False  # Group says it already has object as a member
+
+    if object_name in list_of_members:
+        return False  # Member says it is already part of group
+
+    my_object.attribute_appendfield(object_field, group_name)
+    my_object.save()
+    return True
+
+def _remove_object_from_group(my_object, my_group):
+    """ Remove one specific object to a specified objectgroup
+
+    Examples:
+    c = Contact()
+    g = Contactgroup()
+
+    _remove_object_from_group(c, g )
+    """
+    # First of all, we behave a little differently depending on what type of an object we lets define some variables:
+    group_type = my_group.object_type          # contactgroup,hostgroup,servicegroup
+    group_name = my_group.get_shortname()      # admins
+    object_name = my_object.get_shortname()  # root
+
+    group_field = 'members'     # i.e. Contactgroup.members
+    object_field = group_type + 's'  # i.e. Host.hostgroups
+
+    groups = my_object[object_field] or ''  # e. value of Contact.contactgroups
+    list_of_groups = pynag.Utils.AttributeList(groups)
+
+    members = my_group[group_field] or ''     # f.e. Value of Contactgroup.members
+    list_of_members = pynag.Utils.AttributeList(members)
+
+    if group_name in list_of_groups:
+        # Remove group from the object
+        my_object.attribute_removefield(object_field, group_name)
+        my_object.save()
+
+    if object_name in list_of_members:
+        # Remove object from the group
+        my_group.attribute_removefield(group_field, object_name)
+        my_group.save()
+
+def _add_to_contactgroup(my_object, contactgroup):
+    """ add Host or Service to a contactgroup
+    """
+    if isinstance(contactgroup, basestring):
+        contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
+
+    contactgroup_name = contactgroup.contactgroup_name
+
+    if my_object.object_type == "contact":
+        return _add_object_to_group(my_object, contactgroup)
+
+    current_contactgroups = AttributeList(my_object.contact_groups)
+    if contactgroup_name not in current_contactgroups.fields:
+        my_object.attribute_appendfield('contact_groups', contactgroup_name)
+        my_object.save()
+        return True
+    else:
+        return False
+
+def _remove_from_contactgroup(my_object, contactgroup):
+    """ remove Host or Service from  a contactgroup
+    """
+    if isinstance(contactgroup, basestring):
+        contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
+
+    contactgroup_name = contactgroup.contactgroup_name
+    if my_object.object_type == "contact":
+        return _remove_object_from_group(my_object, contactgroup)
+
+    current_contactgroups = AttributeList(my_object.contact_groups)
+    if contactgroup_name in current_contactgroups.fields:
+        my_object.attribute_removefield('contact_groups', contactgroup_name)
+        my_object.save()
+        return True
+    else:
+        return False
+
+def _add_property(ClassType, name):
+    """ Create a dynamic property specific ClassType
+
+    object_definition = ClassType()
+    object_definition.name -> object_definition['name'
+
+    So in human speak, this reads info from all_attributes and makes sure that
+    Host has Host.host_name
+
+    Returns: None
+    """
+    fget = lambda self: self[name]
+    fset = lambda self, value: self.set_attribute(name, value)
+    fdel = lambda self: self.set_attribute(name, None)
+    fdoc = "This is the %s attribute for object definition"
+    setattr(ClassType, name, property(fget, fset, fdel, fdoc))
+
+def register_attributes(string_to_class, all_attributes):
+    # Add register, name and use to all objects
+    _add_property(ObjectDefinition, 'register')
+    _add_property(ObjectDefinition, 'name')
+    _add_property(ObjectDefinition, 'use')
+    
+    # For others, create attributes dynamically based on all_attributes.keys()
+    for object_type, attributes in all_attributes.object_definitions.items():
+        # Lets find common attributes that every object definition should have:
+        if object_type == 'any':
+            continue
+        if string_to_class.get(object_type) == None:
+            continue
+        Object = string_to_class.get(object_type)
+    
+        for attribute in attributes:
+            _add_property(Object, attribute)
+    
+def prepare_module_attributes(config, eventhandlers, pynag_directory):
+    config = config
+    eventhandlers = eventhandlers
+    pynag_directory = pynag_directory
 
