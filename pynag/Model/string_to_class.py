@@ -22,6 +22,9 @@ class StringToClass(object):
         self.string_to_class['serviceescalation'] = ServiceEscalation
         self.string_to_class['command'] = Command
 
+    def __getitem__(self,item):
+        self.get(item)
+
     def get(self, classname, default=ObjectDefinition):
         try:
             if self.backend == 'nagios':

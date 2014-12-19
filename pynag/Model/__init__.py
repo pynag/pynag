@@ -63,6 +63,13 @@ pynag_directory = None
 # will be recreated whenever a parse is called.
 config = Parsers.config(cfg_file=cfg_file)
 
+#: eventhandlers -- A list of Model.EventHandlers object.
+# Event handler is responsible for passing notification whenever something
+# important happens in the model.
+#
+# For example FileLogger class is an event handler responsible for logging to
+# file whenever something has been written.
+eventhandlers = []
 
 # DEBUG FORCE SET BACKEND
 backend = 'nagios'
