@@ -30,9 +30,9 @@ class StringToClass(object):
             nagios_objects.register_attributes(self.string_to_class, 
                                                 self.all_attributes)
 
-    # for dictionary-like access ['Host']
+    # for dictionary-like access ['host']
     def __getitem__(self, item):
-        self.get(item)
+        return self.get(item)
 
     def get(self, classname):
         try:

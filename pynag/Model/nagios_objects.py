@@ -159,6 +159,7 @@ class ObjectRelations(object):
         >>> hostgroup_hosts['hostgroup1'] == set(['localhost','remotehost'])
         True
         """
+        global config
         if config.get_cfg_value('use_true_regexp_matching') == "1":
             always_use_regex = True
         else:
@@ -368,6 +369,8 @@ class ObjectFetcher(object):
     @pynag.Utils.synchronized(pynag.Utils.rlock)
     def needs_reload(self):
         """ Returns true if configuration files need to be reloaded/reparsed """
+        global config
+
         if not ObjectFetcher._cached_objects:
             return True
         if config is None:
@@ -416,7 +419,7 @@ class ObjectFetcher(object):
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
-        config = config
+        global config
         if config is None or config.needs_reparse():
             self.reload_cache()
         return config.get_object_types()
@@ -652,7 +655,7 @@ class ObjectDefinition(object):
 
         :returns: filename, eg str('/etc/nagios/pynag/templates/hosts.cfg')
         """
-        config = config
+        global config
         # Invalid characters that might potentially mess with our path
         # | / ' " are all invalid. So is any whitespace
         invalid_chars = '[/\s\'\"\|]'
@@ -703,7 +706,7 @@ class ObjectDefinition(object):
                   * In case of new objects, return True
         """
 
-        config = config
+        global config
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
         number_of_changes = len(self._changes.keys())
@@ -755,7 +758,7 @@ class ObjectDefinition(object):
 
     def reload_object(self):
         """ Re-applies templates to this object (handy when you have changed the use attribute """
-        config = config
+        global config
         old_me = config.get_new_item(self.object_type, self.get_filename())
         old_me['meta']['defined_attributes'] = self._defined_attributes
         for k, v in self._defined_attributes.items():
@@ -780,7 +783,7 @@ class ObjectDefinition(object):
 
         :returns: True on success
         """
-        config = config
+        global config
         self._event(level='pre_save', message="Object definition is being rewritten")
         if self.is_new is True:
             self.save()
@@ -811,7 +814,7 @@ class ObjectDefinition(object):
             If True, look for related items and remove references to this one.
             (for example, if you delete a host, remove its name from all hostgroup.members entries)
         """
-        config = config
+        global config
         self._event(level="pre_save", message="%s '%s' will be deleted." % (self.object_type, self.get_shortname()))
         if recursive is True:
             # Recursive does not have any meaning for a generic object, this should subclassed.
@@ -988,7 +991,7 @@ class ObjectDefinition(object):
         Returns:
           (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
         """
-        config = config
+        global config
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname, host_name=host_name)
@@ -1416,6 +1419,9 @@ class Host(ObjectDefinition):
 
     def acknowledge(self, sticky=1, notify=1, persistent=0, author='pynag', comment='acknowledged by pynag',
                     recursive=False, timestamp=None):
+        
+        global config
+
         if timestamp is None:
             timestamp = int(time.time())
         if recursive is True:
@@ -2525,8 +2531,11 @@ def register_attributes(string_to_class, all_attributes):
         for attribute in attributes:
             _add_property(Object, attribute)
     
-def prepare_module_attributes(config, eventhandlers, pynag_directory):
-    config = config
-    eventhandlers = eventhandlers
-    pynag_directory = pynag_directory
+def prepare_module_attributes(cfg, evt_handlers, pynag_dir):
+
+    global config, eventhandlers, pynag_directory
+
+    config = cfg
+    eventhandlers = evt_handlers
+    pynag_directory = pynag_dir
 

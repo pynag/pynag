@@ -20,6 +20,7 @@ class ObjectFactory(object):
             self.ServiceEscalation = nagios_objects.ServiceEscalation
             self.Command = nagios_objects.Command
             self.ObjectDefinition = nagios_objects.ObjectDefinition
+            self.ObjectRelations = nagios_objects.ObjectRelations
 
     def prepare_object_module(self, config, eventhandlers, pynag_directory):
         if self.backend == 'nagios':

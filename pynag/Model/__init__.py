@@ -94,6 +94,7 @@ HostEscalation = factory.HostEscalation
 ServiceEscalation = factory.ServiceEscalation
 Command = factory.Command
 ObjectDefinition = factory.ObjectDefinition
+ObjectRelations = factory.ObjectRelations
 
 if __name__ == '__main__':
     pass
