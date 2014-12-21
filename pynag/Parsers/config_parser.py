@@ -403,7 +403,7 @@ class Config(object):
 
             >>> test_string = "define host {\\nhost_name examplehost\\n}\\n"
             >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
-            >>> c = config()
+            >>> c = Config()
             >>> result = c.parse_string(test_string)
             >>> for i in result: print i.get('host_name'), i.get('service_description', None)
             examplehost None
@@ -2011,7 +2011,7 @@ class Config(object):
 
         Example:
 
-            >>> c = config(cfg_file="/etc/nagios/nagios.cfg")
+            >>> c = Config(cfg_file="/etc/nagios/nagios.cfg")
             >>> c.abspath('nagios.cfg')
             '/etc/nagios/nagios.cfg'
             >>> c.abspath('/etc/nagios/nagios.cfg')
