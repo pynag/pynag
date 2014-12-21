@@ -332,7 +332,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         self.comm_write_to_comm_file = self.patcher1.start()
 
         # Mock socket.connect
-        self.patcher2 = patch('pynag.Parsers.socket.socket', spec=True)
+        self.patcher2 = patch('socket.socket', spec=True)
         self.livestatus_socket = self.patcher2.start()
 
         # Change to mock config directory

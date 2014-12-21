@@ -1,54 +1,16 @@
 # -*- coding: utf-8 -*-
-#
-# pynag - Python Nagios plug-in and configuration environment
-# Copyright (C) 2010 Drew Stinnet
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""This module contains low-level Parsers for nagios configuration and status objects.
+"""This package contains low-level objects and parsers.
 
-Hint: If you are looking to parse some nagios configuration data, you probably
-want pynag.Model module instead.
+If you are looking for a high-level way to parse nagios configs,
+see pynag.Model instead.
 
-The highlights of this module are:
-
-class Config: For Parsing nagios local nagios configuration files
-class Livestatus: To connect to MK-Livestatus
-class StatusDat: To read info from status.dat (not used a lot, migrate to mk-livestatus)
-class LogFiles: To read nagios log-files
-class MultiSite: To talk with multiple Livestatus instances
+Everything you see in this file is for backwards compatibility only.
+Please don't use the objects in this package directly, instead refer
+to their respective sub modules.
 """
 
-import os
-import re
-import time
-import sys
-import socket  # for mk_livestatus
-import stat
-
-import pynag.Plugins
-import pynag.Utils
-import pynag.errors
-import pynag.Parsers.errors
-
-import StringIO
-import tarfile
-
-
-# The following imports are for backwards compatibility only. See also bottom of file
-from pynag.Parsers.errors import ParserError
+from pynag.Parsers import errors
 from pynag.Parsers import livestatus
 from pynag.Parsers import multisite
 from pynag.Parsers import extra_opts
@@ -59,34 +21,42 @@ from pynag.Parsers import object_cache
 from pynag.Parsers import logs
 from pynag.Parsers import ssh_config
 
-_sentinel = object()
 
+# config_parser.py
+Config = config_parser.Config
+config = config_parser.Config
 
+# extra_opts.py
+ExtraOptsParser = extra_opts.ExtraOptsParser
+
+# errors.py
+ParserError = errors.ParserError
+
+# livestatus.py
 Livestatus = livestatus.Livestatus
 LivestatusQuery = livestatus.LivestatusQuery
 mk_livestatus = livestatus.Livestatus
-
-MultiSite = multisite.MultiSite
-
 LivestatusError = livestatus.LivestatusError
 InvalidResponseFromLivestatus = livestatus.InvalidResponseFromLivestatus
 LivestatusNotConfiguredException = livestatus.LivestatusNotConfiguredException
 
-ExtraOptsParser = extra_opts.ExtraOptsParser
+# multisite.py
+MultiSite = multisite.MultiSite
 
-Config = config_parser.Config
-config = config_parser.Config
+# logs.py
+LogFiles = logs.LogFiles
 
-
-RetentionDat = retention_dat.RetentionDat
-retention = retention_dat.RetentionDat
-
-StatusDat = status_dat.StatusDat
-status = status_dat.StatusDat
-
+# object_cache.py
 ObjectCache = object_cache.ObjectCache
 object_cache = object_cache.ObjectCache
 
-LogFiles = logs.LogFiles
+# retention_dat.py
+RetentionDat = retention_dat.RetentionDat
+retention = retention_dat.RetentionDat
 
+# ssh_config.py
 SshConfig = ssh_config.SshConfig
+
+# status_dat.py
+StatusDat = status_dat.StatusDat
+status = status_dat.StatusDat
