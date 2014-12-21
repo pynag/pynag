@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for dealing with multiple Livestatus instances at once."""
+
 from pynag.Parsers import livestatus
 from pynag.Parsers import errors
 

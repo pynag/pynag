@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for parsing Nagios 'Extra opts' files."""
+
 import os
 import sys
 

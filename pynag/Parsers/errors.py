@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+"""Module for errors shared among pynag.Parsers package."""
+
 import pynag.errors
+
 
 class ParserError(pynag.errors.PynagError):
     """ ParserError is used for errors that the Parser has when parsing config.

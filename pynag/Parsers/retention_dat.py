@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+"""Module for parsing retention.dat file."""
 
 import pynag.Parsers.main
 

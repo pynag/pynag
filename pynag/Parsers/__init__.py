@@ -6,8 +6,7 @@ If you are looking for a high-level way to parse nagios configs,
 see pynag.Model instead.
 
 Everything you see in this file is for backwards compatibility only.
-Please don't use the objects in this package directly, instead refer
-to their respective sub modules.
+
 """
 
 from pynag.Parsers import errors

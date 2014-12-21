@@ -31,7 +31,7 @@ import traceback
 import signal
 from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, reconsile_threshold
-from pynag.Parsers import ExtraOptsParser
+from pynag.Parsers import extra_opts
 import pynag.Utils
 import pynag.errors
 from pynag.Plugins import new_threshold_syntax
@@ -714,7 +714,7 @@ class PluginHelper(object):
 
         # Create an ExtraOptsParser instance and get all the values from that
         # config file
-        extra_opts = ExtraOptsParser(
+        extra_opts = extra_opts.ExtraOptsParser(
             section_name=section_name, config_file=config_file).get_values()
 
         for option in self.parser.option_list:
