@@ -20,7 +20,7 @@
 
 """
 This module provides a high level Object-Oriented wrapper
-around pynag.Parsers.config.
+around pynag.Parsers.
 
 Example:
 
@@ -45,12 +45,13 @@ import subprocess
 import time
 import getpass
 
-from pynag import Parsers
 from pynag.Model import macros
 from pynag.Model import all_attributes
 
 import pynag.Control.Command
 import pynag.errors
+import pynag.Parsers.config_parser
+import pynag.Parsers.status_dat
 import pynag.Utils
 
 
@@ -62,7 +63,7 @@ pynag_directory = None
 
 # This is the config parser that we use internally, if cfg_file is changed, then config
 # will be recreated whenever a parse is called.
-config = Parsers.config(cfg_file=cfg_file)
+config = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
 
 
 #: eventhandlers -- A list of Model.EventHandlers object.
@@ -409,14 +410,14 @@ class ObjectFetcher(object):
         global config
         # If global variable cfg_file has been changed, lets create a new ConfigParser object
         if config is None or config.cfg_file != cfg_file:
-            config = Parsers.config(cfg_file)
+            config = pynag.Parsers.config_parser.Config(cfg_file)
         if config.needs_reparse():
             config.parse()
 
         # Reset our list of how objects are related to each other
         ObjectRelations.reset()
 
-        # Fetch all objects from Parsers.config
+        # Fetch all objects from config_parser.config
         for object_type, objects in config.data.items():
             # change "all_host" to just "host"
             object_type = object_type[len("all_"):]
@@ -1730,7 +1731,7 @@ class Host(ObjectDefinition):
 
     def get_current_status(self):
         """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         host = status.get_hoststatus(self.host_name)
         return host
 
@@ -1955,7 +1956,7 @@ class Service(ObjectDefinition):
 
     def get_current_status(self):
         """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         service = status.get_servicestatus(self.host_name, service_description=self.service_description)
         return service
 

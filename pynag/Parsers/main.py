@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for parsing main configuration file (nagios.cfg)."""
+
 from pynag.Utils import paths
 
 

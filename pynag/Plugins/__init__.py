@@ -31,7 +31,7 @@ import traceback
 import signal
 from optparse import OptionParser, OptionGroup
 from pynag.Utils import PerfData, reconsile_threshold
-from pynag.Parsers import ExtraOptsParser
+from pynag.Parsers.extra_opts import ExtraOptsParser
 import pynag.Utils
 import pynag.errors
 from pynag.Plugins import new_threshold_syntax

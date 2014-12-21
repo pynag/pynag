@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for low-level parsing of nagios-style configuration files."""
+
 import os
 import re
 import sys

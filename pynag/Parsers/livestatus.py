@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for talking to MK-Livestatus sockets."""
+
 import socket
 import sys
 import time

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Module for parsing and searching for log entries."""
+
 import os
 import re
 import time

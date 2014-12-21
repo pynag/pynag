@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Experimental module for configuring remote nagios instance via ssh."""
 
 import os

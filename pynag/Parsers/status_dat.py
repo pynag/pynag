@@ -1,6 +1,8 @@
-from pynag.Parsers import retention_dat
-from pynag.Parsers import main
+# -*- coding: utf-8 -*-
+"""Module for parsing status.dat file."""
 
+import pynag.Parsers.main
+from pynag.Parsers import retention_dat
 
 class StatusDat(retention_dat.RetentionDat):
 
