@@ -20,6 +20,7 @@ import datetime
 from tests import tests_dir
 import pynag.Parsers
 import pynag.Utils.misc
+import pynag.Parsers.main
 
 
 class Config(unittest.TestCase):
@@ -538,6 +539,7 @@ class LogFiles(unittest.TestCase):
         directory = './nagios/log/archives/old'
         self.assertNotIn(directory, self.log.get_logfiles())
 
+
 class Status(unittest.TestCase):
 
     @unittest.skipIf(os.getenv('TRAVIS', None) == 'true', "Running in Travis")
@@ -614,6 +616,30 @@ class SshConfig(Config):
         i = ftp.stat('/')
         self.assertTrue(self.instance.isdir('/'))
 
+
+class MainConfigTest(unittest.TestCase):
+
+    def setUp(self):
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        cfg_file = "./nagios/nagios.cfg"
+        self.main_config = pynag.Parsers.main.MainConfig(filename=cfg_file)
+
+    def test_normal(self):
+        self.assertEqual('test.cfg', self.main_config.get('cfg_file'))
+        self.assertEqual(['test.cfg'], self.main_config.get_list('cfg_file'))
+
+    def test_parse_string_normal(self):
+        result = self.main_config._parse_string('cfg_file=test.cfg')
+        self.assertEqual([('cfg_file', 'test.cfg')], result)
+
+    def test_parse_string_empty_line(self):
+        result = self.main_config._parse_string('#empty\n\n#line')
+        self.assertEqual([], result)
+
+    def test_parse_string_skips_comments(self):
+        result = self.main_config._parse_string('# this is a comment')
+        self.assertEqual([], result)
 
 minimal_config = r"""
 define timeperiod {

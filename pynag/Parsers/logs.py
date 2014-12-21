@@ -2,7 +2,7 @@ import os
 import re
 import time
 
-import pynag.Parsers.config_parser
+import pynag.Parsers.main
 
 # TODO: Revisit this import, use Utils.state instead
 import pynag.Plugins
@@ -17,10 +17,9 @@ class LogFiles(object):
     """
 
     def __init__(self, maincfg=None):
-        self.config = pynag.Parsers.config_parser.Config(maincfg)
-
-        self.log_file = self.config.get_cfg_value('log_file')
-        self.log_archive_path = self.config.get_cfg_value('log_archive_path')
+        main_config = pynag.Parsers.main.MainConfig(maincfg)
+        self.log_file = main_config.get('log_file')
+        self.log_archive_path = main_config.get('log_archive_path')
 
     def get_log_entries(self, start_time=None, end_time=None, strict=True, search=None, **kwargs):
         """ Get Parsed log entries for given timeperiod.

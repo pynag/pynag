@@ -3,6 +3,7 @@ import sys
 import time
 
 import pynag.Parsers.errors
+import pynag.Parsers.main
 import pynag.Utils.paths
 
 # TODO remove this and raise proper exceptions
@@ -711,14 +712,13 @@ class Livestatus(object):
         self.nagios_cfg_file = nagios_cfg_file
         self.error = None
         if not livestatus_socket_path:
-            c = pynag.Parsers.Config(cfg_file=nagios_cfg_file)
-            c.parse_maincfg()
-            self.nagios_cfg_file = c.cfg_file
+            main_config = pynag.Parsers.main.MainConfig(nagios_cfg_file)
+
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
-            for k, v in c.maincfg_values:
-                if k == 'broker_module' and "livestatus.o" in v:
-                    for arg in v.split()[1:]:
+            for broker_module in main_config.get_list('broker_module'):
+                if "livestatus.o" in broker_module:
+                    for arg in broker_module.split()[1:]:
                         if arg.startswith('/') or '=' not in arg:
                             livestatus_socket_path = arg
                             break

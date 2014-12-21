@@ -1,5 +1,5 @@
 
-import pynag.Parsers.config_parser
+import pynag.Parsers.main
 
 # TODO: Raise more specific errors in this class
 from pynag.Parsers.errors import ParserError
@@ -32,10 +32,8 @@ class RetentionDat(object):
         # If filename is not provided, lets try to discover it from
         # nagios.cfg
         if filename is None:
-            c = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
-            for key, value in c._load_static_file():
-                if key == "state_retention_file":
-                    filename = value
+            main_config = pynag.Parsers.main.MainConfig(cfg_file)
+            filename = main_config.get("state_retention_file")
 
         self.filename = filename
         self.data = None

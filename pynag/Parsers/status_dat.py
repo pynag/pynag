@@ -1,6 +1,5 @@
 from pynag.Parsers import retention_dat
-# TODO: cleaner import of this module
-from pynag.Parsers import config_parser
+from pynag.Parsers import main
 
 
 class StatusDat(retention_dat.RetentionDat):
@@ -37,10 +36,8 @@ class StatusDat(retention_dat.RetentionDat):
         # If filename is not provided, lets try to discover it from
         # nagios.cfg
         if filename is None:
-            c = config_parser.Config(cfg_file=cfg_file)
-            for key, value in c._load_static_file():
-                if key == "status_file":
-                    filename = value
+            main_config = pynag.Parsers.main.MainConfig(cfg_file)
+            filename = main_config.get("status_file")
 
         self.filename = filename
         self.data = None
