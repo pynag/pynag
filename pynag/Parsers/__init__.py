@@ -2300,10 +2300,13 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nColumns: service_description\\nFilter: host_name = localhost\\n\\n'
         """
-        # `query´ here represents a *single* query, obviously.
-        # But we don't know from where it comes or if it can be trusted..
-        # If it would contains some empty line then we must filter them out:
-        self._query = [ line for line in query.splitlines() if line ]
+        self._query = []
+
+        # We purposefully strip white space, extra line breaks will
+        # be added to the query string when get_query() is called.
+        for header_line in query.strip().splitlines():
+            self.add_header_line(header_line)
+
         for header_line in args:
             self.add_header_line(header_line)
         self.add_filters(**kwargs)
@@ -2412,9 +2415,7 @@ class LivestatusQuery(object):
             >>> query.get_query()
             'GET services\\nFilter: host_name = foo\\n\\n'
         """
-        # from same reason than in __init__, we have to skip empty header:
-        if header_line:
-            self._query.append(header_line)
+        self._query.append(header_line)
 
     def add_header(self, keyword, arguments):
         """Add a new header to our livestatus query.
@@ -3151,7 +3152,7 @@ class Livestatus(object):
         # This is we actually send our query into livestatus. livestatus_response is the raw response
         # from livestatus socket (string):
         try:
-            livestatus_response = self.raw_query(livestatus_query)
+            livestatus_response = self.write(livestatus_query.get_query())
         except LivestatusError:
             time.sleep(self._RETRY_INTERVAL)
             livestatus_response = self.raw_query(livestatus_query)
