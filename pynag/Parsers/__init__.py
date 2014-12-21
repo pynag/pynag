@@ -55,18 +55,11 @@ from pynag.Parsers import extra_opts
 from pynag.Parsers import retention_dat
 from pynag.Parsers import status_dat
 from pynag.Parsers import config_parser
+from pynag.Parsers import object_cache
 
 _sentinel = object()
 
 
-class ObjectCache(config_parser.Config):
-
-    """ Loads the configuration as it appears in objects.cache file """
-
-    def get_cfg_files(self):
-        for k, v in self.maincfg_values:
-            if k == 'object_cache_file':
-                return [v]
 
 
 class LogFiles(object):
@@ -554,16 +547,6 @@ class SshConfig(config_parser.Config):
         return files
 
 
-
-class object_cache(ObjectCache):
-
-    """ This class is here only for backwards compatibility. Use ObjectCache instead. """
-
-
-
-
-
-
 Livestatus = livestatus.Livestatus
 LivestatusQuery = livestatus.LivestatusQuery
 mk_livestatus = livestatus.Livestatus
@@ -585,3 +568,6 @@ retention = retention_dat.RetentionDat
 
 StatusDat = status_dat.StatusDat
 status = status_dat.StatusDat
+
+ObjectCache = object_cache.ObjectCache
+object_cache = object_cache.ObjectCache
