@@ -40,11 +40,13 @@ import stat
 import pynag.Plugins
 import pynag.Utils
 import pynag.errors
+from pynag.Utils import paths
 
 import StringIO
 import tarfile
 
 _sentinel = object()
+
 
 class ParserError(pynag.errors.PynagError):
     """ ParserError is used for errors that the Parser has when parsing config.
@@ -163,18 +165,6 @@ class Config(object):
 
         Checked locations are as follows:
 
-        * /usr/bin/nagios
-        * /usr/sbin/nagios
-        * /usr/local/nagios/bin/nagios
-        * /nagios/bin/nagios
-        * /usr/bin/icinga
-        * /usr/sbin/icinga
-        * /usr/bin/naemon
-        * /usr/sbin/naemon
-        * /usr/local/naemon/bin/naemon.cfg
-        * /usr/bin/shinken
-        * /usr/sbin/shinken
-
         Returns:
 
             str. Path to the nagios binary
@@ -182,20 +172,7 @@ class Config(object):
             None if could not find a binary in any of those locations
         """
 
-        possible_files = ('/usr/bin/nagios',
-                          '/usr/sbin/nagios',
-                          '/usr/local/nagios/bin/nagios',
-                          '/nagios/bin/nagios',
-                          '/usr/bin/icinga',
-                          '/usr/sbin/icinga',
-                          '/usr/bin/naemon',
-                          '/usr/sbin/naemon',
-                          '/usr/local/naemon/bin/naemon.cfg',
-                          '/usr/bin/shinken',
-                          '/usr/sbin/shinken')
-
-        possible_binaries = ('nagios', 'nagios3', 'naemon', 'icinga', 'shinken')
-        for i in possible_binaries:
+        for i in paths.BINARY_NAMES:
             command = ['which', i]
             code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
             if code == 0:
@@ -211,47 +188,13 @@ class Config(object):
 
         Checked locations are as follows:
 
-        * /etc/nagios/nagios.cfg
-        * /etc/nagios3/nagios.cfg
-        * /usr/local/nagios/etc/nagios.cfg
-        * /nagios/etc/nagios/nagios.cfg
-        * ./nagios.cfg
-        * ./nagios/nagios.cfg
-        * /etc/icinga/icinga.cfg
-        * /usr/local/icinga/etc/icinga.cfg
-        * ./icinga.cfg
-        * ./icinga/icinga.cfg
-        * /etc/naemon/naemon.cfg
-        * /usr/local/naemon/etc/naemon.cfg
-        * ./naemon.cfg
-        * ./naemon/naemon.cfg
-        * /etc/shinken/shinken.cfg
-
         Returns:
 
             str. Path to the nagios.cfg or equivalent file
 
             None if couldn't find a file in any of these locations.
         """
-
-        possible_files = ('/etc/nagios/nagios.cfg',
-                          '/etc/nagios3/nagios.cfg',
-                          '/usr/local/nagios/etc/nagios.cfg',
-                          '/nagios/etc/nagios/nagios.cfg',
-                          './nagios.cfg',
-                          './nagios/nagios.cfg',
-                          '/etc/icinga/icinga.cfg',
-                          '/usr/local/icinga/etc/icinga.cfg',
-                          './icinga.cfg',
-                          './icinga/icinga.cfg',
-                          '/etc/naemon/naemon.cfg',
-                          '/usr/local/naemon/etc/naemon.cfg',
-                          './naemon.cfg',
-                          './naemon/naemon.cfg',
-                          '/etc/shinken/shinken.cfg',
-                          )
-
-        for file_path in possible_files:
+        for file_path in paths.COMMON_CONFIG_FILE_LOCATIONS:
             if self.isfile(file_path):
                 return file_path
         return None
