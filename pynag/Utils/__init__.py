@@ -39,6 +39,7 @@ class UtilsError(errors.PynagError):
 class CommandFailed(UtilsError):
     """Raised when a subprocess execution was unsuccessful."""
 
+
 class AttributeList(object):
 
     """ Parse a list of nagios attributes into a parsable format.
