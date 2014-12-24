@@ -50,9 +50,9 @@ from pynag.Model import all_attributes
 
 from .settings import cfg_file, pynag_directory, config, eventhandlers, \
                     _UNRESOLVED_MACRO, _CUSTOM_VARIABLE_PREFIX
+from .errors import ModelError, InvalidMacro
 
 import pynag.Control.Command
-import pynag.errors
 import pynag.Parsers.config_parser
 import pynag.Parsers.status_dat
 import pynag.Utils
@@ -64,13 +64,6 @@ try:
 except ImportError:
     from pynag.Utils import defaultdict
 
-
-class ModelError(pynag.errors.PynagError):
-    """Base class for errors in this module."""
-
-
-class InvalidMacro(ModelError):
-    """Raised when a method is inputted with an invalid macro."""
 
 
 class ObjectRelations(object):
