@@ -1,3 +1,39 @@
+Changes in 1.1.1 (December 26 2014)
+Bug Fixes:
+    - Fix recursive delete of host 
+    - Multiple fixes for macro resolving
+    - Fix issues when finding command file fails
+    - Multiple fixes to daemon class and sudo
+    - Fix crash when archives directory contains directories
+    - Python 2.6 compatibility
+    - Fix comment_id being used instead of downtime_id in pynag.Model
+
+New Features:
+    - New class: livestatus.LivestatusQuery
+    - New methods: Livestatus.write() and livestatus.raw_query()
+    - Livestatus now retries on socket errors
+    - New module Utils.state
+    - New module Parsers.main
+
+Refactor:
+    - Perfdata moved to Utils.metrics
+    - GitRepo moved to Utils.git
+    - PynagError moved to pynag.errors
+    - send_nsca moved to Utils.nsca
+    - synchronized moved to Utils.decorators
+    - cache_only moved to Utils.decorators
+    - reconsile_threshold moved to Utils.metrics
+    - check_threshold moved to Plugins.classic_threshold_syntax
+    - check_range moved to Plugins.classic_threshold_syntax
+    - Livestatus moved to Parsers.livestatus
+    - Config moved to Parsers.config_parser
+    - SshConfig moved to Parsers.ssh_config
+    - StatusDat moved to Parsers.status_dat
+    - RetentionDat moved to Parsers.retention_dat 
+    - ObjectCache moved to Parsers.object_cache
+    - ExtraOptsParser moved to Parsers.extra_opts
+    - LogFiles moved to Parsers.logs
+
 Changes in 0.9.1 (August 5 2014)
 Bug Fixes:
     - Fixes file_time bug in Utils.CheckResult
