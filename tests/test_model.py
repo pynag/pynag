@@ -14,7 +14,9 @@ import time
 
 import pynag.Model
 import pynag.Model.EventHandlers
+import pynag.Model.errors
 import pynag.Utils.misc
+
 from tests import tests_dir
 
 os.chdir(tests_dir)
@@ -52,11 +54,11 @@ class TestMacroResolving(unittest.TestCase):
         self.assertEqual('', self.macroservice._get_custom_variable_macro('$_SERVICE_DOES_NOT_EXIST$'))
 
     def test_get_custom_variable_macro_raises_on_invalid_macro(self):
-        with self.assertRaises(pynag.Model.InvalidMacro):
+        with self.assertRaises(pynag.Model.errors.InvalidMacro):
             self.macroservice._get_custom_variable_macro('$_TEST')
 
     def test_get_custom_variable_macro_raises_on_invalid_object_type(self):
-        with self.assertRaises(pynag.Model.InvalidMacro):
+        with self.assertRaises(pynag.Model.errors.InvalidMacro):
             self.macroservice._get_custom_variable_macro('$_HOST_MACRO1$')
 
     # Tests for Service._get_service_macro()

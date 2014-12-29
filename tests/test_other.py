@@ -46,8 +46,8 @@ class testDatasetParsing(unittest.TestCase):
 
         for directory in test_dirs:
             os.chdir(directory)
-            pynag.Model.cfg_file = "./nagios/nagios.cfg"
-            pynag.Model.config = None
+            pynag.Model.settings.cfg_file = "./nagios/nagios.cfg"
+            pynag.Model.settings.config = None
             actualOutput = ''
             for i in pynag.Model.ObjectDefinition.objects.all:
                 actualOutput += str(i)

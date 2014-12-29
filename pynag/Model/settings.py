@@ -1,3 +1,4 @@
+import pynag.Utils
 import pynag.Parsers.config_parser
 
 # Path To Nagios configuration file
@@ -24,4 +25,7 @@ _UNRESOLVED_MACRO = ''
 # We know that a macro is a custom variable macro if the name
 # of the macro starts with this prefix:
 _CUSTOM_VARIABLE_PREFIX = '_'
+
+# Attributelist is put here for backwards compatibility
+AttributeList = pynag.Utils.AttributeList
 

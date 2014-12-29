@@ -67,11 +67,11 @@ class FakeNagiosEnvironment(object):
     def update_model(self):
         """ Update the global variables in pynag.Model to point to our config """
         self.original_objects_dir = pynag.Model.pynag_directory
-        self.original_cfg_file = pynag.Model.cfg_file
-        self.original_config = pynag.Model.config
+        self.original_cfg_file = pynag.Model.settings.cfg_file
+        self.original_config = pynag.Model.settings.config
 
-        pynag.Model.config = self.get_config()
-        pynag.Model.cfg_file = self.config.cfg_file
+        pynag.Model.settings.config = self.get_config()
+        pynag.Model.settings.cfg_file = self.config.cfg_file
         pynag.Model.pynag_directory = self.objects_dir
         pynag.Model.eventhandlers = []
 
@@ -94,8 +94,8 @@ class FakeNagiosEnvironment(object):
 
     def restore_model(self):
         """ Restores the global variables in pynag.Model """
-        pynag.Model.config = self.original_config
-        pynag.Model.cfg_file = self.original_cfg_file
+        pynag.Model.settings.config = self.original_config
+        pynag.Model.settings.cfg_file = self.original_cfg_file
         pynag.Model.pynag_directory = self.original_objects_dir
         self._model_is_dirty = False
 

@@ -26,7 +26,7 @@ import pprint
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
-from pynag.Model import cfg_file
+import pynag.Model.settings
 from pynag import __version__
 
 debug = False
@@ -112,7 +112,7 @@ def execute_check_command():
     """ Execute a host or service check_command """
     parser.usage = '''%prog execute <host_name> [service_description]'''
     (opts,args) = parser.parse_args(sys.argv[2:])
-    pynag.Model.cfg_file = opts.cfg_file
+    pynag.Model.settings.cfg_file = opts.cfg_file
     try:
         if len(args) == 0:
             parser.error("You need to provide at least one argument to execute")

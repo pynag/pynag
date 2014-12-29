@@ -23,8 +23,8 @@ class testUtils(unittest.TestCase):
         # testdata01
         os.chdir(tests_dir)
         os.chdir('dataset01')
-        pynag.Model.config = None
-        pynag.Model.cfg_file = './nagios/nagios.cfg'
+        pynag.Model.settings.config = None
+        pynag.Model.settings.cfg_file = './nagios/nagios.cfg'
         pynag.Model.ObjectDefinition.objects.get_all()
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
         os.environ['LANG'] = 'en_US@UTF8'
@@ -378,20 +378,20 @@ class testFakeNagiosEnvironment(unittest.TestCase):
     def testModelUpdates(self):
         """ Test backup and restores of Model global variables """
         nagios = self.environment
-        original_config = pynag.Model.config
-        original_cfg_file = pynag.Model.cfg_file
+        original_config = pynag.Model.settings.config
+        original_cfg_file = pynag.Model.settings.cfg_file
         original_dir = pynag.Model.pynag_directory
 
         # Update model, and check if updates succeeded
         nagios.update_model()
-        self.assertEqual(pynag.Model.config, nagios.config)
-        self.assertEqual(pynag.Model.cfg_file, nagios.config.cfg_file)
+        self.assertEqual(pynag.Model.settings.config, nagios.config)
+        self.assertEqual(pynag.Model.settings.cfg_file, nagios.config.cfg_file)
         self.assertEqual(pynag.Model.pynag_directory, nagios.objects_dir)
 
         # See if we can restore our model
         nagios.restore_model()
-        self.assertEqual(pynag.Model.config, original_config)
-        self.assertEqual(pynag.Model.cfg_file, original_cfg_file)
+        self.assertEqual(pynag.Model.settings.config, original_config)
+        self.assertEqual(pynag.Model.settings.cfg_file, original_cfg_file)
         self.assertEqual(pynag.Model.pynag_directory, original_dir)
 
     def testStartStop(self):
