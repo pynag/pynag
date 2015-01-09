@@ -43,8 +43,7 @@ localhost
 from . import macros
 from . import settings
 
-from .settings import pynag_directory, eventhandlers, \
-        _UNRESOLVED_MACRO, _CUSTOM_VARIABLE_PREFIX
+from .settings import _UNRESOLVED_MACRO, _CUSTOM_VARIABLE_PREFIX
 from .nagios_objects import ObjectRelations, ObjectFetcher, ObjectDefinition, \
         Host, Service, Command, Contact, ServiceDependency, HostDependency, \
         HostEscalation, ServiceEscalation, Contactgroup, Hostgroup, \

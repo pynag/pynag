@@ -6,7 +6,6 @@ pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
 import unittest2 as unittest
-import os
 import string
 import random
 import mock
@@ -275,6 +274,7 @@ class Model(unittest.TestCase):
         """
         old = "host1"
         new = "host2"
+
         host = pynag.Model.Host(host_name=old)
         host.save()
 
@@ -404,9 +404,9 @@ class Model(unittest.TestCase):
         s3.service_description = 'Service with Generic Name'
         s3.name = 'generic-test-service'
 
-        s1_expected = '%s/services/Servicewithouthost_name.cfg' % pynag.Model.pynag_directory
-        s2_expected = '%s/services/Servicewithhost_name.cfg' % pynag.Model.pynag_directory
-        s3_expected = '%s/services/generic-test-service.cfg' % pynag.Model.pynag_directory
+        s1_expected = '%s/services/Servicewithouthost_name.cfg' % pynag.Model.settings.pynag_directory
+        s2_expected = '%s/services/Servicewithhost_name.cfg' % pynag.Model.settings.pynag_directory
+        s3_expected = '%s/services/generic-test-service.cfg' % pynag.Model.settings.pynag_directory
 
         self.assertEqual(s1_expected, s1.get_suggested_filename())
         self.assertEqual(s2_expected, s2.get_suggested_filename())
@@ -432,7 +432,7 @@ class Model(unittest.TestCase):
 
         # Save a new object, this time lets specify a filename for it
         host = pynag.Model.Host(host_name=hostname2)
-        dest_file = "%s/newhost2.cfg" % pynag.Model.pynag_directory
+        dest_file = "%s/newhost2.cfg" % pynag.Model.settings.pynag_directory
         host.set_filename(dest_file)
         host.save()
         hostlist2 = pynag.Model.Host.objects.filter(host_name=hostname2)
@@ -484,8 +484,8 @@ class Model(unittest.TestCase):
     def test_move_object(self):
         """ Test ObjectDefinition.move() """
 
-        file1 = pynag.Model.pynag_directory + "/file1.cfg"
-        file2 = pynag.Model.pynag_directory + "/file2.cfg"
+        file1 = pynag.Model.settings.pynag_directory + "/file1.cfg"
+        file2 = pynag.Model.settings.pynag_directory + "/file2.cfg"
         host_name = "movable_host"
         new_object = pynag.Model.Host(host_name=host_name)
         new_object.set_filename(file1)
@@ -1157,7 +1157,7 @@ class EventHandlersTest(unittest.TestCase):
         self.environment.update_model()
 
         self.mock_eventhandler = mock.create_autospec(pynag.Model.EventHandlers.BaseEventHandler, autospec=True)
-        pynag.Model.eventhandlers = [self.mock_eventhandler]
+        pynag.Model.settings.eventhandlers = [self.mock_eventhandler]
 
     def tearDown(self):
         self.environment.terminate()

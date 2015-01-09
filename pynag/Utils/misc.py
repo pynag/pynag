@@ -66,14 +66,14 @@ class FakeNagiosEnvironment(object):
 
     def update_model(self):
         """ Update the global variables in pynag.Model to point to our config """
-        self.original_objects_dir = pynag.Model.pynag_directory
+        self.original_objects_dir = pynag.Model.settings.pynag_directory
         self.original_cfg_file = pynag.Model.settings.cfg_file
         self.original_config = pynag.Model.settings.config
 
         pynag.Model.settings.config = self.get_config()
         pynag.Model.settings.cfg_file = self.config.cfg_file
-        pynag.Model.pynag_directory = self.objects_dir
-        pynag.Model.eventhandlers = []
+        pynag.Model.settings.pynag_directory = self.objects_dir
+        pynag.Model.settings.eventhandlers = []
 
         self._model_is_dirty = True
 
@@ -87,7 +87,8 @@ class FakeNagiosEnvironment(object):
             if filename.startswith(self.tempdir):
                 return func(filename, *args, **kwargs)
             else:
-                raise SandboxError("FakeNagiosEnvironment tried to open file outside its sandbox: %s" % (filename, ))
+                print "FakeNagiosEnvironment tried to open file outside its sandbox: %s, %s" % (filename, self.tempdir )
+                raise SandboxError("FakeNagiosEnvironment tried to open file outside its sandbox: %s, %s" % (filename, self.tempdir ))
         wrap.__name__ = func.__name__
         wrap.__module__ = func.__module__
         return wrap
@@ -96,16 +97,16 @@ class FakeNagiosEnvironment(object):
         """ Restores the global variables in pynag.Model """
         pynag.Model.settings.config = self.original_config
         pynag.Model.settings.cfg_file = self.original_cfg_file
-        pynag.Model.pynag_directory = self.original_objects_dir
+        pynag.Model.settings.pynag_directory = self.original_objects_dir
         self._model_is_dirty = False
 
     def create_minimal_environment(self):
         """ Starts a nagios server with empty config in an isolated environment """
         t = self.tempdir
-        cfg_file = self.cfg_file = os.path.join(t, "nagios.cfg")
+        pynag.Model.settings.cfg_file = cfg_file = self.cfg_file = os.path.join(t, "nagios.cfg")
         open(cfg_file, 'w').write('')
 
-        objects_dir = self.objects_dir = os.path.join(t, "conf.d")
+        objects_dir = self.objects_dir = os.path.join(t, "pynag")
         os.mkdir(objects_dir)
 
         check_result_path = os.path.join(self.tempdir, 'checkresults')
@@ -119,7 +120,7 @@ class FakeNagiosEnvironment(object):
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
 
-        config = self.config = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
+        pynag.Model.settings.config = config = self.config = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
         self.config.open = self.open_decorator(self.config.open)
         config.parse()
         config._edit_static_file(attribute='log_archive_path',

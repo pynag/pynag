@@ -380,19 +380,19 @@ class testFakeNagiosEnvironment(unittest.TestCase):
         nagios = self.environment
         original_config = pynag.Model.settings.config
         original_cfg_file = pynag.Model.settings.cfg_file
-        original_dir = pynag.Model.pynag_directory
+        original_dir = pynag.Model.settings.pynag_directory
 
         # Update model, and check if updates succeeded
         nagios.update_model()
         self.assertEqual(pynag.Model.settings.config, nagios.config)
         self.assertEqual(pynag.Model.settings.cfg_file, nagios.config.cfg_file)
-        self.assertEqual(pynag.Model.pynag_directory, nagios.objects_dir)
+        self.assertEqual(pynag.Model.settings.pynag_directory, nagios.objects_dir)
 
         # See if we can restore our model
         nagios.restore_model()
         self.assertEqual(pynag.Model.settings.config, original_config)
         self.assertEqual(pynag.Model.settings.cfg_file, original_cfg_file)
-        self.assertEqual(pynag.Model.pynag_directory, original_dir)
+        self.assertEqual(pynag.Model.settings.pynag_directory, original_dir)
 
     def testStartStop(self):
         """ Try to start and stop our nagios environment  """

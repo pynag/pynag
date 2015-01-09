@@ -74,7 +74,7 @@ def load_tests(loader=None, tests=None, pattern=None):
 def set_up_for_doc_tests(test_case):
     """For doctests that require a valid config to function, we point them to dataset01."""
     os.chdir(os.path.join(tests_dir, 'dataset01'))
-    pynag.Model.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
+    pynag.Model.settings.config = pynag.Parsers.config(cfg_file="./nagios/nagios.cfg")
 
 if __name__ == "__main__":
     unittest2.main()

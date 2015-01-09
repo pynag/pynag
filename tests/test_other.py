@@ -28,7 +28,7 @@ class testDatasetParsing(unittest.TestCase):
         os.chdir(tests_dir)
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
         # os.mkdir(self.tmp_dir)
-        pynag.Model.pynag_directory = self.tmp_dir
+        pynag.Model.settings.pynag_directory = self.tmp_dir
 
     def tearDown(self):
         """ Clean up after test suite has finished
@@ -69,7 +69,7 @@ class testsFromCommandLine(unittest.TestCase):
 
     def tearDown(self):
         # Check if any configuration changed while we were running tests:
-        self.assertEqual(False, pynag.Model.config.needs_reparse(), "Seems like nagios configuration changed while running the unittests. Some of the tests might have made changes!")
+        self.assertEqual(False, pynag.Model.settings.config.needs_reparse(), "Seems like nagios configuration changed while running the unittests. Some of the tests might have made changes!")
 
     def testCommandPluginTest(self):
         """ Run Tommi's plugintest script to test pynag plugin threshold parameters

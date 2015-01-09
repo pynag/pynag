@@ -659,7 +659,7 @@ class ObjectDefinition(object):
         object_type = re.sub(invalid_chars, '', self.object_type)
         description = re.sub(invalid_chars, '', self.get_description())
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
-        global pynag_directory
+        pynag_directory = settings.pynag_directory
         if pynag_directory is None:
             from os.path import dirname
             pynag_directory = dirname(settings.config.cfg_file) + "/pynag"
@@ -1431,7 +1431,7 @@ class ObjectDefinition(object):
 
     def _event(self, level=None, message=None):
         """ Pass informational message about something that has happened within the Model """
-        for i in eventhandlers:
+        for i in settings.eventhandlers:
             if level == 'write':
                 i.write(object_definition=self, message=message)
             elif level == 'save':
