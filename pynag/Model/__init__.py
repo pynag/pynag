@@ -24,7 +24,7 @@ around pynag.Parsers.
 
 Example:
 
->>> from pynag.Model import Service, Host
+>>> import pynag.Model
 >>>
 >>> all_services = pynag.Model.Service.objects.all
 >>> my_service = all_services[0]
