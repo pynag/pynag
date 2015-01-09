@@ -463,7 +463,7 @@ class ObjectDefinition(object):
     Holds one instance of one particular Object definition
 
     Example:
-         >>> objects = ObjectDefinition.objects.all
+         >>> objects = pynag.Model.ObjectDefinition.objects.all
          >>> my_object = ObjectDefinition( dict ) # doctest: +SKIP
     """
     object_type = None

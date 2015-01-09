@@ -26,13 +26,13 @@ Example:
 
 >>> from pynag.Model import Service, Host
 >>>
->>> all_services = Service.objects.all
+>>> all_services = pynag.Model.Service.objects.all
 >>> my_service = all_services[0]
 >>> print my_service.host_name # doctest: +SKIP
 localhost
 >>>
->>> example_host = Host.objects.filter(host_name="host.example.com")
->>> canadian_hosts = Host.objects.filter(host_name__endswith=".ca")
+>>> example_host = pynag.Model.Host.objects.filter(host_name="host.example.com")
+>>> canadian_hosts = pynag.Model.Host.objects.filter(host_name__endswith=".ca")
 >>>
 >>> for i in canadian_hosts:
 ...     i.alias = "this host is located in Canada"
