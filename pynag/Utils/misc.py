@@ -87,7 +87,6 @@ class FakeNagiosEnvironment(object):
             if filename.startswith(self.tempdir):
                 return func(filename, *args, **kwargs)
             else:
-                print "FakeNagiosEnvironment tried to open file outside its sandbox: %s, %s" % (filename, self.tempdir )
                 raise SandboxError("FakeNagiosEnvironment tried to open file outside its sandbox: %s, %s" % (filename, self.tempdir ))
         wrap.__name__ = func.__name__
         wrap.__module__ = func.__module__
