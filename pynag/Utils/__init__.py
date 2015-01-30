@@ -520,14 +520,24 @@ def grep_to_livestatus(*args, **kwargs):
         ['Filter: service_description != serv']
         >>> grep_to_livestatus(service_description__contains=['serv','check'])
         ['Filter: service_description ~ serv']
+        >>> grep_to_livestatus(service_description__notcontains=['serv','check'])
+        ['Filter: service_description !~ serv']
         >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
         ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
         >>> grep_to_livestatus(service_description__has_field='foo')
         ['Filter: service_description >= foo']
         >>> grep_to_livestatus(service_description__startswith='foo')
         ['Filter: service_description ~ ^foo']
+        >>> grep_to_livestatus(service_description__notstartswith='foo')
+        ['Filter: service_description !~ ^foo']
         >>> grep_to_livestatus(service_description__endswith='foo')
         ['Filter: service_description ~ foo$']
+        >>> grep_to_livestatus(service_description__notendswith='foo')
+        ['Filter: service_description !~ foo$']
+        >>> grep_to_livestatus(service_description__exists='unnecessary_arg')
+        ['Filter: service_description ~~ .*']
+        >>> grep_to_livestatus(service_description__regex='^abc$')
+        ['Filter: service_description ~ ^abc$']
 
     """
 
@@ -538,6 +548,9 @@ def grep_to_livestatus(*args, **kwargs):
         if k.endswith('__contains'):
             k = k[:-len('__contains')]
             my_string = "Filter: %s ~ %s" % (k, v)
+        elif k.endswith('__notcontains'):
+            k = k[:-len('__notcontains')]
+            my_string = "Filter: %s !~ %s" % (k, v)
         elif k.endswith('__has_field'):
             k = k[:-len('__has_field')]
             my_string = "Filter: %s >= %s" % (k, v)
@@ -547,9 +560,21 @@ def grep_to_livestatus(*args, **kwargs):
         elif k.endswith('__startswith'):
             k = k[:-len('__startswith')]
             my_string = "Filter: %s ~ ^%s" % (k, v)
+        elif k.endswith('__notstartswith'):
+            k = k[:-len('__notstartswith')]
+            my_string = "Filter: %s !~ ^%s" % (k, v)
         elif k.endswith('__endswith'):
             k = k[:-len('__endswith')]
             my_string = "Filter: %s ~ %s$" % (k, v)
+        elif k.endswith('__notendswith'):
+            k = k[:-len('__notendswith')]
+            my_string = "Filter: %s !~ %s$" % (k, v)
+        elif k.endswith('__exists'):
+            k = k[:-len('__exists')]
+            my_string = "Filter: %s ~~ .*" % k
+        elif k.endswith('__regex'):
+            k = k[:-len('__regex')]
+            my_string = "Filter: %s ~ %s" % (k, v)
         elif k == 'WaitObject':
             my_string = "WaitObject: %s" % (v,)
         elif k == 'WaitCondition':
@@ -564,6 +589,7 @@ def grep_to_livestatus(*args, **kwargs):
             my_string = "Filter: %s" % (v,)
         else:
             my_string = "Filter: %s = %s" % (k, v)
+
         result.append(my_string)
     return result
 
