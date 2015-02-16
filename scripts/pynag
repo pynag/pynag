@@ -23,6 +23,7 @@ import sys
 import traceback
 from optparse import OptionParser,OptionGroup
 import pprint
+import urllib
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
@@ -294,6 +295,8 @@ def list_objects():
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
+    parser.add_option("--printraw", dest="print_raw", action='store_true', default=False,
+                      help="Print all attributes of object in k=v format, values are urlquoted")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
@@ -307,6 +310,8 @@ def list_objects():
     if opts.print_definition:
         for i in objects:
             print i
+    elif opts.print_raw:
+        print_raw(objects=objects)
     else:
         pretty_print(objects=objects,attributes=attributes)
 
@@ -690,6 +695,19 @@ def pretty_print(objects, attributes=None):
         pre = "-"*10
         post = "-"*(80-10-len(message))
         print pre + message + post
+
+def print_raw(objects):
+    for obj in objects:
+        obj_attributes = []
+        for attribute, value in obj.items():
+            # Don't print pynag internal attributes
+            # or attributes with no value
+            if attribute in ["meta", "id"]:
+                continue
+            if not value:
+                continue
+            obj_attributes.append("{attribute}={value}".format(attribute=attribute, value=urllib.quote(value)))
+        print parser.values.seperator.join(obj_attributes)
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once
