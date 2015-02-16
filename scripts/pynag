@@ -697,6 +697,10 @@ def pretty_print(objects, attributes=None):
         print pre + message + post
 
 def print_raw(objects):
+    # If no column seperator was specified, use emptystring
+    if parser.values.seperator is None:
+        parser.values.seperator = ' '
+
     for obj in objects:
         obj_attributes = []
         for attribute, value in obj.items():
