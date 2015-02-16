@@ -24,6 +24,7 @@ import traceback
 from optparse import OptionParser,OptionGroup
 import pprint
 import urllib
+import json
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
@@ -295,8 +296,10 @@ def list_objects():
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
-    parser.add_option("--printraw", dest="print_raw", action='store_true', default=False,
-                      help="Print all attributes of object in k=v format, values are urlquoted")
+    parser.add_option("--printkv", dest="print_kv", action='store_true', default=False,
+                      help="Print all Nagios attributes of objects in k=v format, values are urlquoted")
+    parser.add_option("--printjson", dest="print_json", action='store_true', default=False,
+                      help="Print all Nagios attributes of objects in json format")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
@@ -310,8 +313,10 @@ def list_objects():
     if opts.print_definition:
         for i in objects:
             print i
-    elif opts.print_raw:
-        print_raw(objects=objects)
+    elif opts.print_kv:
+        print_kv(objects=objects)
+    elif opts.print_json:
+        print_json(objects=objects)
     else:
         pretty_print(objects=objects,attributes=attributes)
 
@@ -696,26 +701,44 @@ def pretty_print(objects, attributes=None):
         post = "-"*(80-10-len(message))
         print pre + message + post
 
-def print_raw(objects):
+def get_nagios_attributes(obj):
+    obj_attributes = {}
+    for attribute, value in obj.items():
+        # Don't return pynag internal attributes
+        # except the object type
+        if attribute == "id":
+            continue
+        if attribute == "meta":
+            obj_attributes["object_type"] = value
+            continue
+        # or attributes with no value
+        if not value:
+            continue
+        obj_attributes[attribute] = value
+    return obj_attributes
+
+def print_kv(objects):
     # If no column seperator was specified, use emptystring
     if parser.values.seperator is None:
         parser.values.seperator = ' '
 
     for obj in objects:
-        obj_attributes = []
-        for attribute, value in obj.items():
-            # Don't print pynag internal attributes
-            # except the object type
-            if attribute == "id":
-                continue
-            if attribute == "meta":
-                obj_attributes.append("object_type={value}".format(value=urllib.quote(value['object_type'])))
-                continue
-            # or attributes with no value
-            if not value:
-                continue
-            obj_attributes.append("{attribute}={value}".format(attribute=attribute, value=urllib.quote(value)))
-        print parser.values.seperator.join(obj_attributes)
+        obj_attributes = get_nagios_attributes(obj)
+        attribute_kv = ["{attribute}={value}".format(attribute=attribute, value=urllib.quote(value))
+                for attribute, value in obj_attributes.iteritems()]
+        print parser.values.seperator.join(attribute_kv)
+
+def print_json(objects):
+    # If no column seperator was specified, use emptystring
+    if parser.values.seperator is None:
+        parser.values.seperator = ' '
+
+    all_objects = []
+    for obj in objects:
+        obj_attributes = get_nagios_attributes(obj)
+        all_objects.append(obj_attributes)
+
+    print json.dumps(all_objects)
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once
