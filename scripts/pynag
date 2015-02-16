@@ -709,7 +709,7 @@ def get_nagios_attributes(obj):
         if attribute == "id":
             continue
         if attribute == "meta":
-            obj_attributes["object_type"] = value
+            obj_attributes["object_type"] = value['object_type']
             continue
         # or attributes with no value
         if not value:
