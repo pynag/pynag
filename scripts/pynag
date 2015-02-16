@@ -705,9 +705,13 @@ def print_raw(objects):
         obj_attributes = []
         for attribute, value in obj.items():
             # Don't print pynag internal attributes
-            # or attributes with no value
-            if attribute in ["meta", "id"]:
+            # except the object type
+            if attribute == "id":
                 continue
+            if attribute == "meta":
+                obj_attributes.append("object_type={value}".format(value=urllib.quote(value['object_type'])))
+                continue
+            # or attributes with no value
             if not value:
                 continue
             obj_attributes.append("{attribute}={value}".format(attribute=attribute, value=urllib.quote(value)))
