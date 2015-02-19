@@ -47,6 +47,7 @@ import getpass
 
 from pynag.Model import macros
 from pynag.Model import all_attributes
+from pynag.Utils import paths
 
 import pynag.Control.Command
 import pynag.errors
@@ -730,14 +731,17 @@ class ObjectDefinition(object):
         invalid_chars = '[/\s\'\"\|]'
         object_type = re.sub(invalid_chars, '', self.object_type)
         description = re.sub(invalid_chars, '', self.get_description())
+
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
-        global pynag_directory
-        if pynag_directory is None:
-            from os.path import dirname
-            pynag_directory = dirname(config.cfg_file) + "/pynag"
+        if pynag_directory:
+            destination_directory = pynag_directory
+        else:
+            main_config = config.cfg_file or paths.find_main_configuration_file()
+            main_config = os.path.abspath(main_config)
+            destination_directory = os.path.dirname(main_config)
 
         # By default assume this is the filename
-        path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
+        path = "%s/%ss/%s.cfg" % (destination_directory, object_type, description)
 
         # Services go to same file as their host
         if object_type == "service" and self.get('host_name'):
