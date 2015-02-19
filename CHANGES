@@ -1,4 +1,4 @@
-Changes in 1.1.1 (December 26 2014)
+Changes in 1.1.1 (unreleased)
 Bug Fixes:
     - Fix recursive delete of host 
     - Multiple fixes for macro resolving
