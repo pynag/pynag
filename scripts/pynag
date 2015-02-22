@@ -23,7 +23,6 @@ import sys
 import traceback
 from optparse import OptionParser,OptionGroup
 import pprint
-import urllib
 import json
 import pynag.Model
 import pynag.Parsers
