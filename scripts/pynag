@@ -23,6 +23,7 @@ import sys
 import traceback
 from optparse import OptionParser,OptionGroup
 import pprint
+import json
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
@@ -294,6 +295,8 @@ def list_objects():
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
+    parser.add_option("--json", dest="json", action='store_true', default=False,
+                      help="Print all attributes of objects in json format")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
@@ -307,6 +310,8 @@ def list_objects():
     if opts.print_definition:
         for i in objects:
             print i
+    elif opts.json:
+        print_json(objects=objects)
     else:
         pretty_print(objects=objects,attributes=attributes)
 
@@ -690,6 +695,27 @@ def pretty_print(objects, attributes=None):
         pre = "-"*10
         post = "-"*(80-10-len(message))
         print pre + message + post
+
+def get_object_attributes(obj):
+    obj_attributes = {}
+    for attribute, value in obj.items():
+        # Don't return attributes with no value
+        if value is None:
+            continue
+        obj_attributes[attribute] = value
+    return obj_attributes
+
+def print_json(objects):
+    # If no column seperator was specified, use emptystring
+    if parser.values.seperator is None:
+        parser.values.seperator = ' '
+
+    all_objects = []
+    for obj in objects:
+        obj_attributes = get_object_attributes(obj)
+        all_objects.append(obj_attributes)
+
+    print json.dumps(all_objects, indent=4)
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once
