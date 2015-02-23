@@ -87,6 +87,7 @@ class testsFromCommandLine(unittest.TestCase):
         ok_commands = [
             "%s list" % pynag_script,
             "%s list where host_name=localhost and object_type=host" % pynag_script,
+            "%s list where host_name=localhost and object_type=host --json --debug" % pynag_script,
             "%s update where nonexistantfield=test set nonexistentfield=pynag_unit_testing" % pynag_script,
             "%s config --get cfg_dir" % pynag_script,
         ]
