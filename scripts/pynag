@@ -753,23 +753,22 @@ def parse_configfile():
 examples = {}
 
 examples['list'] = '''
-  # %prog list host_name address WHERE object_type=host"
-  # %prog list host_name service_description WHERE host_name=examplehost and object_type=service"
+  # %prog list host_name address WHERE object_type=host
+  # %prog list host_name service_description WHERE host_name=examplehost and object_type=service
 '''
 examples['update'] = '''
-  # %prog update SET host_name=newhostname WHERE host_name=oldhostname"
-  # %prog update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
-
-  # %prog update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host"
+  # %prog update SET host_name=newhostname WHERE host_name=oldhostname
+  # %prog update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host
+  # %prog update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host
 '''
 examples['copy'] = '''
-  # %prog copy SET host_name=newhostname WHERE  host_name=oldhostname"
-  # %prog copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
-  # %prog copy SET name=template-host register=0 UNSET address host_name WHERE host_name='examplehost.example.com' and object_type=host"
+  # %prog copy SET host_name=newhostname WHERE  host_name=oldhostname
+  # %prog copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host
+  # %prog copy SET name=template-host register=0 UNSET address host_name WHERE host_name='examplehost.example.com' and object_type=host
 '''
 examples['add'] = '''
-  # %prog add host host_name=examplehost use=generic-host address=127.0.0.1"
-  # %prog add service service_description="Test Service" use="check_nrpe" host_name="localhost"
+  # %prog add host host_name=examplehost use=generic-host address=127.0.0.1
+  # %prog add service service_description="Test Service" use="check_nrpe" host_name=localhost
 '''
 examples['delete'] = '''
   # %prog delete where object_type=service and host_name='mydeprecated_host'
