@@ -137,6 +137,7 @@ update examples
 ^^^^^^^^^^^^^^^
 | pynag update SET host_name=newhostname WHERE host_name=oldhostname
 | pynag update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host
+| pynag update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host
 
 copy examples
 ^^^^^^^^^^^^^
