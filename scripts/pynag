@@ -355,6 +355,10 @@ def add_object():
                       help="Write to this specific file")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+
+    if opts.examples == True:
+        return print_examples()
+
     if len(args) == 0:
         parser.error("You need to specify object_type and attributes for add")
     attributes = {}
@@ -521,6 +525,10 @@ def copy_object():
     parser.add_option("--recursive", dest="recursive", action="store_true",
         default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
+
+    if opts.examples == True:
+        return print_examples()
+
     pynag.Model.cfg_file = opts.cfg_file
     set = {} # dict of which attributes to change
     attributes,where_statement=split_where_and_set(args)
@@ -621,6 +629,10 @@ def update_objects():
                       default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+
+    if opts.examples == True:
+        return print_examples()
+
     set = {}
     attributes,where_statement=split_where_and_set(args)
     if len(where_statement) == 0:
