@@ -526,6 +526,31 @@ class Model(unittest.TestCase):
         host_names = map(lambda x: x.name, hosts)
         self.assertEqual(expected_result, host_names)
 
+    def test_additive_inheritance_contactgroup(self):
+
+        cfg_file = os.path.join(tests_dir, 'testconfigs/additive-inheritance-contactgroups.cfg')
+        self.environment.import_config(cfg_file)
+
+        h = pynag.Model.Host.objects.get_by_name('myhost1')
+        expected_result = ['admins', 'mytestgroup1']
+        contactgroups = h.get_effective_contact_groups()
+
+        contactgroup_names = map(lambda x: x.contactgroup_name, contactgroups)
+        self.assertEqual(expected_result, contactgroup_names)
+
+    def test_additive_inheritance_hostgroups(self):
+        cfg_file = os.path.join(tests_dir, 'testconfigs/additive-inheritance-hostgroups.cfg')
+        self.environment.import_config(cfg_file)
+
+        #print pynag.Utils.AttributeList(pynag.Model.Host.objects.get_by_name('my-server'))
+
+        h = pynag.Model.Host.objects.get_by_shortname('myhost')
+        expected_result = ['my-web-node', 'myproject', 'mytestgroup']
+        hostgroups = h.get_effective_hostgroups()
+
+        hostgroup_names = map(lambda x: x.hostgroup_name, hostgroups)
+        self.assertEqual(expected_result, hostgroup_names)
+
     def test_hostgroup_with_regex_members(self):
         """ Test parsing a hostgroup with regex members. """
         cfg_file = os.path.join(tests_dir, 'testconfigs/hostgroup.with.wildcards.cfg')
