@@ -84,7 +84,7 @@ def send_command(command_id, command_file=None, timestamp=0, *args):
 
     """
     if not timestamp or timestamp == 0:
-        timestamp = time.time()
+        timestamp = int(time.time())
     command_arguments = map(str, args)
     command_arguments = ";".join(command_arguments)
     command_string = "[%s] %s;%s" % (timestamp, command_id, command_arguments)
