@@ -27,6 +27,7 @@ class testUtils(unittest.TestCase):
         pynag.Model.cfg_file = './nagios/nagios.cfg'
         pynag.Model.ObjectDefinition.objects.get_all()
         self.tmp_dir = tempfile.mkdtemp()  # Will be deleted after test runs
+        os.environ['LANG'] = 'en_US@UTF8'
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
@@ -340,7 +341,7 @@ class testUtils(unittest.TestCase):
         # code somewhere
         try:
             pynag.Utils.send_nsca(code=0, message="test", nscahost="localhost")
-        except OSError, e:
+        except OSError as e:
             # We don't care about the result if we have error because send_nsca
             # is not installed
             if e.errno != 2:

@@ -20,7 +20,7 @@
 
 """
 This module provides a high level Object-Oriented wrapper
-around pynag.Parsers.config.
+around pynag.Parsers.
 
 Example:
 
@@ -45,11 +45,15 @@ import subprocess
 import time
 import getpass
 
-from pynag import Parsers
+from pynag.Model import macros
+from pynag.Model import all_attributes
+from pynag.Utils import paths
+
 import pynag.Control.Command
+import pynag.errors
+import pynag.Parsers.config_parser
+import pynag.Parsers.status_dat
 import pynag.Utils
-from macros import _standard_macros
-import all_attributes
 
 
 # Path To Nagios configuration file
@@ -60,7 +64,7 @@ pynag_directory = None
 
 # This is the config parser that we use internally, if cfg_file is changed, then config
 # will be recreated whenever a parse is called.
-config = Parsers.config(cfg_file=cfg_file)
+config = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
 
 
 #: eventhandlers -- A list of Model.EventHandlers object.
@@ -75,6 +79,21 @@ try:
     from collections import defaultdict
 except ImportError:
     from pynag.Utils import defaultdict
+
+# Default value returned when a macro cannot be found
+_UNRESOLVED_MACRO = ''
+
+# We know that a macro is a custom variable macro if the name
+# of the macro starts with this prefix:
+_CUSTOM_VARIABLE_PREFIX = '_'
+
+
+class ModelError(pynag.errors.PynagError):
+    """Base class for errors in this module."""
+
+
+class InvalidMacro(ModelError):
+    """Raised when a method is inputted with an invalid macro."""
 
 
 class ObjectRelations(object):
@@ -392,14 +411,14 @@ class ObjectFetcher(object):
         global config
         # If global variable cfg_file has been changed, lets create a new ConfigParser object
         if config is None or config.cfg_file != cfg_file:
-            config = Parsers.config(cfg_file)
+            config = pynag.Parsers.config_parser.Config(cfg_file)
         if config.needs_reparse():
             config.parse()
 
         # Reset our list of how objects are related to each other
         ObjectRelations.reset()
 
-        # Fetch all objects from Parsers.config
+        # Fetch all objects from config_parser.config
         for object_type, objects in config.data.items():
             # change "all_host" to just "host"
             object_type = object_type[len("all_"):]
@@ -622,7 +641,7 @@ class ObjectDefinition(object):
 
     def __setitem__(self, key, item):
         # Special handle for macros
-        if key.startswith('$') and key.endswith('$'):
+        if pynag.Utils.is_macro(key):
             self.set_macro(key, item)
         elif self[key] != item:
             self._changes[key] = item
@@ -712,14 +731,17 @@ class ObjectDefinition(object):
         invalid_chars = '[/\s\'\"\|]'
         object_type = re.sub(invalid_chars, '', self.object_type)
         description = re.sub(invalid_chars, '', self.get_description())
+
         # if pynag_directory is undefined, use "/pynag" dir under nagios.cfg
-        global pynag_directory
-        if pynag_directory is None:
-            from os.path import dirname
-            pynag_directory = dirname(config.cfg_file) + "/pynag"
+        if pynag_directory:
+            destination_directory = pynag_directory
+        else:
+            main_config = config.cfg_file or paths.find_main_configuration_file()
+            main_config = os.path.abspath(main_config)
+            destination_directory = os.path.dirname(main_config)
 
         # By default assume this is the filename
-        path = "%s/%ss/%s.cfg" % (pynag_directory, object_type, description)
+        path = "%s/%ss/%s.cfg" % (destination_directory, object_type, description)
 
         # Services go to same file as their host
         if object_type == "service" and self.get('host_name'):
@@ -774,7 +796,8 @@ class ObjectDefinition(object):
                 del self._changes[k]
             self.is_new = False
             self._filename_has_changed = False
-            return config.item_add(self._original_attributes, self.get_filename())
+            self._event(level='write', message="Added new %s: %s" % (self.object_type, self.get_description()))
+            config.item_add(self._original_attributes, self.get_filename())
 
         # If we get here, we are making modifications to an object
         else:
@@ -1028,6 +1051,40 @@ class ObjectDefinition(object):
         else:
             self._meta['filename'] = os.path.normpath(filename)
 
+    def _get_custom_variable_macro(self, macro):
+        """Get the value for a specific custom variable macro for this object.
+
+        Args:
+            macro: String. Macro name in the format of $_{OBJECTTYPE}{VARNAME}$, e.g. $HOSTMACADDRESS$
+
+        Returns:
+            String. The real value for this custom variable macro. Emptystring if macro cannot be resolved.
+
+        Raises:
+            InvalidMacro if macro parameter is not a valid custom variable macro for this object type.
+        """
+        if not pynag.Utils.is_macro(macro):
+            raise InvalidMacro("%s does not look like a valid macro" % macro)
+
+        # Remove leading and trailing $ from the macro name:
+        macro = macro[1:-1]
+        # We expect '_{OBJECTTYPE}{VARIABLENAME}'
+        expected_prefix = _CUSTOM_VARIABLE_PREFIX + self.object_type.upper()
+        if not macro.startswith(expected_prefix):
+            raise InvalidMacro("%s does not look like a custom macro for %s" % (macro, self.object_type))
+
+        variable_name = macro.replace(expected_prefix, '')
+        # We want to be case insensitive
+        variable_name = variable_name.upper()
+        # custom variable attribute names are all prefixed
+        variable_name = _CUSTOM_VARIABLE_PREFIX + variable_name
+
+        for attribute_name in self.keys():
+            if attribute_name.upper() == variable_name:
+                return self.get(attribute_name)
+        else:
+            return _UNRESOLVED_MACRO
+
     def get_macro(self, macroname, host_name=None, contact_name=None):
         """ Take macroname (e.g. $USER1$) and return its actual value
 
@@ -1039,6 +1096,8 @@ class ObjectDefinition(object):
         Returns:
           (str) Actual value of the macro. For example "$HOSTADDRESS$" becomes "127.0.0.1"
         """
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$ARG'):
             # Command macros handled in a special function
             return self._get_command_macro(macroname, host_name=host_name)
@@ -1051,10 +1110,7 @@ class ObjectDefinition(object):
             return self._get_service_macro(macroname)
         if macroname.startswith('$CONTACT') or macroname.startswith('$_CONTACT'):
             return self._get_contact_macro(macroname, contact_name=contact_name)
-        if macroname in _standard_macros:
-            attr = _standard_macros[macroname]
-            return self[attr]
-        return ''
+        return _UNRESOLVED_MACRO
 
     def set_macro(self, macroname, new_value):
         """ Update a macro (custom variable) like $ARG1$ intelligently
@@ -1076,7 +1132,7 @@ class ObjectDefinition(object):
             >>> s['__TEST']
             'test'
         """
-        if not macroname.startswith('$') or not macroname.endswith('$'):
+        if not pynag.Utils.is_macro(macroname):
             raise ValueError("Macros must be of the format $<macroname>$")
         if macroname.startswith('$ARG'):
             if self.check_command is None:
@@ -1117,13 +1173,18 @@ class ObjectDefinition(object):
 
         # Add all custom macros to our list:
         for i in self.keys():
-            if not i.startswith('_'):
+            if not i.startswith(_CUSTOM_VARIABLE_PREFIX):
                 continue
             if self.object_type == 'service':
                 i = '$_SERVICE%s$' % (i[1:])
             elif self.object_type == 'host':
                 i = '$_HOST%s$' % (i[1:])
             macronames.append(i)
+
+        # Nagios is case-insensitive when it comes to macros, but it always displays
+        # them in upper-case:
+        macronames = [name.upper() for name in macronames]
+
         result = {}
         for i in macronames:
             result[i] = self.get_macro(i)
@@ -1153,7 +1214,7 @@ class ObjectDefinition(object):
         if contact_name is None:
             contacts = self.get_effective_contacts()
             if len(contacts) == 0:
-                raise pynag.Utils.PynagError('Cannot calculate notification command for object with no contacts')
+                raise ModelError('Cannot calculate notification command for object with no contacts')
             else:
                 contact = contacts[0]
         else:
@@ -1185,7 +1246,7 @@ class ObjectDefinition(object):
         'check_ping -H 127.0.0.1'
         """
         if not string:
-            return None
+            return _UNRESOLVED_MACRO
         regex = re.compile("(\$\w+\$)")
         get_macro = lambda x: self.get_macro(x.group(), host_name=host_name)
         result = regex.sub(get_macro, string)
@@ -1222,55 +1283,61 @@ class ObjectDefinition(object):
 
     def _get_command_macro(self, macroname, check_command=None, host_name=None):
         """Resolve any command argument ($ARG1$) macros from check_command"""
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if check_command is None:
             check_command = self.check_command
         if check_command is None:
-            return ''
+            return _UNRESOLVED_MACRO
         all_args = {}
         c = self._split_check_command_and_arguments(check_command)
         c.pop(0)  # First item is the command, we dont need it
         for i, v in enumerate(c):
             name = '$ARG%s$' % str(i + 1)
             all_args[name] = v
-        result = all_args.get(macroname, '')
+        result = all_args.get(macroname, _UNRESOLVED_MACRO)
         # Our $ARGx$ might contain macros on its own, so lets resolve macros in it:
         result = self._resolve_macros(result, host_name=host_name)
         return result
 
     def _get_service_macro(self, macroname):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$_SERVICE'):
-            # If this is a custom macro
-            name = macroname[9:-1]
-            return self["_%s" % name]
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
-            return self[attr]
+            return self._get_custom_variable_macro(macroname)
+        elif macroname in macros.STANDARD_SERVICE_MACROS:
+            attr = macros.STANDARD_SERVICE_MACROS[macroname]
+            return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$SERVICE'):
             name = macroname[8:-1].lower()
-            return self.get(name) or ''
-        return ''
+            return self.get(name, _UNRESOLVED_MACRO)
+        return _UNRESOLVED_MACRO
 
     def _get_host_macro(self, macroname, host_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if macroname.startswith('$_HOST'):
-            # if this is a custom macro
-            name = macroname[6:-1]
-            return self["_%s" % name]
+            return self._get_custom_variable_macro(macroname)
         elif macroname == '$HOSTADDRESS$' and not self.address:
-            return self.get("host_name")
-        elif macroname in _standard_macros:
-            attr = _standard_macros[macroname]
-            return self[attr]
+            return self._get_host_macro('$HOSTNAME$')
+        elif macroname == '$HOSTDISPLAYNAME$' and not self.display_name:
+            return self._get_host_macro('$HOSTNAME$')
+        elif macroname in macros.STANDARD_HOST_MACROS:
+            attr = macros.STANDARD_HOST_MACROS[macroname]
+            return self.get(attr, _UNRESOLVED_MACRO)
         elif macroname.startswith('$HOST'):
             name = macroname[5:-1].lower()
-            return self.get(name)
-        return ''
+            return self.get(name, _UNRESOLVED_MACRO)
+        return _UNRESOLVED_MACRO
 
     def _get_contact_macro(self, macroname, contact_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         # If contact_name is not specified, get first effective contact and resolve macro for that contact
         if not contact_name:
             contacts = self.get_effective_contacts()
             if len(contacts) == 0:
-                return None
+                return _UNRESOLVED_MACRO
             contact = contacts[0]
         else:
             contact = Contact.objects.get_by_shortname(contact_name)
@@ -1497,12 +1564,12 @@ class Host(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.host_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for host with no host_name')
+            raise ModelError('Cannot schedule a downtime for host with no host_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -1668,7 +1735,7 @@ class Host(ObjectDefinition):
 
     def get_current_status(self):
         """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         host = status.get_hoststatus(self.host_name)
         return host
 
@@ -1744,15 +1811,17 @@ class Service(ObjectDefinition):
             return None
 
     def _get_host_macro(self, macroname, host_name=None):
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
         if not host_name:
             host_name = self['host_name']
         if not host_name:
-            return None
+            return _UNRESOLVED_MACRO
         try:
             myhost = Host.objects.get_by_shortname(host_name)
             return myhost._get_host_macro(macroname)
         except Exception:
-            return None
+            return _UNRESOLVED_MACRO
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -1814,16 +1883,16 @@ class Service(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Only for compatibility, it has no effect.
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.host_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with no host_name')
+            raise ModelError('Cannot schedule a downtime for service with no host_name')
         if not self.service_description:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for service with service_description')
+            raise ModelError('Cannot schedule a downtime for service with service_description')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -1891,7 +1960,7 @@ class Service(ObjectDefinition):
 
     def get_current_status(self):
         """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.StatusDat(cfg_file=cfg_file)
+        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         service = status.get_servicestatus(self.host_name, service_description=self.service_description)
         return service
 
@@ -1984,20 +2053,20 @@ class Contact(ObjectDefinition):
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
-        if macroname in _standard_macros:
-            attribute_name = _standard_macros.get(macroname)
+        if not pynag.Utils.is_macro(macroname):
+            return _UNRESOLVED_MACRO
+        if macroname in macros.STANDARD_CONTACT_MACROS:
+            attribute_name = macros.STANDARD_CONTACT_MACROS[macroname]
         elif macroname.startswith('$_CONTACT'):
-            # if this is a custom macro
-            name = macroname[len('$_CONTACT'):-1]
-            attribute_name = "_%s" % name
+            return self._get_custom_variable_macro(macroname)
         elif macroname.startswith('$CONTACT'):
             # Lets guess an attribute for this macro
             # So convert $CONTACTEMAIL$ to email
             name = macroname[len('$CONTACT'):-1]
             attribute_name = name.lower()
         else:
-            return ''
-        return self.get(attribute_name) or ''
+            return _UNRESOLVED_MACRO
+        return self.get(attribute_name, _UNRESOLVED_MACRO)
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2310,14 +2379,14 @@ class Hostgroup(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Not used, but is here for backwards compatibility
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.hostgroup_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for hostgroup with no hostgroup_name')
+            raise ModelError('Cannot schedule a downtime for hostgroup with no hostgroup_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:
@@ -2411,14 +2480,14 @@ class Servicegroup(ObjectDefinition):
           None because commands sent to nagios have no return values
 
         Raises:
-          PynagError if this does not look an active object.
+          ModelError if this does not look an active object.
         """
         if recursive is True:
             pass  # Its here for compatibility but we dont do anything with it.
         if self.register == '0':
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for unregistered object')
+            raise ModelError('Cannot schedule a downtime for unregistered object')
         if not self.servicegroup_name:
-            raise pynag.Utils.PynagError('Cannot schedule a downtime for servicegroup with no servicegroup_name')
+            raise ModelError('Cannot schedule a downtime for servicegroup with no servicegroup_name')
         if start_time is None:
             start_time = time.time()
         if duration is None:

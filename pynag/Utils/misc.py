@@ -10,9 +10,19 @@
 import tempfile
 import os
 import time
-import pynag.Parsers
+import pynag.Parsers.config_parser
+import pynag.Parsers.livestatus
 import pynag.Model
-from pynag.Utils import PynagError
+
+from pynag.errors import PynagError
+
+
+class MiscError(PynagError):
+    """Base class for errors in this module."""
+
+
+class SandboxError(MiscError):
+    """Raised when FakeEnvironment tries to modify files outside its sandbox."""
 
 
 class FakeNagiosEnvironment(object):
@@ -25,10 +35,11 @@ class FakeNagiosEnvironment(object):
         >>> nagios.update_model()  # Update the global variables in pynag.Model
         >>> nagios.configure_livestatus()  # Configure a livestatus socket
         >>> result, stdout, stderr = nagios.start()  # Start up nagios
-        >>> config = nagios.get_config()   # Returns Parsers.Config instance
-        >>> livestatus = nagios.get_livestatus()  # Returns Parsers.Livestatus instance
+        >>> config = nagios.get_config()   # Returns config_parser.Config instance
+        >>> livestatus = nagios.get_livestatus()  # Returns livestatus.Livestatus instance
         >>> result, stdout, sdterr = nagios.stop()  # Stop nagios
         >>> nagios.terminate()  # Stops nagios and cleans up everything
+
     """
 
     def __init__(self, global_config_file=None, p1_file=None, livestatus=False):
@@ -76,7 +87,7 @@ class FakeNagiosEnvironment(object):
             if filename.startswith(self.tempdir):
                 return func(filename, *args, **kwargs)
             else:
-                raise PynagError("FakeNagiosEnvironment tried to open file outside its sandbox: %s" % (filename, ))
+                raise SandboxError("FakeNagiosEnvironment tried to open file outside its sandbox: %s" % (filename, ))
         wrap.__name__ = func.__name__
         wrap.__module__ = func.__module__
         return wrap
@@ -108,7 +119,7 @@ class FakeNagiosEnvironment(object):
         with open(objects_dir + "/minimal_config.cfg", 'w') as f:
             f.write(minimal_config)
 
-        config = self.config = pynag.Parsers.config(cfg_file=cfg_file)
+        config = self.config = pynag.Parsers.config_parser.Config(cfg_file=cfg_file)
         self.config.open = self.open_decorator(self.config.open)
         config.parse()
         config._edit_static_file(attribute='log_archive_path',
@@ -206,12 +217,12 @@ class FakeNagiosEnvironment(object):
         line = "%s %s" % (self.livestatus_module_path, self.livestatus_socket_path)
         config = self.get_config()
         config._edit_static_file(attribute="broker_module", new_value=line)
-        self.livestatus_object = pynag.Parsers.Livestatus(
+        self.livestatus_object = pynag.Parsers.livestatus.Livestatus(
             nagios_cfg_file=config.cfg_file,
         )
 
     def guess_p1_file(self):
-        global_config = pynag.Parsers.config(cfg_file=self.global_config_file)
+        global_config = pynag.Parsers.config_parser.Config(cfg_file=self.global_config_file)
         global_config.parse_maincfg()
         for k, v in global_config.maincfg_values:
             if k == 'p1_file':
@@ -230,7 +241,7 @@ class FakeNagiosEnvironment(object):
             string containing full path to mk-livestatus broker_module
         """
         # Find mk_livestatus broker module
-        global_config = pynag.Parsers.config(cfg_file=self.global_config_file)
+        global_config = pynag.Parsers.config_parser.Config(cfg_file=self.global_config_file)
         global_config.parse_maincfg()
         for k, v in global_config.maincfg_values:
             if k == 'broker_module' and 'livestatus' in v:

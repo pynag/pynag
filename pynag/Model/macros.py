@@ -26,9 +26,19 @@ i.e. macros['$HOSTADDR$'] should return 'address'
 # TODO: This hash map is incomplete, someone should type everything from the documentation to here:
 # See: http://nagios.sourceforge.net/docs/3_0/macrolist.html
 
-_standard_macros = {
+
+STANDARD_HOST_MACROS = {
     '$HOSTADDRESS$': 'address',
     '$HOSTNAME$': 'host_name',
+    '$HOSTDISPLAYNAME$': 'display_name',
+}
+
+
+STANDARD_SERVICE_MACROS = {
     '$SERVICEDESC$': 'service_description',
+}
+
+
+STANDARD_CONTACT_MACROS = {
     '$CONTACTEMAIL$': 'email',
 }

@@ -34,7 +34,15 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 
 import pynag.Plugins
-from pynag.Utils import PynagError
+import pynag.errors
+from pynag.Utils import states
+
+class Error(pynag.errors.PynagError):
+    """Base class for errors in this module."""
+
+
+class InvalidThreshold(Error):
+    """Raised when an invalid threshold was provided."""
 
 
 def check_threshold(value, ok=None, warning=None, critical=None):
@@ -71,24 +79,24 @@ def check_threshold(value, ok=None, warning=None, critical=None):
     try:
         # 1 - If no levels are specified, return OK
         if not ok and not warning and not critical:
-            return pynag.Plugins.OK
+            return states.OK
         # 2 - If an ok level is specified and value is within range, return OK
         if ok and check_range(value, ok):
-            return pynag.Plugins.OK
+            return states.OK
         # 3 - If a critical level is specified and value is within range, return CRITICAL
         if critical and check_range(value, critical):
-            return pynag.Plugins.CRITICAL
+            return states.CRITICAL
         # 4 - If a warning level is specified and value is within range, return WARNING
         if warning and check_range(value, warning):
-            return pynag.Plugins.WARNING
+            return states.WARNING
         # 5 - If an ok level is specified, return CRITICAL
         if ok:
-            return pynag.Plugins.CRITICAL
+            return states.CRITICAL
         # 6 - Otherwise return OK
-        return pynag.Plugins.OK
+        return states.OK
     except Exception:
         # Return unknown if any problem occurs, including invalid input
-        return pynag.Plugins.UNKNOWN
+        return states.UNKNOWN
 
 
 def check_range(value, range):
@@ -105,7 +113,7 @@ def check_range(value, range):
     """
 
     if not isinstance(range, basestring) or range == '':
-        raise PynagError('range must be a string')
+        raise InvalidThreshold('range must be a string')
 
     # value must be numeric, so we try to convert it to float
     value = float(value)
@@ -113,7 +121,7 @@ def check_range(value, range):
     # If range does not contain ".." then we assume its the older style of
     # ranges (either a plain number or the start:end syntax)
     if '..' not in range:
-        return not pynag.Plugins.check_range(value=value, range_threshold=range)
+        return not pynag.Plugins.classic_threshold_syntax.check_range(value=value, range_threshold=range)
     # If range starts with ^ we the conditions are inverted
     if range[0] == '^':
         return not check_range(value, range[1:])
@@ -121,7 +129,7 @@ def check_range(value, range):
     # Start and end must be defined
     tmp = range.split('..')
     if len(tmp) != 2:
-        raise PynagError('Invalid Format for threshold range: "%s"' % range)
+        raise InvalidThreshold('Invalid Format for threshold range: "%s"' % range)
     start, end = tmp
 
     if not start in ('inf', '-inf'):
@@ -139,8 +147,8 @@ def parse_threshold(threshold):
     """ takes a threshold string as an input and returns a hash map of options and values
 
     Examples:
-        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95.100')
-        {'thresholds': [(0, '0..90'), (1, '90..95'), (2, '95.100')], 'metric': 'disk_usage'}
+        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
+        {u'thresholds': [(0, u'0..90'), (1, u'90..95'), (2, u'95..100')], u'metric': u'disk_usage'}
     """
     tmp = threshold.lower().split(',')
     parsed_thresholds = []
@@ -148,10 +156,67 @@ def parse_threshold(threshold):
     results['thresholds'] = parsed_thresholds
     for i in tmp:
         if i.find('=') < 1:
-            raise PynagError("Invalid input: '%s' is not of the format key=value" % i)
+            raise InvalidThreshold("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
         if key in pynag.Plugins.state.keys():
             parsed_thresholds.append((pynag.Plugins.state[key], value))
         else:
             results[key] = value
     return results
+
+
+def convert_to_classic_format(threshold_range):
+    """ Take threshold string as and normalize it to the format supported by plugin
+    development team
+
+    The input (usually a string in the form of 'the new threshold syntax') is a
+    string in the form of x..y
+
+    The output will be a compatible string in the older nagios plugin format
+    @x:y
+
+    Examples:
+
+    >>> convert_to_classic_format("0..5")
+    u'@0:5'
+    >>> convert_to_classic_format("inf..5")
+    u'5:'
+    >>> convert_to_classic_format("5..inf")
+    u'~:5'
+    >>> convert_to_classic_format("inf..inf")
+    u'@~:'
+    >>> convert_to_classic_format("^0..5")
+    u'0:5'
+    >>> convert_to_classic_format("10..20")
+    u'@10:20'
+    >>> convert_to_classic_format("10..inf")
+    u'~:10'
+    """
+
+    threshold_range = str(threshold_range)
+    if not '..' in threshold_range:
+        return threshold_range
+    threshold_range = threshold_range.strip()
+    if threshold_range.startswith('^'):
+        operator = ''
+        threshold_range = threshold_range[1:]
+    else:
+        operator = '@'
+
+    start, end = threshold_range.split('..', 1)
+    start = start.replace('-inf', '~').replace('inf', '~')
+    end = end.replace('-inf', '').replace('inf', '')
+
+    if not start:
+        start = '0'
+
+    # Lets convert the common case of @0:x into x:
+    if operator == '@' and start == '~' and end not in ('', '~'):
+        result = "%s:" % end
+    # Convert the common case of @x: into 0:x
+    elif operator == '@' and end in ('', '~') and start != '~':
+        result = '~:%s' % start
+    else:
+        result = '%s%s:%s' % (operator, start, end)
+    return result
+

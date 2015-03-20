@@ -8,6 +8,7 @@ pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
 sys.path.insert(0, pynagbase)
 
 import unittest2 as unittest
+import mock
 import doctest
 import tempfile
 import shutil
@@ -19,6 +20,7 @@ import datetime
 from tests import tests_dir
 import pynag.Parsers
 import pynag.Utils.misc
+import pynag.Parsers.main
 
 
 class Config(unittest.TestCase):
@@ -219,8 +221,15 @@ class Livestatus(unittest.TestCase):
 
     def testLivestatus(self):
         """ Smoketest livestatus integration """
-        requests = self.livestatus.query('GET status', 'Columns: requests')
-        self.assertEqual(1, len(requests), "Could not get status.requests from livestatus")
+        rows = self.livestatus.query('GET status', 'Columns: requests')
+        self.assertEqual(1, len(rows), "Could not get status.requests from livestatus")
+        result = rows[0]
+        self.assertEqual(['requests'], result.keys())
+        num_requests = result['requests']
+        try:
+            int(num_requests)
+        except ValueError:
+            self.assertTrue(False, "Expected requests to be a number")
 
     def testParseMaincfg(self):
         """ Test parsing of different broker_module declarations """
@@ -270,6 +279,192 @@ class Livestatus(unittest.TestCase):
             "Dummy livestatus instance was supposed to be nonfunctional"
         )
 
+    def test_raw_query_normal(self):
+        result = self.livestatus.raw_query('GET status', 'Columns: requests')
+        self.assertTrue(result.endswith('\n'))
+        try:
+            requests = int(result.strip())
+        except ValueError:
+            self.assertTrue(False, 'Expected livestatus result to be a number, but got %s' % repr(result))
+
+    def test_write_normal(self):
+        result = self.livestatus.write('GET status\nColumns: requests\n')
+        self.assertTrue(result.endswith('\n'))
+        try:
+            requests = int(result.strip())
+        except ValueError:
+            self.assertTrue(False, 'Expected livestatus result to be a number, but got %s' % repr(result))
+
+    @mock.patch('socket.socket')
+    def test_write_raises(self, mock_socket_class):
+        mock_socket = mock_socket_class.return_value
+        mock_socket.send.side_effect = IOError
+
+        # Make sure write() raises Livestatus errors if we cannot write to socket:
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.write('GET status\nColumns: requests\n')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_raw_query_calls_write(self, mock_write):
+        result = self.livestatus.raw_query('GET services')
+
+        # Make sure its returning the output of livestatus.write()
+        self.assertEqual(mock_write.return_value, result)
+        mock_write.assert_called_once_with('GET services\n')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_raw_query_calls_write(self, mock_write):
+        result = self.livestatus.raw_query('GET services', 'OutputFormat: python')
+
+        # Make sure its returning the output of livestatus.write()
+        self.assertEqual(mock_write.return_value, result)
+        mock_write.assert_called_once_with('GET services\nOutputFormat: python\n\n')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_retries_on_socket_error(self, mock_write):
+        mock_write.side_effect = iter([pynag.Parsers.LivestatusError, '200'])
+        self.livestatus.get_hosts()
+        self.assertEqual(2, mock_write.call_count)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_raises_on_repeated_errors(self, mock_write):
+        mock_write.side_effect = iter([pynag.Parsers.LivestatusError, pynag.Parsers.LivestatusError, '200'])
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.get_hosts()
+        self.assertEqual(2, mock_write.call_count)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_adds_required_headers(self, mock_write):
+        result = self.livestatus.query('GET services')
+        expected_query = 'GET services\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n\n'
+        mock_write.assert_called_once_with(expected_query)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_adds_required_headers_authuser(self, mock_write):
+        self.livestatus.authuser = 'nagiosadmin'
+        self.livestatus.query('GET services')
+        self.livestatus.authuser = None
+        expected_query = 'GET services\nResponseHeader: fixed16\nOutputFormat: python\nColumnHeaders: on\n'
+        expected_query += 'AuthUser: nagiosadmin\n\n'
+        mock_write.assert_called_once_with(expected_query)
+
+    def test_query_stats_have_no_headers(self):
+        # Some versions of livestatus have an annoying bug that when you
+        # include both Stats and ColumnHeaders: on, in a query, the output will get corrupted.
+        # This test makes sure that livestatus.query() works around that bug.
+        response = self.livestatus.query('GET services', 'Stats: state = 0', 'ColumnHeaders: on')
+        self.assertIsInstance(response, list)
+        self.assertEqual(1, len(response))
+        stats_for_state_0 = response[0]
+        self.assertIsInstance(stats_for_state_0, int)
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_empty_response_raises(self, mock_write):
+        mock_write.return_value = ''
+        with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
+            self.livestatus.query('GET services')
+
+    @mock.patch('pynag.Parsers.Livestatus.write')
+    def test_query_invalid_response_raises(self, mock_write):
+        mock_write.return_value = '200\ngarbage data from livestatus['
+        with self.assertRaises(pynag.Parsers.InvalidResponseFromLivestatus):
+            self.livestatus.query('GET services')
+
+    def test_query_outputformat_json_returns_string(self):
+        result = self.livestatus.query('GET status', 'OutputFormat: json')
+        self.assertIsInstance(result, str)
+
+    def test_query_columheaders_off_returns_list_of_lists(self):
+        result = self.livestatus.query('GET status', 'ColumnHeaders: off')
+        for row in result:
+            self.assertIsInstance(row, list)
+
+    def test_query_invalid_query_raises(self):
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus.query('GET something else')
+
+    def test_parse_response_header_empty(self):
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus._parse_response_header('')
+
+    def test_parse_response_header_ok(self):
+        header = '200      510608'
+        data = '[[1,2,3]]'
+        result = self.livestatus._parse_response_header(header + '\n' + data)
+        self.assertEqual(data, result)
+
+    def test_parse_response_header_problem(self):
+        header = '600'
+        data = '[[1,2,3]]'
+        with self.assertRaises(pynag.Parsers.LivestatusError):
+            self.livestatus._parse_response_header(header + '\n' + data)
+
+
+class LivestatusQuery(unittest.TestCase):
+
+    def setUp(self):
+        self.query = pynag.Parsers.LivestatusQuery('GET services')
+
+    def test_init_normal(self):
+        test_query = 'GET status\nColumns: requests\n\n'
+        query = pynag.Parsers.LivestatusQuery(test_query)
+        self.assertEqual(test_query, query.get_query())
+
+    def test_init_with_args(self):
+        test_query = 'GET status\nColumns: requests\n\n'
+        query = pynag.Parsers.LivestatusQuery('GET status', 'Columns: requests')
+        self.assertEqual(test_query, query.get_query())
+
+    def test_init_with_kwargs(self):
+        test_query = 'GET hosts\nColumns: name\nFilter: name = localhost\n\n'
+        query = pynag.Parsers.LivestatusQuery('GET hosts', 'Columns: name', name='localhost')
+        self.assertEqual(test_query, query.get_query())
+
+    def test_add_header(self):
+        self.query.add_header('OutputFormat', 'python')
+
+        expected_result = 'GET services\nOutputFormat: python\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_add_header_line(self):
+        self.query.add_header_line('OutputFormat: python')
+
+        expected_result = 'GET services\nOutputFormat: python\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_remove_header(self):
+        self.query.add_header_line('OutputFormat: python')
+        self.query.remove_header('OutputFormat')
+
+        expected_result = 'GET services\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_set_outputformat(self):
+        self.query.set_outputformat('python')
+        expected_result = 'GET services\nOutputFormat: python\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_set_responseheader(self):
+        self.query.set_responseheader('fixed16')
+        expected_result = 'GET services\nResponseHeader: fixed16\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test_has_header_true(self):
+        self.query.add_header('OutputFormat', 'python')
+        self.assertTrue(self.query.has_header('OutputFormat'))
+
+    def test_has_header_false(self):
+        self.assertFalse(self.query.has_header('OutputFormat'))
+
+    def test_set_authuser(self):
+        self.query.set_authuser('username')
+        expected_result = 'GET services\nAuthUser: username\n\n'
+        self.assertEqual(expected_result, self.query.get_query())
+
+    def test__str__(self):
+        query = str(self.query)
+        self.assertEqual('GET services\n\n', query)
+
 
 class ObjectCache(unittest.TestCase):
 
@@ -315,7 +510,6 @@ class LogFiles(unittest.TestCase):
 
         expected_number_of_files = files_num
         logfiles = self.log.get_logfiles()
-        self.assertEqual(expected_number_of_files, len(logfiles))
         self.assertTrue('./nagios/log/nagios.log' in logfiles)
         self.assertEqual(5, len(logfiles))
 
@@ -340,6 +534,10 @@ class LogFiles(unittest.TestCase):
         expected_number_of_entries = 1000 + 10 + 10
         entries = self.log.get_log_entries(start_time=start_time)
         self.assertEqual(expected_number_of_entries, len(entries))
+
+    def testGetLogFilesSkipsDirectories(self):
+        directory = './nagios/log/archives/old'
+        self.assertNotIn(directory, self.log.get_logfiles())
 
 
 class Status(unittest.TestCase):
@@ -418,6 +616,30 @@ class SshConfig(Config):
         i = ftp.stat('/')
         self.assertTrue(self.instance.isdir('/'))
 
+
+class MainConfigTest(unittest.TestCase):
+
+    def setUp(self):
+        os.chdir(tests_dir)
+        os.chdir('dataset01')
+        cfg_file = "./nagios/nagios.cfg"
+        self.main_config = pynag.Parsers.main.MainConfig(filename=cfg_file)
+
+    def test_normal(self):
+        self.assertEqual('test.cfg', self.main_config.get('cfg_file'))
+        self.assertEqual(['test.cfg'], self.main_config.get_list('cfg_file'))
+
+    def test_parse_string_normal(self):
+        result = self.main_config._parse_string('cfg_file=test.cfg')
+        self.assertEqual([('cfg_file', 'test.cfg')], result)
+
+    def test_parse_string_empty_line(self):
+        result = self.main_config._parse_string('#empty\n\n#line')
+        self.assertEqual([], result)
+
+    def test_parse_string_skips_comments(self):
+        result = self.main_config._parse_string('# this is a comment')
+        self.assertEqual([], result)
 
 minimal_config = r"""
 define timeperiod {

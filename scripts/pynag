@@ -23,6 +23,7 @@ import sys
 import traceback
 from optparse import OptionParser,OptionGroup
 import pprint
+import json
 import pynag.Model
 import pynag.Parsers
 import pynag.Utils
@@ -142,7 +143,7 @@ def execute_check_command():
         print ""
         if opts.quiet == False:
             print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
-    except KeyError, e:
+    except KeyError as e:
         parser.error("Could not find host '%s'" % e)
 
 def search_objects(search_statements):
@@ -294,6 +295,8 @@ def list_objects():
     parser.usage = ''' %prog list [attribute1] [attribute2] [WHERE <...>] '''
     parser.add_option("--print", dest="print_definition", action='store_true',
                       default=False, help="Print actual definition instead of attributes")
+    parser.add_option("--json", dest="json", action='store_true', default=False,
+                      help="Print all attributes of objects in json format")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     if opts.examples == True:
@@ -307,6 +310,8 @@ def list_objects():
     if opts.print_definition:
         for i in objects:
             print i
+    elif opts.json:
+        print_json(objects=objects)
     else:
         pretty_print(objects=objects,attributes=attributes)
 
@@ -355,6 +360,10 @@ def add_object():
                       help="Write to this specific file")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+
+    if opts.examples == True:
+        return print_examples()
+
     if len(args) == 0:
         parser.error("You need to specify object_type and attributes for add")
     attributes = {}
@@ -521,6 +530,10 @@ def copy_object():
     parser.add_option("--recursive", dest="recursive", action="store_true",
         default=False,help="Recursively apply to related child objects")
     (opts,args) = parser.parse_args(sys.argv[2:])
+
+    if opts.examples == True:
+        return print_examples()
+
     pynag.Model.cfg_file = opts.cfg_file
     set = {} # dict of which attributes to change
     attributes,where_statement=split_where_and_set(args)
@@ -621,6 +634,10 @@ def update_objects():
                       default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
+
+    if opts.examples == True:
+        return print_examples()
+
     set = {}
     attributes,where_statement=split_where_and_set(args)
     if len(where_statement) == 0:
@@ -690,6 +707,27 @@ def pretty_print(objects, attributes=None):
         pre = "-"*10
         post = "-"*(80-10-len(message))
         print pre + message + post
+
+def get_object_attributes(obj):
+    obj_attributes = {}
+    for attribute, value in obj.items():
+        # Don't return attributes with no value
+        if value is None:
+            continue
+        obj_attributes[attribute] = value
+    return obj_attributes
+
+def print_json(objects):
+    # If no column seperator was specified, use emptystring
+    if parser.values.seperator is None:
+        parser.values.seperator = ' '
+
+    all_objects = []
+    for obj in objects:
+        obj_attributes = get_object_attributes(obj)
+        all_objects.append(obj_attributes)
+
+    print json.dumps(all_objects, indent=4)
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once
@@ -741,23 +779,22 @@ def parse_configfile():
 examples = {}
 
 examples['list'] = '''
-  # %prog list host_name address WHERE object_type=host"
-  # %prog list host_name service_description WHERE host_name=examplehost and object_type=service"
+  # %prog list host_name address WHERE object_type=host
+  # %prog list host_name service_description WHERE host_name=examplehost and object_type=service
 '''
 examples['update'] = '''
-  # %prog update SET host_name=newhostname WHERE host_name=oldhostname"
-  # %prog update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
-
-  # %prog update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host"
+  # %prog update SET host_name=newhostname WHERE host_name=oldhostname
+  # %prog update SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host
+  # %prog update UNSET contacts WHERE host_name='examplehost.example.com' and object_type=host
 '''
 examples['copy'] = '''
-  # %prog copy SET host_name=newhostname WHERE  host_name=oldhostname"
-  # %prog copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host"
-  # %prog copy SET name=template-host register=0 UNSET address host_name WHERE host_name='examplehost.example.com' and object_type=host"
+  # %prog copy SET host_name=newhostname WHERE  host_name=oldhostname
+  # %prog copy SET address=127.0.0.1 WHERE host_name='examplehost.example.com' and object_type=host
+  # %prog copy SET name=template-host register=0 UNSET address host_name WHERE host_name='examplehost.example.com' and object_type=host
 '''
 examples['add'] = '''
-  # %prog add host host_name=examplehost use=generic-host address=127.0.0.1"
-  # %prog add service service_description="Test Service" use="check_nrpe" host_name="localhost"
+  # %prog add host host_name=examplehost use=generic-host address=127.0.0.1
+  # %prog add service service_description="Test Service" use="check_nrpe" host_name=localhost
 '''
 examples['delete'] = '''
   # %prog delete where object_type=service and host_name='mydeprecated_host'
@@ -814,7 +851,7 @@ if __name__ == '__main__':
         debug = True
     try:
         parse_arguments()
-    except Exception, e:
+    except Exception as e:
         print "Error occured, use --debug to see full traceback:"
         print ""
         print "%s: %s" % (e.__class__.__name__, e)
