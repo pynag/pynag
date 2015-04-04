@@ -1447,29 +1447,8 @@ class Config(object):
 
             String representation of item.
         """
-        output = ""
-        # Header, to go on all files
-        output += "# Configuration file %s\n" % item['meta']['filename']
-        output += "# Edited by PyNag on %s\n" % time.ctime()
-
-        # Some hostgroup information
-        if "hostgroup_list" in item['meta']:
-            output += "# Hostgroups: %s\n" % ",".join(item['meta']['hostgroup_list'])
-
-        # Some hostgroup information
-        if "service_list" in item['meta']:
-            output += "# Services: %s\n" % ",".join(item['meta']['service_list'])
-
-        # Some hostgroup information
-        if "service_members" in item['meta']:
-            output += "# Service Members: %s\n" % ",".join(item['meta']['service_members'])
-
-        if len(item['meta']['template_fields']) != 0:
-            output += "# Values from templates:\n"
-        for k in item['meta']['template_fields']:
-            output += "#\t %-30s %-30s\n" % (k, item[k])
-        output += "\n"
-        output += "define %s {\n" % item['meta']['object_type']
+        object_type = item['meta']['object_type']
+        output = "define %s {\n" % object_type
         for k, v in item.iteritems():
             if v is None:
                 # Skip entries with No value
