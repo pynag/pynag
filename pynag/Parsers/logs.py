@@ -6,9 +6,7 @@ import re
 import time
 
 import pynag.Parsers.main
-
-# TODO: Revisit this import, use Utils.state instead
-import pynag.Plugins
+import pynag.Utils.states
 
 
 class LogFiles(object):
@@ -274,7 +272,10 @@ class LogFiles(object):
                 host, service_description, state, hard, check_attempt, plugin_output = m.groups()
             result['host_name'] = host
             result['service_description'] = service_description
-            result['state'] = int(pynag.Plugins.state[state])
+            try:
+                result['state'] = pynag.Utils.states.service_state_to_int(state)
+            except pynag.Utils.states.UnknownState:
+                result['state'] = pynag.Utils.states.UNKNOWN
             result['check_attempt'] = check_attempt
             result['plugin_output'] = plugin_output
             result['text'] = plugin_output
@@ -296,9 +297,9 @@ class LogFiles(object):
             result['host_name'] = host
             result['service_description'] = service_description
             try:
-                result['state'] = int(pynag.Plugins.state[state])
-            except Exception:
-                result['state'] = -1
+                result['state'] = pynag.Utils.states.service_state_to_int(state)
+            except pynag.Utils.states.UnknownState:
+                result['state'] = pynag.Utils.states.UNKNOWN
             result['plugin_output'] = plugin_output
             result['text'] = plugin_output
         elif logtype == "EXTERNAL COMMAND":
@@ -327,7 +328,10 @@ class LogFiles(object):
                 host, service_description, state, plugin_output = m.groups()
             result['host_name'] = host
             result['service_description'] = service_description
-            result['state'] = state
+            try:
+                result['state'] = pynag.Utils.states.service_state_to_int(state)
+            except pynag.Utils.states.UnknownState:
+                result['state'] = pynag.Utils.states.UNKNOWN
             result['plugin_output'] = plugin_output
             result['text'] = plugin_output
         elif logtype in ('SERVICE FLAPPING ALERT', 'HOST FLAPPING ALERT'):
@@ -342,5 +346,3 @@ class LogFiles(object):
             result['text'] = result['options']
         result['log_class'] = result['class']  # since class is a python keyword
         return result
-
-
