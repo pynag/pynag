@@ -74,12 +74,11 @@ def check_range(value, range_threshold=None):
     ---------------------------------------------------------
     x       Generate an alert if x...
     ---------------------------------------------------------
-    10  	< 0 or > 10, (outside the range of {0 .. 10})
+    10      < 0 or > 10, (outside the range of {0 .. 10})
     10:     < 10, (outside {10 .. ∞})
     ~:10    > 10, (outside the range of {-∞ .. 10})
     10:20   < 10 or > 20, (outside the range of {10 .. 20})
     @10:20  ≥ 10 and ≤ 20, (inside the range of {10 .. 20})
-    10      < 0 or > 10, (outside the range of {0 .. 10})
     ---------------------------------------------------------
 
 
