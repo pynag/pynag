@@ -34,7 +34,7 @@ def check_threshold(value, warning=None, critical=None):
         UNKNOWN int(3)  -- On errors or bad input
         CRITICAL int(2) -- if value is within critical threshold
         WARNING int(1)  -- If value is within warning threshold
-        OK int(0)       -- If value is outside both tresholds
+        OK int(0)       -- If value is outside both thresholds
     Arguments:
         value -- value to check
         warning -- warning range
