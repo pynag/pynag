@@ -34,9 +34,9 @@ class GitRepo(object):
         self.directory = directory
 
         # Who made the change
-        if author_name is None:
+        if author_name is None or author_name.strip() == '':
             author_name = "Pynag User"
-        if author_email is None:
+        if author_email is None or author_email.strip() == '':
             author_email = "%s@%s" % (getuser(), node())
         self.author_name = author_name
         self.author_email = author_email

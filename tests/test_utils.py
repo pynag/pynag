@@ -164,15 +164,17 @@ class testUtils(unittest.TestCase):
     def test_gitrepo_init_empty(self):
         from getpass import getuser
         from platform import node
-        repo = utils.GitRepo(
-            directory=self.tmp_dir,
-            auto_init=True,
-            author_name=None,
-            author_email=None
-        )
-        self.assertEquals(repo.author_name, 'Pynag User')
-        expected_email = '%s@%s' % (getuser(), node())
-        self.assertEquals(repo.author_email, expected_email)
+        emptyish = [None, '', ' ', '\n    ']
+        for x in emptyish:
+            repo = utils.GitRepo(
+                directory=self.tmp_dir,
+                auto_init=True,
+                author_name=x,
+                author_email=x
+            )
+            self.assertEquals(repo.author_name, 'Pynag User')
+            expected_email = '%s@%s' % (getuser(), node())
+            self.assertEquals(repo.author_email, expected_email)
 
     def test_gitrepo_init_with_author(self):
         tempfile.mkstemp(dir=self.tmp_dir)
