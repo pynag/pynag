@@ -349,7 +349,7 @@ class GitRepo(object):
         self.ignore_errors = True
         for i in filelist:
             self.add(i)
-        self.ignore_errors = True
+        self.ignore_errors = False
 
         # Change ['file1','file2'] into the string """ 'file1' 'file2' """
         filestring = ''
