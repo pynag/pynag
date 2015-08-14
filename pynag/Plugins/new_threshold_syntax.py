@@ -150,7 +150,7 @@ def parse_threshold(threshold):
         >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
         {u'thresholds': [(0, u'0..90'), (1, u'90..95'), (2, u'95..100')], u'metric': u'disk_usage'}
     """
-    tmp = threshold.lower().split(',')
+    tmp = threshold.split(',')
     parsed_thresholds = []
     results = {}
     results['thresholds'] = parsed_thresholds
@@ -158,10 +158,11 @@ def parse_threshold(threshold):
         if i.find('=') < 1:
             raise InvalidThreshold("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
-        if key in pynag.Plugins.state.keys():
-            parsed_thresholds.append((pynag.Plugins.state[key], value))
+        key_lower = key.lower()
+        if key_lower in pynag.Plugins.state.keys():
+            parsed_thresholds.append((pynag.Plugins.state[key_lower], value))
         else:
-            results[key] = value
+            results[key_lower] = value
     return results
 
 
