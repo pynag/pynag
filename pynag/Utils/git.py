@@ -34,10 +34,10 @@ class GitRepo(object):
         self.directory = directory
 
         # Who made the change
-        if author_name is None:
+        if author_name is None or author_name.strip() == '':
             author_name = "Pynag User"
-        if author_email is None:
-            author_email = "<%s@%s>" % (getuser(), node())
+        if author_email is None or author_email.strip() == '':
+            author_email = "%s@%s" % (getuser(), node())
         self.author_name = author_name
         self.author_email = author_email
 
@@ -68,7 +68,7 @@ class GitRepo(object):
             None
         """
         os.environ['GIT_AUTHOR_NAME'] = self.author_name
-        os.environ['GIT_AUTHOR_EMAIL'] = self.author_email.strip('<').strip('>')
+        os.environ['GIT_AUTHOR_EMAIL'] = self.author_email
 
     def _run_command(self, command):
         """ Run a specified command from the command line. Return stdout
@@ -349,7 +349,7 @@ class GitRepo(object):
         self.ignore_errors = True
         for i in filelist:
             self.add(i)
-        self.ignore_errors = True
+        self.ignore_errors = False
 
         # Change ['file1','file2'] into the string """ 'file1' 'file2' """
         filestring = ''

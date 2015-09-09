@@ -69,7 +69,7 @@ def find_command_file(cfg_file=None):
     return command_file
 
 
-def send_command(command_id, command_file=None, timestamp=0, *args):
+def send_command(command_id, command_file=None, timestamp=None, *args):
     """
     Send one specific command to the command pipe
 
@@ -83,8 +83,9 @@ def send_command(command_id, command_file=None, timestamp=0, *args):
         args: Command arguments.
 
     """
-    if not timestamp or timestamp == 0:
-        timestamp = int(time.time())
+    if not timestamp:
+        timestamp = time.time()
+    timestamp = int(timestamp)
     command_arguments = map(str, args)
     command_arguments = ";".join(command_arguments)
     command_string = "[%s] %s;%s" % (timestamp, command_id, command_arguments)
