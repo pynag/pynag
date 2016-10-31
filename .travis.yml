@@ -6,8 +6,8 @@ before_install:
   - sudo apt-get update -qq
 install:
   - sudo apt-get install nagios3 check-mk-livestatus 
-  - pip install unittest2==0.5.1 --use-mirrors
-  - pip install coveralls --use-mirrors
+  - pip install unittest2==0.5.1
+  - pip install coveralls
   - python setup.py build
   - python setup.py install
   - sudo chmod 777 /etc/nagios3/nagios.cfg
