@@ -245,7 +245,7 @@ class ObjectRelations(object):
             always_use_regex = True
         else:
             always_use_regex = False
-        is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '+' in x or '\.' in x)
+        is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '\.' in x)
 
         # Strip None entries from full_list
         full_list = filter(lambda x: x is not None, full_list)
