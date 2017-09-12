@@ -50,6 +50,7 @@ class daemon(object):
     SYSTEMD = 3
 
     systemd_service_path = "/usr/lib/systemd/system"
+    init_d_path = "/etc/init.d"
 
     def __init__(self,
                  nagios_bin="/usr/bin/nagios",
@@ -224,16 +225,21 @@ class daemon(object):
         """
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
-        elif self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
+
+        if self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
             self.service_name = self.nagios_init.split(None, 1)[1]
             return daemon.SYSV_INIT_SERVICE
-        elif os.path.exists("%s/%s.service" % (daemon.systemd_service_path,
+
+        if self.service_name and os.path.exists("%s/%s" % (daemon.init_d_path,
+                                                           self.service_name)):
+            return daemon.SYSV_INIT_SERVICE
+
+        if os.path.exists("%s/%s.service" % (daemon.systemd_service_path,
                                                self.service_name)):
             return daemon.SYSTEMD
-        else:
-            raise ControlError(
-                'Unable to detect daemon method, could not find init'
-                'script or systemd unit file')
+
+        raise ControlError('Unable to detect daemon method, could not find init'
+                           'script or systemd unit file')
 
     def _deprecate_sudo(self):
         """
