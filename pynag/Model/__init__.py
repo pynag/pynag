@@ -241,11 +241,14 @@ class ObjectRelations(object):
         >>> hostgroup_hosts['hostgroup1'] == set(['localhost','remotehost'])
         True
         """
+        if config.get_cfg_value('use_regexp_matching') == "0":
+            return
+
         if config.get_cfg_value('use_true_regexp_matching') == "1":
             always_use_regex = True
         else:
             always_use_regex = False
-        is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '\.' in x)
+        is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '+' in x or '\.' in x)
 
         # Strip None entries from full_list
         full_list = filter(lambda x: x is not None, full_list)

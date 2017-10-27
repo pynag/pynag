@@ -530,6 +530,8 @@ class Config(object):
                 if (current['meta']['object_type'] == 'timeperiod') and key not in ('timeperiod_name', 'alias'):
                     key = line
                     value = ''
+                if (current['meta']['object_type'] == 'hostgroup') and key == 'members' and key in current:
+                    value = '%s,%s' % (current[key], value)
                 current[key] = value
                 current['meta']['defined_attributes'][key] = value
             # Something is wrong in the config
