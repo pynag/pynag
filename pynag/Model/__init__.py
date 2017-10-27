@@ -241,6 +241,9 @@ class ObjectRelations(object):
         >>> hostgroup_hosts['hostgroup1'] == set(['localhost','remotehost'])
         True
         """
+        if config.get_cfg_value('use_regexp_matching') == "0":
+            return
+
         if config.get_cfg_value('use_true_regexp_matching') == "1":
             always_use_regex = True
         else:

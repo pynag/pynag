@@ -1057,6 +1057,9 @@ class Config(object):
         # Alphabetize
         return_list.sort()
 
+        # remove preceding and trailing whitespace from each element
+        return_list = map(lambda x : x.strip(), return_list)
+
         return return_list
 
     def delete_object(self, object_type, object_name, user_key=None):
