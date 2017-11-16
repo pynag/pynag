@@ -7,6 +7,7 @@ before_install:
   - sudo apt-get update -qq
 install:
   - sudo apt-get -y install nagios3 check-mk-livestatus
+  - pip install unittest2==1.1.0
   - pip install coveralls
   - pip install mock
   - pip install nose
