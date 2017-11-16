@@ -249,7 +249,7 @@ class daemon(object):
         sudo to True
         """
         if self.nagios_init and \
-           self.nagios_init.split(None, 1)[0].endswith(b"sudo"):
+           self.nagios_init.split(None, 1)[0].endswith("sudo"):
             self.sudo = True
             self.nagios_init = self.nagios_init.split(None, 1)[1]
             warn("nagios_init command line with sudo is deprecated, please "
