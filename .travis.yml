@@ -7,8 +7,9 @@ before_install:
   - sudo apt-get update -qq
 install:
   - sudo apt-get -y install nagios3 check-mk-livestatus
-  - pip install unittest2==1.1.0
   - pip install coveralls
+  - pip install mock
+  - pip install nose
   - python setup.py build
   - python setup.py install
   - sudo chmod 777 /etc/nagios3/nagios.cfg
@@ -20,7 +21,7 @@ before_script:
   - git config --global user.email "noreply@travis-ci.org"
   - git config --global user.name "Travis"
 script:
-  - coverage run --source=pynag tests/test.py
+  - nosetests --cover-erase --with-coverage --cover-package="pynag" --cover-html tests/test_*.py
 after_success:
   - coveralls
 notifications:
