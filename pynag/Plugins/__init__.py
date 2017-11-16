@@ -21,9 +21,9 @@
 Python Nagios extensions
 """
 
-
-
-
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
 
 import sys
 import os
@@ -36,6 +36,7 @@ import pynag.Utils
 import pynag.errors
 from pynag.Plugins import new_threshold_syntax
 from pynag.Plugins import classic_threshold_syntax
+import six
 
 # The following constants, and state, state_text below are considered deprecated.
 # Use pynag.Utils.states module instead.
@@ -198,7 +199,7 @@ class simple(object):
                 self.parser.error("option '%s' is required" % extra_item)
 
         # Put the remaining values into the data dictionary
-        for key, value in list(options.__dict__.items()):
+        for key, value in options.__dict__.items():
             if key in (self.extra_list_required + self.extra_list_optional):
                 self.data[key] = value
 
@@ -667,7 +668,7 @@ class PluginHelper(object):
 
         # If new status was entered as a human readable string (ok,warn,etc)
         # lets convert it to int:
-        if isinstance(new_status, str):
+        if isinstance(new_status, six.string_types):
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:

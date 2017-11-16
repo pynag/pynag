@@ -3,6 +3,8 @@
 # This script looks for files in your configuration that have no objects in them.
 #
 #
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import pynag.Model
 

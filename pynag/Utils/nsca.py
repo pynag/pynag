@@ -1,4 +1,5 @@
 """Module for dealing with NSCA."""
+from __future__ import absolute_import
 import platform
 import subprocess
 

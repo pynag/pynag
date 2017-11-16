@@ -39,6 +39,7 @@ localhost
 ...     i.save() # doctest: +SKIP
 """
 
+from __future__ import absolute_import
 import os
 import re
 import subprocess
@@ -54,6 +55,9 @@ import pynag.errors
 import pynag.Parsers.config_parser
 import pynag.Parsers.status_dat
 import pynag.Utils
+import six
+from six.moves import filter
+from six.moves import map
 
 
 # Path To Nagios configuration file
@@ -191,7 +195,7 @@ class ObjectRelations(object):
     @staticmethod
     def reset():
         """ Runs clear() on every member attribute in ObjectRelations """
-        for k, v in list(ObjectRelations.__dict__.items()):
+        for k, v in ObjectRelations.__dict__.items():
             if isinstance(v, defaultdict):
                 v.clear()
 
@@ -280,7 +284,7 @@ class ObjectRelations(object):
         # if dictionary = {'localhost':[ '.*' ]}
         # then change it so that:
         # dictionary = { 'localhost':[1,2,3] }
-        for key, value in list(dictionary.items()):
+        for key, value in dictionary.items():
             regex_members = list(filter(is_regex, value))
             if len(regex_members) == 0:
                 continue  # no changes need to be made
@@ -353,7 +357,7 @@ class ObjectRelations(object):
             However the relations we update work on Service.get_id() because not all services that belong to servicegroups
             have a valid host_name/service_description pair (templates)
         """
-        for servicegroup, members in list(ObjectRelations.servicegroup_members.items()):
+        for servicegroup, members in ObjectRelations.servicegroup_members.items():
             for shortname in members:
                 try:
                     service = Service.objects.get_by_shortname(shortname, cache_only=True)
@@ -422,7 +426,7 @@ class ObjectFetcher(object):
         ObjectRelations.reset()
 
         # Fetch all objects from config_parser.config
-        for object_type, objects in list(config.data.items()):
+        for object_type, objects in config.data.items():
             # change "all_host" to just "host"
             object_type = object_type[len("all_"):]
             Class = string_to_class.get(object_type, ObjectDefinition)
@@ -585,7 +589,7 @@ class ObjectDefinition(object):
         self.__argument_macros = {}
 
         # Any kwargs provided will be added to changes:
-        for k, v in list(kwargs.items()):
+        for k, v in kwargs.items():
             self[k] = v
 
     def get_attribute(self, attribute_name):
@@ -688,13 +692,13 @@ class ObjectDefinition(object):
 
     def keys(self):
         all_keys = ['meta', 'id', 'shortname', 'effective_command_line']
-        for k in list(self._changes.keys()):
+        for k in self._changes.keys():
             if k not in all_keys:
                 all_keys.append(k)
-        for k in list(self._defined_attributes.keys()):
+        for k in self._defined_attributes.keys():
             if k not in all_keys:
                 all_keys.append(k)
-        for k in list(self._inherited_attributes.keys()):
+        for k in self._inherited_attributes.keys():
             if k not in all_keys:
                 all_keys.append(k)
             # for k in self._meta.keys():
@@ -792,7 +796,7 @@ class ObjectDefinition(object):
 
         # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self._filename_has_changed:
-            for k, v in list(self._changes.items()):
+            for k, v in self._changes.items():
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
@@ -805,7 +809,7 @@ class ObjectDefinition(object):
         # If we get here, we are making modifications to an object
         else:
             number_of_changes = 0
-            for field_name, new_value in list(self._changes.items()):
+            for field_name, new_value in self._changes.items():
                 save_result = config.item_edit_field(
                     item=self._original_attributes,
                     field_name=field_name,
@@ -837,9 +841,9 @@ class ObjectDefinition(object):
         """ Re-applies templates to this object (handy when you have changed the use attribute """
         old_me = config.get_new_item(self.object_type, self.get_filename())
         old_me['meta']['defined_attributes'] = self._defined_attributes
-        for k, v in list(self._defined_attributes.items()):
+        for k, v in self._defined_attributes.items():
             old_me[k] = v
-        for k, v in list(self._changes.items()):
+        for k, v in self._changes.items():
             old_me[k] = v
         i = config._apply_template(old_me)
         new_me = self.__class__(item=i)
@@ -935,11 +939,11 @@ class ObjectDefinition(object):
             raise ValueError('To copy an object definition you need at least one new attribute')
 
         new_object = string_to_class[self.object_type](filename=filename)
-        for k, v in list(self._defined_attributes.items()):
+        for k, v in self._defined_attributes.items():
             new_object[k] = v
-        for k, v in list(self._changes.items()):
+        for k, v in self._changes.items():
             new_object[k] = v
-        for k, v in list(args.items()):
+        for k, v in args.items():
             new_object[k] = v
         new_object.save()
         return new_object
@@ -985,7 +989,7 @@ class ObjectDefinition(object):
     def __str__(self):
         return_buffer = "define %s {\n" % self.object_type
         fields = list(self._defined_attributes.keys())
-        for i in list(self._changes.keys()):
+        for i in self._changes.keys():
             if i not in fields:
                 fields.append(i)
         fields.sort()
@@ -1082,7 +1086,7 @@ class ObjectDefinition(object):
         # custom variable attribute names are all prefixed
         variable_name = _CUSTOM_VARIABLE_PREFIX + variable_name
 
-        for attribute_name in list(self.keys()):
+        for attribute_name in self.keys():
             if attribute_name.upper() == variable_name:
                 return self.get(attribute_name)
         else:
@@ -1175,7 +1179,7 @@ class ObjectDefinition(object):
         macronames = regex.findall(command['command_line'])
 
         # Add all custom macros to our list:
-        for i in list(self.keys()):
+        for i in self.keys():
             if not i.startswith(_CUSTOM_VARIABLE_PREFIX):
                 continue
             if self.object_type == 'service':
@@ -1395,7 +1399,7 @@ class ObjectDefinition(object):
         (attribute_name,defined_value,inherited_value)
         """
         result = []
-        for k in list(self.keys()):
+        for k in self.keys():
             inher = defin = None
             if k in self._inherited_attributes:
                 inher = self._inherited_attributes[k]
@@ -2590,7 +2594,7 @@ def _remove_object_from_group(my_object, my_group):
 def _add_to_contactgroup(my_object, contactgroup):
     """ add Host or Service to a contactgroup
     """
-    if isinstance(contactgroup, str):
+    if isinstance(contactgroup, six.string_types):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
@@ -2610,7 +2614,7 @@ def _add_to_contactgroup(my_object, contactgroup):
 def _remove_from_contactgroup(my_object, contactgroup):
     """ remove Host or Service from  a contactgroup
     """
-    if isinstance(contactgroup, str):
+    if isinstance(contactgroup, six.string_types):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
@@ -2669,7 +2673,7 @@ _add_property(ObjectDefinition, 'name')
 _add_property(ObjectDefinition, 'use')
 
 # For others, create attributes dynamically based on all_attributes.keys()
-for object_type, attributes in list(all_attributes.object_definitions.items()):
+for object_type, attributes in all_attributes.object_definitions.items():
     # Lets find common attributes that every object definition should have:
     if object_type == 'any':
         continue

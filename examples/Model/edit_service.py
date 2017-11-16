@@ -2,6 +2,8 @@
 #
 # Example script on how to modify a single Nagios service
 
+from __future__ import absolute_import
+from __future__ import print_function
 from pynag import Model
 import sys
 

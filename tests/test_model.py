@@ -1,5 +1,8 @@
+from __future__ import absolute_import
 import os
 import sys
+from six.moves import map
+from six.moves import range
 
 # Make sure we import from working tree
 pynagbase = os.path.dirname(os.path.realpath(__file__ + "/.."))
@@ -1121,7 +1124,7 @@ class Model(unittest.TestCase):
         new_host = pynag.Model.Host.objects.get_by_shortname('new_host_name')
         self.assertEqual(list(host.keys()), list(new_host.keys()))
         self.assertEqual('new_host_name', new_host.host_name)
-        for attribute_name in list(host.keys()):
+        for attribute_name in host.keys():
             new_value = new_host[attribute_name]
             old_value = host[attribute_name]
             if attribute_name in ('meta', 'id', 'shortname', 'host_name'):

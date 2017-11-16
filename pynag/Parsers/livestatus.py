@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for talking to MK-Livestatus sockets."""
 
+from __future__ import absolute_import
 import socket
 import sys
 import time
@@ -11,6 +12,7 @@ import pynag.Utils.paths
 
 # TODO remove this and raise proper exceptions
 from pynag.Parsers.errors import ParserError
+from six.moves import filter
 
 
 class Error(ParserError):
@@ -544,7 +546,7 @@ class LivestatusQuery(object):
         # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
         # For example if attribute ends with '__contains' we want the end result
         # to be 'Filter: attribute ~ value' (notice the ~ instead of =)
-        for suffix, potential_filter_statement in list(self.__FILTER_TRANSMUTATION_SUFFIX.items()):
+        for suffix, potential_filter_statement in self.__FILTER_TRANSMUTATION_SUFFIX.items():
             if attribute.endswith(suffix):
                 suffix_length = len(suffix)
                 attribute = attribute[:-suffix_length]
@@ -614,7 +616,7 @@ class LivestatusQuery(object):
         >>> query.get_query()
         'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n\\n'
         """
-        for key, value in list(kwargs.items()):
+        for key, value in kwargs.items():
             self.add_filter(key, value)
 
     def set_columns(self, *columns):

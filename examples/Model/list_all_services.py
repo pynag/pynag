@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 sys.path.insert(1, '/opt/pynag')
 from pynag import Model

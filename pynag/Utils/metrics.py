@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """ Classes and functions related to Perfdata metrics."""
+from __future__ import absolute_import
 import shlex
 import re
 from pynag import errors
 from pynag.Plugins import new_threshold_syntax
 from pynag.Plugins import classic_threshold_syntax
+from six.moves import map
 
 
 MULTIPLIERS = {
@@ -501,7 +503,7 @@ def get_base_value(value, uom=None, maximum=None):
     """
     float_value = float(value)
     all_multipliers_in_lowercase = {}
-    for key, multiplier in list(MULTIPLIERS.items()):
+    for key, multiplier in MULTIPLIERS.items():
         all_multipliers_in_lowercase[key.lower()] = multiplier
     if not uom:
         return float_value

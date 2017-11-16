@@ -29,13 +29,14 @@ Example:
 
 """
 
-
-
-
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
 
 import pynag.Plugins
 import pynag.errors
 from pynag.Utils import states
+import six
 
 class Error(pynag.errors.PynagError):
     """Base class for errors in this module."""
@@ -112,7 +113,7 @@ def check_range(value, range):
     False
     """
 
-    if not isinstance(range, str) or range == '':
+    if not isinstance(range, six.string_types) or range == '':
         raise InvalidThreshold('range must be a string')
 
     # value must be numeric, so we try to convert it to float

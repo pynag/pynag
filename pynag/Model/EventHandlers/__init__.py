@@ -27,6 +27,8 @@ This enables you for example to log to file every time an object is rewritten.
 """
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import time
 from platform import node
 import subprocess

@@ -18,6 +18,7 @@
 #
 #
 
+from __future__ import absolute_import
 import os
 import tempfile
 import time
@@ -150,13 +151,13 @@ class CheckResult(object):
         os.write(self.fh, """
 ### Nagios {1} Check Result ###
 # Time: {0}\n""".format(self.file_time, object_type.capitalize()))
-        for key, value in list(parms.items()):
+        for key, value in parms.items():
             os.write(self.fh, key + "=" + str(value) + "\n")
 
     def submit(self):
         """Submits the results to nagios"""
         os.close(self.fh)
         ok_filename = self.cmd_file + ".ok"
-        ok_fh = file(ok_filename, 'a')
+        ok_fh = open(ok_filename, 'a')
         ok_fh.close()
         return self.cmd_file

@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 ## setup.py ###
+from __future__ import absolute_import
+from __future__ import print_function
 from distutils.core import setup, Command
 from distutils.command.build_py import build_py as _build_py
 from pynag import __version__

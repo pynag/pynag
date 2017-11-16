@@ -25,11 +25,14 @@ that are used throughout the pynag library.
 
 """
 
+from __future__ import absolute_import
 import os
 import re
 import subprocess
 
 from pynag import errors
+from six.moves import filter
+from six.moves import map
 
 
 class UtilsError(errors.PynagError):
@@ -446,7 +449,7 @@ def grep(objects, **kwargs):
     # is a list, it means the calling function is doing multible search on
     # the same key
     search = []
-    for k, v in list(kwargs.items()):
+    for k, v in kwargs.items():
         # We need the actual array in "v" for __in and __notin
         if isinstance(v, type([])) and not (k.endswith('__in') or k.endswith('__notin')):
             for i in v:
@@ -542,7 +545,7 @@ def grep_to_livestatus(*args, **kwargs):
     """
 
     result = list(args)  # Args go unchanged back into results
-    for k, v in list(kwargs.items()):
+    for k, v in kwargs.items():
         if isinstance(v, list) and len(v) > 0:
             v = v[0]
         if k.endswith('__contains'):

@@ -12,6 +12,7 @@
 # serve to show the default.
 
 
+from __future__ import absolute_import
 import sys, os
 
 sys.path.insert(0,os.path.abspath('.'))
@@ -44,8 +45,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'pynag'
-copyright = '2014, Pall Sigurdsson and Tomas Edwardsson'
+project = u'pynag'
+copyright = u'2014, Pall Sigurdsson and Tomas Edwardsson'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -187,8 +188,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'pynag.tex', 'pynag Documentation',
-   'Pall Sigurdsson and Tomas Edwardsson', 'manual'),
+  ('index', 'pynag.tex', u'pynag Documentation',
+   u'Pall Sigurdsson and Tomas Edwardsson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -217,8 +218,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('pynag-command', 'pynag', 'command line front for manipulating nagios configuration',
-     ['Pall Sigurdsson and Tomas Edwardsson'], 1)
+    ('pynag-command', 'pynag', u'command line front for manipulating nagios configuration',
+     [u'Pall Sigurdsson and Tomas Edwardsson'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -231,8 +232,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'pynag', 'pynag Documentation',
-   'Pall Sigurdsson and Tomas Edwardsson', 'pynag', 'One line description of project.',
+  ('index', 'pynag', u'pynag Documentation',
+   u'Pall Sigurdsson and Tomas Edwardsson', 'pynag', 'One line description of project.',
    'Miscellaneous'),
 ]
 

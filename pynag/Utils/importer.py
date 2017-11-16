@@ -10,10 +10,13 @@ Either execute this script standalone from the command line or use it as a pytho
 ...     i.save() # doctest: +SKIP
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import optparse
 import os
 
 import pynag.Model
+from six.moves import map
 
 # Default host is used when you try to add a service to a
 # Host that does not exist

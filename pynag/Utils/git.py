@@ -1,5 +1,6 @@
 """ Convenience class for handling git repos."""
 
+from __future__ import absolute_import
 import datetime
 import subprocess
 import os
@@ -9,6 +10,8 @@ from platform import node
 
 from pynag.Utils import grep
 from pynag.errors import PynagError
+from six.moves import filter
+from six.moves import map
 
 
 class GitError(PynagError):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for low-level parsing of nagios-style configuration files."""
 
+from __future__ import absolute_import
 import os
 import re
 import sys
@@ -11,6 +12,9 @@ from pynag.Utils import paths
 
 # TODO: Raise more specific errors in this module.
 from pynag.Parsers.errors import ParserError
+import six
+from six.moves import map
+from six.moves import range
 
 
 class ConfigFileNotFound(ParserError):
@@ -281,7 +285,7 @@ class Config(object):
         inherited_attributes = original_item['meta']['inherited_attributes']
         template_fields = original_item['meta']['template_fields']
         for parent_item in parent_items:
-            for k, v in parent_item.items():
+            for k, v in six.iteritems(parent_item):
                 if k in ('use', 'register', 'meta', 'name'):
                     continue
                 if k not in inherited_attributes:
@@ -312,7 +316,7 @@ class Config(object):
         """
         return_list = []
 
-        for k in list(self.data.keys()):
+        for k in self.data.keys():
             for item in self[k]:
                 if item['meta']['filename'] == filename:
                     return_list.append(item)
@@ -1359,7 +1363,7 @@ class Config(object):
         for possible_item in self.pre_object_list:
             if "name" in possible_item:
                 # Start appending to the item
-                for k, v in possible_item.items():
+                for k, v in six.iteritems(possible_item):
 
                     try:
                         if k == 'use':
@@ -1401,7 +1405,7 @@ class Config(object):
     def commit(self):
         """ Write any changes that have been made to it's appropriate file """
         # Loops through ALL items
-        for k in list(self.data.keys()):
+        for k in self.data.keys():
             for item in self[k]:
 
                 # If the object needs committing, commit it!
@@ -1437,7 +1441,7 @@ class Config(object):
         """ Flag every item in the configuration to be committed
         This should probably only be used for debugging purposes
         """
-        for object_type in list(self.data.keys()):
+        for object_type in self.data.keys():
             for item in self.data[object_type]:
                 item['meta']['needs_commit'] = True
 
@@ -1454,7 +1458,7 @@ class Config(object):
         """
         object_type = item['meta']['object_type']
         output = "define %s {\n" % object_type
-        for k, v in item.items():
+        for k, v in six.iteritems(item):
             if v is None:
                 # Skip entries with No value
                 continue
@@ -1612,7 +1616,7 @@ class Config(object):
         # Reload not needed if no object_cache file
         if object_cache_file is None:
             return False
-        for k, v in list(new_timestamps.items()):
+        for k, v in new_timestamps.items():
             if not v or int(v) > object_cache_timestamp:
                 return True
         return False
@@ -1636,7 +1640,7 @@ class Config(object):
         new_timestamps = self.get_timestamps()
         if len(new_timestamps) != len(self.timestamps):
             return True
-        for k, v in list(new_timestamps.items()):
+        for k, v in new_timestamps.items():
             if self.timestamps.get(k, None) != v:
                 return True
         return False
@@ -1737,7 +1741,7 @@ class Config(object):
         for i in self.get_cfg_files():
             files[i] = None
         # Now lets lets get timestamp of every file
-        for k, v in list(files.items()):
+        for k, v in files.items():
             if not self.isfile(k):
                 continue
             files[k] = self.stat(k).st_mtime

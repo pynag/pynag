@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """Module for parsing and searching for log entries."""
 
+from __future__ import absolute_import
 import os
 import re
 import time
 
 import pynag.Parsers.main
 import pynag.Utils.states
+from six.moves import filter
 
 
 class LogFiles(object):
@@ -87,7 +89,7 @@ class LogFiles(object):
                 # If search string provided, filter the string
             if search is not None:
                 entries = [x for x in entries if x['message'].lower().find(search.lower()) > -1]
-            for k, v in list(kwargs.items()):
+            for k, v in kwargs.items():
                 entries = [x for x in entries if x.get(k) == v]
             result += entries
 

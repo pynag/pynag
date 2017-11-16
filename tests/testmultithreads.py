@@ -4,6 +4,8 @@
 # and prints error to screen if any writes fail
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import pynag.Model
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 """Experimental module for configuring remote nagios instance via ssh."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import stat
 import tarfile
-import io
+import StringIO
 
 from pynag.Parsers import config_parser
+from six.moves import map
 
 
 class SshConfig(config_parser.Config):
@@ -35,8 +38,8 @@ class SshConfig(config_parser.Config):
         self.ssh.connect(host, username=username, password=password)
         self.ftp = self.ssh.open_sftp()
 
-        import io
-        c = io.StringIO()
+        import cStringIO
+        c = cStringIO.StringIO()
         self.tar = tarfile.open(mode='w', fileobj=c)
 
         self.cached_stats = {}
@@ -48,7 +51,7 @@ class SshConfig(config_parser.Config):
         tarinfo = self._get_file(filename)
         string = tarinfo.tobuf()
         print(string)
-        return io.StringIO(string)
+        return StringIO.StringIO(string)
         return self.tar.extractfile(tarinfo)
 
     def add_to_tar(self, path):
