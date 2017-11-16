@@ -227,7 +227,7 @@ class daemon(object):
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
 
-        if self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
+        if self.nagios_init and self.nagios_init.split(None, 1)[0].endswith(b"service"):
             self.service_name = self.nagios_init.split(None, 1)[1]
             return daemon.SYSV_INIT_SERVICE
 
@@ -249,14 +249,14 @@ class daemon(object):
         sudo to True
         """
         if self.nagios_init and \
-           self.nagios_init.split(None, 1)[0].endswith("sudo"):
+           self.nagios_init.split(None, 1)[0].endswith(b"sudo"):
             self.sudo = True
             self.nagios_init = self.nagios_init.split(None, 1)[1]
             warn("nagios_init command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
 
         if self.nagios_bin and \
-           self.nagios_bin.split(None, 1)[0].endswith("sudo"):
+           self.nagios_bin.split(None, 1)[0].endswith(b"sudo"):
             self.sudo = True
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "
