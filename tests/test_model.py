@@ -338,11 +338,11 @@ class Model(unittest.TestCase):
         host = pynag.Model.Host()
 
         all_hosts = pynag.Model.Host.objects.get_all()
-        all_hostnames = map(lambda x: x.host_name, all_hosts)
+        all_hostnames = [x.host_name for x in all_hosts]
 
         # generate a random hostname for our new host
         chars = string.letters + string.digits
-        host_name = "host-delete-test" + ''.join([random.choice(chars) for i in xrange(10)])
+        host_name = "host-delete-test" + ''.join([random.choice(chars) for i in range(10)])
 
         # Produce an error if our randomly generated host already exists in config
         self.assertTrue(host_name not in all_hostnames)
@@ -516,14 +516,14 @@ class Model(unittest.TestCase):
         h = pynag.Model.Host.objects.get_by_name('child')
         expected_result = ['parent01', 'parent02', 'parent-of-all']
         hosts = h.get_effective_parents(recursive=True)
-        host_names = map(lambda x: x.name, hosts)
+        host_names = [x.name for x in hosts]
         self.assertEqual(expected_result, host_names)
 
         # Get host named parent-of-all, get its children
         h = pynag.Model.Host.objects.get_by_name('parent-of-all')
         expected_result = ['parent01', 'parent02', 'parent03', 'child']
         hosts = h.get_effective_children(recursive=True)
-        host_names = map(lambda x: x.name, hosts)
+        host_names = [x.name for x in hosts]
         self.assertEqual(expected_result, host_names)
 
     def test_hostgroup_with_regex_members(self):
@@ -598,11 +598,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are removed when a contactgroup is deleted"""
         """ => test with delete(recursive=True,cleanup_related_items=True) """
         all_contactgroups = pynag.Model.Contactgroup.objects.get_all()
-        all_contactgroup_names = map(lambda x: x.name, all_contactgroups)
+        all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        cg_name = "cg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        cg_name = "cg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
         self.assertTrue(cg_name not in all_contactgroup_names)
@@ -635,11 +635,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are _NOT_ removed when a contactgroup is deleted with recursive=False"""
         """ => test with delete(recursive=False,cleanup_related_items=True) """
         all_contactgroups = pynag.Model.Contactgroup.objects.get_all()
-        all_contactgroup_names = map(lambda x: x.name, all_contactgroups)
+        all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        cg_name = "cg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        cg_name = "cg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
         self.assertTrue(cg_name not in all_contactgroup_names)
@@ -668,11 +668,11 @@ class Model(unittest.TestCase):
         """ => test with delete(recursive=False,cleanup_related_items=False) """
 
         all_contactgroups = pynag.Model.Contactgroup.objects.get_all()
-        all_contactgroup_names = map(lambda x: x.name, all_contactgroups)
+        all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        cg_name = "cg_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        cg_name = "cg_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
         self.assertTrue(cg_name not in all_contactgroup_names)
@@ -701,11 +701,11 @@ class Model(unittest.TestCase):
         """ should have the same results as  test_contactgroup_delete_nonRecursive_nonCleanup()"""
 
         all_contactgroups = pynag.Model.Contactgroup.objects.get_all()
-        all_contactgroup_names = map(lambda x: x.name, all_contactgroups)
+        all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        cg_name = "cg_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        cg_name = "cg_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
         self.assertTrue(cg_name not in all_contactgroup_names)
@@ -733,11 +733,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are removed when a contact is deleted"""
         """ => test with delete(recursive=True,cleanup_related_items=True) """
         all_contacts = pynag.Model.Contact.objects.get_all()
-        all_contact_names = map(lambda x: x.name, all_contacts)
+        all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
         chars = string.letters + string.digits
-        c_name = "c_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c_name = "c_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
         self.assertTrue(c_name not in all_contact_names)
@@ -766,11 +766,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are _NOT_ removed when a contact is deleted with recursive=False"""
         """ => test with delete(recursive=False,cleanup_related_items=True) """
         all_contacts = pynag.Model.Contact.objects.get_all()
-        all_contact_names = map(lambda x: x.name, all_contacts)
+        all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
         chars = string.letters + string.digits
-        c_name = "c_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c_name = "c_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
         self.assertTrue(c_name not in all_contact_names)
@@ -799,11 +799,11 @@ class Model(unittest.TestCase):
         """ => test with delete(recursive=False,cleanup_related_items=False) """
 
         all_contacts = pynag.Model.Contact.objects.get_all()
-        all_contact_names = map(lambda x: x.name, all_contacts)
+        all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
         chars = string.letters + string.digits
-        c_name = "c_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c_name = "c_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
         self.assertTrue(c_name not in all_contact_names)
@@ -833,11 +833,11 @@ class Model(unittest.TestCase):
         """ should have the same results as  test_contact_delete_nonRecursive_nonCleanup()"""
 
         all_contacts = pynag.Model.Contact.objects.get_all()
-        all_contact_names = map(lambda x: x.name, all_contacts)
+        all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
         chars = string.letters + string.digits
-        c_name = "c_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        c_name = "c_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
         self.assertTrue(c_name not in all_contact_names)
@@ -865,11 +865,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are removed when a hostgroup is deleted"""
         """ => test with delete(recursive=True,cleanup_related_items=True) """
         all_hostgroups = pynag.Model.Hostgroup.objects.get_all()
-        all_hostgroup_names = map(lambda x: x.name, all_hostgroups)
+        all_hostgroup_names = [x.name for x in all_hostgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        hg_name = "hg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        hg_name = "hg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         hg = pynag.Model.Hostgroup()
         # Produce an error if our randomly generated hostgroup already exists in config
         self.assertTrue(hg_name not in all_hostgroup_names)
@@ -910,11 +910,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are cleaned up when a hostgroup is deleted"""
         """ => test with delete(recursive=False,cleanup_related_items=True) """
         all_hostgroups = pynag.Model.Hostgroup.objects.get_all()
-        all_hostgroup_names = map(lambda x: x.name, all_hostgroups)
+        all_hostgroup_names = [x.name for x in all_hostgroups]
 
         # creating test object
         chars = string.letters + string.digits
-        hg_name = "hg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        hg_name = "hg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         hg = pynag.Model.Hostgroup()
         # Produce an error if our randomly generated hostgroup already exists in config
         self.assertTrue(hg_name not in all_hostgroup_names)
@@ -952,11 +952,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are removed when a host is deleted"""
         """ => test with delete(recursive=True,cleanup_related_items=True) """
         all_hosts = pynag.Model.Host.objects.get_all()
-        all_host_names = map(lambda x: x.name, all_hosts)
+        all_host_names = [x.name for x in all_hosts]
 
         # creating test object
         chars = string.letters + string.digits
-        h_name = "h_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        h_name = "h_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         h = pynag.Model.Host()
         # Produce an error if our randomly generated host already exists in config
         self.assertTrue(h_name not in all_host_names)
@@ -990,11 +990,11 @@ class Model(unittest.TestCase):
         """Test if the right objects are cleaned up when a host is deleted"""
         """ => test with delete(recursive=False,cleanup_related_items=True) """
         all_hosts = pynag.Model.Host.objects.get_all()
-        all_host_names = map(lambda x: x.name, all_hosts)
+        all_host_names = [x.name for x in all_hosts]
 
         # creating test object
         chars = string.letters + string.digits
-        h_name = "h_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in xrange(10)])
+        h_name = "h_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         h = pynag.Model.Host()
         # Produce an error if our randomly generated host already exists in config
         self.assertTrue(h_name not in all_host_names)
@@ -1119,9 +1119,9 @@ class Model(unittest.TestCase):
         host.copy(host_name='new_host_name')
 
         new_host = pynag.Model.Host.objects.get_by_shortname('new_host_name')
-        self.assertEqual(host.keys(), new_host.keys())
+        self.assertEqual(list(host.keys()), list(new_host.keys()))
         self.assertEqual('new_host_name', new_host.host_name)
-        for attribute_name in host.keys():
+        for attribute_name in list(host.keys()):
             new_value = new_host[attribute_name]
             old_value = host[attribute_name]
             if attribute_name in ('meta', 'id', 'shortname', 'host_name'):

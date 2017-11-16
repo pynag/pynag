@@ -20,5 +20,5 @@ nc.extended_parse()
 for hostgroup in nc.get_host(target_host)['meta']['hostgroup_list']:
     ## Check to see if this is the only host in this service
     #return_item = nc.get_service(target_host, service_description)
-    print hostgroup
+    print(hostgroup)
 #    print return_item['service_description']

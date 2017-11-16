@@ -27,10 +27,10 @@ class BuildMan(Command):
         stdout, stderr = sphinx_proc.communicate()
         return_code = sphinx_proc.wait()
         if return_code:
-            print "Warning: Build of manpage failed \"%s\":\n%s\n%s" % (
+            print("Warning: Build of manpage failed \"%s\":\n%s\n%s" % (
                       cmd,
                       stdout,
-                      stderr)
+                      stderr))
     def initialize_options(self):
         pass
 
@@ -55,7 +55,7 @@ class PynagTest(Command):
 def check_python_version():
     """Check if the python version is outdated"""
     if sys.version_info[0] == 2 and sys.version_info[1] < 6:
-        raise SystemExit, "python 2.6 or newer is required"
+        raise SystemExit("python 2.6 or newer is required")
 
 if __name__ == "__main__":
     check_python_version()

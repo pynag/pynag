@@ -427,7 +427,7 @@ class PerfData(object):
             "'load'=15;;;;"
 
         """
-        metrics = map(lambda x: x.__str__(), self.metrics)
+        metrics = [x.__str__() for x in self.metrics]
         return ' '.join(metrics)
 
 
@@ -501,7 +501,7 @@ def get_base_value(value, uom=None, maximum=None):
     """
     float_value = float(value)
     all_multipliers_in_lowercase = {}
-    for key, multiplier in MULTIPLIERS.items():
+    for key, multiplier in list(MULTIPLIERS.items()):
         all_multipliers_in_lowercase[key.lower()] = multiplier
     if not uom:
         return float_value

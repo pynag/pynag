@@ -40,13 +40,13 @@ class TestDefaultDict(unittest.TestCase):
         self.assertEqual(d2["bar"], 2)
         self.assertEqual(d2[42], [])
         self.assertIn("foo", d2)
-        self.assertIn("foo", d2.keys())
+        self.assertIn("foo", list(d2.keys()))
         self.assertIn("bar", d2)
-        self.assertIn("bar", d2.keys())
+        self.assertIn("bar", list(d2.keys()))
         self.assertIn(42, d2)
-        self.assertIn(42, d2.keys())
+        self.assertIn(42, list(d2.keys()))
         self.assertNotIn(12, d2)
-        self.assertNotIn(12, d2.keys())
+        self.assertNotIn(12, list(d2.keys()))
         d2.default_factory = None
         self.assertEqual(d2.default_factory, None)
         try:
@@ -95,8 +95,8 @@ class TestDefaultDict(unittest.TestCase):
         try:
             f = open(tfn, "w+")
             try:
-                print >>f, d1
-                print >>f, d2
+                print(d1, file=f)
+                print(d2, file=f)
                 f.seek(0)
                 self.assertEqual(f.readline(), repr(d1) + "\n")
                 self.assertEqual(f.readline(), repr(d2) + "\n")
@@ -180,7 +180,7 @@ class TestDefaultDict(unittest.TestCase):
         try:
             f = open(tfn, "w+")
             try:
-                print >>f, d
+                print(d, file=f)
             finally:
                 f.close()
         finally:

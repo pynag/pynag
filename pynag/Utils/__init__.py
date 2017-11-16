@@ -86,7 +86,7 @@ class AttributeList(object):
         # (like when working with livestatus) we have the luxury of getting lists
         if isinstance(value, list):
             # Remove empty fields
-            self.fields = filter(lambda x: len(x) > 0, value)
+            self.fields = [x for x in value if len(x) > 0]
             return
 
         possible_operators = '+-!'
@@ -103,7 +103,7 @@ class AttributeList(object):
         self.fields = value.split(',')
 
         # Strip whitespaces from each field
-        self.fields = map(lambda x: x.strip(), self.fields)
+        self.fields = [x.strip() for x in self.fields]
 
     def __str__(self):
         return self.operator + ','.join(self.fields)
@@ -361,7 +361,7 @@ class DefaultDict(dict):
             args = tuple()
         else:
             args = self.default_factory,
-        return type(self), args, None, None, self.items()
+        return type(self), args, None, None, list(self.items())
 
     def copy(self):
         return self.__copy__()
@@ -371,7 +371,7 @@ class DefaultDict(dict):
 
     def __deepcopy__(self, memo):
         import copy
-        return type(self)(self.default_factory, copy.deepcopy(self.items()))
+        return type(self)(self.default_factory, copy.deepcopy(list(self.items())))
 
     def __repr__(self):
         return 'defaultdict(%s, %s)' % (self.default_factory,
@@ -446,7 +446,7 @@ def grep(objects, **kwargs):
     # is a list, it means the calling function is doing multible search on
     # the same key
     search = []
-    for k, v in kwargs.items():
+    for k, v in list(kwargs.items()):
         # We need the actual array in "v" for __in and __notin
         if isinstance(v, type([])) and not (k.endswith('__in') or k.endswith('__notin')):
             for i in v:
@@ -503,7 +503,7 @@ def grep(objects, **kwargs):
             # If all else fails, assume they are asking for exact match
             v_is_str = isinstance(v, str)
             expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
-        matching_objects = filter(expression, matching_objects)
+        matching_objects = list(filter(expression, matching_objects))
     return matching_objects
 
 
@@ -542,7 +542,7 @@ def grep_to_livestatus(*args, **kwargs):
     """
 
     result = list(args)  # Args go unchanged back into results
-    for k, v in kwargs.items():
+    for k, v in list(kwargs.items()):
         if isinstance(v, list) and len(v) > 0:
             v = v[0]
         if k.endswith('__contains'):

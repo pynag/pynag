@@ -17,5 +17,5 @@ for i in pynag.Model.config.get_cfg_files():
         for k,v, in pynag.Model.config.maincfg_values:
             if k == 'cfg-file' and v == i:
                 continue
-        print "Empty config file: %s" % i
+        print("Empty config file: %s" % i)
         # os.remove(i)

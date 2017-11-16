@@ -74,9 +74,9 @@ def main():
         pynag_objects += tmp
 
     if opts.dry_run:
-        print len(pynag_objects)
+        print(len(pynag_objects))
         for i in pynag_objects:
-            print i
+            print(i)
     else:
         for i in pynag_objects:
             i.save(filename=opts.destination_filename)
@@ -121,11 +121,11 @@ def parse_csv_string(csv_string, seperator=','):
             continue
         # If this is first line
         if not headers:
-            headers = map(lambda x: x.strip(), line.split(seperator))
+            headers = [x.strip() for x in line.split(seperator)]
             continue
         mydict = {}
         result.append(mydict)
-        columns = map(lambda x: x.strip(), line.split(seperator))
+        columns = [x.strip() for x in line.split(seperator)]
         for i, column in enumerate(columns):
             header = headers[i]
             mydict[header] = column

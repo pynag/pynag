@@ -22,4 +22,4 @@ if not item:
     sys.stderr.write("Item not found: %s\n" % item)
     sys.exit(2)
 
-print nc.print_conf(item)
+print(nc.print_conf(item))

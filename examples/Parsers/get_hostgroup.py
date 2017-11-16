@@ -22,5 +22,5 @@ if not hostgroup:
     sys.stderr.write("Hostgroup not found: %s\n" % hostgroup)
     sys.exit(2)
 
-print nc.print_conf(hostgroup)
+print(nc.print_conf(hostgroup))
 

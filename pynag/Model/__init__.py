@@ -191,7 +191,7 @@ class ObjectRelations(object):
     @staticmethod
     def reset():
         """ Runs clear() on every member attribute in ObjectRelations """
-        for k, v in ObjectRelations.__dict__.items():
+        for k, v in list(ObjectRelations.__dict__.items()):
             if isinstance(v, defaultdict):
                 v.clear()
 
@@ -221,8 +221,8 @@ class ObjectRelations(object):
         expand = self._expand_regex
         shortnames = ObjectFetcher._cached_shortnames
 
-        host_names = shortnames['host'].keys()
-        hostgroup_names = shortnames['hostgroup'].keys()
+        host_names = list(shortnames['host'].keys())
+        hostgroup_names = list(shortnames['hostgroup'].keys())
 
         expand(self.hostgroup_hosts, host_names)
         expand(self.host_hostgroups, hostgroup_names)
@@ -251,7 +251,7 @@ class ObjectRelations(object):
         is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '+' in x or '\.' in x)
 
         # Strip None entries from full_list
-        full_list = filter(lambda x: x is not None, full_list)
+        full_list = [x for x in full_list if x is not None]
 
         # Strip None entries from dictionary
 
@@ -261,13 +261,13 @@ class ObjectRelations(object):
         # dictionary['localhost'].update( [1] )
         # dictionary['remotehost'].update( [1] )
         # del dictionary['.*']
-        regex_keys = filter(is_regex, dictionary.keys())
+        regex_keys = list(filter(is_regex, list(dictionary.keys())))
         for key in regex_keys:
             if key == '*':
                 expanded_list = regex_keys
             else:
                 regex = re.compile(key)
-                expanded_list = filter(regex.search, regex_keys)
+                expanded_list = list(filter(regex.search, regex_keys))
             for i in expanded_list:
                 if i == key:  # No need to react if regex resolved to itself
                     continue
@@ -280,8 +280,8 @@ class ObjectRelations(object):
         # if dictionary = {'localhost':[ '.*' ]}
         # then change it so that:
         # dictionary = { 'localhost':[1,2,3] }
-        for key, value in dictionary.items():
-            regex_members = filter(is_regex, value)
+        for key, value in list(dictionary.items()):
+            regex_members = list(filter(is_regex, value))
             if len(regex_members) == 0:
                 continue  # no changes need to be made
             if isinstance(value, list):
@@ -292,7 +292,7 @@ class ObjectRelations(object):
                     expanded_list = full_list
                 else:
                     regex = re.compile(i)
-                    expanded_list = filter(regex.search, full_list)
+                    expanded_list = list(filter(regex.search, full_list))
                 value.remove(i)
                 value.update(expanded_list)
                 #dictionary[key] = new_value
@@ -300,7 +300,7 @@ class ObjectRelations(object):
     @staticmethod
     def resolve_contactgroups():
         """ Update all contactgroup relations to take into account contactgroup.contactgroup_members """
-        groups = ObjectRelations.contactgroup_contactgroups.keys()
+        groups = list(ObjectRelations.contactgroup_contactgroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.contactgroup_contactgroups)
             ObjectRelations.contactgroup_subgroups[group] = subgroups
@@ -314,7 +314,7 @@ class ObjectRelations(object):
     @staticmethod
     def resolve_hostgroups():
         """ Update all hostgroup relations to take into account hostgroup.hostgroup_members """
-        groups = ObjectRelations.hostgroup_hostgroups.keys()
+        groups = list(ObjectRelations.hostgroup_hostgroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.hostgroup_hostgroups)
             ObjectRelations.hostgroup_subgroups[group] = subgroups
@@ -332,7 +332,7 @@ class ObjectRelations(object):
         # Before we do anything, resolve servicegroup.members into actual services
         ObjectRelations._resolve_servicegroup_members()
 
-        groups = ObjectRelations.servicegroup_servicegroups.keys()
+        groups = list(ObjectRelations.servicegroup_servicegroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.servicegroup_servicegroups)
             ObjectRelations.servicegroup_subgroups[group] = subgroups
@@ -353,7 +353,7 @@ class ObjectRelations(object):
             However the relations we update work on Service.get_id() because not all services that belong to servicegroups
             have a valid host_name/service_description pair (templates)
         """
-        for servicegroup, members in ObjectRelations.servicegroup_members.items():
+        for servicegroup, members in list(ObjectRelations.servicegroup_members.items()):
             for shortname in members:
                 try:
                     service = Service.objects.get_by_shortname(shortname, cache_only=True)
@@ -422,7 +422,7 @@ class ObjectFetcher(object):
         ObjectRelations.reset()
 
         # Fetch all objects from config_parser.config
-        for object_type, objects in config.data.items():
+        for object_type, objects in list(config.data.items()):
             # change "all_host" to just "host"
             object_type = object_type[len("all_"):]
             Class = string_to_class.get(object_type, ObjectDefinition)
@@ -585,7 +585,7 @@ class ObjectDefinition(object):
         self.__argument_macros = {}
 
         # Any kwargs provided will be added to changes:
-        for k, v in kwargs.items():
+        for k, v in list(kwargs.items()):
             self[k] = v
 
     def get_attribute(self, attribute_name):
@@ -618,7 +618,7 @@ class ObjectDefinition(object):
 
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
-        return len(self._changes.keys()) != 0
+        return len(list(self._changes.keys())) != 0
 
     def is_registered(self):
         """ Returns true if object is enabled (registered)
@@ -676,9 +676,9 @@ class ObjectDefinition(object):
 
     def __contains__(self, item):
         """ Returns true if item is in ObjectDefinition """
-        if item in self.keys():
+        if item in list(self.keys()):
             return True
-        if item in self._meta.keys():
+        if item in list(self._meta.keys()):
             return True
         return False
 
@@ -688,13 +688,13 @@ class ObjectDefinition(object):
 
     def keys(self):
         all_keys = ['meta', 'id', 'shortname', 'effective_command_line']
-        for k in self._changes.keys():
+        for k in list(self._changes.keys()):
             if k not in all_keys:
                 all_keys.append(k)
-        for k in self._defined_attributes.keys():
+        for k in list(self._defined_attributes.keys()):
             if k not in all_keys:
                 all_keys.append(k)
-        for k in self._inherited_attributes.keys():
+        for k in list(self._inherited_attributes.keys()):
             if k not in all_keys:
                 all_keys.append(k)
             # for k in self._meta.keys():
@@ -702,7 +702,7 @@ class ObjectDefinition(object):
         return all_keys
 
     def items(self):
-        return map(lambda x: (x, self[x]), self.keys())
+        return [(x, self[x]) for x in list(self.keys())]
 
     def get_id(self):
         """ Return a unique ID for this object"""
@@ -712,7 +712,7 @@ class ObjectDefinition(object):
         if not self.__object_id__:
             filename = self._original_attributes['meta']['filename']
 
-            object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
+            object_id = (filename, sorted(frozenset(list(self._defined_attributes.items()))))
             object_id = str(object_id)
 
             self.__object_id__ = str(hash(object_id))
@@ -785,14 +785,14 @@ class ObjectDefinition(object):
 
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
-        number_of_changes = len(self._changes.keys())
+        number_of_changes = len(list(self._changes.keys()))
 
         filename = filename or self.get_filename() or self.get_suggested_filename()
         self.set_filename(filename)
 
         # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self._filename_has_changed:
-            for k, v in self._changes.items():
+            for k, v in list(self._changes.items()):
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
@@ -805,7 +805,7 @@ class ObjectDefinition(object):
         # If we get here, we are making modifications to an object
         else:
             number_of_changes = 0
-            for field_name, new_value in self._changes.items():
+            for field_name, new_value in list(self._changes.items()):
                 save_result = config.item_edit_field(
                     item=self._original_attributes,
                     field_name=field_name,
@@ -837,9 +837,9 @@ class ObjectDefinition(object):
         """ Re-applies templates to this object (handy when you have changed the use attribute """
         old_me = config.get_new_item(self.object_type, self.get_filename())
         old_me['meta']['defined_attributes'] = self._defined_attributes
-        for k, v in self._defined_attributes.items():
+        for k, v in list(self._defined_attributes.items()):
             old_me[k] = v
-        for k, v in self._changes.items():
+        for k, v in list(self._changes.items()):
             old_me[k] = v
         i = config._apply_template(old_me)
         new_me = self.__class__(item=i)
@@ -935,11 +935,11 @@ class ObjectDefinition(object):
             raise ValueError('To copy an object definition you need at least one new attribute')
 
         new_object = string_to_class[self.object_type](filename=filename)
-        for k, v in self._defined_attributes.items():
+        for k, v in list(self._defined_attributes.items()):
             new_object[k] = v
-        for k, v in self._changes.items():
+        for k, v in list(self._changes.items()):
             new_object[k] = v
-        for k, v in args.items():
+        for k, v in list(args.items()):
             new_object[k] = v
         new_object.save()
         return new_object
@@ -984,8 +984,8 @@ class ObjectDefinition(object):
 
     def __str__(self):
         return_buffer = "define %s {\n" % self.object_type
-        fields = self._defined_attributes.keys()
-        for i in self._changes.keys():
+        fields = list(self._defined_attributes.keys())
+        for i in list(self._changes.keys()):
             if i not in fields:
                 fields.append(i)
         fields.sort()
@@ -995,7 +995,7 @@ class ObjectDefinition(object):
                 fields.remove(i)
                 fields.insert(0, i)
         for key in fields:
-            if key == 'meta' or key in self['meta'].keys():
+            if key == 'meta' or key in list(self['meta'].keys()):
                 continue
             value = self[key]
             return_buffer += "  %-30s %s\n" % (key, value)
@@ -1082,7 +1082,7 @@ class ObjectDefinition(object):
         # custom variable attribute names are all prefixed
         variable_name = _CUSTOM_VARIABLE_PREFIX + variable_name
 
-        for attribute_name in self.keys():
+        for attribute_name in list(self.keys()):
             if attribute_name.upper() == variable_name:
                 return self.get(attribute_name)
         else:
@@ -1175,7 +1175,7 @@ class ObjectDefinition(object):
         macronames = regex.findall(command['command_line'])
 
         # Add all custom macros to our list:
-        for i in self.keys():
+        for i in list(self.keys()):
             if not i.startswith(_CUSTOM_VARIABLE_PREFIX):
                 continue
             if self.object_type == 'service':
@@ -1281,7 +1281,7 @@ class ObjectDefinition(object):
         if '\!' in check_command:
             check_command = check_command.replace('\!', 'ESCAPE_EXCL_MARK')
         tmp = check_command.split('!')
-        result = map(lambda x: x.replace('ESCAPE_EXCL_MARK', '\!'), tmp)
+        result = [x.replace('ESCAPE_EXCL_MARK', '\!') for x in tmp]
         return result
 
     def _get_command_macro(self, macroname, check_command=None, host_name=None):
@@ -1395,7 +1395,7 @@ class ObjectDefinition(object):
         (attribute_name,defined_value,inherited_value)
         """
         result = []
-        for k in self.keys():
+        for k in list(self.keys()):
             inher = defin = None
             if k in self._inherited_attributes:
                 inher = self._inherited_attributes[k]
@@ -1601,7 +1601,7 @@ class Host(ObjectDefinition):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_services[self.host_name])
-        services = map(get_object, list_of_shortnames)
+        services = list(map(get_object, list_of_shortnames))
         # Look for services that define hostgroup_name that we belong to
         for hg in self.get_effective_hostgroups():
             services += hg.get_effective_services()
@@ -1611,19 +1611,19 @@ class Host(ObjectDefinition):
         """ Returns a list of all Contact that belong to this Host """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contacts[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Host """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contact_groups[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Host """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_hostgroups[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_network_parents(self, recursive=False):
         """ Get all objects this one depends on via "parents" attribute
@@ -1921,7 +1921,7 @@ class Service(ObjectDefinition):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hosts[self.get_id()])
-        hosts = map(get_object, list_of_shortnames)
+        hosts = list(map(get_object, list_of_shortnames))
         for hg in self.get_effective_hostgroups():
             hosts += hg.get_effective_hosts()
         return hosts
@@ -1930,25 +1930,25 @@ class Service(ObjectDefinition):
         """ Returns a list of all Contact that belong to this Service """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contacts[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Service """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contact_groups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Service """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hostgroups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_servicegroups(self):
         """ Returns a list of all Servicegroup that belong to this Service """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_servicegroups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_check_command(self):
         """ Returns a Command object as defined by check_command attribute
@@ -2031,7 +2031,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Contactgroup that are hooked to this contact """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_contactgroups[self.contact_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Get a list of all Host that are hooked to this Contact """
@@ -2039,7 +2039,7 @@ class Contact(ObjectDefinition):
         # First add all hosts that name this contact specifically
         get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_hosts[self.contact_name])
-        result.update(map(get_object, list_of_shortnames))
+        result.update(list(map(get_object, list_of_shortnames)))
 
         # Next do the same for all contactgroups this contact belongs in
         for i in self.get_effective_contactgroups():
@@ -2052,7 +2052,7 @@ class Contact(ObjectDefinition):
         # First add all services that name this contact specifically
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_services[self.contact_name])
-        result.update(map(get_object, list_of_shortnames))
+        result.update(list(map(get_object, list_of_shortnames)))
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
@@ -2168,19 +2168,19 @@ class Contactgroup(ObjectDefinition):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_subgroups[self.contactgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_contacts[self.contactgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = sorted(ObjectRelations.contactgroup_hosts[self.contactgroup_name])
         get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_services(self):
         """ Return every Host that belongs to this contactgroup """
@@ -2190,7 +2190,7 @@ class Contactgroup(ObjectDefinition):
             services[i.get_id()] = i
         list_of_shortnames = sorted(ObjectRelations.contactgroup_services[self.contactgroup_name])
         get_object = lambda x: services[x]
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2281,19 +2281,19 @@ class Hostgroup(ObjectDefinition):
         """ Returns a list of all Service that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_services[self.hostgroup_name])
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_hosts[self.hostgroup_name])
         get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.hostgroup_subgroups[self.hostgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2433,13 +2433,13 @@ class Servicegroup(ObjectDefinition):
         """ Returns a list of all Service that belong to this Servicegroup """
         list_of_shortnames = sorted(ObjectRelations.servicegroup_services[self.servicegroup_name])
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_servicegroups(self):
         """ Returns a list of every Servicegroup that is a member of this Servicegroup """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.servicegroup_subgroups[self.servicegroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def add_service(self, shortname):
         """ Adds service to this group. Behaves like _add_object_to_group(object, group)"""
@@ -2590,7 +2590,7 @@ def _remove_object_from_group(my_object, my_group):
 def _add_to_contactgroup(my_object, contactgroup):
     """ add Host or Service to a contactgroup
     """
-    if isinstance(contactgroup, basestring):
+    if isinstance(contactgroup, str):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
@@ -2610,7 +2610,7 @@ def _add_to_contactgroup(my_object, contactgroup):
 def _remove_from_contactgroup(my_object, contactgroup):
     """ remove Host or Service from  a contactgroup
     """
-    if isinstance(contactgroup, basestring):
+    if isinstance(contactgroup, str):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
@@ -2669,7 +2669,7 @@ _add_property(ObjectDefinition, 'name')
 _add_property(ObjectDefinition, 'use')
 
 # For others, create attributes dynamically based on all_attributes.keys()
-for object_type, attributes in all_attributes.object_definitions.items():
+for object_type, attributes in list(all_attributes.object_definitions.items()):
     # Lets find common attributes that every object definition should have:
     if object_type == 'any':
         continue

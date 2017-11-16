@@ -16,18 +16,18 @@ top_level_items = ['main data center']
 
 
 orphan_hosts = []
-print "The following hosts do not have parent items:"
+print("The following hosts do not have parent items:")
 
 for host in nc['all_host']:
     use_attr = ''
     for attribute in ['host_name', 'name', 'alias']:
-        if host.has_key(attribute):
+        if attribute in host:
             use_attr = attribute
     
-    if not host.has_key('parents') or not host['parents']:
+    if 'parents' not in host or not host['parents']:
         if  host[use_attr] not in top_level_items:
             orphan_hosts.append(host)
-            print "%-12s %-32s (%s)" % (use_attr, host[use_attr], host['meta']['filename'])
+            print("%-12s %-32s (%s)" % (use_attr, host[use_attr], host['meta']['filename']))
 
 if not len(orphan_hosts):
-    print "No ophaned hosts found"
+    print("No ophaned hosts found")

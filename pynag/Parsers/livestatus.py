@@ -282,7 +282,7 @@ class LivestatusQuery(object):
 
         """
         signature = keyword + ':'
-        self._query = filter(lambda x: not x.startswith(signature), self._query)
+        self._query = [x for x in self._query if not x.startswith(signature)]
 
     def set_responseheader(self, response_header='fixed16'):
         """Set ResponseHeader to our query.
@@ -544,7 +544,7 @@ class LivestatusQuery(object):
         # Check if attribute ends with any of the suffixes in __FILTER_TRANSMUTATION_SUFFIX
         # For example if attribute ends with '__contains' we want the end result
         # to be 'Filter: attribute ~ value' (notice the ~ instead of =)
-        for suffix, potential_filter_statement in self.__FILTER_TRANSMUTATION_SUFFIX.items():
+        for suffix, potential_filter_statement in list(self.__FILTER_TRANSMUTATION_SUFFIX.items()):
             if attribute.endswith(suffix):
                 suffix_length = len(suffix)
                 attribute = attribute[:-suffix_length]
@@ -614,7 +614,7 @@ class LivestatusQuery(object):
         >>> query.get_query()
         'GET services\\nFilter: host_name = localhost\\nFilter: description ~~ Ping\\n\\n'
         """
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             self.add_filter(key, value)
 
     def set_columns(self, *columns):

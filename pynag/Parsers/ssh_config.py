@@ -4,7 +4,7 @@
 import os
 import stat
 import tarfile
-import StringIO
+import io
 
 from pynag.Parsers import config_parser
 
@@ -35,8 +35,8 @@ class SshConfig(config_parser.Config):
         self.ssh.connect(host, username=username, password=password)
         self.ftp = self.ssh.open_sftp()
 
-        import cStringIO
-        c = cStringIO.StringIO()
+        import io
+        c = io.StringIO()
         self.tar = tarfile.open(mode='w', fileobj=c)
 
         self.cached_stats = {}
@@ -47,17 +47,17 @@ class SshConfig(config_parser.Config):
         return self.tar.extractfile(filename)
         tarinfo = self._get_file(filename)
         string = tarinfo.tobuf()
-        print string
-        return StringIO.StringIO(string)
+        print(string)
+        return io.StringIO(string)
         return self.tar.extractfile(tarinfo)
 
     def add_to_tar(self, path):
         """
         """
-        print "Taring ", path
+        print("Taring ", path)
         command = "find '{path}' -type f | tar -c -T - --to-stdout --absolute-names"
         command = command.format(path=path)
-        print command
+        print(command)
         stdin, stdout, stderr = self.ssh.exec_command(command, bufsize=50000)
         tar = tarfile.open(fileobj=stdout, mode='r|')
         if not self.tar:
@@ -156,5 +156,5 @@ class SshConfig(config_parser.Config):
         stats = self.ftp.listdir_attr(*args, **kwargs)
         for i in stats:
             self.cached_stats[args[0] + "/" + i.filename] = i
-        files = map(lambda x: x.filename, stats)
+        files = [x.filename for x in stats]
         return files

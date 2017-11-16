@@ -224,7 +224,7 @@ class Livestatus(unittest.TestCase):
         rows = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(rows), "Could not get status.requests from livestatus")
         result = rows[0]
-        self.assertEqual(['requests'], result.keys())
+        self.assertEqual(['requests'], list(result.keys()))
         num_requests = result['requests']
         try:
             int(num_requests)
@@ -475,7 +475,7 @@ class ObjectCache(unittest.TestCase):
         """Test pynag.Parsers.object_cache"""
         o = pynag.Parsers.object_cache()
         o.parse()
-        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+        self.assertTrue(len(list(o.data.keys())) > 0, 'Object cache seems to be empty')
 
 
 class LogFiles(unittest.TestCase):
@@ -525,7 +525,7 @@ class LogFiles(unittest.TestCase):
 
     def testForMissingLogEntries(self):
         # Get all log files from 2014-01-01, make sure we find all of them
-        start_time = (2014, 01, 01, 0, 0, 0, 0, 0, 0)
+        start_time = (2014, 0o1, 0o1, 0, 0, 0, 0, 0, 0)
         start_time = time.mktime(start_time)  # timestamp
 
         # We expect 1020 log entries to appear

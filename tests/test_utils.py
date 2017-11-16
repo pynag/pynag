@@ -158,7 +158,7 @@ class testUtils(unittest.TestCase):
         expected_msg += '\* Output was:\n\n'
         expected_msg += 'Check if y/our path is correct: %s' % os.getenv(
             'PATH')
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             utils.PynagError, expected_msg, utils.runCommand, command, raise_error_on_fail=True)
 
     def test_gitrepo_init_empty(self):
@@ -172,9 +172,9 @@ class testUtils(unittest.TestCase):
                 author_name=x,
                 author_email=x
             )
-            self.assertEquals(repo.author_name, 'Pynag User')
+            self.assertEqual(repo.author_name, 'Pynag User')
             expected_email = '%s@%s' % (getuser(), node())
-            self.assertEquals(repo.author_email, expected_email)
+            self.assertEqual(repo.author_email, expected_email)
 
     def test_gitrepo_init_with_author(self):
         tempfile.mkstemp(dir=self.tmp_dir)
@@ -186,11 +186,11 @@ class testUtils(unittest.TestCase):
             author_name=author_name,
             author_email=author_email
         )
-        self.assertEquals(repo.author_name, author_name)
-        self.assertEquals(repo.author_email, author_email)
-        self.assertEquals(len(repo.log()), 1)
-        self.assertEquals(repo.log()[0]['author_name'], author_name)
-        self.assertEquals(repo.log()[0]['author_email'], author_email)
+        self.assertEqual(repo.author_name, author_name)
+        self.assertEqual(repo.author_email, author_email)
+        self.assertEqual(len(repo.log()), 1)
+        self.assertEqual(repo.log()[0]['author_name'], author_name)
+        self.assertEqual(repo.log()[0]['author_email'], author_email)
 
     def test_gitrepo_init_with_files(self):
         tempfile.mkstemp(dir=self.tmp_dir)
@@ -210,20 +210,20 @@ class testUtils(unittest.TestCase):
         )
         # Check that there is an initial commit
         expected_email = '%s@%s' % (getuser(), nodename)
-        self.assertEquals(len(repo.log()), 1)
-        self.assertEquals(repo.log()[0]['comment'], 'Initial Commit')
-        self.assertEquals(repo.log()[0]['author_name'], 'Pynag User')
-        self.assertEquals(repo.log()[0]['author_email'], expected_email)
+        self.assertEqual(len(repo.log()), 1)
+        self.assertEqual(repo.log()[0]['comment'], 'Initial Commit')
+        self.assertEqual(repo.log()[0]['author_name'], 'Pynag User')
+        self.assertEqual(repo.log()[0]['author_email'], expected_email)
         # Test kwargs functionality
-        self.assertEquals(
+        self.assertEqual(
             repo.log(author_email=expected_email)[0]['author_email'], expected_email)
-        self.assertEquals(
+        self.assertEqual(
             repo.log(comment__contains='Initial')[0]['comment'], 'Initial Commit')
-        self.assertEquals(len(repo.log(comment__contains='nothing')), 0)
+        self.assertEqual(len(repo.log(comment__contains='nothing')), 0)
         # Test show method
         initial_hash = repo.log()[0]['hash']
         initial_hash_valid_commits = repo.get_valid_commits()[0]
-        self.assertEquals(initial_hash, initial_hash_valid_commits)
+        self.assertEqual(initial_hash, initial_hash_valid_commits)
 
         gitrunpatcher = patch('pynag.Utils.GitRepo._run_command')
         validcommitspatcher = patch('pynag.Utils.GitRepo.get_valid_commits')
@@ -235,19 +235,19 @@ class testUtils(unittest.TestCase):
         gitrunpatcher.stop()
         validcommitspatcher.stop()
 
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             PynagError, '%s is not a valid commit id' % initial_hash)
         # Add file
         tempfile.mkstemp(dir=self.tmp_dir)
-        self.assertEquals(len(repo.get_uncommited_files()), 1)
-        self.assertEquals(repo.is_up_to_date(), False)
+        self.assertEqual(len(repo.get_uncommited_files()), 1)
+        self.assertEqual(repo.is_up_to_date(), False)
         # Commit file
         repo.commit(filelist=repo.get_uncommited_files()[0]['filename'])
-        self.assertEquals(repo.is_up_to_date(), True)
-        self.assertEquals(len(repo.get_uncommited_files()), 0)
-        self.assertEquals(len(repo.get_valid_commits()), 2)
+        self.assertEqual(repo.is_up_to_date(), True)
+        self.assertEqual(len(repo.get_uncommited_files()), 0)
+        self.assertEqual(len(repo.get_valid_commits()), 2)
         log_entry = repo.log()[0]
-        self.assertEquals(log_entry['comment'], 'commited by pynag')
+        self.assertEqual(log_entry['comment'], 'commited by pynag')
 
     def test_gitrepo_deprecated_methods(self):
         """
@@ -289,7 +289,7 @@ class testUtils(unittest.TestCase):
 
         # First try diff with no changes made:
         diff = git.diff()
-        self.assertEquals(diff, '')
+        self.assertEqual(diff, '')
 
         # Now append to our file and see the difference:
         extra_data = 'extra data\n'
@@ -308,7 +308,7 @@ class testUtils(unittest.TestCase):
         # Call commit again and confirm there is no diff
         git.commit()
         diff = git.diff()
-        self.assertEquals(diff, '')
+        self.assertEqual(diff, '')
 
         # Call a diff against first commit, see if we find our changes in the
         # commit.

@@ -17,4 +17,4 @@ nc.parse()
 
 service = nc.get_service(sys.argv[1],sys.argv[2])
 
-print nc.print_conf(service)
+print(nc.print_conf(service))

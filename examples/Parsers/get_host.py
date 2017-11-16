@@ -23,4 +23,4 @@ if not host:
     sys.stderr.write("Host not found: %s\n" % host)
     sys.exit(2)
 
-print nc.print_conf(host)
+print(nc.print_conf(host))

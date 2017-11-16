@@ -29,9 +29,9 @@ Example:
 
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import absolute_import
+
+
+
 
 import pynag.Plugins
 import pynag.errors
@@ -112,7 +112,7 @@ def check_range(value, range):
     False
     """
 
-    if not isinstance(range, basestring) or range == '':
+    if not isinstance(range, str) or range == '':
         raise InvalidThreshold('range must be a string')
 
     # value must be numeric, so we try to convert it to float
@@ -159,7 +159,7 @@ def parse_threshold(threshold):
             raise InvalidThreshold("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
         key_lower = key.lower()
-        if key_lower in pynag.Plugins.state.keys():
+        if key_lower in list(pynag.Plugins.state.keys()):
             parsed_thresholds.append((pynag.Plugins.state[key_lower], value))
         else:
             results[key_lower] = value

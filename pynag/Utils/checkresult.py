@@ -150,7 +150,7 @@ class CheckResult(object):
         os.write(self.fh, """
 ### Nagios {1} Check Result ###
 # Time: {0}\n""".format(self.file_time, object_type.capitalize()))
-        for key, value in parms.items():
+        for key, value in list(parms.items()):
             os.write(self.fh, key + "=" + str(value) + "\n")
 
     def submit(self):

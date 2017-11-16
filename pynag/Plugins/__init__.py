@@ -21,9 +21,9 @@
 Python Nagios extensions
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import absolute_import
+
+
+
 
 import sys
 import os
@@ -198,7 +198,7 @@ class simple(object):
                 self.parser.error("option '%s' is required" % extra_item)
 
         # Put the remaining values into the data dictionary
-        for key, value in options.__dict__.items():
+        for key, value in list(options.__dict__.items()):
             if key in (self.extra_list_required + self.extra_list_optional):
                 self.data[key] = value
 
@@ -351,7 +351,7 @@ class simple(object):
         """
         # Check for messages in unknown, critical, warning, ok to determine
         # code
-        keys = self.data['messages'].keys()
+        keys = list(self.data['messages'].keys())
         keys.sort(reverse=True)
         code = UNKNOWN
         for code in keys:
@@ -667,7 +667,7 @@ class PluginHelper(object):
 
         # If new status was entered as a human readable string (ok,warn,etc)
         # lets convert it to int:
-        if isinstance(new_status, basestring):
+        if isinstance(new_status, str):
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:

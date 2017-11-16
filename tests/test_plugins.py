@@ -1,7 +1,7 @@
 
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import absolute_import
+
+
+
 
 import os
 import sys
@@ -20,7 +20,7 @@ import signal
 # Some of the methods here print directly to stdout but we
 # dont want to spam the output of the unittests. Lets do a temp
 # blocking of stdout and stderr
-from cStringIO import StringIO
+from io import StringIO
 original_stdout = sys.stdout
 original_stderr = sys.stderr
 
@@ -44,31 +44,31 @@ class PluginParams(unittest.TestCase):
         #sys.argv = [sys.argv[0]] + ['-v', '10']
         self.create_params('-v', '10')
         self.np.activate()
-        self.assertEquals(self.np.data['verbosity'], 0)
+        self.assertEqual(self.np.data['verbosity'], 0)
 
     def test_verbose(self):
         self.create_params('-v', '3')
         self.np.activate()
-        self.assertEquals(self.np.data['verbosity'], 3)
+        self.assertEqual(self.np.data['verbosity'], 3)
 
     def test_set_hostname(self):
         self.create_params('-H', 'testhost.example.com')
         self.np.activate()
-        self.assertEquals(self.np.data['host'], 'testhost.example.com')
+        self.assertEqual(self.np.data['host'], 'testhost.example.com')
 
     def test_set_timeout(self):
         self.create_params('-t', '100')
         self.np.activate()
-        self.assertEquals(self.np.data['timeout'], '100')
+        self.assertEqual(self.np.data['timeout'], '100')
 
     def test_default_timeout(self):
         self.np.activate()
-        self.assertEquals(self.np.data['timeout'], None)
+        self.assertEqual(self.np.data['timeout'], None)
 
     def test_shortname(self):
         from pynag.Plugins import simple as Plugin
         np = Plugin(shortname='testcase')
-        self.assertEquals(np.data['shortname'], 'testcase')
+        self.assertEqual(np.data['shortname'], 'testcase')
 
 
 class PluginNoThreshold(unittest.TestCase):
@@ -89,8 +89,8 @@ class PluginNoThreshold(unittest.TestCase):
         try:
             self.np.check_range(value)
         except SystemExit as e:
-            self.assertEquals(type(e), type(SystemExit()))
-            self.assertEquals(e.code, expected_exit)
+            self.assertEqual(type(e), type(SystemExit()))
+            self.assertEqual(e.code, expected_exit)
         except Exception as e:
             self.fail('unexpected exception: %s' % e)
         else:
@@ -143,8 +143,8 @@ class PluginHelper(unittest.TestCase):
             self.my_plugin.check_all_metrics()
             self.my_plugin.exit()
         except SystemExit as e:
-            self.assertEquals(type(e), type(SystemExit()))
-            self.assertEquals(e.code, expected_exit)
+            self.assertEqual(type(e), type(SystemExit()))
+            self.assertEqual(e.code, expected_exit)
         except Exception as e:
             self.fail('unexpected exception: %s' % e)
         else:
@@ -322,8 +322,8 @@ class PluginHelper(unittest.TestCase):
             time.sleep(1)
             self.assertTrue(False, "Code should have timed out by now")
         except SystemExit as e:
-            self.assertEquals(type(e), type(SystemExit()))
-            self.assertEquals(e.code, pynag.Plugins.unknown)
+            self.assertEqual(type(e), type(SystemExit()))
+            self.assertEqual(e.code, pynag.Plugins.unknown)
         self.assertTrue(True, "Timeout occured in plugin, just like expected.")
 
 
@@ -349,14 +349,14 @@ class Plugin(unittest.TestCase):
                                  warn=10, crit=20, minimum=-100, maximum=100)
             perfdata_string = self.np.perfdata_string()
             print(perfdata_string)
-            self.assertEquals(perfdata_string, "| '%s'=%s%s;%s;%s;%s;%s" % (
+            self.assertEqual(perfdata_string, "| '%s'=%s%s;%s;%s;%s;%s" % (
                               'fake', value, 'fakes', 10, 20, -100, 100))
             self.np.add_message('OK', 'Some message')
-            self.assertEquals(self.np.data['messages'][0], ['Some message'])
+            self.assertEqual(self.np.data['messages'][0], ['Some message'])
             self.np.check_range(value)
         except SystemExit as e:
-            self.assertEquals(type(e), type(SystemExit()))
-            self.assertEquals(e.code, expected_exit)
+            self.assertEqual(type(e), type(SystemExit()))
+            self.assertEqual(e.code, expected_exit)
         except Exception as e:
             import traceback
             print(traceback.format_exc())
@@ -384,16 +384,16 @@ class Plugin(unittest.TestCase):
 
     def test_codestring_to_int(self):
         code = self.np.code_string2int('OK')
-        self.assertEquals(code, 0, "OK did not map to 0")
+        self.assertEqual(code, 0, "OK did not map to 0")
 
         code = self.np.code_string2int('WARNING')
-        self.assertEquals(code, 1, "WARNING did not map to 1")
+        self.assertEqual(code, 1, "WARNING did not map to 1")
 
         code = self.np.code_string2int('CRITICAL')
-        self.assertEquals(code, 2, "CRITICAL did not map to 2")
+        self.assertEqual(code, 2, "CRITICAL did not map to 2")
 
         code = self.np.code_string2int('UNKNOWN')
-        self.assertEquals(code, 3, "UNKNOWN did not map to 3")
+        self.assertEqual(code, 3, "UNKNOWN did not map to 3")
 
     # Critical if "stuff" is over 20, else warn if over 10
     # (will be critical if "stuff" is less than 0)

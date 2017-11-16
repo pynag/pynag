@@ -60,12 +60,12 @@ class LogFiles(object):
 
         logfiles = self.get_logfiles()
         if 'filename' in kwargs:
-            logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
+            logfiles = [x for x in logfiles if x == kwargs.get('filename')]
 
         # If start time was provided, skip all files that we last modified
         # before start_time
         if start_time:
-            logfiles = filter(lambda x: start_time <= os.stat(x).st_mtime, logfiles)
+            logfiles = [x for x in logfiles if start_time <= os.stat(x).st_mtime]
 
         # Log entries are returned in ascending order, which is the opposite of
         # what get_logfiles returns.
@@ -87,7 +87,7 @@ class LogFiles(object):
                 # If search string provided, filter the string
             if search is not None:
                 entries = [x for x in entries if x['message'].lower().find(search.lower()) > -1]
-            for k, v in kwargs.items():
+            for k, v in list(kwargs.items()):
                 entries = [x for x in entries if x.get(k) == v]
             result += entries
 

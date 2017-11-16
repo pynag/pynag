@@ -13,7 +13,7 @@ def change(host):
     host.address = "127.0.0.1"
     host.save()
     pynag.Model.ObjectDefinition.objects.get_all()
-    print "Set address", host.address, "to", host.host_name
+    print("Set address", host.address, "to", host.host_name)
 
 
 if __name__ == '__main__':
@@ -29,4 +29,4 @@ if __name__ == '__main__':
     hosts = pynag.Model.Host.objects.filter(host_name__startswith="web04")
     for i in hosts:
         if i.address != "127.0.0.1":
-            print "ERROR", i.host_name, "has address", i.address
+            print("ERROR", i.host_name, "has address", i.address)

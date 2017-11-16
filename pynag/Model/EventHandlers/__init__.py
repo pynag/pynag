@@ -62,15 +62,15 @@ class PrintToScreenHandler(BaseEventHandler):
     def debug(self, object_definition, message):
         """Used for any particual debug notifications"""
         if self._debug:
-            print "%s: %s" % (time.asctime(), message)
+            print("%s: %s" % (time.asctime(), message))
 
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
-        print "%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message)
+        print("%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message))
 
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        print "%s: %s" % (time.asctime(), message)
+        print("%s: %s" % (time.asctime(), message))
 
 
 class FileLogger(BaseEventHandler):

@@ -106,7 +106,7 @@ class GitRepo(object):
         Returns:
             List of all valid commit hashes
         """
-        return map(lambda x: x.get('hash'), self.log())
+        return [x.get('hash') for x in self.log()]
 
     def get_uncommited_files(self):
         """ Returns a list of files that are have unstaged changes
@@ -343,7 +343,7 @@ class GitRepo(object):
             filelist = [filelist]
 
         # Remove from commit list files that have not changed:
-        filelist = filter(lambda x: self.is_dirty(x), filelist)
+        filelist = [x for x in filelist if self.is_dirty(x)]
 
         # Run "git add" on every file. Just in case they are untracked
         self.ignore_errors = True
@@ -355,10 +355,10 @@ class GitRepo(object):
         filestring = ''
 
         # Escape all single quotes in filenames
-        filelist = map(lambda x: x.replace("'", r"\'"), filelist)
+        filelist = [x.replace("'", r"\'") for x in filelist]
 
         # Wrap filename inside single quotes:
-        filelist = map(lambda x: "'%s'" % x, filelist)
+        filelist = ["'%s'" % x for x in filelist]
 
         # If filelist is empty, we have nothing to commit and we will return as
         # opposed to throwing error
