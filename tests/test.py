@@ -71,7 +71,8 @@ def load_tests(loader=None, tests=None, pattern=None):
     # Load unit tests from all files starting with test_*
     for all_test_suite in unittest2.defaultTestLoader.discover('.', pattern='test_*.py'):
         for test_suite in all_test_suite:
-            suite.addTests(test_suite)
+            if isinstance(test_suite, unittest2.suite.TestSuite):
+                suite.addTests(test_suite)
 
     return suite
 
