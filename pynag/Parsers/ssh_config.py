@@ -6,7 +6,10 @@ from __future__ import print_function
 import os
 import stat
 import tarfile
-import StringIO
+try:
+    import StringIO
+except:
+    from io import StringIO
 
 from pynag.Parsers import config_parser
 from six.moves import map
