@@ -227,7 +227,7 @@ class daemon(object):
         if self.nagios_init and os.path.exists(self.nagios_init):
             return daemon.SYSV_INIT_SCRIPT
 
-        if self.nagios_init and self.nagios_init.split(None, 1)[0].endswith(b"service"):
+        if self.nagios_init and self.nagios_init.split(None, 1)[0].endswith("service"):
             self.service_name = self.nagios_init.split(None, 1)[1]
             return daemon.SYSV_INIT_SERVICE
 
