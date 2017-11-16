@@ -22,7 +22,7 @@ before_script:
   - git config --global user.email "noreply@travis-ci.org"
   - git config --global user.name "Travis"
 script:
-  - nosetests --cover-erase --with-coverage --cover-package="pynag" --cover-html tests/test_*.py
+  - nosetests --with-coverage --cover-package="pynag" --cover-html tests/test_*.py
 after_success:
   - coveralls
 notifications:
