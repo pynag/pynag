@@ -344,7 +344,7 @@ class Model(unittest.TestCase):
         all_hostnames = [x.host_name for x in all_hosts]
 
         # generate a random hostname for our new host
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         host_name = "host-delete-test" + ''.join([random.choice(chars) for i in range(10)])
 
         # Produce an error if our randomly generated host already exists in config
@@ -604,7 +604,7 @@ class Model(unittest.TestCase):
         all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         cg_name = "cg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
@@ -641,7 +641,7 @@ class Model(unittest.TestCase):
         all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         cg_name = "cg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
@@ -674,7 +674,7 @@ class Model(unittest.TestCase):
         all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         cg_name = "cg_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
@@ -707,7 +707,7 @@ class Model(unittest.TestCase):
         all_contactgroup_names = [x.name for x in all_contactgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         cg_name = "cg_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         cg = pynag.Model.Contactgroup()
         # Produce an error if our randomly generated contactgroup already exists in config
@@ -739,7 +739,7 @@ class Model(unittest.TestCase):
         all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         c_name = "c_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
@@ -772,7 +772,7 @@ class Model(unittest.TestCase):
         all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         c_name = "c_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
@@ -805,7 +805,7 @@ class Model(unittest.TestCase):
         all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         c_name = "c_to_be_deleted_nonRecursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
@@ -839,7 +839,7 @@ class Model(unittest.TestCase):
         all_contact_names = [x.name for x in all_contacts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         c_name = "c_to_be_deleted_recursive_nonCleanup" + ''.join([random.choice(chars) for i in range(10)])
         c = pynag.Model.Contact()
         # Produce an error if our randomly generated contact already exists in config
@@ -871,7 +871,7 @@ class Model(unittest.TestCase):
         all_hostgroup_names = [x.name for x in all_hostgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         hg_name = "hg_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         hg = pynag.Model.Hostgroup()
         # Produce an error if our randomly generated hostgroup already exists in config
@@ -916,7 +916,7 @@ class Model(unittest.TestCase):
         all_hostgroup_names = [x.name for x in all_hostgroups]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         hg_name = "hg_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         hg = pynag.Model.Hostgroup()
         # Produce an error if our randomly generated hostgroup already exists in config
@@ -958,7 +958,7 @@ class Model(unittest.TestCase):
         all_host_names = [x.name for x in all_hosts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         h_name = "h_to_be_deleted_recursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         h = pynag.Model.Host()
         # Produce an error if our randomly generated host already exists in config
@@ -996,7 +996,7 @@ class Model(unittest.TestCase):
         all_host_names = [x.name for x in all_hosts]
 
         # creating test object
-        chars = string.letters + string.digits
+        chars = string.ascii_letters + string.digits
         h_name = "h_to_be_deleted_nonRecursive_cleanup" + ''.join([random.choice(chars) for i in range(10)])
         h = pynag.Model.Host()
         # Produce an error if our randomly generated host already exists in config
