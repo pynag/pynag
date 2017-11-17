@@ -499,7 +499,7 @@ class Config(object):
                 rest = m.groups()[1]
                 continue
             else:  # In the middle of an object definition
-                tmp_buffer.append('    {}'.format(line))
+                tmp_buffer.append('    {0}'.format(line))
 
             # save whatever's left in the buffer for the next iteration
             if not in_definition:
