@@ -796,7 +796,8 @@ class ObjectDefinition(object):
 
         # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self._filename_has_changed:
-            for k, v in self._changes.items():
+            for k in list(self._changes.keys()):
+                v = self._changes.get(k, None)
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
@@ -809,7 +810,8 @@ class ObjectDefinition(object):
         # If we get here, we are making modifications to an object
         else:
             number_of_changes = 0
-            for field_name, new_value in self._changes.items():
+            for field_name in list(self._changes.keys()):
+                new_value = self._changes.get(field_name, None)
                 save_result = config.item_edit_field(
                     item=self._original_attributes,
                     field_name=field_name,
