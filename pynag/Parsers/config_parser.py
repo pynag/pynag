@@ -482,7 +482,7 @@ class Config(object):
                     msg = msg.format(**locals())
                     self.errors.append(ParserError(msg, item=current))
 
-                m = self.__beginning_of_object.search(line)
+                m = self.__beginning_of_object.search(line.decode())
 
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
