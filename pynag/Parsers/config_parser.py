@@ -448,11 +448,11 @@ class Config(object):
                 continue
 
             # If this line ends with a backslash, continue directly to next line
-            if line.endswith('\\'):
+            if line.endswith(b'\\'):
                 append = line.strip('\\')
                 continue
 
-            if line.startswith('}'):  # end of object definition
+            if line.startswith(b'}'):  # end of object definition
 
                 if not in_definition:
                     p = ParserError("Unexpected '}' found outside object definition in line %s" % line_num)
@@ -476,7 +476,7 @@ class Config(object):
                 current = None
                 continue
 
-            elif line.startswith('define'):  # beginning of object definition
+            elif line.startswith(b'define'):  # beginning of object definition
                 if in_definition:
                     msg = "Unexpected 'define' in {filename} on line {line_num}. was expecting '}}'."
                     msg = msg.format(**locals())
@@ -499,7 +499,7 @@ class Config(object):
                 rest = m.groups()[1]
                 continue
             else:  # In the middle of an object definition
-                tmp_buffer.append('    ' + line)
+                tmp_buffer.append('    {}'.format(line))
 
             # save whatever's left in the buffer for the next iteration
             if not in_definition:
@@ -611,7 +611,7 @@ class Config(object):
         tmp_buffer = ''
         result = []
         for i in list_of_strings:
-            if i.endswith('\\\n'):
+            if i.endswith(b'\\\n'):
                 tmp_buffer += i.strip('\\\n')
             else:
                 result.append(tmp_buffer + i)
@@ -711,7 +711,7 @@ class Config(object):
             comment = '# Edited by PyNag on %s\n' % time.ctime()
             if len(everything_before) > 0:
                 last_line_before = everything_before[-1]
-                if last_line_before.startswith('# Edited by PyNag on'):
+                if last_line_before.startswith(b'# Edited by PyNag on'):
                     everything_before.pop()  # remove this line
             object_definition.insert(0, comment)
             # Here we overwrite the config-file, hoping not to ruin anything
