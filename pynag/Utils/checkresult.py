@@ -46,8 +46,8 @@ class CheckResult(object):
         self.fh, self.cmd_file = tempfile.mkstemp(prefix='c',
                                                   dir=nagios_result_dir)
 
-        os.write(self.fh, "### Active Check Result File ###\n")
-        os.write(self.fh, "file_time=" + str(self.file_time) + "\n")
+        os.write(self.fh, "### Active Check Result File ###\n".encode())
+        os.write(self.fh, "file_time={0}\n".format(str(self.file_time)).encode())
 
     def service_result(self, host_name, service_description, **kwargs):
         """
@@ -150,9 +150,9 @@ class CheckResult(object):
         parms['output'].replace('\n', '\\n')
         os.write(self.fh, """
 ### Nagios {1} Check Result ###
-# Time: {0}\n""".format(self.file_time, object_type.capitalize()))
+# Time: {0}\n""".format(self.file_time, object_type.capitalize()).encode())
         for key, value in parms.items():
-            os.write(self.fh, key + "=" + str(value) + "\n")
+            os.write(self.fh, "{0}={1}\n".format(key, str(value)).encode())
 
     def submit(self):
         """Submits the results to nagios"""
