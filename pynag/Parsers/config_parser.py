@@ -444,7 +444,7 @@ class Config(object):
             line = line.strip()
             if line == "":
                 continue
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith(b"#") or line.startswith(b";"):
                 continue
 
             # If this line ends with a backslash, continue directly to next line
@@ -1492,7 +1492,7 @@ class Config(object):
                 continue
 
             # Skip comments
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith("#") or line.startswith(";"):
                 continue
             tmp = line.split("=", 1)
             if len(tmp) < 2:
@@ -1551,7 +1551,7 @@ class Config(object):
                 continue
 
             # Skip comments
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith("#") or line.startswith(";"):
                 continue
             key, value = line.split("=", 1)
             key = key.strip()
