@@ -7,9 +7,9 @@ import os
 import stat
 import tarfile
 try:
-    import StringIO
-except:
     from io import StringIO
+except:
+    import StringIO
 
 from pynag.Parsers import config_parser
 from six.moves import map
@@ -41,8 +41,7 @@ class SshConfig(config_parser.Config):
         self.ssh.connect(host, username=username, password=password)
         self.ftp = self.ssh.open_sftp()
 
-        import cStringIO
-        c = cStringIO.StringIO()
+        c = StringIO()
         self.tar = tarfile.open(mode='w', fileobj=c)
 
         self.cached_stats = {}

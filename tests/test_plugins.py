@@ -20,7 +20,13 @@ import signal
 # Some of the methods here print directly to stdout but we
 # dont want to spam the output of the unittests. Lets do a temp
 # blocking of stdout and stderr
-from cStringIO import StringIO
+try:
+    from io import StringIO
+except:
+    try:
+        from cStringIO import StringIO
+    except:
+        import StringIO
 original_stdout = sys.stdout
 original_stderr = sys.stderr
 
