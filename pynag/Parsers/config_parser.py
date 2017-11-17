@@ -431,6 +431,9 @@ class Config(object):
         tmp_buffer = []
         result = []
 
+        if isinstance(string, six.binary_type):
+            string = string.decode()
+
         for sequence_no, line in enumerate(string.splitlines(False)):
             line_num = sequence_no + 1
 
@@ -444,15 +447,15 @@ class Config(object):
             line = line.strip()
             if line == "":
                 continue
-            if line.startswith(b"#") or line.startswith(b";"):
+            if line.startswith("#") or line.startswith(";"):
                 continue
 
             # If this line ends with a backslash, continue directly to next line
-            if line.endswith(b'\\'):
+            if line.endswith('\\'):
                 append = line.strip('\\')
                 continue
 
-            if line.startswith(b'}'):  # end of object definition
+            if line.startswith('}'):  # end of object definition
 
                 if not in_definition:
                     p = ParserError("Unexpected '}' found outside object definition in line %s" % line_num)
@@ -476,13 +479,13 @@ class Config(object):
                 current = None
                 continue
 
-            elif line.startswith(b'define'):  # beginning of object definition
+            elif line.startswith('define'):  # beginning of object definition
                 if in_definition:
                     msg = "Unexpected 'define' in {filename} on line {line_num}. was expecting '}}'."
                     msg = msg.format(**locals())
                     self.errors.append(ParserError(msg, item=current))
 
-                m = self.__beginning_of_object.search(line.decode())
+                m = self.__beginning_of_object.search(line)
 
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
@@ -517,7 +520,7 @@ class Config(object):
                     value = ""
 
                 # Strip out in-line comments
-                if value.find(b";") != -1:
+                if value.find(";") != -1:
                     value = value.split(";", 1)[0]
 
                 # Clean info
@@ -611,7 +614,7 @@ class Config(object):
         tmp_buffer = ''
         result = []
         for i in list_of_strings:
-            if i.endswith(b'\\\n'):
+            if i.endswith('\\\n'):
                 tmp_buffer += i.strip('\\\n')
             else:
                 result.append(tmp_buffer + i)
@@ -711,7 +714,7 @@ class Config(object):
             comment = '# Edited by PyNag on %s\n' % time.ctime()
             if len(everything_before) > 0:
                 last_line_before = everything_before[-1]
-                if last_line_before.startswith(b'# Edited by PyNag on'):
+                if last_line_before.startswith('# Edited by PyNag on'):
                     everything_before.pop()  # remove this line
             object_definition.insert(0, comment)
             # Here we overwrite the config-file, hoping not to ruin anything

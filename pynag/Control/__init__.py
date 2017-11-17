@@ -29,6 +29,7 @@ from warnings import warn
 
 import pynag.errors
 from pynag.Utils import runCommand
+import six
 
 
 class ControlError(pynag.errors.PynagError):
@@ -255,8 +256,10 @@ class daemon(object):
             warn("nagios_init command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
 
+        if self.nagios_bin and isinstance(self.nagios_bin, six.binary_type):
+            slef.nagios_bin = self.nagios_bin.decode()
         if self.nagios_bin and \
-           self.nagios_bin.split(None, 1)[0].endswith(b"sudo"):
+           self.nagios_bin.split(None, 1)[0].endswith("sudo"):
             self.sudo = True
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "
