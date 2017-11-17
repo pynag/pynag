@@ -517,7 +517,7 @@ class Config(object):
                     value = ""
 
                 # Strip out in-line comments
-                if value.find(";") != -1:
+                if value.find(b";") != -1:
                     value = value.split(";", 1)[0]
 
                 # Clean info
