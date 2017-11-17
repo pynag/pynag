@@ -93,7 +93,10 @@ class Config(object):
             command = ['which', i]
             code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
             if code == 0:
-                return stdout.splitlines()[0].strip()
+                out = stdout.splitlines()[0].strip()
+                if not six.PY2 and isinstance(out, six.binary_type):
+                    out.decode()
+                return out
 
         return None
 
