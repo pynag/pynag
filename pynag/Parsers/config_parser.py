@@ -431,7 +431,7 @@ class Config(object):
         tmp_buffer = []
         result = []
 
-        if isinstance(string, six.binary_type):
+        if six.PY2 and isinstance(string, six.binary_type):
             string = string.decode()
 
         for sequence_no, line in enumerate(string.splitlines(False)):
