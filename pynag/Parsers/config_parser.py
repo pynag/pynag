@@ -95,7 +95,7 @@ class Config(object):
             if code == 0:
                 out = stdout.splitlines()[0].strip()
                 if not six.PY2 and isinstance(out, six.binary_type):
-                    out.decode()
+                    out = out.decode()
                 return out
 
         return None
