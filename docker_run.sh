@@ -35,7 +35,6 @@ pyenv global ${PYTHON_VERSION:?}
 pip install unittest2==1.1.0
 pip install coveralls
 pip install mock
-pip install six
 python setup.py build
 python setup.py install
 

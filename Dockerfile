@@ -4,10 +4,10 @@
 #   docker build -t pynag .
 #
 #   docker run --rm -d --name pynag_py27 -v $(pwd):/mnt pynag
-#   docker exec -it pynag_test sudo -u travis -i /mnt/docker_run.sh 2.7.14
+#   docker exec -it pynag_py27 sudo -u travis -i /mnt/docker_run.sh 2.7.14
 #
 #   docker run --rm -d --name pynag_py36 -v $(pwd):/mnt pynag
-#   docker exec -it pynag_test sudo -u travis -i /mnt/docker_run.sh 3.6.3
+#   docker exec -it pynag_py36 sudo -u travis -i /mnt/docker_run.sh 3.6.3
 FROM ubuntu:trusty
 MAINTAINER Toshiaki Baba<toshiaki@netmark.jp>
 
