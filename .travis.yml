@@ -10,7 +10,6 @@ install:
   - pip install unittest2==1.1.0
   - pip install coveralls
   - pip install mock
-  - pip install six
   - python setup.py build
   - python setup.py install
   - sudo chmod 777 /etc/nagios3/nagios.cfg

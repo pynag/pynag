@@ -95,4 +95,7 @@ if __name__ == "__main__":
             'build_man': BuildMan,
         },
         requires=['unittest2'],
+        install_requires=[
+            'six',
+        ],
     )
