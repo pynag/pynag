@@ -2,6 +2,7 @@
 """Module for talking to MK-Livestatus sockets."""
 
 from __future__ import absolute_import
+import six
 import socket
 import sys
 import time
@@ -818,6 +819,8 @@ class Livestatus(object):
             LivestatusError if there is a problem writing to socket.
 
         """
+        if not six.PY2 and not isinstance(livestatus_query, six.binary_type):
+            livestatus_query=livestatus_query.encode()
         # Lets create a socket and see if we can write to it
         livestatus_socket = self._get_socket()
         try:
