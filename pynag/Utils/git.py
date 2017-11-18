@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import datetime
 import subprocess
 import os
+import six
 import sys
 from getpass import getuser
 from platform import node
@@ -119,6 +120,8 @@ class GitRepo(object):
         """
         output = self._run_command("git status --porcelain")
         result = []
+        if not six.PY2 and isinstance(output, six.binary_type):
+            output = output.decode()
         for line in output.split('\n'):
             line = line.split(None, 1)
             if len(line) < 2:
@@ -157,6 +160,8 @@ class GitRepo(object):
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
+            if not six.PY2 and isinstance(line, six.binary_type):
+                line = line.decode()
             hash, author, authoremail, authortime, comment = line.split("\t", 4)
             result.append({
                 "hash": hash,

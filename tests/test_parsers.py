@@ -238,21 +238,21 @@ class Livestatus(unittest.TestCase):
 
         # Test plain setup with no weird arguments
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
+        os.write(fd, b'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
 
         # Test what happens if arguments are provided
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
+        os.write(fd, b'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
 
         # Test what happens if arguments are provided before and after file socket path
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
+        os.write(fd, b'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
@@ -260,7 +260,7 @@ class Livestatus(unittest.TestCase):
         # Test what happens if livestatus socket path cannot be found
         try:
             fd, filename = tempfile.mkstemp()
-            os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20')
+            os.write(fd, b'broker_module=./livestatus.o  num_client_threads=20')
             status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
             self.assertEqual(path, status.livestatus_socket_path)
             os.close(fd)
