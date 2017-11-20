@@ -148,8 +148,21 @@ def parse_threshold(threshold):
     """ takes a threshold string as an input and returns a hash map of options and values
 
     Examples:
-        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
-        {u'thresholds': [(0, u'0..90'), (1, u'90..95'), (2, u'95..100')], u'metric': u'disk_usage'}
+        >>> parsed = parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
+        >>> parsed[six.u(str('thresholds'))][0][0] == 0
+        True
+        >>> parsed[six.u(str('thresholds'))][0][1] == six.u(str('0..90'))
+        True
+        >>> parsed[six.u(str('thresholds'))][1][0] == 1
+        True
+        >>> parsed[six.u(str('thresholds'))][1][1] == six.u(str('90..95'))
+        True
+        >>> parsed[six.u(str('thresholds'))][2][0] == 2
+        True
+        >>> parsed[six.u(str('thresholds'))][2][1] == six.u(str('95..100'))
+        True
+        >>> parsed[six.u(str('metric'))] == six.u(str('disk_usage'))
+        True
     """
     tmp = threshold.split(',')
     parsed_thresholds = []
@@ -179,20 +192,20 @@ def convert_to_classic_format(threshold_range):
 
     Examples:
 
-    >>> convert_to_classic_format("0..5")
-    u'@0:5'
-    >>> convert_to_classic_format("inf..5")
-    u'5:'
-    >>> convert_to_classic_format("5..inf")
-    u'~:5'
-    >>> convert_to_classic_format("inf..inf")
-    u'@~:'
-    >>> convert_to_classic_format("^0..5")
-    u'0:5'
-    >>> convert_to_classic_format("10..20")
-    u'@10:20'
-    >>> convert_to_classic_format("10..inf")
-    u'~:10'
+    >>> convert_to_classic_format("0..5") == six.u(str('@0:5'))
+    True
+    >>> convert_to_classic_format("inf..5") == six.u(str('5:'))
+    True
+    >>> convert_to_classic_format("5..inf") == six.u(str('~:5'))
+    True
+    >>> convert_to_classic_format("inf..inf") == six.u(str('@~:'))
+    True
+    >>> convert_to_classic_format("^0..5") == six.u(str('0:5'))
+    True
+    >>> convert_to_classic_format("10..20") == six.u(str('@10:20'))
+    True
+    >>> convert_to_classic_format("10..inf") == six.u(str('~:10'))
+    True
     """
 
     threshold_range = str(threshold_range)
