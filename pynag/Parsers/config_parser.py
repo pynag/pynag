@@ -415,9 +415,9 @@ class Config(object):
             >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
             >>> c = Config()
             >>> result = c.parse_string(test_string)
-            >>> for i in result: print i.get('host_name'), i.get('service_description', None)
-            examplehost None
-            examplehost example service
+            >>> for i in result: print(i.get('host_name'), i.get('service_description', None))
+            ('examplehost', None)
+            ('examplehost', 'example service')
 
         Returns:
 

@@ -410,10 +410,10 @@ class PerfData(object):
 
         Example:
             >>> p = PerfData('load=15;0..5;;;')
-            >>> print p
+            >>> print(p)
             'load'=15;0..5;;;
             >>> p.reconsile_thresholds()
-            >>> print p
+            >>> print(p)
             'load'=15;@0:5;;;
 
         """

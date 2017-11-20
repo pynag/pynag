@@ -28,7 +28,7 @@ Example:
 >>>
 >>> all_services = Service.objects.all
 >>> my_service = all_services[0]
->>> print my_service.host_name # doctest: +SKIP
+>>> print(my_service.host_name) # doctest: +SKIP
 localhost
 >>>
 >>> example_host = Host.objects.filter(host_name="host.example.com")
@@ -1431,7 +1431,7 @@ class ObjectDefinition(object):
            >>> myservice.contact_groups
            '+alladmins'
            >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
@@ -1451,10 +1451,10 @@ class ObjectDefinition(object):
            >>> myservice = Service()
            >>> myservice.contact_groups = "+alladmins,localadmins"
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value='localadmins')
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value="alladmins")
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            None
            """
         aList = AttributeList(self[attribute_name])
@@ -1474,7 +1474,7 @@ class ObjectDefinition(object):
            >>> myservice = Service()
            >>> myservice.contact_groups = "+alladmins,localadmins"
            >>> myservice.attribute_replacefield(attribute_name="contact_groups", old_value='localadmins', new_value="webmasters")
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
