@@ -13,7 +13,6 @@ import pynag.Utils.paths
 
 # TODO remove this and raise proper exceptions
 from pynag.Parsers.errors import ParserError
-from six.moves import filter
 
 
 class Error(ParserError):
@@ -821,6 +820,9 @@ class Livestatus(object):
         """
         # Lets create a socket and see if we can write to it
         livestatus_socket = self._get_socket()
+        if not six.PY2 and not isinstance(livestatus_query, six.binary_type):
+            # socket.send() requires binary argument
+            livestatus_query = livestatus_query.encode()
         try:
             livestatus_socket.send(livestatus_query)
             livestatus_socket.shutdown(socket.SHUT_WR)

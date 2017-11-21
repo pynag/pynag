@@ -9,6 +9,7 @@ sys.path.insert(0, pynagbase)
 from tests import tests_dir
 import unittest2 as unittest
 from mock import MagicMock, patch, __version__
+import six
 
 try:
     # open_mock comes with mock 1.0.1
@@ -366,7 +367,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] PROCESS_HOST_CHECK_RESULT;%s;%s;%s' % (self.timestamp, self.testhost, status_code, plugin_output)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_remove_host_acknowledgement(self):
         self.command.remove_host_acknowledgement(
@@ -375,7 +376,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] REMOVE_HOST_ACKNOWLEDGEMENT;%s' % (self.timestamp, self.testhost)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_remove_svc_acknowledgement(self):
         self.command.remove_svc_acknowledgement(
@@ -385,7 +386,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] REMOVE_SVC_ACKNOWLEDGEMENT;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_host_downtime(self):
         start_time = self.timestamp + 1000
@@ -408,7 +409,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                                                                                     start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_svc_downtime(self):
         start_time = self.timestamp + 1000
@@ -432,7 +433,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                                                                                       self.test_svc_desc, start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_disable_svc_notifications(self):
         self.command.disable_svc_notifications(
@@ -442,7 +443,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] DISABLE_SVC_NOTIFICATIONS;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_servicegroup_svc_downtime(self):
         start_time = self.timestamp + 1000
@@ -465,7 +466,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
                                                                                                 start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_servicegroup_host_downtime(self):
         start_time = self.timestamp + 1000
@@ -488,7 +489,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_svc_group,
                                                                                                  start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_host_svc_downtime(self):
         start_time = self.timestamp + 1000
@@ -511,7 +512,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_HOST_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.testhost,
                                                                                         start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_hostgroup_host_downtime(self):
         start_time = self.timestamp + 1000
@@ -534,7 +535,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_HOSTGROUP_HOST_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
                                                                                               start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_hostgroup_svc_downtime(self):
         start_time = self.timestamp + 1000
@@ -557,7 +558,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         expected = 'COMMAND [%s] SCHEDULE_HOSTGROUP_SVC_DOWNTIME;%s;%s;%s;%s;%s;%s;%s;%s' % (self.timestamp, self.test_host_group,
                                                                                              start_time, end_time, fixed, trigger_id, duration, self.testauthor, comment)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_del_host_downtime(self):
         downtime_id = 100
@@ -567,7 +568,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] DEL_HOST_DOWNTIME;%s' % (self.timestamp, downtime_id)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_del_svc_downtime(self):
         downtime_id = 100
@@ -577,7 +578,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] DEL_SVC_DOWNTIME;%s' % (self.timestamp, downtime_id)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_host_check(self):
         self.command.schedule_host_check(
@@ -587,7 +588,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] SCHEDULE_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_forced_host_check(self):
         self.command.schedule_forced_host_check(
@@ -597,7 +598,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] SCHEDULE_FORCED_HOST_CHECK;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_forced_svc_check(self):
         self.command.schedule_forced_svc_check(
@@ -608,7 +609,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] SCHEDULE_FORCED_SVC_CHECK;%s;%s;%s' % (self.timestamp, self.testhost, self.test_svc_desc, self.timestamp)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_del_all_host_comments(self):
         self.command.del_all_host_comments(
@@ -617,7 +618,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] DEL_ALL_HOST_COMMENTS;%s' % (self.timestamp, self.testhost)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_schedule_forced_host_svc_checks(self):
         self.command.schedule_forced_host_svc_checks(
@@ -627,7 +628,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] SCHEDULE_FORCED_HOST_SVC_CHECKS;%s;%s' % (self.timestamp, self.testhost, self.timestamp)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
     def test_process_file(self):
         file_name = '/tmp/testfile'
@@ -639,7 +640,7 @@ class testCommandsToLivestatus(unittest.TestCase):
         )
         expected = 'COMMAND [%s] PROCESS_FILE;%s;%s' % (self.timestamp, file_name, delete)
         sock = self.livestatus_socket()
-        sock.send.assert_called_with(expected + self.livestatus_command_suffix)
+        sock.send.assert_called_with(six.b(expected + self.livestatus_command_suffix))
 
 
 if __name__ == "__main__":
