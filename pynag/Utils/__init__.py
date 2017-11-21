@@ -28,6 +28,7 @@ that are used throughout the pynag library.
 from __future__ import absolute_import
 import os
 import re
+import six
 import subprocess
 
 from pynag import errors
@@ -624,6 +625,10 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
                             stderr=subprocess.PIPE,
                             env=run_env)
     stdout, stderr = proc.communicate('through stdin to stdout')
+    if not six.PY2 and isinstance(stdout, six.binary_type):
+        stdout = stdout.decode()
+    if not six.PY2 and isinstance(stderr, six.binary_type):
+        stderr = stderr.decode()
     result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
