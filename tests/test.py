@@ -50,7 +50,7 @@ def get_all_pynag_modules():
 
 
 def get_all_doctests():
-    flags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE
+    flags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE | doctest.IGNORE_EXCEPTION_DETAIL
     finder = doctest.DocTestFinder(exclude_empty=False)
     for module in get_all_pynag_modules():
         yield doctest.DocTestSuite(
