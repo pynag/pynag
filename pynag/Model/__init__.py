@@ -1275,6 +1275,10 @@ class ObjectDefinition(object):
             return None
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, )
         stdout, stderr = proc.communicate('through stdin to stdout')
+        if not six.PY2 and isinstance(stdout, six.binary_type):
+            stdout = stdout.decode()
+        if not six.PY2 and isinstance(stderr, six.binary_type):
+            stderr = stderr.decode()
         return proc.returncode, stdout, stderr
 
     def _split_check_command_and_arguments(self, check_command):

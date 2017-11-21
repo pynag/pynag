@@ -53,6 +53,10 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
         input_string = input_string.encode()
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     stdout, stderr = proc.communicate(input=input_string)
+    if not six.PY2 and isinstance(stdout, six.binary_type):
+        stdout = stdout.decode()
+    if not six.PY2 and isinstance(stderr, six.binary_type):
+        stderr = stderr.decode()
     result = proc.returncode, stdout, stderr
 
     return result
