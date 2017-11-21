@@ -640,6 +640,9 @@ class ObjectDefinition(object):
     def __cmp__(self, other):
         return cmp(self.get_description(), other.get_description())
 
+    def __eq__(self, other):
+        return self.get_description() == other.get_description()
+
     def __lt__(self, other):
         return self.get_description() < other.get_description()
 
