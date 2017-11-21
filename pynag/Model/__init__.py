@@ -649,6 +649,9 @@ class ObjectDefinition(object):
     def __gt__(self, other):
         return self.get_description() > other.get_description()
 
+    def __hash__(self):
+        return hash(self.get_id())
+
     def __setitem__(self, key, item):
         # Special handle for macros
         if pynag.Utils.is_macro(key):
