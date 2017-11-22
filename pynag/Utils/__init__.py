@@ -526,8 +526,8 @@ def grep_to_livestatus(*args, **kwargs):
         ['Filter: service_description ~ serv']
         >>> grep_to_livestatus(service_description__notcontains=['serv','check'])
         ['Filter: service_description !~ serv']
-        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
-        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
+        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin') == ['Filter: contacts >= admin', 'Filter: service_description ~ foo'] or grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin') == ['Filter: service_description ~ foo', 'Filter: contacts >= admin']
+        True
         >>> grep_to_livestatus(service_description__has_field='foo')
         ['Filter: service_description >= foo']
         >>> grep_to_livestatus(service_description__startswith='foo')
