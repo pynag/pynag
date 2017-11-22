@@ -256,11 +256,24 @@ class daemon(object):
             warn("nagios_init command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
 
-        if not six.PY2 and self.nagios_bin and isinstance(self.nagios_bin, six.binary_type):
-            self.nagios_bin = self.nagios_bin.decode()
         if self.nagios_bin and \
            self.nagios_bin.split(None, 1)[0].endswith("sudo"):
             self.sudo = True
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
+
+    def __setattr__(self, name, value):
+        if not six.PY2 and \
+            name in [
+                "nagios_bin",
+                "nagios_cfg",
+                "nagios_init",
+                "service_name",
+                "stdout",
+                "stderr",
+                "nagios_config",
+            ] and \
+            isinstance(value, six.binary_type):
+            value = value.encode()
+        self.__dict__[name] = value
