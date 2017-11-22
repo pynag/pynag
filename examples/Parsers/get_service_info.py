@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 if len(sys.argv) != 3:
@@ -17,4 +19,4 @@ nc.parse()
 
 service = nc.get_service(sys.argv[1],sys.argv[2])
 
-print nc.print_conf(service)
+print(nc.print_conf(service))

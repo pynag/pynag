@@ -1,6 +1,7 @@
 # check_stuff.py Takes any arguments from the command_line and treats them as performance metrics.
 
 
+from __future__ import absolute_import
 from pynag.Plugins import PluginHelper
 
 my_plugin = PluginHelper()

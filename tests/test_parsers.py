@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__ = 'palli'
 
 import os
@@ -224,7 +225,7 @@ class Livestatus(unittest.TestCase):
         rows = self.livestatus.query('GET status', 'Columns: requests')
         self.assertEqual(1, len(rows), "Could not get status.requests from livestatus")
         result = rows[0]
-        self.assertEqual(['requests'], result.keys())
+        self.assertEqual(['requests'], list(result.keys()))
         num_requests = result['requests']
         try:
             int(num_requests)
@@ -237,21 +238,21 @@ class Livestatus(unittest.TestCase):
 
         # Test plain setup with no weird arguments
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
+        os.write(fd, b'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
 
         # Test what happens if arguments are provided
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
+        os.write(fd, b'broker_module=./livestatus.o /var/lib/nagios/rw/livestatus hostgroups=t')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
 
         # Test what happens if arguments are provided before and after file socket path
         fd, filename = tempfile.mkstemp()
-        os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
+        os.write(fd, b'broker_module=./livestatus.o  num_client_threads=20 /var/lib/nagios/rw/livestatus hostgroups=t')
         status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
         self.assertEqual(path, status.livestatus_socket_path)
         os.close(fd)
@@ -259,7 +260,7 @@ class Livestatus(unittest.TestCase):
         # Test what happens if livestatus socket path cannot be found
         try:
             fd, filename = tempfile.mkstemp()
-            os.write(fd, 'broker_module=./livestatus.o  num_client_threads=20')
+            os.write(fd, b'broker_module=./livestatus.o  num_client_threads=20')
             status = pynag.Parsers.mk_livestatus(nagios_cfg_file=filename)
             self.assertEqual(path, status.livestatus_socket_path)
             os.close(fd)
@@ -475,7 +476,7 @@ class ObjectCache(unittest.TestCase):
         """Test pynag.Parsers.object_cache"""
         o = pynag.Parsers.object_cache()
         o.parse()
-        self.assertTrue(len(o.data.keys()) > 0, 'Object cache seems to be empty')
+        self.assertTrue(len(list(o.data.keys())) > 0, 'Object cache seems to be empty')
 
 
 class LogFiles(unittest.TestCase):
@@ -525,7 +526,7 @@ class LogFiles(unittest.TestCase):
 
     def testForMissingLogEntries(self):
         # Get all log files from 2014-01-01, make sure we find all of them
-        start_time = (2014, 01, 01, 0, 0, 0, 0, 0, 0)
+        start_time = (2014, 0o1, 0o1, 0, 0, 0, 0, 0, 0)
         start_time = time.mktime(start_time)  # timestamp
 
         # We expect 1020 log entries to appear

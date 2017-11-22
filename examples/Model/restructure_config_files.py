@@ -14,6 +14,8 @@
 
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import pynag.Model
 from pynag.Model import ObjectDefinition
 import os
@@ -30,11 +32,11 @@ all_objects = ObjectDefinition.objects.all
 # all_objects = ObjectDefinition.objects.filter(filename__contains='/etc/nagios/all_the_services.cfg')
 
 for i in all_objects:
-    print "Saving", i.object_type, i.get_description(), "...",
+    print("Saving", i.object_type, i.get_description(), "...", end=' ')
     # Set a new filename for our object, None means
     # That pynag decides where it goes
     new_filename = i.get_suggested_filename()
-    print new_filename
+    print(new_filename)
     continue
     # Alternative:
     # if i.object.type == 'host' and i.host_name is not None:
@@ -46,5 +48,5 @@ for i in all_objects:
     with open(new_filename, 'a') as f:
         data = "\n" + str(i)
         f.write(data)
-    print  new_filename
+    print(new_filename)
 

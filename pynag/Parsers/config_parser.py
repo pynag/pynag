@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for low-level parsing of nagios-style configuration files."""
 
+from __future__ import absolute_import
 import os
 import re
 import sys
@@ -11,6 +12,9 @@ from pynag.Utils import paths
 
 # TODO: Raise more specific errors in this module.
 from pynag.Parsers.errors import ParserError
+import six
+from six.moves import map
+from six.moves import range
 
 
 class ConfigFileNotFound(ParserError):
@@ -89,7 +93,10 @@ class Config(object):
             command = ['which', i]
             code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
             if code == 0:
-                return stdout.splitlines()[0].strip()
+                out = stdout.splitlines()[0].strip()
+                if not six.PY2 and isinstance(out, six.binary_type):
+                    out = out.decode()
+                return out
 
         return None
 
@@ -281,7 +288,7 @@ class Config(object):
         inherited_attributes = original_item['meta']['inherited_attributes']
         template_fields = original_item['meta']['template_fields']
         for parent_item in parent_items:
-            for k, v in parent_item.iteritems():
+            for k, v in six.iteritems(parent_item):
                 if k in ('use', 'register', 'meta', 'name'):
                     continue
                 if k not in inherited_attributes:
@@ -408,9 +415,9 @@ class Config(object):
             >>> test_string += "define service {\\nhost_name examplehost\\nservice_description example service\\n}\\n"
             >>> c = Config()
             >>> result = c.parse_string(test_string)
-            >>> for i in result: print i.get('host_name'), i.get('service_description', None)
-            examplehost None
-            examplehost example service
+            >>> for i in result: print((i.get('host_name'), i.get('service_description', None)))
+            ('examplehost', None)
+            ('examplehost', 'example service')
 
         Returns:
 
@@ -427,6 +434,9 @@ class Config(object):
         tmp_buffer = []
         result = []
 
+        if not six.PY2 and isinstance(string, six.binary_type):
+            string = string.decode()
+
         for sequence_no, line in enumerate(string.splitlines(False)):
             line_num = sequence_no + 1
 
@@ -440,7 +450,7 @@ class Config(object):
             line = line.strip()
             if line == "":
                 continue
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith("#") or line.startswith(";"):
                 continue
 
             # If this line ends with a backslash, continue directly to next line
@@ -482,7 +492,7 @@ class Config(object):
 
                 tmp_buffer = [line]
                 object_type = m.groups()[0]
-                if self.strict and object_type not in self.object_type_keys.keys():
+                if self.strict and object_type not in list(self.object_type_keys.keys()):
                     raise ParserError(
                         "Don't know any object definition of type '%s'. it is not in a list of known object definitions." % object_type)
                 current = self.get_new_item(object_type, filename)
@@ -495,7 +505,7 @@ class Config(object):
                 rest = m.groups()[1]
                 continue
             else:  # In the middle of an object definition
-                tmp_buffer.append('    ' + line)
+                tmp_buffer.append('    {0}'.format(line))
 
             # save whatever's left in the buffer for the next iteration
             if not in_definition:
@@ -959,8 +969,8 @@ class Config(object):
 
             False -- Items are not equal
         """
-        keys1 = item1['meta']['defined_attributes'].keys()
-        keys2 = item2['meta']['defined_attributes'].keys()
+        keys1 = list(item1['meta']['defined_attributes'].keys())
+        keys2 = list(item2['meta']['defined_attributes'].keys())
         keys1.sort()
         keys2.sort()
         result = True
@@ -1058,7 +1068,7 @@ class Config(object):
         return_list.sort()
 
         # remove preceding and trailing whitespace from each element
-        return_list = map(lambda x : x.strip(), return_list)
+        return_list = [x.strip() for x in return_list]
 
         return return_list
 
@@ -1359,7 +1369,7 @@ class Config(object):
         for possible_item in self.pre_object_list:
             if "name" in possible_item:
                 # Start appending to the item
-                for k, v in possible_item.iteritems():
+                for k, v in six.iteritems(possible_item):
 
                     try:
                         if k == 'use':
@@ -1454,7 +1464,7 @@ class Config(object):
         """
         object_type = item['meta']['object_type']
         output = "define %s {\n" % object_type
-        for k, v in item.iteritems():
+        for k, v in six.iteritems(item):
             if v is None:
                 # Skip entries with No value
                 continue
@@ -1488,7 +1498,7 @@ class Config(object):
                 continue
 
             # Skip comments
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith("#") or line.startswith(";"):
                 continue
             tmp = line.split("=", 1)
             if len(tmp) < 2:
@@ -1547,7 +1557,7 @@ class Config(object):
                 continue
 
             # Skip comments
-            if line[0] == "#" or line[0] == ';':
+            if line.startswith("#") or line.startswith(";"):
                 continue
             key, value = line.split("=", 1)
             key = key.strip()
@@ -2041,7 +2051,7 @@ class Config(object):
 
     def get_object_types(self):
         """ Returns a list of all discovered object types """
-        return map(lambda x: re.sub("all_", "", x), self.data.keys())
+        return [re.sub("all_", "", x) for x in list(self.data.keys())]
 
     def cleanup(self):
         """ Remove configuration files that have no configuration items """

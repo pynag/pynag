@@ -19,6 +19,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import traceback
 from optparse import OptionParser,OptionGroup
@@ -29,6 +31,9 @@ import pynag.Parsers
 import pynag.Utils
 from pynag.Model import cfg_file
 from pynag import __version__
+from six.moves import filter
+from six.moves import map
+from six.moves import input
 
 debug = False
 usage = """usage: %prog <sub-command> [options] [arguments]
@@ -105,7 +110,7 @@ def parse_arguments():
     elif sys.argv[1] in ('--examples','examples'):
         print_examples()
     elif sys.argv[1] in ('version','--version'):
-        print __version__
+        print(__version__)
     else:
         parser.error("Unknown sub-command '%s'" % sys.argv[1])
 
@@ -132,17 +137,17 @@ def execute_check_command():
                 raise pynag.Utils.PynagError("Host %s does not seem to have any service named '%s'" % (host_name,service_description))
 
         if opts.quiet == False:
-            print "# %s" %(obj.get_effective_command_line(host_name=host_name))
+            print("# %s" %(obj.get_effective_command_line(host_name=host_name)))
         exit_code,stdout,stderr = obj.run_check_command(host_name=host_name)
-        print stdout,
+        print(stdout, end=' ')
         if stderr != '':
-            print ""
-            print "----- errors -------"
-            print stderr,
-            print "--------------------"
-        print ""
+            print("")
+            print("----- errors -------")
+            print(stderr, end=' ')
+            print("--------------------")
+        print("")
         if opts.quiet == False:
-            print "# %s check exited with exit code %s" %(obj.object_type, exit_code)
+            print("# %s check exited with exit code %s" %(obj.object_type, exit_code))
     except KeyError as e:
         parser.error("Could not find host '%s'" % e)
 
@@ -235,10 +240,10 @@ def main_config():
             result = c._edit_static_file(attribute=k, new_value=v, old_value=opts.old_value, append=append)
             if result:
                 if opts.quiet == False:
-                    print "%s: set %s=%s" % (c.cfg_file, k, result)
+                    print("%s: set %s=%s" % (c.cfg_file, k, result))
             else:
                 if opts.quiet == False:
-                    print "%s: No changed were needed" % c.cfg_file
+                    print("%s: No changed were needed" % c.cfg_file)
         return
 
 
@@ -251,10 +256,10 @@ def main_config():
         result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=False)
         if result:
             if opts.quiet == False:
-                print "%s: set %s=%s" % (c.cfg_file, k, v)
+                print("%s: set %s=%s" % (c.cfg_file, k, v))
         else:
             if opts.quiet == False:
-                print "%s: No changed were needed" % c.cfg_file
+                print("%s: No changed were needed" % c.cfg_file)
 
     # Handle a --append operation
     if opts.append is not None:
@@ -265,19 +270,19 @@ def main_config():
         result = c._edit_static_file(filename=c.cfg_file, attribute=k, new_value=v, old_value=opts.old_value, append=True)
         if result:
             if opts.quiet == False:
-                print "%s: set %s=%s" % (c.cfg_file, k, v)
+                print("%s: set %s=%s" % (c.cfg_file, k, v))
         else:
             if opts.quiet == False:
-                print "%s: No changed were needed" % c.cfg_file
+                print("%s: No changed were needed" % c.cfg_file)
     # Handle a remove operation
     if opts.remove is not None:
         result = c._edit_static_file(filename=c.cfg_file, attribute=opts.remove, new_value=None, old_value=opts.old_value, )
         if result:
             if opts.quiet == False:
-                print "%s: %s was removed" % (c.cfg_file, opts.remove)
+                print("%s: %s was removed" % (c.cfg_file, opts.remove))
         else:
             if opts.quiet == False:
-                print "%s: No changed were needed" % c.cfg_file
+                print("%s: No changed were needed" % c.cfg_file)
     # Handle --get operation
     if opts.get is not None:
         found_some_attributes = False
@@ -286,9 +291,9 @@ def main_config():
             v = v.strip()
             if k == opts.get:
                 found_some_attributes=True
-                print v
+                print(v)
         if not found_some_attributes and opts.quiet == False:
-            print "no '%s=*' found in '%s'" % (opts.get, c.cfg_file)
+            print("no '%s=*' found in '%s'" % (opts.get, c.cfg_file))
 
 def list_objects():
     """ List nagios objects given a specified search filter """
@@ -309,7 +314,7 @@ def list_objects():
         objects = pynag.Model.ObjectDefinition.objects.all
     if opts.print_definition:
         for i in objects:
-            print i
+            print(i)
     elif opts.json:
         print_json(objects=objects)
     else:
@@ -338,20 +343,20 @@ def delete_object():
         parser.error('Refusing to delete every object. Please trim down the selection with a WHERE statement')
     if len(objects) > 0 and not opts.force:
         pretty_print(objects)
-        answer = raw_input('Delete these %s objects ? (y/N) ' % (len(objects)))
+        answer = input('Delete these %s objects ? (y/N) ' % (len(objects)))
         if answer.lower() not in ('y', 'yes'):
             return 
     for i in objects:
         if opts.verbose:
-            print i
+            print(i)
         try:
             i.delete(recursive=opts.recursive)
             if opts.quiet == False:
-                print i.get_shortname(), "deleted."
+                print(i.get_shortname(), "deleted.")
         except ValueError:
-            print i.get_shortname(), "not found."
+            print(i.get_shortname(), "not found.")
     if opts.quiet == False:
-        print len(objects), "objects deleted"
+        print(len(objects), "objects deleted")
 
 def add_object():
     parser.usage = ''' %prog add <object_type> <attr1=value1> [attr2=value2]'''
@@ -382,10 +387,10 @@ def add_object():
     for k,v in attributes.items():
         obj[k] = v
     obj.save()
-    print "Object saved to", obj.get_filename()
+    print("Object saved to", obj.get_filename())
     if opts.verbose:
-        print "# This is what actual statement looks like"
-        print obj
+        print("# This is what actual statement looks like")
+        print(obj)
 
 def acknowledge():
     parser.usage = ''' %prog acknowledge < HOST [SERVICE] | WHERE ... > '''
@@ -419,13 +424,13 @@ def acknowledge():
     # Here we actually ack the objects
     if opts.quiet == False:
         pretty_print(objects)
-    answer = raw_input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
+    answer = input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
     if answer.lower() not in ('y', 'yes'):
         return
 
     for i in objects:
         if opts.quiet is False:
-            print "Acknowledge %s: %s" % (i.object_type, i.get_shortname())
+            print("Acknowledge %s: %s" % (i.object_type, i.get_shortname()))
         i.acknowledge(comment=opts.comment,author=opts.author,timestamp=opts.ts)
 
 def downtime():
@@ -466,13 +471,13 @@ def downtime():
         else:
             pretty_print(downtimes, attributes=attributes)
         if opts.remove == True:
-            answer = raw_input('Remove these %s downtimes? (y/N) ' % (len(downtimes)))
+            answer = input('Remove these %s downtimes? (y/N) ' % (len(downtimes)))
             if answer.lower() not in ('y', 'yes'):
                 return
 
             for i in downtimes:
                 if opts.quiet == False:
-                    print "Removing downtime %s: " % (i.get('id'))
+                    print("Removing downtime %s: " % (i.get('id')))
                 if i.get('service_description', None) in (None, ''):
                     pynag.Control.Command.del_host_downtime(i.get('id'))
                 else:
@@ -494,18 +499,18 @@ def downtime():
 
     # Filter everything from objects that does not have a downtime() method or is not registered
     filter_function = lambda x: x.register != '0' and 'downtime' in dir(x)
-    objects = filter(filter_function, objects)
+    objects = list(filter(filter_function, objects))
 
     # Here we actually talk to the the objects
     if opts.quiet == False:
         pretty_print(objects)
-    answer = raw_input('Schedule downtime for these %s objects ? (y/N) ' % (len(objects)))
+    answer = input('Schedule downtime for these %s objects ? (y/N) ' % (len(objects)))
     if answer.lower() not in ('y', 'yes'):
         return
 
     for i in objects:
         if opts.quiet == False:
-            print "Downtime %s: %s" % (i.object_type,i.get_shortname())
+            print("Downtime %s: %s" % (i.object_type,i.get_shortname()))
         i.downtime(comment=opts.comment,author=opts.author,start_time=opts.st, end_time=opts.et, duration=opts.dur, recursive=opts.recursive)
 
 def _get_all_downtimes():
@@ -551,11 +556,11 @@ def copy_object():
                 tmp[1] = None
             set[tmp[0]] = tmp[1]
         else:
-            set[tmp[0]] = raw_input('Enter a value for %s: ' % tmp[0])
+            set[tmp[0]] = input('Enter a value for %s: ' % tmp[0])
 
     # Here we actually copy the object
     pretty_print(objects)
-    answer = raw_input('Update these %s objects ? (y/N) ' % (len(objects)))
+    answer = input('Update these %s objects ? (y/N) ' % (len(objects)))
     if answer.lower() not in ('y', 'yes'):
         return
     number_of_copies = 0
@@ -567,12 +572,12 @@ def copy_object():
         number_of_copies += len(copied_objects)
         for new_obj in copied_objects:
             if opts.quiet == False:
-                print "Object saved to", new_obj.get_filename()
+                print("Object saved to", new_obj.get_filename())
             if opts.verbose:
-                print "# This is what actual statement looks like"
-                print new_obj
+                print("# This is what actual statement looks like")
+                print(new_obj)
     if opts.quiet == False:
-        print "%s objects copied." % (number_of_copies)
+        print("%s objects copied." % (number_of_copies))
 def livestatus():
     """ Make a custom query to MK Livestatus """
     parser.usage = '''%prog livestatus '<query>' [query2] [query3] [...] '''
@@ -616,10 +621,10 @@ def livestatus():
 
     # Here we run the actual query
     if opts.verbose == True:
-        print "--- this query will be sent ---"
+        print("--- this query will be sent ---")
         for i in args:
-            print i
-        print "--- end of query --------------"
+            print(i)
+        print("--- end of query --------------")
     livestatus = pynag.Parsers.mk_livestatus(nagios_cfg_file=opts.cfg_file, livestatus_socket_path=opts.socket)
     result = livestatus.query(*args)
 
@@ -654,19 +659,19 @@ def update_objects():
                 tmp[1] = None
             set[tmp[0]] = tmp[1]
         else:
-            set[tmp[0]] = raw_input('Enter a value for %s: ' % tmp[0])
+            set[tmp[0]] = input('Enter a value for %s: ' % tmp[0])
 
     if len(objects) > 0 and not opts.force:
         pretty_print(objects)
-        answer = raw_input('Update these %s objects ? (y/N) ' % (len(objects)))
+        answer = input('Update these %s objects ? (y/N) ' % (len(objects)))
         if answer.lower() not in ('y', 'yes'):
             return
     update_many(objects=objects, **set)
 
     if opts.verbose:
-        for i in objects: print i
+        for i in objects: print(i)
     if opts.quiet == False:
-        print "Updated %s objects" % (len(objects))
+        print("Updated %s objects" % (len(objects)))
 
 def pretty_print(objects, attributes=None):
     """ Takes in a list of objects and prints them in a pretty table format """
@@ -685,28 +690,28 @@ def pretty_print(objects, attributes=None):
     # Print header
     if parser.values.quiet == False:
         # Apply fixed with to columns
-        transformed_attributes = map(lambda x: min_width % x, attributes)
+        transformed_attributes = [min_width % x for x in attributes]
         row = parser.values.seperator.join(transformed_attributes)
-        print row
-        print "-"*80
+        print(row)
+        print("-"*80)
     
     # Print one row for each object
     for i in objects:
         # For every attribute we want to print, get the value for this row
-        columns = map(lambda x: i.get(x, "null"), attributes)
+        columns = [i.get(x, "null") for x in attributes]
 
         # Pad every column with spaces if width was specified
-        transformed_columns = map(lambda x: min_width % x, columns)
+        transformed_columns = [min_width % x for x in columns]
 
         # Print the row
-        print parser.values.seperator.join(transformed_columns)
+        print(parser.values.seperator.join(transformed_columns))
 
     # Print Footer
     if parser.values.quiet == False:
         message = "%s objects matches search condition" % ( len(objects) )
         pre = "-"*10
         post = "-"*(80-10-len(message))
-        print pre + message + post
+        print(pre + message + post)
 
 def get_object_attributes(obj):
     obj_attributes = {}
@@ -727,7 +732,7 @@ def print_json(objects):
         obj_attributes = get_object_attributes(obj)
         all_objects.append(obj_attributes)
 
-    print json.dumps(all_objects, indent=4)
+    print(json.dumps(all_objects, indent=4))
     
 def update_many(objects, **kwargs):
     """ Helper function to update many objects at once
@@ -742,7 +747,7 @@ def update_many(objects, **kwargs):
         for attr,value in kwargs.items():
             i[attr] = value
             i.save()
-            print "%s (%s): changed %s to %s" % (i.get_filename(), i.get_shortname(),attr, value)
+            print("%s (%s): changed %s to %s" % (i.get_filename(), i.get_shortname(),attr, value))
 
 
 def split_where_and_set(argument_list):
@@ -833,15 +838,15 @@ def print_examples():
     # Print all examples if no subcommand is specified
     if subcommand == '--examples':
         for k,v in examples.items():
-            print "%s Examples:" % k
-            print v.replace('%prog', sys.argv[0] )
-            print ""
+            print("%s Examples:" % k)
+            print(v.replace('%prog', sys.argv[0] ))
+            print("")
         sys.exit()
-    if subcommand not in examples.keys():
-        print "No examples found for subcommand '%s'" % subcommand
+    if subcommand not in list(examples.keys()):
+        print("No examples found for subcommand '%s'" % subcommand)
         sys.exit(1)
-    print "Examples for the '%s' subcommand:" % sys.argv[1]
-    print examples[sys.argv[1]].replace('%prog', sys.argv[0] )
+    print("Examples for the '%s' subcommand:" % sys.argv[1])
+    print(examples[sys.argv[1]].replace('%prog', sys.argv[0] ))
     sys.exit()
 
 if __name__ == '__main__':
@@ -852,9 +857,9 @@ if __name__ == '__main__':
     try:
         parse_arguments()
     except Exception as e:
-        print "Error occured, use --debug to see full traceback:"
-        print ""
-        print "%s: %s" % (e.__class__.__name__, e)
+        print("Error occured, use --debug to see full traceback:")
+        print("")
+        print("%s: %s" % (e.__class__.__name__, e))
         if debug:
             traceback.print_exc(file=sys.stdout)
         sys.exit(1)

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Module for dealing with multiple Livestatus instances at once."""
 
+from __future__ import absolute_import
 from pynag.Parsers import livestatus
 from pynag.Parsers import errors
+from six.moves import map
 
 
 class MultiSite(livestatus.Livestatus):
@@ -47,7 +49,7 @@ class MultiSite(livestatus.Livestatus):
         """ Return one specific backend that has previously been added
         """
         if not backend_name:
-            return self.backends.values()[0]
+            return list(self.backends.values())[0]
         try:
             return self.backends[backend_name]
         except KeyError:
@@ -68,7 +70,7 @@ class MultiSite(livestatus.Livestatus):
         # Special hack, if 'Stats' argument was provided to livestatus
         # We have to maintain compatibility with old versions of livestatus
         # and return single list with all results instead of a list of dicts
-        doing_stats = any(map(lambda x: x.startswith('Stats:'), args + (query,)))
+        doing_stats = any([x.startswith('Stats:') for x in args + (query,)])
 
         # Iterate though all backends and run the query
         # TODO: Make this multithreaded
