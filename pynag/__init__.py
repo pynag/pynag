@@ -22,8 +22,12 @@ import sys
 import os
 import re
 from optparse import OptionParser
-from pynag import Plugins
-Plugin = Plugins.simple
+try:
+    from pynag import Plugins
+    Plugin = Plugins.simple
+except:
+    # when setup, import caused dependency error
+    pass
 
 
 __version__ = '0.9.1'
