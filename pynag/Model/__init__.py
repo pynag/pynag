@@ -1751,9 +1751,13 @@ class Host(ObjectDefinition):
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
-    def get_current_status(self):
-        """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
+    def get_current_status(self, status=None):
+        """ Returns a dictionary with status data information for this object
+
+        :param status: pynag.Parsers.status_dat.StatusDat instance
+        """
+        if not status:
+            status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         host = status.get_hoststatus(self.host_name)
         return host
 
@@ -1976,9 +1980,13 @@ class Service(ObjectDefinition):
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
-    def get_current_status(self):
-        """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
+    def get_current_status(self, status=None):
+        """ Returns a dictionary with status data information for this object
+
+        :param status: pynag.Parsers.status_dat.StatusDat instance
+        """
+        if not status:
+            status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         service = status.get_servicestatus(self.host_name, service_description=self.service_description)
         return service
 
