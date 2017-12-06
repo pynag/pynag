@@ -49,6 +49,7 @@ import getpass
 from pynag.Model import macros
 from pynag.Model import all_attributes
 from pynag.Utils import paths
+from pynag.Utils import bytes2str
 
 import pynag.Control.Command
 import pynag.errors
@@ -1275,10 +1276,8 @@ class ObjectDefinition(object):
             return None
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, )
         stdout, stderr = proc.communicate('through stdin to stdout')
-        if not six.PY2 and isinstance(stdout, six.binary_type):
-            stdout = stdout.decode()
-        if not six.PY2 and isinstance(stderr, six.binary_type):
-            stderr = stderr.decode()
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         return proc.returncode, stdout, stderr
 
     def _split_check_command_and_arguments(self, check_command):

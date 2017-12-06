@@ -25,6 +25,7 @@ Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
 Requires: python-six
+Requires: python-chardet
 BuildRequires: python-devel
 BuildRequires: python-setuptools
 BuildRequires: python-six

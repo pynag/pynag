@@ -1,5 +1,6 @@
 """Module for dealing with NSCA."""
 from __future__ import absolute_import
+from pynag.Utils import bytes2str
 import platform
 import subprocess
 import six
@@ -53,10 +54,8 @@ def send_nsca(code, message, nscahost, hostname=None, service=None, nscabin="sen
         input_string = input_string.encode()
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
     stdout, stderr = proc.communicate(input=input_string)
-    if not six.PY2 and isinstance(stdout, six.binary_type):
-        stdout = stdout.decode()
-    if not six.PY2 and isinstance(stderr, six.binary_type):
-        stderr = stderr.decode()
+    stdout = bytes2str(stdout)
+    stderr = bytes2str(stderr)
     result = proc.returncode, stdout, stderr
 
     return result

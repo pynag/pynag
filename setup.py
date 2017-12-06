@@ -97,5 +97,6 @@ if __name__ == "__main__":
         requires=['unittest2'],
         install_requires=[
             'six',
+            'chardet',
         ],
     )
