@@ -34,6 +34,7 @@ from platform import node
 import subprocess
 from os import environ
 from getpass import getuser
+from pynag.Utils import bytes2str
 
 
 class BaseEventHandler:
@@ -163,10 +164,8 @@ class GitEventHandler(BaseEventHandler):
         cwd = self.gitdir
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
-        if not six.PY2 and isinstance(stdout, six.binary_type):
-            stdout = stdout.decode()
-        if not six.PY2 and isinstance(stderr, six.binary_type):
-            stderr = stderr.decode()
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"

@@ -9,6 +9,7 @@ import time
 
 import pynag.Utils
 from pynag.Utils import paths
+from pynag.Utils import bytes2str
 
 # TODO: Raise more specific errors in this module.
 from pynag.Parsers.errors import ParserError
@@ -94,8 +95,8 @@ class Config(object):
             code, stdout, stderr = pynag.Utils.runCommand(command=command, shell=False)
             if code == 0:
                 out = stdout.splitlines()[0].strip()
-                if not six.PY2 and isinstance(out, six.binary_type):
-                    out = out.decode()
+                out = bytes2str(out)
+
                 return out
 
         return None
@@ -434,8 +435,7 @@ class Config(object):
         tmp_buffer = []
         result = []
 
-        if not six.PY2 and isinstance(string, six.binary_type):
-            string = string.decode()
+        string = bytes2str(string)
 
         for sequence_no, line in enumerate(string.splitlines(False)):
             line_num = sequence_no + 1

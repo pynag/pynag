@@ -10,6 +10,7 @@ from getpass import getuser
 from platform import node
 
 from pynag.Utils import grep
+from pynag.Utils import bytes2str
 from pynag.errors import PynagError
 from six.moves import filter
 from six.moves import map
@@ -86,10 +87,8 @@ class GitRepo(object):
         cwd = self.directory
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
-        if not six.PY2 and isinstance(stdout, six.binary_type):
-            stdout = stdout.decode()
-        if not six.PY2 and isinstance(stderr, six.binary_type):
-            stderr = stderr.decode()
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
@@ -124,8 +123,8 @@ class GitRepo(object):
         """
         output = self._run_command("git status --porcelain")
         result = []
-        if not six.PY2 and isinstance(output, six.binary_type):
-            output = output.decode()
+
+        output = bytes2str(output)
         for line in output.split('\n'):
             line = line.split(None, 1)
             if len(line) < 2:
@@ -164,8 +163,7 @@ class GitRepo(object):
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
-            if not six.PY2 and isinstance(line, six.binary_type):
-                line = line.decode()
+            line = bytes2str(line)
             hash, author, authoremail, authortime, comment = line.split("\t", 4)
             result.append({
                 "hash": hash,

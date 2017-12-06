@@ -30,6 +30,7 @@ import os
 import re
 import six
 import subprocess
+import chardet
 
 from pynag import errors
 from six.moves import filter
@@ -625,10 +626,8 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
                             stderr=subprocess.PIPE,
                             env=run_env)
     stdout, stderr = proc.communicate('through stdin to stdout')
-    if not six.PY2 and isinstance(stdout, six.binary_type):
-        stdout = stdout.decode()
-    if not six.PY2 and isinstance(stderr, six.binary_type):
-        stderr = stderr.decode()
+    stdout = bytes2str(stdout)
+    stderr = bytes2str(stderr)
     result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
@@ -641,6 +640,26 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
         raise CommandFailed(error_string)
     else:
         return result
+
+
+def bytes2str(line):
+    """
+    Decode bytes to str, only when Python 3+.
+    At first, decode as default encoding, next, detect with chardet
+
+    @params line (bytes)
+    @returns (str)
+    """
+    if not six.PY2 and isinstance(line, six.binary_type):
+        try:
+            line = line.decode()
+        except UnicodeDecodeError:
+            try:
+                line = line.decode(chardet.detect(line)["encoding"])
+            except UnicodeDecodeError:
+                line = line.decode(chardet.detect(line)["encoding"], "replace")
+    return line
+
 
 # These are here for backwards compatibility only
 from pynag.Utils import checkresult
