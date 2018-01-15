@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 if len(sys.argv) != 3:
@@ -39,7 +41,7 @@ if target_host not in existing_list:
 else:
     existing_list.remove(target_host)
 
-print "Removing %s from %s" % (target_host, target_group)
+print("Removing %s from %s" % (target_host, target_group))
 
 ## Alphabetize the list, for easier readability (and to make it pretty)
 existing_list.sort()

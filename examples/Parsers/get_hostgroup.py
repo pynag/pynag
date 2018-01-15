@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 if len(sys.argv) != 2:
@@ -22,5 +24,5 @@ if not hostgroup:
     sys.stderr.write("Hostgroup not found: %s\n" % hostgroup)
     sys.exit(2)
 
-print nc.print_conf(hostgroup)
+print(nc.print_conf(hostgroup))
 

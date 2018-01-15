@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Constants and conveniance methods related to paths to config files, and binaries."""
 
+from __future__ import absolute_import
 import os
 
 

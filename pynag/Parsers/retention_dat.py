@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Module for parsing retention.dat file."""
 
+from __future__ import absolute_import
+from pynag.Utils import bytes2str
 import pynag.Parsers.main
 
 # TODO: Raise more specific errors in this class
@@ -63,6 +65,7 @@ class RetentionDat(object):
             raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
         for sequence_no, line in enumerate(lines):
+            line = bytes2str(line)
             line_num = sequence_no + 1
             # Cleanup and line skips
             line = line.strip()

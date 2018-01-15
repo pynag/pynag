@@ -9,6 +9,7 @@ Everything you see in this file is for backwards compatibility only.
 
 """
 
+from __future__ import absolute_import
 from pynag.Parsers import errors
 from pynag.Parsers import livestatus
 from pynag.Parsers import multisite

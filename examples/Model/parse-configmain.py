@@ -3,6 +3,7 @@
 # This script parses the configmain.html file from the Nagios project and tries
 # to extract information regarding options.
 
+from __future__ import absolute_import
 import re
 from pprint import pprint
 

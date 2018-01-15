@@ -28,7 +28,7 @@ Example:
 >>>
 >>> all_services = Service.objects.all
 >>> my_service = all_services[0]
->>> print my_service.host_name # doctest: +SKIP
+>>> print(my_service.host_name) # doctest: +SKIP
 localhost
 >>>
 >>> example_host = Host.objects.filter(host_name="host.example.com")
@@ -39,6 +39,7 @@ localhost
 ...     i.save() # doctest: +SKIP
 """
 
+from __future__ import absolute_import
 import os
 import re
 import subprocess
@@ -48,12 +49,16 @@ import getpass
 from pynag.Model import macros
 from pynag.Model import all_attributes
 from pynag.Utils import paths
+from pynag.Utils import bytes2str
 
 import pynag.Control.Command
 import pynag.errors
 import pynag.Parsers.config_parser
 import pynag.Parsers.status_dat
 import pynag.Utils
+import six
+from six.moves import filter
+from six.moves import map
 
 
 # Path To Nagios configuration file
@@ -221,8 +226,8 @@ class ObjectRelations(object):
         expand = self._expand_regex
         shortnames = ObjectFetcher._cached_shortnames
 
-        host_names = shortnames['host'].keys()
-        hostgroup_names = shortnames['hostgroup'].keys()
+        host_names = list(shortnames['host'].keys())
+        hostgroup_names = list(shortnames['hostgroup'].keys())
 
         expand(self.hostgroup_hosts, host_names)
         expand(self.host_hostgroups, hostgroup_names)
@@ -241,6 +246,9 @@ class ObjectRelations(object):
         >>> hostgroup_hosts['hostgroup1'] == set(['localhost','remotehost'])
         True
         """
+        if config.get_cfg_value('use_regexp_matching') == "0":
+            return
+
         if config.get_cfg_value('use_true_regexp_matching') == "1":
             always_use_regex = True
         else:
@@ -248,7 +256,7 @@ class ObjectRelations(object):
         is_regex = lambda x: x is not None and (always_use_regex or '*' in x or '?' in x or '+' in x or '\.' in x)
 
         # Strip None entries from full_list
-        full_list = filter(lambda x: x is not None, full_list)
+        full_list = [x for x in full_list if x is not None]
 
         # Strip None entries from dictionary
 
@@ -258,13 +266,13 @@ class ObjectRelations(object):
         # dictionary['localhost'].update( [1] )
         # dictionary['remotehost'].update( [1] )
         # del dictionary['.*']
-        regex_keys = filter(is_regex, dictionary.keys())
+        regex_keys = list(filter(is_regex, list(dictionary.keys())))
         for key in regex_keys:
             if key == '*':
                 expanded_list = regex_keys
             else:
                 regex = re.compile(key)
-                expanded_list = filter(regex.search, regex_keys)
+                expanded_list = list(filter(regex.search, regex_keys))
             for i in expanded_list:
                 if i == key:  # No need to react if regex resolved to itself
                     continue
@@ -278,7 +286,7 @@ class ObjectRelations(object):
         # then change it so that:
         # dictionary = { 'localhost':[1,2,3] }
         for key, value in dictionary.items():
-            regex_members = filter(is_regex, value)
+            regex_members = list(filter(is_regex, value))
             if len(regex_members) == 0:
                 continue  # no changes need to be made
             if isinstance(value, list):
@@ -289,7 +297,7 @@ class ObjectRelations(object):
                     expanded_list = full_list
                 else:
                     regex = re.compile(i)
-                    expanded_list = filter(regex.search, full_list)
+                    expanded_list = list(filter(regex.search, full_list))
                 value.remove(i)
                 value.update(expanded_list)
                 #dictionary[key] = new_value
@@ -297,7 +305,7 @@ class ObjectRelations(object):
     @staticmethod
     def resolve_contactgroups():
         """ Update all contactgroup relations to take into account contactgroup.contactgroup_members """
-        groups = ObjectRelations.contactgroup_contactgroups.keys()
+        groups = list(ObjectRelations.contactgroup_contactgroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.contactgroup_contactgroups)
             ObjectRelations.contactgroup_subgroups[group] = subgroups
@@ -311,7 +319,7 @@ class ObjectRelations(object):
     @staticmethod
     def resolve_hostgroups():
         """ Update all hostgroup relations to take into account hostgroup.hostgroup_members """
-        groups = ObjectRelations.hostgroup_hostgroups.keys()
+        groups = list(ObjectRelations.hostgroup_hostgroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.hostgroup_hostgroups)
             ObjectRelations.hostgroup_subgroups[group] = subgroups
@@ -329,7 +337,7 @@ class ObjectRelations(object):
         # Before we do anything, resolve servicegroup.members into actual services
         ObjectRelations._resolve_servicegroup_members()
 
-        groups = ObjectRelations.servicegroup_servicegroups.keys()
+        groups = list(ObjectRelations.servicegroup_servicegroups.keys())
         for group in groups:
             subgroups = ObjectRelations._get_subgroups(group, ObjectRelations.servicegroup_servicegroups)
             ObjectRelations.servicegroup_subgroups[group] = subgroups
@@ -615,7 +623,7 @@ class ObjectDefinition(object):
 
     def is_dirty(self):
         """Returns true if any attributes has been changed on this object, and therefore it needs saving"""
-        return len(self._changes.keys()) != 0
+        return len(list(self._changes.keys())) != 0
 
     def is_registered(self):
         """ Returns true if object is enabled (registered)
@@ -633,11 +641,17 @@ class ObjectDefinition(object):
     def __cmp__(self, other):
         return cmp(self.get_description(), other.get_description())
 
+    def __eq__(self, other):
+        return self.get_description() == other.get_description()
+
     def __lt__(self, other):
         return self.get_description() < other.get_description()
 
     def __gt__(self, other):
         return self.get_description() > other.get_description()
+
+    def __hash__(self):
+        return hash(self.get_id())
 
     def __setitem__(self, key, item):
         # Special handle for macros
@@ -673,9 +687,9 @@ class ObjectDefinition(object):
 
     def __contains__(self, item):
         """ Returns true if item is in ObjectDefinition """
-        if item in self.keys():
+        if item in list(self.keys()):
             return True
-        if item in self._meta.keys():
+        if item in list(self._meta.keys()):
             return True
         return False
 
@@ -699,7 +713,7 @@ class ObjectDefinition(object):
         return all_keys
 
     def items(self):
-        return map(lambda x: (x, self[x]), self.keys())
+        return [(x, self[x]) for x in list(self.keys())]
 
     def get_id(self):
         """ Return a unique ID for this object"""
@@ -709,7 +723,7 @@ class ObjectDefinition(object):
         if not self.__object_id__:
             filename = self._original_attributes['meta']['filename']
 
-            object_id = (filename, sorted(frozenset(self._defined_attributes.items())))
+            object_id = (filename, sorted(frozenset(list(self._defined_attributes.items()))))
             object_id = str(object_id)
 
             self.__object_id__ = str(hash(object_id))
@@ -782,14 +796,15 @@ class ObjectDefinition(object):
 
         # Let event-handlers know we are about to save an object
         self._event(level='pre_save', message="%s '%s'." % (self.object_type, self['shortname']))
-        number_of_changes = len(self._changes.keys())
+        number_of_changes = len(list(self._changes.keys()))
 
         filename = filename or self.get_filename() or self.get_suggested_filename()
         self.set_filename(filename)
 
         # If this is a new object, we save it with config.item_add()
         if self.is_new is True or self._filename_has_changed:
-            for k, v in self._changes.items():
+            for k in list(self._changes.keys()):
+                v = self._changes.get(k, None)
                 if v is not None:  # Dont save anything if attribute is None
                     self._defined_attributes[k] = v
                     self._original_attributes[k] = v
@@ -802,7 +817,8 @@ class ObjectDefinition(object):
         # If we get here, we are making modifications to an object
         else:
             number_of_changes = 0
-            for field_name, new_value in self._changes.items():
+            for field_name in list(self._changes.keys()):
+                new_value = self._changes.get(field_name, None)
                 save_result = config.item_edit_field(
                     item=self._original_attributes,
                     field_name=field_name,
@@ -981,7 +997,7 @@ class ObjectDefinition(object):
 
     def __str__(self):
         return_buffer = "define %s {\n" % self.object_type
-        fields = self._defined_attributes.keys()
+        fields = list(self._defined_attributes.keys())
         for i in self._changes.keys():
             if i not in fields:
                 fields.append(i)
@@ -992,7 +1008,7 @@ class ObjectDefinition(object):
                 fields.remove(i)
                 fields.insert(0, i)
         for key in fields:
-            if key == 'meta' or key in self['meta'].keys():
+            if key == 'meta' or key in list(self['meta'].keys()):
                 continue
             value = self[key]
             return_buffer += "  %-30s %s\n" % (key, value)
@@ -1260,6 +1276,8 @@ class ObjectDefinition(object):
             return None
         proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, )
         stdout, stderr = proc.communicate('through stdin to stdout')
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         return proc.returncode, stdout, stderr
 
     def _split_check_command_and_arguments(self, check_command):
@@ -1278,7 +1296,7 @@ class ObjectDefinition(object):
         if '\!' in check_command:
             check_command = check_command.replace('\!', 'ESCAPE_EXCL_MARK')
         tmp = check_command.split('!')
-        result = map(lambda x: x.replace('ESCAPE_EXCL_MARK', '\!'), tmp)
+        result = [x.replace('ESCAPE_EXCL_MARK', '\!') for x in tmp]
         return result
 
     def _get_command_macro(self, macroname, check_command=None, host_name=None):
@@ -1422,7 +1440,7 @@ class ObjectDefinition(object):
            >>> myservice.contact_groups
            '+alladmins'
            >>> myservice.attribute_appendfield(attribute_name="contact_groups", value='webmasters')
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
@@ -1442,10 +1460,10 @@ class ObjectDefinition(object):
            >>> myservice = Service()
            >>> myservice.contact_groups = "+alladmins,localadmins"
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value='localadmins')
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins
            >>> myservice.attribute_removefield(attribute_name="contact_groups", value="alladmins")
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            None
            """
         aList = AttributeList(self[attribute_name])
@@ -1465,7 +1483,7 @@ class ObjectDefinition(object):
            >>> myservice = Service()
            >>> myservice.contact_groups = "+alladmins,localadmins"
            >>> myservice.attribute_replacefield(attribute_name="contact_groups", old_value='localadmins', new_value="webmasters")
-           >>> print myservice.contact_groups
+           >>> print(myservice.contact_groups)
            +alladmins,webmasters
            """
         aList = AttributeList(self[attribute_name])
@@ -1598,7 +1616,7 @@ class Host(ObjectDefinition):
         """ Returns a list of all Service that belong to this Host """
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_services[self.host_name])
-        services = map(get_object, list_of_shortnames)
+        services = list(map(get_object, list_of_shortnames))
         # Look for services that define hostgroup_name that we belong to
         for hg in self.get_effective_hostgroups():
             services += hg.get_effective_services()
@@ -1608,19 +1626,19 @@ class Host(ObjectDefinition):
         """ Returns a list of all Contact that belong to this Host """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contacts[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Host """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_contact_groups[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Host """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.host_hostgroups[self.host_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_network_parents(self, recursive=False):
         """ Get all objects this one depends on via "parents" attribute
@@ -1733,9 +1751,13 @@ class Host(ObjectDefinition):
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
-    def get_current_status(self):
-        """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
+    def get_current_status(self, status=None):
+        """ Returns a dictionary with status data information for this object
+
+        :param status: pynag.Parsers.status_dat.StatusDat instance
+        """
+        if not status:
+            status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         host = status.get_hoststatus(self.host_name)
         return host
 
@@ -1918,7 +1940,7 @@ class Service(ObjectDefinition):
         """ Returns a list of all Host that belong to this Service """
         get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hosts[self.get_id()])
-        hosts = map(get_object, list_of_shortnames)
+        hosts = list(map(get_object, list_of_shortnames))
         for hg in self.get_effective_hostgroups():
             hosts += hg.get_effective_hosts()
         return hosts
@@ -1927,25 +1949,25 @@ class Service(ObjectDefinition):
         """ Returns a list of all Contact that belong to this Service """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contacts[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contact_groups(self):
         """ Returns a list of all Contactgroup that belong to this Service """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_contact_groups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of all Hostgroup that belong to this Service """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_hostgroups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_servicegroups(self):
         """ Returns a list of all Servicegroup that belong to this Service """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.service_servicegroups[self.get_id()])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_check_command(self):
         """ Returns a Command object as defined by check_command attribute
@@ -1958,9 +1980,13 @@ class Service(ObjectDefinition):
         check_command = c.split('!')[0]
         return Command.objects.get_by_shortname(check_command, cache_only=True)
 
-    def get_current_status(self):
-        """ Returns a dictionary with status data information for this object """
-        status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
+    def get_current_status(self, status=None):
+        """ Returns a dictionary with status data information for this object
+
+        :param status: pynag.Parsers.status_dat.StatusDat instance
+        """
+        if not status:
+            status = pynag.Parsers.status_dat.StatusDat(cfg_file=cfg_file)
         service = status.get_servicestatus(self.host_name, service_description=self.service_description)
         return service
 
@@ -2028,7 +2054,7 @@ class Contact(ObjectDefinition):
         """ Get a list of all Contactgroup that are hooked to this contact """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_contactgroups[self.contact_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Get a list of all Host that are hooked to this Contact """
@@ -2036,7 +2062,7 @@ class Contact(ObjectDefinition):
         # First add all hosts that name this contact specifically
         get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_hosts[self.contact_name])
-        result.update(map(get_object, list_of_shortnames))
+        result.update(list(map(get_object, list_of_shortnames)))
 
         # Next do the same for all contactgroups this contact belongs in
         for i in self.get_effective_contactgroups():
@@ -2049,7 +2075,7 @@ class Contact(ObjectDefinition):
         # First add all services that name this contact specifically
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contact_services[self.contact_name])
-        result.update(map(get_object, list_of_shortnames))
+        result.update(list(map(get_object, list_of_shortnames)))
         return result
 
     def _get_contact_macro(self, macroname, contact_name=None):
@@ -2165,19 +2191,19 @@ class Contactgroup(ObjectDefinition):
         """ Returns a list of every Contactgroup that is a member of this Contactgroup """
         get_object = lambda x: Contactgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_subgroups[self.contactgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_contacts(self):
         """ Returns a list of every Contact that is a member of this Contactgroup """
         get_object = lambda x: Contact.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.contactgroup_contacts[self.contactgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Return every Host that belongs to this contactgroup """
         list_of_shortnames = sorted(ObjectRelations.contactgroup_hosts[self.contactgroup_name])
         get_object = lambda x: Host.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_services(self):
         """ Return every Host that belongs to this contactgroup """
@@ -2187,7 +2213,7 @@ class Contactgroup(ObjectDefinition):
             services[i.get_id()] = i
         list_of_shortnames = sorted(ObjectRelations.contactgroup_services[self.contactgroup_name])
         get_object = lambda x: services[x]
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2278,19 +2304,19 @@ class Hostgroup(ObjectDefinition):
         """ Returns a list of all Service that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_services[self.hostgroup_name])
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hosts(self):
         """ Returns a list of all Host that belong to this hostgroup """
         list_of_shortnames = sorted(ObjectRelations.hostgroup_hosts[self.hostgroup_name])
         get_object = lambda x: Host.objects.get_by_shortname(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_hostgroups(self):
         """ Returns a list of every Hostgroup that is a member of this Hostgroup """
         get_object = lambda x: Hostgroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.hostgroup_subgroups[self.hostgroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def _do_relations(self):
         super(self.__class__, self)._do_relations()
@@ -2430,13 +2456,13 @@ class Servicegroup(ObjectDefinition):
         """ Returns a list of all Service that belong to this Servicegroup """
         list_of_shortnames = sorted(ObjectRelations.servicegroup_services[self.servicegroup_name])
         get_object = lambda x: Service.objects.get_by_id(x, cache_only=True)
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def get_effective_servicegroups(self):
         """ Returns a list of every Servicegroup that is a member of this Servicegroup """
         get_object = lambda x: Servicegroup.objects.get_by_shortname(x, cache_only=True)
         list_of_shortnames = sorted(ObjectRelations.servicegroup_subgroups[self.servicegroup_name])
-        return map(get_object, list_of_shortnames)
+        return list(map(get_object, list_of_shortnames))
 
     def add_service(self, shortname):
         """ Adds service to this group. Behaves like _add_object_to_group(object, group)"""
@@ -2587,7 +2613,7 @@ def _remove_object_from_group(my_object, my_group):
 def _add_to_contactgroup(my_object, contactgroup):
     """ add Host or Service to a contactgroup
     """
-    if isinstance(contactgroup, basestring):
+    if isinstance(contactgroup, six.string_types):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name
@@ -2607,7 +2633,7 @@ def _add_to_contactgroup(my_object, contactgroup):
 def _remove_from_contactgroup(my_object, contactgroup):
     """ remove Host or Service from  a contactgroup
     """
-    if isinstance(contactgroup, basestring):
+    if isinstance(contactgroup, six.string_types):
         contactgroup = Contactgroup.objects.get_by_shortname(contactgroup)
 
     contactgroup_name = contactgroup.contactgroup_name

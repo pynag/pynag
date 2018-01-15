@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for parsing and filtering object_cache files."""
 
+from __future__ import absolute_import
 from pynag.Parsers import config_parser
 
 

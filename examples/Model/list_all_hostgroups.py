@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 sys.path.insert(1, '/opt/pynag')
 from pynag import Model
@@ -11,5 +13,5 @@ from pynag import Model
 hostgroups = Model.Hostgroup.objects.all
 
 for hostgroup in hostgroups:
-    print hostgroup['hostgroup_name']
+    print(hostgroup['hostgroup_name'])
 

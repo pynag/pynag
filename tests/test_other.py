@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import sys
 
@@ -49,8 +50,25 @@ class testDatasetParsing(unittest.TestCase):
             pynag.Model.cfg_file = "./nagios/nagios.cfg"
             pynag.Model.config = None
             actualOutput = ''
+            # adjust object order, to test file.
             for i in pynag.Model.ObjectDefinition.objects.all:
-                actualOutput += str(i)
+                if isinstance(i, pynag.Model.Host):
+                    actualOutput += str(i)
+            for i in pynag.Model.ObjectDefinition.objects.all:
+                if isinstance(i, pynag.Model.Command):
+                    actualOutput += str(i)
+            for i in pynag.Model.ObjectDefinition.objects.all:
+                if isinstance(i, pynag.Model.Servicegroup):
+                    actualOutput += str(i)
+            for i in pynag.Model.ObjectDefinition.objects.all:
+                if isinstance(i, pynag.Model.Service):
+                    actualOutput += str(i)
+            for i in pynag.Model.ObjectDefinition.objects.all:
+                if not isinstance(i, pynag.Model.Host) and \
+                        not isinstance(i, pynag.Model.Command) and \
+                        not isinstance(i, pynag.Model.Servicegroup) and \
+                        not isinstance(i, pynag.Model.Service):
+                    actualOutput += str(i)
                 # Write our parsed data to tmpfile so we have an easy diff later:
             tmp_file = self.tmp_dir + "/" + os.path.basename(directory) + "_actual_output.txt"
             open(tmp_file, 'w').write(actualOutput)
