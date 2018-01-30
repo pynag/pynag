@@ -26,6 +26,7 @@ from __future__ import absolute_import
 import time
 import os
 
+from pynag import Model
 from pynag.Parsers import main
 from pynag.Parsers import livestatus
 
@@ -62,6 +63,10 @@ def find_command_file(cfg_file=None):
 
     # If we reach here, we have to parse nagios.cfg to find path
     # to our command file
+    if not cfg_file and Model.cfg_file:
+        # If cfg_file not specified by function argument and
+        # Model.cfg_file is specified, use Model.cfg_file value
+        cfg_file = Model.cfg_file
     main_config = main.MainConfig(cfg_file)
     command_file = main_config.get('command_file')
 
