@@ -25,11 +25,16 @@ that are used throughout the pynag library.
 
 """
 
+from __future__ import absolute_import
 import os
 import re
+import six
 import subprocess
+import chardet
 
 from pynag import errors
+from six.moves import filter
+from six.moves import map
 
 
 class UtilsError(errors.PynagError):
@@ -86,7 +91,7 @@ class AttributeList(object):
         # (like when working with livestatus) we have the luxury of getting lists
         if isinstance(value, list):
             # Remove empty fields
-            self.fields = filter(lambda x: len(x) > 0, value)
+            self.fields = [x for x in value if len(x) > 0]
             return
 
         possible_operators = '+-!'
@@ -103,7 +108,7 @@ class AttributeList(object):
         self.fields = value.split(',')
 
         # Strip whitespaces from each field
-        self.fields = map(lambda x: x.strip(), self.fields)
+        self.fields = [x.strip() for x in self.fields]
 
     def __str__(self):
         return self.operator + ','.join(self.fields)
@@ -361,7 +366,7 @@ class DefaultDict(dict):
             args = tuple()
         else:
             args = self.default_factory,
-        return type(self), args, None, None, self.items()
+        return type(self), args, None, None, list(self.items())
 
     def copy(self):
         return self.__copy__()
@@ -371,7 +376,7 @@ class DefaultDict(dict):
 
     def __deepcopy__(self, memo):
         import copy
-        return type(self)(self.default_factory, copy.deepcopy(self.items()))
+        return type(self)(self.default_factory, copy.deepcopy(list(self.items())))
 
     def __repr__(self):
         return 'defaultdict(%s, %s)' % (self.default_factory,
@@ -503,7 +508,7 @@ def grep(objects, **kwargs):
             # If all else fails, assume they are asking for exact match
             v_is_str = isinstance(v, str)
             expression = lambda obj: (lambda objval: str(objval) == v_str or (v_is_str and isinstance(objval, list) and v in objval))(obj.get(k))
-        matching_objects = filter(expression, matching_objects)
+        matching_objects = list(filter(expression, matching_objects))
     return matching_objects
 
 
@@ -522,8 +527,8 @@ def grep_to_livestatus(*args, **kwargs):
         ['Filter: service_description ~ serv']
         >>> grep_to_livestatus(service_description__notcontains=['serv','check'])
         ['Filter: service_description !~ serv']
-        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin')
-        ['Filter: contacts >= admin', 'Filter: service_description ~ foo']
+        >>> grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin') == ['Filter: contacts >= admin', 'Filter: service_description ~ foo'] or grep_to_livestatus(service_description__contains='foo', contacts__has_field='admin') == ['Filter: service_description ~ foo', 'Filter: contacts >= admin']
+        True
         >>> grep_to_livestatus(service_description__has_field='foo')
         ['Filter: service_description >= foo']
         >>> grep_to_livestatus(service_description__startswith='foo')
@@ -621,6 +626,8 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
                             stderr=subprocess.PIPE,
                             env=run_env)
     stdout, stderr = proc.communicate('through stdin to stdout')
+    stdout = bytes2str(stdout)
+    stderr = bytes2str(stderr)
     result = proc.returncode, stdout, stderr
     if proc.returncode > 0 and raise_error_on_fail:
         error_string = "* Could not run command (return code= %s)\n" % proc.returncode
@@ -633,6 +640,26 @@ def run_command(command, raise_error_on_fail=False, shell=True, env=None):
         raise CommandFailed(error_string)
     else:
         return result
+
+
+def bytes2str(line):
+    """
+    Decode bytes to str, only when Python 3+.
+    At first, decode as default encoding, next, detect with chardet
+
+    @params line (bytes)
+    @returns (str)
+    """
+    if not six.PY2 and isinstance(line, six.binary_type):
+        try:
+            line = line.decode()
+        except UnicodeDecodeError:
+            try:
+                line = line.decode(chardet.detect(line)["encoding"])
+            except UnicodeDecodeError:
+                line = line.decode(chardet.detect(line)["encoding"], "replace")
+    return line
+
 
 # These are here for backwards compatibility only
 from pynag.Utils import checkresult

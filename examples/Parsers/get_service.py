@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 if len(sys.argv) != 3:
@@ -23,5 +25,5 @@ if not service:
     sys.stderr.write("Service not found: %s %s\n" % (service_description, target_host))
     sys.exit(2)
 
-print nc.print_conf(service)
+print(nc.print_conf(service))
 

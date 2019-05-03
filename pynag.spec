@@ -24,8 +24,11 @@ Release: %{release}%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
 Group: System Environment/Libraries
+Requires: python-six
+Requires: python-chardet
 BuildRequires: python-devel
 BuildRequires: python-setuptools
+BuildRequires: python-six
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pynag.org/
 BuildArch: noarch
@@ -54,7 +57,9 @@ are scripts which list services, do network discovery among other tasks.
 %{__python} setup.py build
 
 %if 0%{?unittest2}
+cp -a %{_topdir}/../tests %{_topdir}/%{name}-%{version}/.
 %{__python} setup.py test
+rm -rf %{_topdir}/%{name}-%{version}/tests
 %endif
 
 %install

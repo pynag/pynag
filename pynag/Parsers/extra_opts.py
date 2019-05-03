@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for parsing Nagios 'Extra opts' files."""
 
+from __future__ import absolute_import
 import os
 import sys
 

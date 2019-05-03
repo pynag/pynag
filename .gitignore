@@ -9,3 +9,5 @@ dist
 .idea
 .coverage
 man/.doctrees
+.python-version
+rpm-build/

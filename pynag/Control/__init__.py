@@ -22,12 +22,14 @@ The Control module includes classes to control the Nagios service
 and the Command submodule wraps Nagios commands.
 """
 
+from __future__ import absolute_import
 import os
 import pynag.Utils
 from warnings import warn
 
 import pynag.errors
 from pynag.Utils import runCommand
+import six
 
 
 class ControlError(pynag.errors.PynagError):
@@ -260,3 +262,18 @@ class daemon(object):
             self.nagios_bin = self.nagios_bin.split(None, 1)[1]
             warn("nagios_bin command line with sudo is deprecated, please "
                  "use sudo=True for daemon()", FutureWarning)
+
+    def __setattr__(self, name, value):
+        if not six.PY2 and \
+            name in [
+                "nagios_bin",
+                "nagios_cfg",
+                "nagios_init",
+                "service_name",
+                "stdout",
+                "stderr",
+                "nagios_config",
+            ] and \
+            isinstance(value, six.binary_type):
+            value = value.encode()
+        self.__dict__[name] = value

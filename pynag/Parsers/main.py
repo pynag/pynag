@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for parsing main configuration file (nagios.cfg)."""
 
+from __future__ import absolute_import
 from pynag.Utils import paths
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import os
 import sys
 import fnmatch
@@ -40,12 +41,16 @@ def get_all_pynag_modules():
         filename = filename.replace('/', '.')
         filename = filename.strip('.')
         module_name = filename
-        module = __import__(module_name, locals(), globals(), [module_name], -1)
+        try:
+            module = __import__(module_name, locals(), globals(), [module_name], -1)
+        except:
+            import importlib
+            module = importlib.import_module(module_name)
         yield module
 
 
 def get_all_doctests():
-    flags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE
+    flags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE | doctest.IGNORE_EXCEPTION_DETAIL
     finder = doctest.DocTestFinder(exclude_empty=False)
     for module in get_all_pynag_modules():
         yield doctest.DocTestSuite(
@@ -66,7 +71,8 @@ def load_tests(loader=None, tests=None, pattern=None):
     # Load unit tests from all files starting with test_*
     for all_test_suite in unittest2.defaultTestLoader.discover('.', pattern='test_*.py'):
         for test_suite in all_test_suite:
-            suite.addTests(test_suite)
+            if isinstance(test_suite, unittest2.suite.TestSuite):
+                suite.addTests(test_suite)
 
     return suite
 

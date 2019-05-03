@@ -1,6 +1,7 @@
 # check_dns.py -- Returns OK if a hostname resolves to any ip address
 
 # check_dns plugin will need some system libraries for DNS lookup
+from __future__ import absolute_import
 from _socket import gaierror
 import socket
 import time

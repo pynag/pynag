@@ -1,5 +1,6 @@
 """Common decorators used throughout pynag."""
 
+from __future__ import absolute_import
 import threading
 
 rlock = threading.RLock()

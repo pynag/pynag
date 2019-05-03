@@ -1,14 +1,19 @@
 """ Convenience class for handling git repos."""
 
+from __future__ import absolute_import
 import datetime
 import subprocess
 import os
+import six
 import sys
 from getpass import getuser
 from platform import node
 
 from pynag.Utils import grep
+from pynag.Utils import bytes2str
 from pynag.errors import PynagError
+from six.moves import filter
+from six.moves import map
 
 
 class GitError(PynagError):
@@ -82,6 +87,8 @@ class GitRepo(object):
         cwd = self.directory
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
@@ -106,7 +113,7 @@ class GitRepo(object):
         Returns:
             List of all valid commit hashes
         """
-        return map(lambda x: x.get('hash'), self.log())
+        return [x.get('hash') for x in self.log()]
 
     def get_uncommited_files(self):
         """ Returns a list of files that are have unstaged changes
@@ -116,6 +123,8 @@ class GitRepo(object):
         """
         output = self._run_command("git status --porcelain")
         result = []
+
+        output = bytes2str(output)
         for line in output.split('\n'):
             line = line.split(None, 1)
             if len(line) < 2:
@@ -154,6 +163,7 @@ class GitRepo(object):
         raw_log = self._run_command("git log --pretty='%H\t%an\t%ae\t%at\t%s'")
         result = []
         for line in raw_log.splitlines():
+            line = bytes2str(line)
             hash, author, authoremail, authortime, comment = line.split("\t", 4)
             result.append({
                 "hash": hash,
@@ -343,7 +353,7 @@ class GitRepo(object):
             filelist = [filelist]
 
         # Remove from commit list files that have not changed:
-        filelist = filter(lambda x: self.is_dirty(x), filelist)
+        filelist = [x for x in filelist if self.is_dirty(x)]
 
         # Run "git add" on every file. Just in case they are untracked
         self.ignore_errors = True
@@ -355,10 +365,10 @@ class GitRepo(object):
         filestring = ''
 
         # Escape all single quotes in filenames
-        filelist = map(lambda x: x.replace("'", r"\'"), filelist)
+        filelist = [x.replace("'", r"\'") for x in filelist]
 
         # Wrap filename inside single quotes:
-        filelist = map(lambda x: "'%s'" % x, filelist)
+        filelist = ["'%s'" % x for x in filelist]
 
         # If filelist is empty, we have nothing to commit and we will return as
         # opposed to throwing error

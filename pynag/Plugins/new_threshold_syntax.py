@@ -36,6 +36,7 @@ from __future__ import absolute_import
 import pynag.Plugins
 import pynag.errors
 from pynag.Utils import states
+import six
 
 class Error(pynag.errors.PynagError):
     """Base class for errors in this module."""
@@ -112,7 +113,7 @@ def check_range(value, range):
     False
     """
 
-    if not isinstance(range, basestring) or range == '':
+    if not isinstance(range, six.string_types) or range == '':
         raise InvalidThreshold('range must be a string')
 
     # value must be numeric, so we try to convert it to float
@@ -147,8 +148,21 @@ def parse_threshold(threshold):
     """ takes a threshold string as an input and returns a hash map of options and values
 
     Examples:
-        >>> parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
-        {u'thresholds': [(0, u'0..90'), (1, u'90..95'), (2, u'95..100')], u'metric': u'disk_usage'}
+        >>> parsed = parse_threshold('metric=disk_usage,ok=0..90,warning=90..95,critical=95..100')
+        >>> parsed[six.u(str('thresholds'))][0][0] == 0
+        True
+        >>> parsed[six.u(str('thresholds'))][0][1] == six.u(str('0..90'))
+        True
+        >>> parsed[six.u(str('thresholds'))][1][0] == 1
+        True
+        >>> parsed[six.u(str('thresholds'))][1][1] == six.u(str('90..95'))
+        True
+        >>> parsed[six.u(str('thresholds'))][2][0] == 2
+        True
+        >>> parsed[six.u(str('thresholds'))][2][1] == six.u(str('95..100'))
+        True
+        >>> parsed[six.u(str('metric'))] == six.u(str('disk_usage'))
+        True
     """
     tmp = threshold.split(',')
     parsed_thresholds = []
@@ -159,7 +173,7 @@ def parse_threshold(threshold):
             raise InvalidThreshold("Invalid input: '%s' is not of the format key=value" % i)
         key, value = i.split('=', 1)
         key_lower = key.lower()
-        if key_lower in pynag.Plugins.state.keys():
+        if key_lower in list(pynag.Plugins.state.keys()):
             parsed_thresholds.append((pynag.Plugins.state[key_lower], value))
         else:
             results[key_lower] = value
@@ -178,20 +192,20 @@ def convert_to_classic_format(threshold_range):
 
     Examples:
 
-    >>> convert_to_classic_format("0..5")
-    u'@0:5'
-    >>> convert_to_classic_format("inf..5")
-    u'5:'
-    >>> convert_to_classic_format("5..inf")
-    u'~:5'
-    >>> convert_to_classic_format("inf..inf")
-    u'@~:'
-    >>> convert_to_classic_format("^0..5")
-    u'0:5'
-    >>> convert_to_classic_format("10..20")
-    u'@10:20'
-    >>> convert_to_classic_format("10..inf")
-    u'~:10'
+    >>> convert_to_classic_format("0..5") == six.u(str('@0:5'))
+    True
+    >>> convert_to_classic_format("inf..5") == six.u(str('5:'))
+    True
+    >>> convert_to_classic_format("5..inf") == six.u(str('~:5'))
+    True
+    >>> convert_to_classic_format("inf..inf") == six.u(str('@~:'))
+    True
+    >>> convert_to_classic_format("^0..5") == six.u(str('0:5'))
+    True
+    >>> convert_to_classic_format("10..20") == six.u(str('@10:20'))
+    True
+    >>> convert_to_classic_format("10..inf") == six.u(str('~:10'))
+    True
     """
 
     threshold_range = str(threshold_range)

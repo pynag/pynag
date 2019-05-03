@@ -9,6 +9,7 @@ Example usage:
     print states.host_state_to_int('UP')
     print states.host_state_to_string(1)
 """
+from __future__ import absolute_import
 import pynag.errors
 
 OK, WARNING, CRITICAL, UNKNOWN = 0, 1, 2, 3

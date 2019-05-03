@@ -1,6 +1,7 @@
 # check_load.py - Check load average. Thresholds can be specified from the commandline
 
 # Import PluginHelper and some utility constants from the Plugins module
+from __future__ import absolute_import
 from pynag.Plugins import PluginHelper,ok,warning,critical,unknown
 
 # Create an instance of PluginHelper()

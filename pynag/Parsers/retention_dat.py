@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """Module for parsing retention.dat file."""
 
+from __future__ import absolute_import
+from pynag.Utils import bytes2str
 import pynag.Parsers.main
+import re
 
 # TODO: Raise more specific errors in this class
 from pynag.Parsers.errors import ParserError
@@ -62,7 +65,10 @@ class RetentionDat(object):
         if not self.filename:
             raise ParserError("status.dat file not found")
         lines = open(self.filename, 'rb').readlines()
+
+        meta_type_begin_pattern = re.compile(r"^[a-zA-Z0-9]+ \{$")
         for sequence_no, line in enumerate(lines):
+            line = bytes2str(line)
             line_num = sequence_no + 1
             # Cleanup and line skips
             line = line.strip()
@@ -70,11 +76,11 @@ class RetentionDat(object):
                 pass
             elif line[0] == "#" or line[0] == ';':
                 pass
-            elif line.find("{") != -1:
+            elif meta_type_begin_pattern.match(line):
                 status = {}
                 status['meta'] = {}
                 status['meta']['type'] = line.split("{")[0].strip()
-            elif line.find("}") != -1:
+            elif line == "}":
                 # Status definition has finished, lets add it to
                 # self.data
                 if status['meta']['type'] not in self.data:
