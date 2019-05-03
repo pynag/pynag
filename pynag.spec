@@ -19,7 +19,7 @@
 
 Summary: Python modules and utilities for Nagios plugins and configuration
 Name: pynag
-Version: 0.9.1
+Version: 1.1.2
 Release: %{release}%{?dist}
 Source0: http://pynag.googlecode.com/files/%{name}-%{version}.tar.gz
 License: GPLv2
