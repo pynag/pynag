@@ -722,7 +722,7 @@ class Livestatus(object):
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
             for broker_module in main_config.get_list('broker_module'):
-                if "livestatus.o" in broker_module:
+                if "livestatus.o" or "livestatus.so "in broker_module:
                     for arg in broker_module.split()[1:]:
                         if arg.startswith('/') or '=' not in arg:
                             livestatus_socket_path = arg
