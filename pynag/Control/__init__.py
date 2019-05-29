@@ -51,7 +51,7 @@ class daemon(object):
     SYSV_INIT_SERVICE = 2
     SYSTEMD = 3
 
-    systemd_service_path = "/usr/lib/systemd/system"
+    systemd_service_path = "/lib/systemd/system"
     init_d_path = "/etc/init.d"
 
     def __init__(self,
