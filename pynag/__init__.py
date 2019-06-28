@@ -17,12 +17,17 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import absolute_import
 import sys
 import os
 import re
 from optparse import OptionParser
-from pynag import Plugins
-Plugin = Plugins.simple
+try:
+    from pynag import Plugins
+    Plugin = Plugins.simple
+except:
+    # when setup, import caused dependency error
+    pass
 
 
-__version__ = '0.9.1'
+__version__ = '1.1.2'

@@ -7,14 +7,17 @@
 """
 
 
+from __future__ import absolute_import
 import tempfile
 import os
 import time
 import pynag.Parsers.config_parser
 import pynag.Parsers.livestatus
 import pynag.Model
+import six
 
 from pynag.errors import PynagError
+from pynag.Utils import bytes2str
 
 
 class MiscError(PynagError):
@@ -167,6 +170,7 @@ class FakeNagiosEnvironment(object):
 
     def start(self, start_command=None, timeout=10):
         self.configure_p1_file()
+        start_command = bytes2str(start_command)
         if not start_command:
             nagios_binary = self.config.guess_nagios_binary()
             start_command = "%s -d %s" % (nagios_binary, self.config.cfg_file)

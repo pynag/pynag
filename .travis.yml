@@ -1,13 +1,14 @@
 language: python
 python:
-  - "2.6"
   - "2.7"
+  - "3.6"
 before_install:
   - sudo apt-get update -qq
 install:
-  - sudo apt-get install nagios3 check-mk-livestatus 
-  - pip install unittest2==0.5.1
+  - sudo apt-get -y install nagios3 check-mk-livestatus
+  - pip install unittest2==1.1.0
   - pip install coveralls
+  - pip install mock
   - python setup.py build
   - python setup.py install
   - sudo chmod 777 /etc/nagios3/nagios.cfg

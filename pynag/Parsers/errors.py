@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for errors shared among pynag.Parsers package."""
 
+from __future__ import absolute_import
 import pynag.errors
 
 

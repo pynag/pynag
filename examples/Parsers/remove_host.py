@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 if len(sys.argv) != 2:
@@ -28,7 +30,7 @@ for service_description in nc.get_host(target_host)['meta']['service_list']:
 
     ## Check to see if this is the only host in this service
     host_list = []
-    if service.has_key('host_name'):
+    if 'host_name' in service:
         for host in nc._get_list(service, 'host_name'):
             if host[0] != "!":
                 host_list.append(host)
@@ -41,27 +43,27 @@ for service_description in nc.get_host(target_host)['meta']['service_list']:
 
 
     if len(host_list) > 1:
-        print "Removing %s from %s" % (target_host, service['service_description'])
+        print("Removing %s from %s" % (target_host, service['service_description']))
         new_item = nc.get_service(service['service_description'], target_host)
         host_list.remove(target_host)
         host_string = ",".join(host_list)
-        print "New Value: %s" % host_string
+        print("New Value: %s" % host_string)
         nc.edit_service(target_host, service['service_description'], 'host_name',host_string)
-    elif (len(host_list) == 1) and not service.has_key('hostgroup_name'):
-        print "Deleting %s" % service['service_description']
+    elif (len(host_list) == 1) and 'hostgroup_name' not in service:
+        print("Deleting %s" % service['service_description'])
         nc.delete_service(service['service_description'], target_host)
     elif (len(host_list) == 1) and (host_list[0] is target_host):
-        print "Deleting %s" % service['service_description']
+        print("Deleting %s" % service['service_description'])
         nc.delete_service(service['service_description'], target_host)
     else:
-        print "Unknown Action"
+        print("Unknown Action")
         sys.exit(2)
     nc.commit()
 
 ## Delete from groups
 host_obj = nc.get_host(target_host)
 for hostgroup in host_obj['meta']['hostgroup_list']:
-    print "Removing %s from hostgroup %s" % (target_host, hostgroup)
+    print("Removing %s from hostgroup %s" % (target_host, hostgroup))
     hostgroup_obj = nc.get_hostgroup(hostgroup)
 
     ## Get the list
@@ -82,12 +84,12 @@ for hostgroup in host_obj['meta']['hostgroup_list']:
 ## Delete a host
 result = nc.delete_object('host',target_host)
 if result:
-    print "Deleted host"
+    print("Deleted host")
 
 ## Delete hostextinfo
 result = nc.delete_object('hostextinfo',target_host)
 if result:
-    print "Deleted hostextinfo"
+    print("Deleted hostextinfo")
 
 nc.commit()
 nc.cleanup()

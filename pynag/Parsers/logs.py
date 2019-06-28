@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """Module for parsing and searching for log entries."""
 
+from __future__ import absolute_import
 import os
 import re
 import time
 
 import pynag.Parsers.main
 import pynag.Utils.states
+from six.moves import filter
 
 
 class LogFiles(object):
@@ -60,12 +62,12 @@ class LogFiles(object):
 
         logfiles = self.get_logfiles()
         if 'filename' in kwargs:
-            logfiles = filter(lambda x: x == kwargs.get('filename'), logfiles)
+            logfiles = [x for x in logfiles if x == kwargs.get('filename')]
 
         # If start time was provided, skip all files that we last modified
         # before start_time
         if start_time:
-            logfiles = filter(lambda x: start_time <= os.stat(x).st_mtime, logfiles)
+            logfiles = [x for x in logfiles if start_time <= os.stat(x).st_mtime]
 
         # Log entries are returned in ascending order, which is the opposite of
         # what get_logfiles returns.

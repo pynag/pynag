@@ -1,3 +1,12 @@
+Changes in 1.1.2
+Bug Fixes:
+    - Python 3 compatibility
+    - Python 2.7 compatibility
+    - use_regexp_matching=0 does not work properly when using + in hostname (#248)
+
+New Features:
+    - Support multi members in hostgroup definition (#244)
+
 Changes in 1.1.1 (unreleased)
 Bug Fixes:
     - Fix recursive delete of host 

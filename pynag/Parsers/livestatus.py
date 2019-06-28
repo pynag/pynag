@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Module for talking to MK-Livestatus sockets."""
 
+from __future__ import absolute_import
+import six
 import socket
 import sys
 import time
@@ -282,7 +284,7 @@ class LivestatusQuery(object):
 
         """
         signature = keyword + ':'
-        self._query = filter(lambda x: not x.startswith(signature), self._query)
+        self._query = [x for x in self._query if not x.startswith(signature)]
 
     def set_responseheader(self, response_header='fixed16'):
         """Set ResponseHeader to our query.
@@ -720,7 +722,7 @@ class Livestatus(object):
             # Look for a broker_module line in the main config and parse its arguments
             # One of the arguments is path to the file socket created
             for broker_module in main_config.get_list('broker_module'):
-                if "livestatus.o" in broker_module:
+                if "livestatus.o" or "livestatus.so" in broker_module:
                     for arg in broker_module.split()[1:]:
                         if arg.startswith('/') or '=' not in arg:
                             livestatus_socket_path = arg
@@ -818,6 +820,9 @@ class Livestatus(object):
         """
         # Lets create a socket and see if we can write to it
         livestatus_socket = self._get_socket()
+        if not six.PY2 and not isinstance(livestatus_query, six.binary_type):
+            # socket.send() requires binary argument
+            livestatus_query = livestatus_query.encode()
         try:
             livestatus_socket.send(livestatus_query)
             livestatus_socket.shutdown(socket.SHUT_WR)

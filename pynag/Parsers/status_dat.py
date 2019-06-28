@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Module for parsing status.dat file."""
 
+from __future__ import absolute_import
 import pynag.Parsers.main
 from pynag.Parsers import retention_dat
 

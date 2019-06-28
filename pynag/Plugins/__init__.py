@@ -36,6 +36,7 @@ import pynag.Utils
 import pynag.errors
 from pynag.Plugins import new_threshold_syntax
 from pynag.Plugins import classic_threshold_syntax
+import six
 
 # The following constants, and state, state_text below are considered deprecated.
 # Use pynag.Utils.states module instead.
@@ -351,7 +352,7 @@ class simple(object):
         """
         # Check for messages in unknown, critical, warning, ok to determine
         # code
-        keys = self.data['messages'].keys()
+        keys = list(self.data['messages'].keys())
         keys.sort(reverse=True)
         code = UNKNOWN
         for code in keys:
@@ -578,9 +579,8 @@ class PluginHelper(object):
           >>> p.add_long_output('Status of sensor 1')
           >>> p.add_long_output('* Temperature: OK')
           >>> p.add_long_output('* Humidity: OK')
-          >>> p.get_long_output()
-          u'Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'
-
+          >>> p.get_long_output() == six.u(str('Status of sensor 1\\n* Temperature: OK\\n* Humidity: OK'))
+          True
         """
         self._long_output.append(message)
 
@@ -599,8 +599,8 @@ class PluginHelper(object):
         >>> s = PluginHelper()
         >>> s.add_long_output('first long output')
         >>> s.set_long_output('Fatal error')
-        >>> s.get_long_output()
-        u'Fatal error'
+        >>> s.get_long_output() == six.u(str('Fatal error'))
+        True
         """
         self._long_output = [message]
 
@@ -615,8 +615,8 @@ class PluginHelper(object):
         >>> s = PluginHelper()
         >>> s.add_summary('first summary')
         >>> s.set_summary('Fatal error')
-        >>> s.get_summary()
-        u'Fatal error'
+        >>> s.get_summary() == six.u(str('Fatal error'))
+        True
         """
         self._summary = [message]
 
@@ -667,7 +667,7 @@ class PluginHelper(object):
 
         # If new status was entered as a human readable string (ok,warn,etc)
         # lets convert it to int:
-        if isinstance(new_status, basestring):
+        if isinstance(new_status, six.string_types):
             if new_status.lower() in state:
                 new_status = state[new_status]
             else:
@@ -784,21 +784,21 @@ class PluginHelper(object):
 
         Examples of functionality:
         >>> p = PluginHelper()
-        >>> p.get_plugin_output()
-        u'Unknown -'
+        >>> p.get_plugin_output() == six.u(str('Unknown -'))
+        True
 
         >>> p = PluginHelper()
         >>> p.add_summary('Testing')
         >>> p.add_long_output('Long testing output')
         >>> p.add_long_output('More output')
-        >>> p.get_plugin_output(exit_code=0)
-        u'OK - Testing\\nLong testing output\\nMore output'
+        >>> p.get_plugin_output(exit_code=0) == six.u(str('OK - Testing\\nLong testing output\\nMore output'))
+        True
 
         >>> p = PluginHelper()
         >>> p.add_summary('Testing')
         >>> p.add_status(0)
-        >>> p.get_plugin_output()
-        u'OK - Testing'
+        >>> p.get_plugin_output() == six.u(str('OK - Testing'))
+        True
 
         >>> p = PluginHelper()
         >>> p.show_status_in_summary = False
@@ -806,8 +806,8 @@ class PluginHelper(object):
         >>> p.add_metric(label="load1", value="7")
         >>> p.add_metric(label="load5", value="5")
         >>> p.add_metric(label="load15",value="2")
-        >>> p.get_plugin_output(exit_code=0)
-        u"Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"
+        >>> p.get_plugin_output(exit_code=0) == six.u(str("Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;"))
+        True
 
         >>> p = PluginHelper()
         >>> p.show_status_in_summary = False
@@ -817,8 +817,8 @@ class PluginHelper(object):
         >>> p.add_metric(label="load1", value="7")
         >>> p.add_metric(label="load5", value="5")
         >>> p.add_metric(label="load15",value="2")
-        >>> p.get_plugin_output(exit_code=0)
-        u"Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;\\nLong testing output\\nMore output"
+        >>> p.get_plugin_output(exit_code=0) == six.u(str("Testing | 'load1'=7;;;; 'load5'=5;;;; 'load15'=2;;;;\\nLong testing output\\nMore output"))
+        True
 
         """
         if summary is None:
@@ -892,31 +892,30 @@ class PluginHelper(object):
         Examples:
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
-        >>> p.get_plugin_output()
-        u'Unknown -'
+        >>> p.get_plugin_output() == six.u(str('Unknown -'))
+        True
         >>> p.add_metric('load15', '3')
         >>> p.check_metric('load15',thresholds)
-        >>> p.get_plugin_output()
-        u"Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;"
-
+        >>> p.get_plugin_output() == six.u(str("Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;"))
+        True
         >>> p = PluginHelper()
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
         >>> p.add_metric('load15', '3')
         >>> p.verbose = True
         >>> p.check_metric('load15',thresholds)
-        >>> p.get_plugin_output()
-        u"Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;\\nWarning on load15"
+        >>> p.get_plugin_output() == six.u(str("Warning - Warning on load15 | 'load15'=3;@2:5;~:5;;\\nWarning on load15"))
+        True
 
         Invalid metric:
         >>> p = PluginHelper()
         >>> p.add_status(ok)
         >>> p.add_summary('Everythings fine!')
-        >>> p.get_plugin_output()
-        u'OK - Everythings fine!'
+        >>> p.get_plugin_output() == six.u(str('OK - Everythings fine!'))
+        True
         >>> thresholds = [(warning,'2..5'), (critical,'5..inf')]
         >>> p.check_metric('never_added_metric', thresholds)
-        >>> p.get_plugin_output()
-        u'Unknown - Everythings fine!. Metric never_added_metric not found'
+        >>> p.get_plugin_output() == six.u(str('Unknown - Everythings fine!. Metric never_added_metric not found'))
+        True
 
         Invalid threshold:
         >>> p = PluginHelper()

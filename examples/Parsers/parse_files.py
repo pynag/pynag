@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 ## This is for the custom nagios module
@@ -10,4 +12,4 @@ nc = config('/etc/nagios/nagios.cfg')
 nc.parse()
 #nc._post_parse()
 for host in nc['all_host']:
-    print nc.print_conf(host)
+    print(nc.print_conf(host))

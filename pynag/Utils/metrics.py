@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """ Classes and functions related to Perfdata metrics."""
+from __future__ import absolute_import
 import shlex
+import six
 import re
 from pynag import errors
 from pynag.Plugins import new_threshold_syntax
 from pynag.Plugins import classic_threshold_syntax
+from six.moves import map
 
 
 MULTIPLIERS = {
@@ -243,8 +246,8 @@ class PerfDataMetric(object):
             >>> p.warn
             '0..100'
             >>> p.reconsile_thresholds()
-            >>> p.warn
-            u'@0:100'
+            >>> p.warn == six.u('@0:100')
+            True
 
         """
 
@@ -268,8 +271,20 @@ class PerfDataMetric(object):
 
         Examples:
             >>> p = PerfDataMetric("load=5")
-            >>> p.get_dict()
-            {'min': '', 'max': '', 'value': '5', 'label': 'load', 'warn': '', 'crit': '', 'uom': ''}
+            >>> p.get_dict()['min']
+            ''
+            >>> p.get_dict()['max']
+            ''
+            >>> p.get_dict()['value']
+            '5'
+            >>> p.get_dict()['label']
+            'load'
+            >>> p.get_dict()['warn']
+            ''
+            >>> p.get_dict()['crit']
+            ''
+            >>> p.get_dict()['uom']
+            ''
         """
 
         return {
@@ -408,10 +423,10 @@ class PerfData(object):
 
         Example:
             >>> p = PerfData('load=15;0..5;;;')
-            >>> print p
+            >>> print(p)
             'load'=15;0..5;;;
             >>> p.reconsile_thresholds()
-            >>> print p
+            >>> print(p)
             'load'=15;@0:5;;;
 
         """
@@ -427,7 +442,7 @@ class PerfData(object):
             "'load'=15;;;;"
 
         """
-        metrics = map(lambda x: x.__str__(), self.metrics)
+        metrics = [x.__str__() for x in self.metrics]
         return ' '.join(metrics)
 
 

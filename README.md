@@ -5,7 +5,7 @@
 
 About
 =====
-Pynag a tool and a library for managing nagios configuration and provides a
+Pynag, a tool and a library for managing Nagios/Naemon configuration and provides a
 framework to write plugins.
 
 Pynag command-line utility offers the following features:
@@ -14,12 +14,12 @@ Pynag command-line utility offers the following features:
   - copy object definitions
   - remove object definitions
   - edit nagios.cfg from command-line
-  
+
 Pynag also has the following modules:
   - Model   - Easy way to work with configuration as python objects
   - Plugins - convenience classes for writing python plugins
-  - Parsers - Various parsers for nagios configuration files
-  - Control - Control of Nagios daemon
+  - Parsers - Various parsers for Nagios configuration files
+  - Control - Control of Nagios/Naemon daemon
 
 
 Install
@@ -112,7 +112,7 @@ Model module's get_effective_* functions are not complete if your configuration 
         service_description check http
         check_command check_http
         host_name www*
-    } 
+    }
 
 Same applies for exemptions like this one:
 

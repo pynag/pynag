@@ -12,6 +12,7 @@
 # serve to show the default.
 
 
+from __future__ import absolute_import
 import sys, os
 
 sys.path.insert(0,os.path.abspath('.'))

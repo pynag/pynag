@@ -7,6 +7,7 @@ define what the syntax of a threshold should be, and it can be looked up here:
 * https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT
 
 """
+from __future__ import absolute_import
 import pynag.errors
 
 # Map the return codes

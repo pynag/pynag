@@ -27,11 +27,14 @@ This enables you for example to log to file every time an object is rewritten.
 """
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import time
 from platform import node
 import subprocess
 from os import environ
 from getpass import getuser
+from pynag.Utils import bytes2str
 
 
 class BaseEventHandler:
@@ -62,15 +65,15 @@ class PrintToScreenHandler(BaseEventHandler):
     def debug(self, object_definition, message):
         """Used for any particual debug notifications"""
         if self._debug:
-            print "%s: %s" % (time.asctime(), message)
+            print("%s: %s" % (time.asctime(), message))
 
     def write(self, object_definition, message):
         """Called whenever a modification has been written to file"""
-        print "%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message)
+        print("%s: file='%s' %s" % (time.asctime(), object_definition['meta']['filename'], message))
 
     def save(self, object_definition, message):
         """Called when objectdefinition.save() has finished"""
-        print "%s: %s" % (time.asctime(), message)
+        print("%s: %s" % (time.asctime(), message))
 
 
 class FileLogger(BaseEventHandler):
@@ -161,6 +164,8 @@ class GitEventHandler(BaseEventHandler):
         cwd = self.gitdir
         proc = subprocess.Popen(command, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         stdout, stderr = proc.communicate('through stdin to stdout')
+        stdout = bytes2str(stdout)
+        stderr = bytes2str(stderr)
         returncode = proc.returncode
         if returncode > 0 and self.ignore_errors is False:
             errorstring = "Command '%s' returned exit status %s.\n stdout: %s \n stderr: %s\n Current user: %s"
