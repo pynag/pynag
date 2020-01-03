@@ -160,16 +160,14 @@ class FakeNagiosEnvironment(object):
         """ Clean up all temporary directories """
         command = ['rm', '-rf', self.tempdir]
         pynag.Utils.runCommand(command=command, shell=False)
-        #time.sleep(.1)
 
     def terminate(self):
         """ Stop the nagios environment and remove all temporary files """
         self.stop()
-        #time.sleep(.1)
         if self._model_is_dirty:
             self.restore_model()
         self.clean_up()
-        time.sleep(.1)
+        time.sleep(.2)
 
     def start(self, start_command=None, timeout=10):
         self.configure_p1_file()
@@ -204,7 +202,7 @@ class FakeNagiosEnvironment(object):
             message += "=============\nLog File output\n{log_file_output}\n"
             message = message.format(**locals())
             raise Exception(message)
-        time.sleep(.1)
+        time.sleep(.2)
         return result
 
     def stop(self, stop_command=None):
@@ -216,7 +214,7 @@ class FakeNagiosEnvironment(object):
         if not stop_command:
             stop_command = "kill -9 %s" % pid
         result = pynag.Utils.runCommand(stop_command)
-        time.sleep(0.5)
+        time.sleep(.2)
         return result
 
     def configure_livestatus(self):
