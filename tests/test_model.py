@@ -1044,7 +1044,7 @@ class Model(unittest.TestCase):
         self.assertEqual(False, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
         self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)
 
-        message = "Host should belong to hostgroup after we specificly add it"
+        message = "Host should belong to hostgroup after we specifically add it"
         host1.add_to_hostgroup(hostgroup_name)
         self.assertEqual(True, hostgroup_name in pynag.Utils.AttributeList(host1.hostgroups), message)
         self.assertEqual(False, host_name in pynag.Utils.AttributeList(hostgroup.members), message)

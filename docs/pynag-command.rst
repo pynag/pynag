@@ -43,7 +43,7 @@ sub-commands
 
 *copy*
 
-   Copy objects, specifiying which attributes to change
+   Copy objects, specifying which attributes to change
 
       | pynag copy <WHERE ...> <SET attr1=value1 [attr2=value2] ...>
 
@@ -87,7 +87,7 @@ these work just fine:
    | pynag list host_name address WHERE address__exists=True
    | pynag list host_name WHERE register__isnot=0
 
-If you specificly want to match against non existent attribute,
+If you specifically want to match against non existent attribute,
 use attribute__exists=True or attribute=None.
 
 The pynag filter supports few parameters that are not just attributes.
