@@ -399,7 +399,9 @@ def acknowledge():
     parser.add_option("--author", dest="author",
         default="pynag",help="Author to put on the acknowledgement")
     parser.add_option("--timestamp", dest="ts",
-        default="0",help="Timestamp of the acknowledgement (default: now)")
+        default="0",help="Timestamp of the acknowledgement (default: now)"),
+    parser.add_option("--force", dest="force", action="store_true",
+        default=False,help="Don't prompt for confirmation")
     (opts,args) = parser.parse_args(sys.argv[2:])
     pynag.Model.cfg_file = opts.cfg_file
     objects =[]
@@ -424,9 +426,10 @@ def acknowledge():
     # Here we actually ack the objects
     if opts.quiet == False:
         pretty_print(objects)
-    answer = input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
-    if answer.lower() not in ('y', 'yes'):
-        return
+    if not opts.force: 
+        answer = input('Acknowledge these %s objects ? (y/N) ' % (len(objects)))
+        if answer.lower() not in ('y', 'yes'):
+            return
 
     for i in objects:
         if opts.quiet is False:
