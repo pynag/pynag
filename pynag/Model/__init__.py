@@ -921,7 +921,7 @@ class ObjectDefinition(object):
         :returns: The new object definition
         """
         new_me = self.copy(filename=filename)
-        self.delete()
+        self.delete(cleanup_related_items=False)
         return new_me
 
     def copy(self, recursive=False, filename=None, **args):
