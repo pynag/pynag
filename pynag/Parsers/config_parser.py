@@ -1612,12 +1612,6 @@ class Config(object):
         new_timestamps = self.get_timestamps()
         object_cache_file = self.get_cfg_value('object_cache_file')
 
-        if self._get_pid() is None:
-            return False
-        if not object_cache_file:
-            return True
-        if not self.isfile(object_cache_file):
-            return True
         object_cache_timestamp = new_timestamps.get(object_cache_file, 0)
         # Reload not needed if no object_cache file
         if object_cache_file is None:
@@ -1742,7 +1736,7 @@ class Config(object):
         files = {}
         files[self.cfg_file] = None
         for k, v in self.maincfg_values:
-            if k in ('resource_file', 'lock_file', 'object_cache_file'):
+            if k in ('resource_file', 'object_cache_file'):
                 files[v] = None
         for i in self.get_cfg_files():
             files[i] = None
