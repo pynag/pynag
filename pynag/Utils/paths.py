@@ -17,6 +17,7 @@ COMMON_CONFIG_FILE_LOCATIONS = [
     # nagios
     '/etc/nagios/nagios.cfg',
     '/etc/nagios3/nagios.cfg',
+    '/etc/nagios4/nagios.cfg',
     '/usr/local/nagios/etc/nagios.cfg',
     '/nagios/etc/nagios/nagios.cfg',
     './nagios.cfg',
