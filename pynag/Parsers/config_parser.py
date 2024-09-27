@@ -673,6 +673,9 @@ class Config(object):
             change = None
             value = None
             i = 0
+            # default with a tab and a field width of 30
+            spaces_before_field = '\t'
+            field_width = 30
             for i in range(len(object_definition)):
                 tmp = object_definition[i].split(None, 1)
                 if len(tmp) == 0:
@@ -690,6 +693,15 @@ class Config(object):
                 else:
                     value = tmp[1]
                 k = tmp[0].strip()
+                
+                # only grab object style if it isn't the opening or closing lines
+                if not re.search('[{}]', object_definition[i]):
+                    preserve_spaces = re.match('(\s*)\S+(\s+)', object_definition[i])
+                    if preserve_spaces:
+                        spaces_before_field = preserve_spaces.group(1)
+                        spaces_after_field = preserve_spaces.group(2)
+                        field_width = len(k) + len(spaces_after_field) - 1
+                        
                 if k == field_name:
                     # Attribute was found, lets change this line
                     if new_field_name is None and new_value is None:
@@ -703,14 +715,14 @@ class Config(object):
                         # value has changed
                         value = new_value
                         # Here we do the actual change
-                    change = "\t%-30s%s\n" % (k, value)
+                    change = "%s%-*s %s\n" % (spaces_before_field, field_width, k, value)
                     if item['meta']['object_type'] == 'timeperiod' and field_name not in ('alias', 'timeperiod_name'):
-                        change = "\t%s\n" % new_field_name
+                        change = "%s%s\n" % (spaces_before_field, new_field_name)
                     object_definition[i] = change
                     break
             if not change and new_value is not None:
                 # Attribute was not found. Lets add it
-                change = "\t%-30s%s\n" % (field_name, new_value)
+                change = "%s%-*s %s\n" % (spaces_before_field, field_width, field_name, new_value)
                 object_definition.insert(i, change)
             # Lets put a banner in front of our item
         if make_comments:
